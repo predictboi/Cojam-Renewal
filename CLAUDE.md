@@ -18,8 +18,12 @@ This file holds what is specific to Cojam and overrides the handoff where they d
 | Name | Cojam (capital C, rest lower case) |
 | Primary | `#124CC4`, text on it is white (7.35:1) |
 | Secondary candidates | `#3E58E3` (app background blue), `#97DBFF` (sky) |
-| Logo | `brand/logo/cojam-mark.svg` (original), `brand/logo/cojam-mark-centered.svg` (geometry centred, used on the site until the founder decides) |
-| Type | Pretendard Variable for EN and KO, Pretendard JP Variable for JA (switched by `:lang(ja)`), tabular numerals |
+| Logo | `brand/logo/cojam-mark.svg` (centred geometry, confirmed). `cojam-mark-original.svg` is archive only |
+| Type | Pretendard Variable for EN and KO, Pretendard JP Variable for JA (switched by `:lang(ja)`), tabular numerals (confirmed) |
+| Chain | Kaia mainnet (chain id 8217) for both old and new token |
+| Migration | Open 1:1 swap, CT to new token, no rewards or incentives. New token uses the same contract code and the same supply as the old one (exact figure to confirm: current 4,083,262,533.956 or original 5,000,000,000) |
+| Old token admin | The team does NOT control the old owner key. That owner can still pause CT at any time, which would block `transferFrom` based migration: keep a snapshot plus claim fallback in the spec |
+| Domain | New domain, name TBD. X and Telegram come later |
 | Deploy | Render static site from `site/` via `render.yaml` |
 | Old token | "Cojam" (CT), Kaia (formerly Klaytn), `0x7f223b1607171b81ebd68d22f1ca79157fd4a44b`, 18 decimals, supply 4,083,262,533.956 after burns, owner `0xeb1622d0377da1f9815bfc6eff61afe3257a0518`, pausable, not paused (checked on chain 2026-11-12). Ticker CT is now reused by other tokens on MEXC: always show the full address. Details in `research/01-cojam-history.md` |
 | Everything else | TBD: see the Brand sheet in `docs/HANDOFF.md` section 2 and `brand/BRAND.md` |
@@ -28,7 +32,7 @@ Colour rules learned so far: `#124CC4` and `#3E58E3` sit at 1.3:1 against each o
 
 ## Repository map
 
-- `site/`: what Render serves. `assets/base.css` (tokens), `assets/i18n.js` (EN / KO / JA dictionary and toggle).
+- `site/`: what Render serves (`assets/cojam-mark.svg` is the official mark). `assets/base.css` (tokens), `assets/i18n.js` (EN / KO / JA dictionary and toggle).
 - `brand/`: logo files and `BRAND.md`.
 - `research/`: market and project research that feeds planning.
 - `docs/HANDOFF.md`: method carried over from the previous project.
