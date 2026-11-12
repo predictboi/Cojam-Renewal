@@ -6,6 +6,7 @@
   --brand-tint: #E7EEFB;     /* selected background; brand text on it 6.31:1 */
   --sky: #97DBFF;            /* data colour for new CT; dark ink on it */
   --sky-tint: #E3F5FF;
+  --sky-soft: #C9EDFF;       /* a released lot's track: lighter than live data, clearly filled against --inset */
 
   /* light ground */
   --bg: #F5F7FB;

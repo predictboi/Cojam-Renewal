@@ -77,15 +77,18 @@
   function renderKpis() {
     var T = D.tot, ct = t("unit.ct_plain"), nW = D.walletList.length, ws = CJ.windowState(), win;
     if (ws === "open") {
-      var left = C.windowEnd - D.now;
-      win = kpi(t("kpi.window"), amt0(Math.floor(left / DAY)), t(Math.floor(left / DAY) === 1 ? "n.day.one" : "n.day.other", { n: "" }).trim(), t("kpi.window_sub", { date: dOnly(C.windowEnd), start: dOnly(C.windowStart) }));
+      // whole days rounded down, from the shared helper, so swap, status, landing and this tile agree
+      var left = CJ.daysLeft ? CJ.daysLeft() : Math.floor((C.windowEnd - D.now) / DAY);
+      win = kpi(t("kpi.window"), amt0(left), t(left === 1 ? "n.day.one" : "n.day.other", { n: "" }).trim(), t("kpi.window_sub", { date: dOnly(C.windowEnd), start: dOnly(C.windowStart) }));
     } else if (ws === "closed") win = kpi(t("kpi.window"), t("kpi.window_closed"), "", t("kpi.window_closed_sub", { date: dOnly(C.windowEnd) }));
     else win = kpi(t("kpi.window"), t("kpi.window_upcoming"), "", t("kpi.window_sub", { date: dOnly(C.windowEnd), start: dOnly(C.windowStart) }));
     var od = T.nOverdue > 0;
     // whole CT parts that add up: instant + locked + released = swapped, exactly as on the status page
     var U = T.u, W = CJ.sample.wholeParts([U.instant, U.locked + U.releasing, U.released]), sw = W[0] + W[1] + W[2];
     var reserve = Math.round(SUPPLY - sw);
-    $("kpi-grid").innerHTML =
+    // Urgency first: overdue releases lead the grid while there are any; otherwise the tile closes it.
+    var overdue = kpi(t("kpi.overdue"), amt0(T.overdue), ct, od ? t("kpi.overdue_sub", { n: pl("n.req", T.nOverdue) }) : t("kpi.overdue_none"), od ? "is-warn" : "");
+    $("kpi-grid").innerHTML = (od ? overdue : "") +
       kpi(t("kpi.swapped"), amt0(sw), ct, t("kpi.swapped_sub", { pct: F.pct(sw / SUPPLY, 2), supply: C.newToken.supplyText, n: amt0(D.lots.length) }), "", sw, "swapped") +
       kpi(t("kpi.wallets"), amt0(nW), t("unit.wallets"), t("kpi.wallets_sub", { n: amt0(HOLDERS), pct: F.pct(nW / HOLDERS, 1) }), "", nW, "wallets") +
       kpi(t("kpi.reserve"), amt0(reserve), ct, t("kpi.reserve_sub", { pct: F.pct(reserve / SUPPLY, 2) }), "", reserve, "reserve") +
@@ -93,21 +96,41 @@
       kpi(t("kpi.instant"), amt0(W[0]), ct, t("kpi.instant_sub", { n: amt0(D.lots.length) }), "", W[0], "instant") +
       kpi(t("kpi.locked"), amt0(W[1]), ct, t("kpi.locked_sub", { n: amt0(T.nLocked), m: amt0(T.nReleasing) }), "", W[1], "locked") +
       kpi(t("kpi.released"), amt0(W[2]), ct, t("kpi.released_sub", { k: amt0(T.byKeeper), h: amt0(T.byHolder) }), "", W[2], "released") +
-      kpi(t("kpi.overdue"), amt0(T.overdue), ct, od ? t("kpi.overdue_sub", { n: pl("n.req", T.nOverdue) }) : t("kpi.overdue_none"), od ? "is-warn" : "");
+      (od ? "" : overdue);
     renderGas();
   }
 
   // ---------- gas wallet ----------
   function renderGas() {
     var g = D.gas, low = g.runway < 7, k = t("unit.kaia");
-    $("gas-grid").innerHTML =
-      kpi(t("gas.balance"), F.amount(g.balance, 2), k, t("gas.balance_sub")) +
-      kpi(t("gas.runway"), isFinite(g.runway) ? amt0(Math.floor(g.runway)) : "∞", t(Math.floor(g.runway) === 1 ? "n.day.one" : "n.day.other", { n: "" }).trim(),
-        t(low ? "gas.runway_low" : "gas.runway_sub", { rate: F.amount(g.rate, 3) }), low ? "is-warn" : "") +
+    var runway = kpi(t("gas.runway"), isFinite(g.runway) ? amt0(Math.floor(g.runway)) : "∞", t(Math.floor(g.runway) === 1 ? "n.day.one" : "n.day.other", { n: "" }).trim(),
+        t(low ? "gas.runway_low" : "gas.runway_sub", { rate: F.amount(g.rate, 3) }), low ? "is-warn" : "");
+    // A short runway is the gas wallet's alarm: it leads the grid.
+    $("gas-grid").innerHTML = (low ? runway : "") +
+      kpi(t("gas.balance"), F.amount(g.balance, 2), k, t("gas.balance_sub")) + (low ? "" : runway) +
       kpi(t("gas.today"), amt0(g.txToday), t("unit.tx"), t("gas.spent", { kaia: F.amount(g.kaiaToday, 3) })) +
       kpi(t("gas.total"), amt0(g.tx), t("unit.tx"), t("gas.spent", { kaia: F.amount(g.kaia, 3) }));
     $("gas-note").textContent = t("gas.note", { n: pl("n.release", g.releasesToday) });
+    paintNotesToggles();
   }
+
+  // Phones: KPI tiles show label and figure only; one toggle per panel shows the notes under them (alerts always show theirs).
+  function paintNotesToggles() {
+    document.querySelectorAll(".kpi-more").forEach(function (b) {
+      var on = b.getAttribute("aria-expanded") === "true";
+      b.querySelector("span").textContent = t(on ? "kpi.notes_hide" : "kpi.notes_show");
+    });
+  }
+  ["kpi-grid", "gas-grid"].forEach(function (id) {
+    var grid = $(id), b = document.createElement("button");
+    b.type = "button"; b.className = "kpi-more"; b.setAttribute("aria-expanded", "false"); b.setAttribute("aria-controls", id);
+    b.innerHTML = "<span></span>" + I("chevron", 16);
+    b.addEventListener("click", function () {
+      var on = b.getAttribute("aria-expanded") !== "true";
+      b.setAttribute("aria-expanded", String(on)); grid.classList.toggle("show-notes", on); paintNotesToggles();
+    });
+    grid.parentNode.insertBefore(b, grid.nextSibling);
+  });
 
   // ---------- bar chart (inline SVG, one series, keyboard and pointer readout) ----------
   function niceMax(v) {
@@ -255,7 +278,7 @@
       if (c.nosort) return '<th scope="col" class="' + cls + '">' + t(c.label) + "</th>";
       var on = S.key === c.k, sort = on ? (S.dir === "asc" ? "ascending" : "descending") : "none";
       return '<th scope="col" class="' + cls + '" aria-sort="' + sort + '"><button type="button" class="sort-btn' + (on ? " is-on is-" + S.dir : "") + '" data-sort="' + c.k + '">' +
-        "<span>" + t(c.label) + "</span>" + SORT_ICO + "</button></th>";
+        "<span>" + esc(t(c.label)).replace(/\s?\((CT|UTC)\)$/, "<br>($1)") + "</span>" + SORT_ICO + "</button></th>";
     }).join("");
   }
   var SORT_OPTS = ["requested.desc", "requested.asc", "amount.desc", "amount.asc", "locked.desc", "unlocks.asc", "unlocks.desc", "left.asc", "status.asc", "status.desc", "wallet.asc"];
@@ -289,12 +312,13 @@
       $("lots-body").innerHTML = slice.map(function (l) {
         return '<tr class="row-' + l.status + ' row-open" data-row-wallet="' + l.wallet + '">' +
           cell("col.wallet", '<div class="w-cell">' + walletBtn(l.wallet) + '<span class="w-tools">' + walletTools(l.wallet) + "</span></div>", "c-wallet") +
-          cell("col.amount", '<span class="num amt">' + amt(l.amount) + "</span>", "r c-amount") +
+          cell("col.amount", '<span class="num amt">' + amt(l.amount) + '</span><span class="amt-u"> ' + t("unit.ct_plain") + "</span>", "r c-amount") +
           cell("col.instant", '<span class="num">' + amt(l.instant) + "</span>", "r c-instant") +
           cell("col.locked", '<span class="num">' + amt(l.locked) + "</span>", "r c-locked") +
           cell("col.requested", '<span class="dt"><span class="num">' + dOnly(l.swappedAt) + '</span><span class="num muted">' + tOnly(l.swappedAt) + "</span></span>", "c-requested") +
           cell("col.unlocks", '<span class="dt"><span class="num">' + dOnly(l.unlockAt) + '</span><span class="num muted">' + tOnly(l.unlockAt) + "</span></span>", "c-unlocks") +
-          cell("col.left", '<span class="num left-' + l.status + ((l.status === "locked" && l.unlockAt - D.now <= DAY) || l.overdue ? " is-soon" : "") + '">' + leftText(l) + "</span>", "c-left") +
+          cell("col.left", '<span class="num left-' + l.status + ((l.status === "locked" && l.unlockAt - D.now <= DAY) || l.overdue ? " is-soon" : "") + '">' +
+            (l.status === "locked" ? '<span class="left-d">' + leftText(l) + '</span><span class="left-m">' + t("left.locked_m", { time: leftText(l) }) + "</span>" : leftText(l)) + "</span>", "c-left") +
           cell("col.status", '<span class="st-cell">' + statusTag(l.status) + byLine(l) + "</span>", "c-status") +
           cell("col.tx", txLink(l.txSwap), "c-tx") + "</tr>";
       }).join("");

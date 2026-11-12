@@ -11,6 +11,10 @@
   function loc() { return { en: "en-US", ko: "ko-KR", ja: "ja-JP" }[CJ.lang()] || "en-US"; }
   function cmp(n) { return new Intl.NumberFormat(loc(), { notation: "compact", maximumFractionDigits: 1 }).format(n); }
   function whole(n) { return F.amount(n, 0); }
+  // Activity amounts: whole CT from 1,000 up, two fixed decimals below, the same rule everywhere on the page.
+  function amtR(n) { return n >= 1000 ? whole(n) : new Intl.NumberFormat(loc(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n); }
+  // Days left to swap: whole days rounded down, the same figure as the swap app, the landing and the admin monitor.
+  function daysLeft(now) { return CJ.daysLeft ? CJ.daysLeft() : Math.max(0, Math.floor((C.windowEnd - now) / DAY)); }
   function shortDate(ts) { return new Intl.DateTimeFormat(loc(), { month: "short", day: "numeric", timeZone: "UTC" }).format(ts); }
   function hm(ts) { return new Intl.DateTimeFormat(loc(), { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "UTC" }).format(ts); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
@@ -109,7 +113,7 @@
     $("st-swapped").innerHTML = '<span data-count="' + m.swapped + '" data-count-key="st-swapped">' + whole(m.swapped) + "</span>";
     $("st-swapped-sub").textContent = t("status.fig.swapped_sub", { pct: F.pct(m.swapped / SUPPLY, 1), supply: SUPPLY_TEXT + " " + ct });
     $("st-fees").textContent = t("status.fees", { kaia: F.amount(m.gas.kaia, 2), n: whole(m.gas.tx) });
-    var left = Math.max(0, Math.ceil((C.windowEnd - m.now) / DAY)), closed = CJ.windowState() === "closed";
+    var left = daysLeft(m.now), closed = CJ.windowState() === "closed";
     $("st-figs").innerHTML =
       fig(t("status.fig.instant"), whole(m.instant), ct, t("status.fig.instant_sub"), m.instant, "instant") +
       fig(t("status.fig.locked"), whole(m.locked), ct, m.sending ? t("status.fig.locked_sub_sending", { n: whole(m.sending) }) : t("status.fig.locked_sub"), m.locked, "locked") +
@@ -118,7 +122,7 @@
       fig(t("status.fig.reserve"), whole(m.reserve), ct, t("status.fig.reserve_sub"), m.reserve, "reserve") +
       (closed
         ? fig(t("status.fig.time"), t("status.fig.time_closed"), "", t("status.fig.time_closed_sub", { date: F.date(C.windowEnd) }))
-        : fig(t("status.fig.time"), t("status.fig.time_value", { n: whole(left) }), "", t("status.fig.time_sub", { date: F.date(C.windowEnd) })));
+        : fig(t("status.fig.time"), t(left === 1 ? "status.fig.time_value_one" : "status.fig.time_value", { n: whole(left) }), "", t("status.fig.time_sub", { date: F.date(C.windowEnd) })));
 
     // supply split: in holders' wallets (the 10% plus released 90%), locked 90%, not swapped yet. Shares add up to 100%.
     var parts = [
@@ -156,11 +160,18 @@
         aria: t("status.track.aria", { swapped: whole(m.swapped), instant: whole(m.instant), locked: whole(m.locked), days: dayList, released: whole(m.released) })
       }
     });
-    // soonest first: day 7 unlocks within 24 hours
+    // Readable levels: one large day would leave the others as empty boxes on a linear scale, so the height grows with the
+    // square root and every day with CT gets at least a fifth of the tick. Order is kept; the exact CT is printed under
+    // each tick when there is room, and in the list beside it.
+    var max = Math.max.apply(null, m.ticks), days = el.querySelectorAll(".track-day");
+    m.ticks.forEach(function (v, i) { if (days[i]) days[i].style.setProperty("--lv", v > 0 && max > 0 ? (0.2 + 0.8 * Math.sqrt(v / max)).toFixed(3) : "0"); });
+    var vals = '<div class="st-tick-vals" aria-hidden="true"><span></span>' + m.ticks.map(function (v) { return '<span class="num">' + (v ? cmp(v) : "0") + "</span>"; }).join("") + "</div>";
+    var axis = el.querySelector(".track-axis"); if (axis) axis.insertAdjacentHTML("beforebegin", vals);
+    // The list reads the same way as the track: day 1 (newest) to day 7 (unlocks within 24 hours).
     var rows = "";
-    for (var k = 6; k >= 0; k--) {
+    for (var k = 0; k < 7; k++) {
       var label = k === 6 ? t("status.unlock.next24") : t("status.unlock.in_days", { a: 6 - k, b: 7 - k });
-      rows += '<li class="st-cal-row"><span class="st-cal-date small">' + label + '</span><span class="st-cal-amt small"><span class="num">' + whole(m.ticks[k]) + '</span> <span class="muted">' + t("unit.ct") + "</span></span></li>";
+      rows += '<li class="st-cal-row' + (k === 6 ? " is-next" : "") + '"><span class="st-cal-date small"><span class="st-cal-d">' + t("status.unlock.day", { d: k + 1 }) + "</span> " + label + '</span><span class="st-cal-amt small"><span class="num">' + whole(m.ticks[k]) + '</span> <span class="muted">' + t("unit.ct") + "</span></span></li>";
     }
     $("st-cal").innerHTML = rows;
     $("st-cal-total").textContent = m.sending ? t("status.unlock.total_sending", { amount: whole(m.locked), n: whole(m.sending) }) : t("status.unlock.total", { amount: whole(m.locked) });
@@ -302,15 +313,15 @@
         rows.map(function (r) {
           return '<tr><td><span class="st-hash">' + F.addr(r.lot.wallet) + "</span></td>" +
             "<td>" + t("status.act." + r.type) + "</td>" +
-            '<td class="r"><span class="num">' + F.amount(r.amount, 2) + '</span> <span class="muted">' + unitFor(r) + "</span></td>" +
+            '<td class="r"><span class="num">' + amtR(r.amount) + '</span> <span class="muted">' + unitFor(r) + "</span></td>" +
             "<td>" + statusTag(r) + "</td>" +
             '<td class="muted">' + timeEl(r) + "</td>" +
             '<td class="r">' + txLink(r) + "</td></tr>";
         }).join("") + "</tbody></table></div></div>";
     } else {
       body.innerHTML = '<ul class="st-cards">' + rows.map(function (r) {
-        return '<li class="panel st-card lift">' +
-          '<p class="st-card-amt"><span class="num">' + F.amount(r.amount, 2) + '</span> <span class="st-unit">' + unitFor(r) + "</span></p>" +
+        return '<li class="panel st-card">' +
+          '<p class="st-card-amt"><span class="num">' + amtR(r.amount) + '</span> <span class="st-unit">' + unitFor(r) + "</span></p>" +
           '<p class="small muted">' + t("status.act." + r.type) + " " + timeEl(r) + "</p>" +
           '<div class="st-card-row">' + statusTag(r) + "</div>" +
           '<div class="st-card-foot"><span class="st-hash small">' + F.addr(r.lot.wallet) + "</span>" + txLink(r) + "</div></li>";

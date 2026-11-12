@@ -31,6 +31,8 @@ CJ.dict({
     "kpi.window_closed": "Closed",
     "kpi.window_closed_sub": "Closed {date}. Unswapped new CT goes to the treasury multisig; remainders still release.",
     "kpi.window_upcoming": "Not open yet",
+    "kpi.notes_show": "Show notes",
+    "kpi.notes_hide": "Hide notes",
 
     "gas.title": "Gas wallet",
     "gas.sub": "Cojam's fee payer. It pays the network fee for fee delegated approve, swap and claim transactions, and for every keeper release.",
@@ -149,6 +151,7 @@ CJ.dict({
     "left.releasing": "Unlocked {time} ago",
     "left.overdue": "Overdue, unlocked {time} ago",
     "left.released": "Released {date}",
+    "left.locked_m": "{time} left",
 
     "row.open": "Open wallet {addr}",
     "row.copy": "Copy wallet address",
@@ -227,6 +230,8 @@ CJ.dict({
     "kpi.window_closed": "종료",
     "kpi.window_closed_sub": "{date} 종료. 교환되지 않은 신규 CT는 트레저리 멀티시그로 이동하며, 잔여분은 계속 지급됩니다.",
     "kpi.window_upcoming": "시작 전",
+    "kpi.notes_show": "설명 보기",
+    "kpi.notes_hide": "설명 숨기기",
 
     "gas.title": "대납지갑",
     "gas.sub": "Cojam의 수수료 대납 지갑입니다. 수수료 대납으로 처리하는 승인, 교환, 수령 트랜잭션과 모든 자동 지급의 네트워크 수수료를 냅니다.",
@@ -345,6 +350,7 @@ CJ.dict({
     "left.releasing": "해제 후 {time} 경과",
     "left.overdue": "지연, 해제 후 {time} 경과",
     "left.released": "{date} 지급 완료",
+    "left.locked_m": "{time} 남음",
 
     "row.open": "지갑 {addr} 열기",
     "row.copy": "지갑 주소 복사",
@@ -423,6 +429,8 @@ CJ.dict({
     "kpi.window_closed": "終了",
     "kpi.window_closed_sub": "{date}に終了。交換されなかった新CTはトレジャリーマルチシグに移され、残りは引き続き送付されます。",
     "kpi.window_upcoming": "開始前",
+    "kpi.notes_show": "説明を表示",
+    "kpi.notes_hide": "説明を隠す",
 
     "gas.title": "ガス代ウォレット",
     "gas.sub": "Cojamの手数料支払い用ウォレットです。手数料の肩代わりによる承認、交換、受け取りのトランザクションと、すべての自動送付のネットワーク手数料を支払います。",
@@ -541,6 +549,7 @@ CJ.dict({
     "left.releasing": "解除から{time}経過",
     "left.overdue": "遅延、解除から{time}経過",
     "left.released": "{date} 送付済み",
+    "left.locked_m": "残り{time}",
 
     "row.open": "ウォレット{addr}を開く",
     "row.copy": "ウォレットアドレスをコピー",

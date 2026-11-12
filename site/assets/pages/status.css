@@ -60,8 +60,8 @@
 }
 
 /* ---------- panels in the grid ---------- */
+/* One column: the daily chart, then the aggregate track panel at full width, so no column ends early and leaves a gap. */
 .st-grid { display: grid; gap: var(--s-24); grid-template-columns: minmax(0, 1fr); align-items: start; }
-@media (min-width: 1024px) { .st-grid { grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); } }
 .st-panel-head { display: grid; gap: var(--s-4); margin-bottom: var(--s-16); }
 .st-h2 { font-size: var(--fs-20); letter-spacing: -0.01em; }
 
@@ -93,11 +93,30 @@
 .st-scroll { overflow-x: auto; max-width: 100%; }
 
 /* ---------- unlock calendar: the swap track in aggregate ---------- */
+/* Track left, the same seven days as a list right (wide screens); stacked on phones. Both read day 1 to day 7. */
+.st-unlock { display: grid; gap: 0 var(--s-48); grid-template-columns: minmax(0, 1fr); }
+.st-unlock-main { min-width: 0; container-type: inline-size; }
+.st-unlock-side { min-width: 0; }
+@media (min-width: 1024px) {
+  .st-unlock { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+  .st-unlock-side .st-cal-h { border-top: 0; padding-top: 0; }
+  .st-unlock #st-track { margin-bottom: 0; }
+}
 .st-cal { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .st-unlock #st-track { margin: var(--s-8) 0 var(--s-24); }
 .st-cal-h { font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--ink); padding-top: var(--s-16); border-top: 1px solid var(--line); margin-bottom: var(--s-4); }
 .st-cal-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); min-height: 32px; }
 .st-cal-date { color: var(--ink-2); white-space: nowrap; }
+.st-cal-d { display: inline-block; min-width: 3.6em; color: var(--ink); font-weight: var(--fw-medium); }
+.st-cal-row.is-next .st-cal-amt .num { font-weight: var(--fw-semi); }
+/* Aggregate track: taller levels, the first label starts at its tick, and the CT of each day under its tick when there is room. */
+.st-unlock .track-agg .track-rail { height: 56px; }
+.st-unlock .track-axis { margin-top: 0; }
+.st-unlock .track-axis > :empty { display: none; }
+.st-unlock .track-axis > :nth-child(2) { grid-column: 2 / 5; text-align: left; }
+.st-unlock .track-axis > :last-child { grid-column: 6 / 9; text-align: right; }
+.st-tick-vals { grid-column: 1 / -1; display: none; grid-template-columns: minmax(18px, 0.78fr) repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: -6px; font-size: var(--fs-12); font-weight: var(--fw-medium); color: var(--ink); text-align: center; white-space: nowrap; }
+@container (min-width: 520px) { .st-tick-vals { display: grid; } }
 .st-cal-amt { text-align: right; white-space: nowrap; color: var(--ink); }
 .st-cal-total { margin-top: var(--s-12); padding-top: var(--s-12); border-top: 1px solid var(--line); color: var(--ink); }
 
@@ -114,6 +133,7 @@
 .st-recent-table .tag svg, .st-card .tag svg { display: inline-block; }
 
 .st-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-12); grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+/* Cards are not links (the tx button inside is), so they stay still under the finger. */
 .st-card { display: grid; gap: var(--s-4); padding: var(--s-12) var(--s-16) var(--s-4); }
 .st-card-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4) var(--s-8); }
 .st-card-amt { font-size: var(--fs-20); font-weight: var(--fw-semi); line-height: 1.25; }

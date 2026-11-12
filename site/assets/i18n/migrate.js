@@ -3,7 +3,7 @@ CJ.dict({
   en: {
     "page.title": "Swap old CT for new CT",
     "page.lede": "One old CT becomes one new CT on Kaia. 10% arrives in your wallet at once, and the other 90% follows 7 days later, automatically.",
-    "win.open": "Swaps are open for 1 year from launch, until {date}, {rel}.",
+    "win.open": "Swaps are open for 1 year from launch, until {date}, {left}.",
     "win.closed": "The swap window closed on {date}. Locked remainders still release.",
 
     "back": "Back",
@@ -72,7 +72,7 @@ CJ.dict({
     "f.hint.approved": "Already approved. Your wallet asks once, to swap.",
     "f.over": "That is more than your balance of {amount} old CT.",
     "f.usemax": "Use max",
-    "f.claimnote": "{amount} new CT is unlocked and on its way to your wallet.",
+    "f.claimnote": "{amount} new CT is being sent to your wallet.",
     "f.claimnote.btn": "Claim it now",
 
     "rv.title": "Check this large swap",
@@ -115,9 +115,9 @@ CJ.dict({
     "ok.add.toast": "Your wallet can show new CT once its address is announced at launch.",
     "ok.done": "Done",
 
-    "cl.title": "Unlocked",
-    "cl.body.one": "Unlocked. Cojam is sending it to your wallet; you can also claim it now.",
-    "cl.body.many": "{count} swaps have unlocked. Cojam is sending them to your wallet; you can also claim them now in one transaction.",
+    "cl.title": "Being sent",
+    "cl.body.one": "Your {amount} new CT finished its {days} day lock on {date}. Cojam sends it to your wallet within {min} minutes, or you can claim it now.",
+    "cl.body.many": "{count} swaps finished their {days} day lock. Cojam sends each one to your wallet within {min} minutes of its unlock, or you can claim them all now in one transaction.",
     "cl.cta": "Claim {amount} new CT",
     "cl.cta.all": "Claim all {amount} new CT",
     "cl.swapmore": "Swap old CT instead",
@@ -197,12 +197,20 @@ CJ.dict({
     "pr.closed": "Jump past the window end",
     "pr.network": "Move wallet to another network",
     "pr.sponsor": "Make the fee payer unavailable",
-    "pr.reset": "Reset everything"
+    "pr.reset": "Reset everything",
+    "win.left": "{n} days left",
+    "win.left.one": "1 day left",
+    "win.left.zero": "closing today",
+    "win.short": "Open until {date}, {n} days left",
+    "win.short.one": "Open until {date}, 1 day left",
+    "win.short.zero": "Open until {date}, closing today",
+    "head.more": "About the swap",
+    "f.none": "No amount yet"
   },
   ko: {
     "page.title": "기존 CT를 신규 CT로 교환",
     "page.lede": "Kaia에서 기존 CT 1개가 신규 CT 1개로 바뀝니다. 10%는 즉시 지갑에 들어오고, 나머지 90%는 7일 후 자동으로 지급됩니다.",
-    "win.open": "교환은 출시 후 1년간, {date}까지 가능합니다({rel} 마감).",
+    "win.open": "교환은 출시 후 1년간 {date}까지 가능하며, {left}.",
     "win.closed": "교환 기간이 {date}에 종료되었습니다. 락업된 잔여분은 계속 지급됩니다.",
 
     "back": "뒤로",
@@ -257,9 +265,9 @@ CJ.dict({
     "f.max": "최대",
     "f.max.aria": "전체 잔액 사용",
     "f.now": "지금 받는 수량",
-    "f.now.v": "{amount} 신규 CT(10%)",
+    "f.now.v": "{amount} 신규 CT (10%)",
     "f.later": "{date} 지급",
-    "f.later.v": "{amount} 신규 CT(90%)",
+    "f.later.v": "{amount} 신규 CT (90%)",
     "f.later.sub": "지갑으로 자동 지급",
     "f.gas.v": "약 {amount} KAIA",
     "f.gas.have": "보유 {amount} KAIA",
@@ -271,7 +279,7 @@ CJ.dict({
     "f.hint.approved": "이미 승인했습니다. 지갑에서 교환만 한 번 확인합니다.",
     "f.over": "잔액 {amount} 기존 CT보다 많습니다.",
     "f.usemax": "최대 수량 사용",
-    "f.claimnote": "{amount} 신규 CT가 해제되어 지갑으로 지급 중입니다.",
+    "f.claimnote": "{amount} 신규 CT가 지갑으로 지급 중입니다.",
     "f.claimnote.btn": "지금 수령하기",
 
     "rv.title": "대량 교환 확인",
@@ -314,9 +322,9 @@ CJ.dict({
     "ok.add.toast": "신규 CT 주소가 출시 시 공개되면 지갑에 표시할 수 있습니다.",
     "ok.done": "완료",
 
-    "cl.title": "락업 해제",
-    "cl.body.one": "락업이 해제되었습니다. Cojam이 지갑으로 지급 중이며, 지금 직접 수령할 수도 있습니다.",
-    "cl.body.many": "교환 {count}건의 락업이 해제되었습니다. Cojam이 지갑으로 지급 중이며, 지금 한 번의 트랜잭션으로 직접 수령할 수도 있습니다.",
+    "cl.title": "지급 중",
+    "cl.body.one": "{amount} 신규 CT의 {days}일 락업이 {date}에 끝났습니다. Cojam이 {min}분 안에 지갑으로 지급하며, 지금 직접 수령할 수도 있습니다.",
+    "cl.body.many": "교환 {count}건의 {days}일 락업이 끝났습니다. Cojam이 락업이 끝난 뒤 {min}분 안에 각각 지갑으로 지급하며, 지금 한 번의 트랜잭션으로 모두 수령할 수도 있습니다.",
     "cl.cta": "{amount} 신규 CT 수령하기",
     "cl.cta.all": "{amount} 신규 CT 모두 수령하기",
     "cl.swapmore": "대신 기존 CT 교환하기",
@@ -396,12 +404,20 @@ CJ.dict({
     "pr.closed": "교환 기간 종료 이후로 이동",
     "pr.network": "지갑을 다른 네트워크로 전환",
     "pr.sponsor": "대납지갑 사용 불가로 설정",
-    "pr.reset": "모두 초기화"
+    "pr.reset": "모두 초기화",
+    "win.left": "{n}일 남았습니다",
+    "win.left.one": "1일 남았습니다",
+    "win.left.zero": "오늘 마감됩니다",
+    "win.short": "{date}까지 교환 가능, {n}일 남음",
+    "win.short.one": "{date}까지 교환 가능, 1일 남음",
+    "win.short.zero": "{date}까지 교환 가능, 오늘 마감",
+    "head.more": "교환 안내",
+    "f.none": "아직 수량이 없습니다"
   },
   ja: {
     "page.title": "旧CTを新CTに交換",
     "page.lede": "Kaia上で旧CT 1枚が新CT 1枚になります。10%はすぐにウォレットに届き、残りの90%は7日後に自動で届きます。",
-    "win.open": "交換はローンチから1年間、{date}まで可能です({rel}に終了)。",
+    "win.open": "交換はローンチから1年間、{date}まで可能で、{left}。",
     "win.closed": "交換期間は{date}に終了しました。ロック中の残りは引き続き送付されます。",
 
     "back": "戻る",
@@ -470,7 +486,7 @@ CJ.dict({
     "f.hint.approved": "承認済みです。ウォレットでの確認は交換の1回のみです。",
     "f.over": "残高の{amount} 旧CTを超えています。",
     "f.usemax": "最大数量を使う",
-    "f.claimnote": "{amount} 新CTのロックが解除され、ウォレットへ送付中です。",
+    "f.claimnote": "{amount} 新CTをウォレットへ送付中です。",
     "f.claimnote.btn": "今すぐ受け取る",
 
     "rv.title": "大口の交換を確認",
@@ -513,9 +529,9 @@ CJ.dict({
     "ok.add.toast": "新CTのアドレスがローンチ時に公開されると、ウォレットに表示できるようになります。",
     "ok.done": "完了",
 
-    "cl.title": "ロック解除",
-    "cl.body.one": "ロックが解除されました。Cojamがウォレットへ送付中ですが、今すぐご自身で受け取ることもできます。",
-    "cl.body.many": "{count}件の交換のロックが解除されました。Cojamがウォレットへ送付中ですが、今すぐ1回のトランザクションでまとめて受け取ることもできます。",
+    "cl.title": "送付中",
+    "cl.body.one": "{amount} 新CTの{days}日間のロックは{date}に終わりました。Cojamが{min}分以内にウォレットへ送付しますが、今すぐご自身で受け取ることもできます。",
+    "cl.body.many": "{count}件の交換の{days}日間のロックが終わりました。Cojamはロック終了から{min}分以内にそれぞれウォレットへ送付しますが、今すぐ1回のトランザクションでまとめて受け取ることもできます。",
     "cl.cta": "{amount} 新CTを受け取る",
     "cl.cta.all": "{amount} 新CTをすべて受け取る",
     "cl.swapmore": "旧CTの交換に戻る",
@@ -595,6 +611,14 @@ CJ.dict({
     "pr.closed": "交換期間の終了後に進める",
     "pr.network": "ウォレットを別のネットワークに移す",
     "pr.sponsor": "ガス代ウォレットを利用不可にする",
-    "pr.reset": "すべてリセット"
+    "pr.reset": "すべてリセット",
+    "win.left": "残り{n}日です",
+    "win.left.one": "残り1日です",
+    "win.left.zero": "本日で終了します",
+    "win.short": "{date}まで交換可能、残り{n}日",
+    "win.short.one": "{date}まで交換可能、残り1日",
+    "win.short.zero": "{date}まで交換可能、本日終了",
+    "head.more": "交換について",
+    "f.none": "数量が未入力です"
   }
 });

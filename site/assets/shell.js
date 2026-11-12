@@ -1,6 +1,10 @@
 // Shared shell: skip link, safety banner, header, mobile nav, footer. Every page has <body data-page="home|swap|status|docs" data-root="./|../">
 // (plus data-foot="compact" where the page has its own contract address section, see the footer below)
 // with <div id="cj-top"></div> before <main> and <div id="cj-foot"></div> after it.
+// Load order: system.js, i18n/shell.js and this file run synchronously right after <div id="cj-top"></div>, so the banner
+// and header are in the first paint and nothing below them moves when the page script runs. The page's own scripts
+// (motion.js, wallet.js, i18n/<page>.js, pages/<page>.js) stay at the end of <body>; CJ.dict re-applies data-i18n when a
+// page dictionary loads. The footer is rendered on DOMContentLoaded, below everything, so it cannot shift the page.
 (function () {
   var b = document.body, page = b.dataset.page || "home", root = b.dataset.root || "./";
   var I = CJ.icon;
@@ -31,20 +35,24 @@
       // The mobile nav sits outside the sticky header, so only the 56 px top row stays on screen while scrolling.
       '<div class="cj-subnav">' + nav("cj-nav-mobile container") + "</div>";
   }
-  var foot = document.getElementById("cj-foot");
-  // <body data-foot="compact">: the page already shows the addresses in its own #contracts section, so the footer adds
-  // a "Contracts on Kaia" link to that section under the site links instead of listing the addresses a second time.
-  var compact = b.dataset.foot === "compact" ? "contracts" : null;
-  if (foot) {
-    foot.outerHTML =
-      '<footer class="cj-footer"><div class="container cj-foot-grid">' +
-        '<div class="cj-foot-brand"><a class="cj-brand" href="' + root + '" data-i18n-attr="aria-label:nav.home"><img src="' + root + 'assets/cojam-mark.svg" alt="" width="28" height="28"><span>Cojam</span></a>' +
-          '<p class="muted small" data-i18n="foot.tagline"></p></div>' +
-        '<div><h2 class="cj-foot-h" data-i18n="foot.site"></h2>' +
-          (compact ? nav("cj-foot-nav").replace("</nav>", '<a href="#' + compact + '" data-i18n="foot.contracts"></a></nav>') : nav("cj-foot-nav")) + "</div>" +
-        (compact ? "" : '<div class="cj-foot-addrs"><h2 class="cj-foot-h" data-i18n="foot.contracts"></h2><div class="addr" data-addr="old"></div><div class="addr" data-addr="new"></div><div class="addr" data-addr="swap"></div></div>') +
-      "</div>" +
-      '<div class="container cj-foot-legal"><p class="small" data-i18n="foot.safety"></p><p class="xs muted" data-i18n="foot.legal"></p><p class="xs muted" data-i18n="foot.copy"></p></div></footer>';
+  function renderFoot() {
+    var foot = document.getElementById("cj-foot");
+    // <body data-foot="compact">: the page already shows the addresses in its own #contracts section, so the footer adds
+    // a "Contracts on Kaia" link to that section under the site links instead of listing the addresses a second time.
+    var compact = b.dataset.foot === "compact" ? "contracts" : null;
+    if (foot) {
+      foot.outerHTML =
+        '<footer class="cj-footer"><div class="container cj-foot-grid">' +
+          '<div class="cj-foot-brand"><a class="cj-brand" href="' + root + '" data-i18n-attr="aria-label:nav.home"><img src="' + root + 'assets/cojam-mark.svg" alt="" width="28" height="28"><span>Cojam</span></a>' +
+            '<p class="muted small" data-i18n="foot.tagline"></p></div>' +
+          '<div><h2 class="cj-foot-h" data-i18n="foot.site"></h2>' +
+            (compact ? nav("cj-foot-nav").replace("</nav>", '<a href="#' + compact + '" data-i18n="foot.contracts"></a></nav>') : nav("cj-foot-nav")) + "</div>" +
+          (compact ? "" : '<div class="cj-foot-addrs"><h2 class="cj-foot-h" data-i18n="foot.contracts"></h2><div class="addr" data-addr="old"></div><div class="addr" data-addr="new"></div><div class="addr" data-addr="swap"></div></div>') +
+        "</div>" +
+        '<div class="container cj-foot-legal"><p class="small" data-i18n="foot.safety"></p><p class="xs muted" data-i18n="foot.legal"></p><p class="xs muted" data-i18n="foot.copy"></p></div></footer>';
+      var f = document.querySelector(".cj-footer");
+      CJ.applyI18n(f); CJ.renderAddrs(f);
+    }
   }
 
   var sel = document.getElementById("cj-lang-select");
@@ -70,6 +78,6 @@
   document.addEventListener("cj:lang", function () { paintWallet(); CJ.renderAddrs(); });
 
   CJ.applyI18n();
-  CJ.renderAddrs();
   paintWallet();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", renderFoot); else renderFoot();
 })();

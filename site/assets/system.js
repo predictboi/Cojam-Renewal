@@ -1,5 +1,7 @@
 // Cojam shared system: config, i18n, mock ledger, mock clock, formatters, amount parser, swap track, toasts.
-// Mock only: nothing here talks to a chain. Load order on every page: system.js, i18n/*.js, shell.js, page script.
+// Mock only: nothing here talks to a chain. Load order on every page: system.js, i18n/shell.js and shell.js right after
+// <div id="cj-top"></div> (so the header is in the first paint), then motion.js, wallet.js, i18n/<page>.js and the page script
+// at the end of <body>.
 (function () {
   var DAY = 86400000;
   var params = new URLSearchParams(location.search);
@@ -36,7 +38,12 @@
   // ---------- i18n ----------
   var SUPPORTED = ["en", "ko", "ja"];
   var dicts = { en: {}, ko: {}, ja: {} };
-  function dict(d) { SUPPORTED.forEach(function (l) { if (d[l]) Object.assign(dicts[l], d[l]); }); }
+  // A dictionary that loads after the shell (the page's own i18n file at the end of <body>) re-applies data-i18n and the
+  // address rows at once, before the page script runs, so the static markup is translated in the first paint.
+  function dict(d) {
+    SUPPORTED.forEach(function (l) { if (d[l]) Object.assign(dicts[l], d[l]); });
+    if (document.body) { applyI18n(); renderAddrs(); }
+  }
   function pickLang() {
     var q = params.get("lang");
     if (SUPPORTED.indexOf(q) > -1) return q;
@@ -83,6 +90,8 @@
   function pct(n, dp) { return new Intl.NumberFormat(loc(), { style: "percent", maximumFractionDigits: dp == null ? 1 : dp }).format(n); }
   function date(ts) { return new Intl.DateTimeFormat(loc(), { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(ts); }
   function dateTime(ts) { return new Intl.DateTimeFormat(loc(), { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC", timeZoneName: "short" }).format(ts); }
+  // "Dec 6, 10:14 UTC": a lot's swap time, so two lots from the same day are told apart. 24 hour clock in every language.
+  function lotTime(ts) { return new Intl.DateTimeFormat(loc(), { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "UTC", timeZoneName: "short" }).format(ts); }
   function rel(ts) {
     var diff = ts - now(), abs = Math.abs(diff);
     var rtf = new Intl.RelativeTimeFormat(loc(), { numeric: "auto" });
@@ -195,6 +204,8 @@
   };
 
   // ---------- window ----------
+  // Whole days left in the swap window (or until ts). One formula for every page: swap, status and admin say the same number.
+  function daysLeft(ts) { return Math.floor(((ts == null ? config.windowEnd : ts) - now()) / DAY); }
   function windowState() {
     var n = now();
     if (n < config.windowStart) return "upcoming";
@@ -249,19 +260,19 @@
       html += '<span class="' + cls + '"' + part + "></span>";
     }
     var by = lot && lot.releasedBy === "you" ? "track.by_you" : lot && lot.releasedBy === "holder" ? "track.by_holder" : "track.by_keeper";
-    var leftCap = lot ? t("track.swapped", { date: date(lot.swappedAt) }) : t("track.left");
+    var leftCap = lot ? t("track.swapped", { date: lotTime(lot.swappedAt) }) : t("track.left");
     var nowCap = lot ? t("track.now_done") : t("track.now");
     var rightCap = status === "demo" ? t("track.right", { days: days })
       : status === "locked" ? t("track.unlocks", { date: date(lot.unlockAt) })
       : status === "releasing" ? t("track.sending")
-      : t("track.released", { date: date(lot.releasedAt) });
+      : icon("check", 14) + t("track.released", { date: date(lot.releasedAt) });
     var mid = status === "demo" ? t("track.mid", { days: days })
       : status === "locked" ? t("track.left_days", { rel: rel(lot.unlockAt) })
       : status === "releasing" ? t("track.mid_ready") : t(by);
     var a = amount(total), ai = amount(sp.instant), al = amount(sp.locked);
     el.className = "track" + (opts.large ? " track-lg" : "") + (status === "releasing" ? " is-ready" : "") + (status === "released" ? " is-released" : "");
     el.setAttribute("role", "img");
-    el.setAttribute("aria-label", t("track.aria", { amount: a, instant: ai, locked: al, right: rightCap, mid: mid }));
+    el.setAttribute("aria-label", t("track.aria", { amount: a, instant: ai, locked: al, right: rightCap.replace(/<[^>]+>/g, ""), mid: mid }));
     el.innerHTML =
       '<div class="track-end"><span class="track-cap">' + leftCap + '</span><span class="track-amt"><span class="num">' + a + '</span> <span class="track-unit">' + t("unit.old") + "</span></span></div>" +
       '<div class="track-end r"><span class="track-cap">' + rightCap + '</span><span class="track-amt"><span class="num">' + al + '</span> <span class="track-unit">' + t("unit.new") + "</span></span></div>" +
@@ -477,8 +488,8 @@
   window.CJ = {
     config: config, params: params, DAY: DAY, now: now,
     dict: dict, t: t, lang: function () { return lang; }, setLang: setLang, applyI18n: applyI18n,
-    fmt: { amount: amount, compact: compact, pct: pct, date: date, dateTime: dateTime, rel: rel, addr: shortAddr },
-    parseAmount: parseAmount, split: split, ledger: ledgerApi, windowState: windowState,
+    fmt: { amount: amount, compact: compact, pct: pct, date: date, dateTime: dateTime, lotTime: lotTime, rel: rel, addr: shortAddr },
+    parseAmount: parseAmount, split: split, ledger: ledgerApi, windowState: windowState, daysLeft: daysLeft,
     icon: icon, track: track, trackAggregate: trackAggregate, toast: toast, copy: copy, renderAddrs: renderAddrs, fakeTx: fakeTx,
     sample: { lots: sampleLots, state: sampleState, wholeParts: wholeParts, shares: shares },
     state: params.get("state")

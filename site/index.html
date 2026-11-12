@@ -14,6 +14,9 @@
 </head>
 <body data-page="home" data-root="./" data-foot="compact">
 <div id="cj-top"></div>
+<script src="assets/system.js"></script>
+<script src="assets/i18n/shell.js"></script>
+<script src="assets/shell.js"></script>
 <main id="main">
 
   <section class="hero">
@@ -27,9 +30,13 @@
         </div>
       </div>
       <figure class="hero-card panel" aria-labelledby="hero-card-cap">
+        <div class="hero-status">
+          <p class="hero-live"><span class="live-dot" id="hero-dot" aria-hidden="true"></span><strong id="hero-live"></strong></p>
+          <p class="small muted" id="hero-window"></p>
+        </div>
         <div class="hero-card-head">
           <span class="tag tag-sky" data-i18n="hero.card.tag">1 old CT = 1 new CT</span>
-          <span class="small muted" id="hero-window"></span>
+          <span class="tag" data-i18n="hero.card.example">Example</span>
         </div>
         <div id="hero-track" class="track track-lg"></div>
         <figcaption id="hero-card-cap" class="small muted" data-i18n="hero.card.cap">Swap any amount. 10% of the new CT arrives in the same transaction. The other 90% is locked for 7 days, then sent to your wallet automatically.</figcaption>
@@ -82,32 +89,37 @@
   </section>
 
   <section class="section timeline" id="timeline" aria-labelledby="tl-h">
-    <div class="container" data-reveal=".section-head, .tl-item">
+    <div class="container" data-reveal=".section-head, .tl-key, .tl-item">
       <div class="section-head">
         <h2 id="tl-h" data-i18n="tl.title">One year to swap</h2>
         <p data-i18n="tl.lede">Swaps are open for 1 year from launch. Locked remainders still release after that.</p>
       </div>
+      <ul class="tl-key" data-i18n-attr="aria-label:tl.key">
+        <li><span class="tl-dot is-done" aria-hidden="true"></span><span data-i18n="tl.done">Done</span></li>
+        <li><span class="tl-dot is-now" aria-hidden="true"></span><span data-i18n="tl.now">Now</span></li>
+        <li><span class="tl-dot is-later" aria-hidden="true"></span><span data-i18n="tl.later">Later</span></li>
+      </ul>
       <ol class="tl" id="tl-list">
         <li class="tl-item">
-          <span class="tl-dot" aria-hidden="true"></span>
+          <span class="tl-dot" aria-hidden="true"></span><span class="tl-state"></span>
           <span class="tl-when num" id="tl-open"></span>
           <h3 data-i18n="tl.open.title">Window opens</h3>
           <p class="muted small" data-i18n="tl.open.body">On launch, the day the swap contract is deployed. Open to every holder.</p>
         </li>
         <li class="tl-item">
-          <span class="tl-dot" aria-hidden="true"></span>
+          <span class="tl-dot" aria-hidden="true"></span><span class="tl-state"></span>
           <span class="tl-when" data-i18n="tl.each.when">On every swap</span>
           <h3 data-i18n="tl.each.title">10% now, 90% 7 days later</h3>
           <p class="muted small" data-i18n="tl.each.body">10% arrives in the swap itself. The 90% is sent to your wallet automatically 7 days later.</p>
         </li>
         <li class="tl-item">
-          <span class="tl-dot" aria-hidden="true"></span>
+          <span class="tl-dot" aria-hidden="true"></span><span class="tl-state"></span>
           <span class="tl-when num" id="tl-close"></span>
           <h3 data-i18n="tl.close.title">Window closes</h3>
           <p class="muted small" data-i18n="tl.close.body">1 year after launch. No new swaps. Unswapped new CT goes to the new treasury multisig.</p>
         </li>
         <li class="tl-item">
-          <span class="tl-dot" aria-hidden="true"></span>
+          <span class="tl-dot" aria-hidden="true"></span><span class="tl-state"></span>
           <span class="tl-when" data-i18n="tl.after.when">After the window</span>
           <h3 data-i18n="tl.after.title">Remainders still release</h3>
           <p class="muted small" data-i18n="tl.after.body">The locked 90% of earlier swaps is still sent to its owners.</p>
@@ -152,9 +164,9 @@
         <h2 id="fu-h" data-i18n="fu.title">Where Cojam is going</h2>
         <p data-i18n="fu.lede">Ideas for the platform new CT is made for. Nothing here is live, and every number is an example.</p>
       </div>
-      <div class="mocks">
+      <div class="mocks" id="mocks">
 
-        <figure class="panel mock lift" data-tilt aria-labelledby="m1-h">
+        <figure class="panel mock" aria-labelledby="m1-h">
           <div class="mock-head">
             <h3 id="m1-h" data-i18n="fu.m1.title">Predict with CT</h3>
             <span class="mock-tag" data-i18n="fu.concept">Concept preview, not live</span>
@@ -174,7 +186,7 @@
           <figcaption class="mock-cap" data-i18n="fu.m1.cap">Stake CT on the outcome you expect.</figcaption>
         </figure>
 
-        <figure class="panel mock lift" data-tilt aria-labelledby="m2-h">
+        <figure class="panel mock" aria-labelledby="m2-h">
           <div class="mock-head">
             <h3 id="m2-h" data-i18n="fu.m2.title">Outcome derivatives</h3>
             <span class="mock-tag" data-i18n="fu.concept">Concept preview, not live</span>
@@ -186,7 +198,7 @@
               <line class="mock-grid" x1="0" y1="48" x2="300" y2="48"/>
               <line class="mock-grid" x1="0" y1="72" x2="300" y2="72"/>
               <line class="mock-entry" x1="0" y1="62" x2="300" y2="62"/>
-              <polyline class="mock-line" points="4,66 28,62 52,68 76,58 100,60 124,52 148,55 172,44 196,46 220,36 244,38 268,30 294,26"/>
+              <polyline class="mock-line" pathLength="1" points="4,66 28,62 52,68 76,58 100,60 124,52 148,55 172,44 196,46 220,36 244,38 268,30 294,26"/>
               <circle class="mock-dot" cx="294" cy="26" r="3.5"/>
             </svg>
             <div class="mock-rows">
@@ -198,7 +210,7 @@
           <figcaption class="mock-cap" data-i18n="fu.m2.cap">Trade an outcome price before the result.</figcaption>
         </figure>
 
-        <figure class="panel mock lift" data-tilt aria-labelledby="m3-h">
+        <figure class="panel mock" aria-labelledby="m3-h">
           <div class="mock-head">
             <h3 id="m3-h" data-i18n="fu.m3.title">Loans against positions</h3>
             <span class="mock-tag" data-i18n="fu.concept">Concept preview, not live</span>
@@ -219,7 +231,7 @@
           <figcaption class="mock-cap" data-i18n="fu.m3.cap">Borrow CT without closing your prediction.</figcaption>
         </figure>
 
-        <figure class="panel mock lift" data-tilt aria-labelledby="m4-h">
+        <figure class="panel mock" aria-labelledby="m4-h">
           <div class="mock-head">
             <h3 id="m4-h" data-i18n="fu.m4.title">Margin on predictions</h3>
             <span class="mock-tag" data-i18n="fu.concept">Concept preview, not live</span>
@@ -241,6 +253,7 @@
         </figure>
 
       </div>
+      <div class="mocks-dots" id="mocks-dots" aria-hidden="true"></div>
     </div>
   </section>
 
@@ -280,12 +293,9 @@
 
 </main>
 <div id="cj-foot"></div>
-<script src="assets/system.js"></script>
 <script src="assets/motion.js"></script>
 <script src="assets/wallet.js"></script>
-<script src="assets/i18n/shell.js"></script>
 <script src="assets/i18n/landing.js"></script>
-<script src="assets/shell.js"></script>
 <script src="assets/pages/landing.js"></script>
 </body>
 </html>

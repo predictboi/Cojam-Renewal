@@ -7,15 +7,39 @@
 //   browser; the example passes the URL without its scheme (app.uniswap.org). If the app is missing, the link lands on a
 //   download page. https://docs.metamask.io/metamask-connect/evm/guides/metamask-exclusive/use-deeplinks/
 //   Older docs used https://metamask.app.link/dapp/{dappUrl}, which still redirects; we use the current domain.
-// - Kaia Wallet: the official docs (https://docs.kaiawallet.io/, https://docs.kaia.io/build/wallets/overview/kaia-wallet/,
-//   https://docs.kaia.io/build/wallets/dapp-integration/integrate-dapp-with-kaiawallet/) document the injected provider
-//   window.klaytn and the flag klaytn.isKaikas, and nothing for mobile: no URL scheme or universal link that opens a
-//   dApp URL in the Kaia Wallet app browser. So the sheet falls back to the store link plus "open this page in the Kaia
-//   Wallet browser" steps with a Copy link button. The App Store notes confirm the app has an in-app browser (v3.3.2)
-//   and WalletConnect (v3.4.4): https://apps.apple.com/app/id6502896387 (LINE NEXT Inc.).
-//   Android: https://play.google.com/store/apps/details?id=io.klutch.wallet ("Kaia Wallet").
-//   Chrome: https://chromewebstore.google.com/detail/jblndlipeogpafnldhgmapagcccfchpi ("Kaia Wallet", LINE NEXT Inc.).
-//   window.kaia is checked too in case a later release renames the provider; it is not documented today.
+// - Kaia Wallet, desktop: the docs (https://docs.kaiawallet.io/, https://docs.kaia.io/build/wallets/dapp-integration/integrate-dapp-with-kaiawallet/)
+//   document the injected provider window.klaytn and the flag klaytn.isKaikas. window.kaia is checked too in case a later
+//   release renames the provider; it is not documented today.
+// - Kaia Wallet, mobile (re-checked 2026-11-12). The Kaia Wallet docs have a Korean section "[KO] Kaia Wallet mobile":
+//   * Browser open, https://docs.kaiawallet.io/api_reference/ko-kaia-wallet-mobile/browser-open : documented.
+//     "https://app.kaiawallet.io/u/${URL}" opens the URL in the Kaia Wallet in-app browser (example /u/google.com), and the
+//     app scheme form is "kaikas://wallet/browser?url=" + encodeURIComponent(URL). This is what the Recommended row uses:
+//     one tap opens this page inside Kaia Wallet, where the injected provider connects in one tap and signs Kaia fee
+//     delegated transactions, so the holder needs no KAIA.
+//     How the link behaves, read from app.kaiawallet.io's own page script (not from a device): /u/<rest> becomes
+//     kaiawallet://wallet/browser?url=encodeURIComponent(<rest>) after 500 ms, Android uses
+//     intent://wallet/browser?url=...#Intent;scheme=kaiawallet;package=io.klutch.wallet;end, and a missing app lands on
+//     the store. app.kaiawallet.io serves no apple-app-site-association file, so on iOS it is a web page that hands off
+//     to the app scheme (Safari asks "Open in Kaia Wallet?"), not a true universal link. NOT yet tested on a phone.
+//   * App to app API, https://docs.kaiawallet.io/api_reference/ko-kaia-wallet-mobile/ko-kaia-wallet-mobile-app2app-api/
+//     and .../prepare/ : documented. POST https://api.kaiawallet.io/api/v1/k/prepare with type auth | sign | send_klay |
+//     execute_contract | watch_asset | add_network, then open kaikas://wallet/api?request_key=KEY on the phone (or show
+//     https://app.kaiawallet.io/a/KEY as a QR code on desktop), then poll GET .../k/result/KEY. Fee delegation is
+//     documented for execute_contract and send_klay: "fee_delegated": true builds a FeeDelegatedSmartContractExecution
+//     (or value transfer), the wallet does not broadcast it and returns senderTxHashRLP for the fee payer to co-sign.
+//     So a holder could also approve, swap and claim from Safari or Chrome without leaving it, at the cost of an app
+//     round trip per step and a server that co-signs and sends. Kept as the production option for desktop QR and for
+//     holders who do not want the in-app browser; the mock does not simulate it. The prepare endpoint answered
+//     {"status":"prepared","request_key":...} to an auth request on 2026-11-12. The old host api.kaikas.io no longer
+//     resolves; use api.kaiawallet.io.
+//   * WalletConnect: thirdweb's wallet list, generated from the WalletConnect registry, has Kaia Wallet as io.kaiawallet
+//     with mobile links native "kaiawallet://wallet" and universal "https://app.kaiawallet.io":
+//     https://github.com/thirdweb-dev/js/blob/main/packages/thirdweb/src/wallets/__generated__/wallet/io.kaiawallet/index.ts
+//     (the WalletConnect Explorer API itself needs a project id, so it was not queried directly).
+//     The App Store notes list WalletConnect since v3.4.4. UNCONFIRMED: no Kaia Wallet or Kaia doc says Kaia Wallet signs
+//     fee delegated transactions over WalletConnect, so the sheet never promises a free swap for the WalletConnect row.
+//   Stores: https://apps.apple.com/app/id6502896387 (LINE NEXT Inc.), https://play.google.com/store/apps/details?id=io.klutch.wallet,
+//   Chrome https://chromewebstore.google.com/detail/jblndlipeogpafnldhgmapagcccfchpi.
 // - MetaMask install page for every platform: https://metamask.io/download/
 //
 // Testing: ?env=inapp-kaia | inapp-metamask | mobile-browser | desktop-ext | desktop-none forces a mode for captures.
@@ -78,6 +102,9 @@
     return u.toString();
   }
   function metamaskLink() { return "https://link.metamask.io/dapp/" + pageUrl().replace(/^https?:\/\//, ""); }
+  // Kaia Wallet browser open (documented, see the sources above). The page URL goes in raw, as in the docs example:
+  // app.kaiawallet.io encodes it once when it hands off to kaiawallet://wallet/browser?url=.
+  function kaiaLink() { return "https://app.kaiawallet.io/u/" + pageUrl(); }
   function kaiaStore() { return os === "android" ? [STORE.kaiaAndroid] : os === "ios" ? [STORE.kaiaIos] : [STORE.kaiaIos, STORE.kaiaAndroid]; }
 
   // Label for a one tap connect button (in-app) or the generic one.
@@ -106,8 +133,9 @@
     drag();
   }
   function opt(tag, attrs, icon, name, sub, badge, trail) {
-    return "<" + tag + ' class="cj-opt" ' + attrs + '><span class="cj-opt-ic">' + ic(icon, 20) + '</span><span class="cj-opt-txt"><span class="cj-opt-name">' + name +
-      (badge ? ' <span class="tag tag-sky cj-opt-tag">' + badge + "</span>" : "") + '</span><span class="cj-opt-sub">' + sub + "</span></span>" + ic(trail || "chevron", 18) + "</" + tag + ">";
+    // The tag is its own grid item: beside the name when the row is wide, after the sub line on a narrow phone.
+    return "<" + tag + ' class="cj-opt" ' + attrs + '><span class="cj-opt-ic">' + ic(icon, 20) + '</span><span class="cj-opt-txt"><span class="cj-opt-name">' + name + "</span>" +
+      '<span class="cj-opt-sub">' + sub + "</span>" + (badge ? '<span class="tag tag-sky cj-opt-tag">' + badge + "</span>" : "") + "</span>" + ic(trail || "chevron", 18) + "</" + tag + ">";
   }
   function back() { return '<button type="button" class="btn btn-ghost cj-sheet-back" data-view="list">' + I("chevron", 18) + "<span>" + t("wl.back") + "</span></button>"; }
   function paint() {
@@ -132,8 +160,12 @@
         '<p class="cj-sheet-lead">' + t("wl.qr.lead") + "</p>" +
         '<button type="button" class="btn btn-block" data-pick="wc">' + t("wl.qr.sim") + "</button>";
     } else if (e.mode === "mobile-browser") {
+      // Recommended: one tap opens this page inside Kaia Wallet. If the app does not open (not installed, scheme blocked),
+      // the line under it leads to Copy link and the store links.
       h = '<p class="cj-sheet-lead">' + t("wl.mobile.lead") + "</p><div class=\"cj-opts\">" +
-        opt("button", 'type="button" data-view="kaia"', "phone", t("wl.open.kaia"), t("wl.sub.kaia"), t("wl.rec")) +
+        '<div class="cj-opt-group">' +
+        opt("a", 'href="' + esc(kaiaLink()) + '" data-deeplink="kaia"', "phone", t("wl.open.kaia"), t("wl.sub.kaia.open"), t("wl.rec"), "ext") +
+        '<button type="button" class="btn btn-ghost btn-block cj-opt-alt" data-view="kaia">' + t("wl.kaia.alt") + "</button></div>" +
         opt("a", 'href="' + esc(metamaskLink()) + '" data-deeplink="mm"', "phone", t("wl.open.mm"), t("wl.sub.mm"), null, "ext") +
         opt("button", 'type="button" data-pick="wc"', "link", t("wl.wc"), t("wl.sub.wc.mobile")) + "</div>";
     } else if (e.mode === "desktop-none") {
@@ -229,5 +261,5 @@
   }
   document.addEventListener("cj:lang", function () { if (dlg && dlg.open) paint(); });
 
-  CJ.wallet = { env: env, open: open, close: close, ctaLabel: ctaLabel, os: os, links: { metamask: metamaskLink, store: STORE, page: pageUrl } };
+  CJ.wallet = { env: env, open: open, close: close, ctaLabel: ctaLabel, os: os, links: { metamask: metamaskLink, kaia: kaiaLink, store: STORE, page: pageUrl } };
 })();

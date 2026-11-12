@@ -1,10 +1,10 @@
 /* Admin swap monitor layout. Components come from base.css; colours, sizes and radii from tokens.css. */
-/* Wider for the request table, main content only: the shared header and footer keep --container. */
-.adm > .container { max-width: 1280px; }
+/* Same --container as the header, footer and every other page, so the left edges line up. */
 .adm { padding: var(--s-32) 0 0; }
 .adm > .container > * + * { margin-top: var(--s-24); }
 .adm h2 { font-size: var(--fs-20); letter-spacing: -0.01em; }
 .adm .panel { padding: var(--s-24); min-width: 0; }
+@media (max-width: 599px) { .adm .panel { padding: var(--s-16); } }
 
 /* ---------- head ---------- */
 .adm-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-16); }
@@ -33,9 +33,25 @@
 .adm-gas .kpi-grid { border-bottom: 1px solid var(--line); }
 .adm-gas-note { padding: var(--s-12) var(--s-16); color: var(--ink); }
 @media (min-width: 900px) { .adm-gas-head { padding: var(--s-24) var(--s-24) var(--s-16); } .adm-gas-note { padding: var(--s-12) var(--s-24); } }
-@media (max-width: 479px) {
-  .kpi-grid { grid-template-columns: minmax(0, 1fr); }
-  .kpi { padding: var(--s-12) var(--s-16); }
+/* Notes toggle: phones only. */
+.kpi-more { display: none; }
+/* Phones: two compact tiles a row, label and figure; the notes open with one toggle per panel. Alert tiles keep theirs. */
+@media (max-width: 599px) {
+  .kpi { padding: var(--s-12); gap: 2px; }
+  .kpi dt { font-size: var(--fs-13); line-height: 1.35; }
+  .kpi-v { font-size: var(--fs-16); }
+  .kpi-u { font-size: var(--fs-13); }
+  .kpi-grid:not(.show-notes) .kpi:not(.is-warn) .kpi-sub { display: none; }
+  /* An alert tile (one per grid at most) takes the full row with its note; the last tile then closes the grid evenly. */
+  .kpi.is-warn, .kpi-grid:has(> .is-warn) > .kpi:last-child { grid-column: 1 / -1; }
+  .kpi-more {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--s-8); width: 100%; min-height: 44px; padding: 0 var(--s-12);
+    border: 0; border-top: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--fs-14); font-weight: var(--fw-medium); cursor: pointer;
+  }
+  .kpi-more svg { color: var(--ink-2); transform: rotate(90deg); transition: transform var(--dur) var(--ease); }
+  .kpi-more[aria-expanded="true"] svg { transform: rotate(-90deg); }
+  .adm-gas .kpi-grid { border-bottom: 0; }
+  .adm-gas .kpi-more { border-bottom: 1px solid var(--line); }
 }
 @media (min-width: 900px) {
   .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -102,16 +118,19 @@
 .lots-sort-m { display: none; }
 .lots-count .muted { margin-left: var(--s-8); }
 .lots-wrap { margin-top: var(--s-8); overflow-x: auto; border-top: 1px solid var(--line); }
-.lots-table { min-width: 1120px; }
-.lots-table th { padding: 0 var(--s-12); height: 48px; }
-.lots-table td { padding: var(--s-4) var(--s-12); height: 56px; }
+.lots-table { min-width: 980px; }
+.lots-table th { padding: 0 var(--s-8); height: 48px; }
+.lots-table td { padding: var(--s-4) var(--s-8); height: 56px; }
+.lots-table th:first-child, .lots-table td:first-child { padding-left: 0; }
+.lots-table th:last-child, .lots-table td:last-child { padding-right: 0; }
+.amt-u, .left-m { display: none; }
 .lots-table td { transition: background-color var(--dur-fast) var(--ease); }
 .lots-table tbody tr.row-open { cursor: pointer; }
 @media (hover: hover) and (pointer: fine) { .lots-table tbody tr:hover td { background: var(--bg); } }
 .lots-table tbody tr.row-open:active td { background: var(--inset); transition-duration: var(--dur-press); }
-.lots-table .c-tx { width: 64px; text-align: center; }
-.lots-table .c-wallet { width: 230px; }
-.lots-table .c-status { width: 150px; }
+.lots-table .c-tx { width: 44px; text-align: center; }
+.lots-table .c-wallet { width: 196px; }
+.lots-table .c-status { width: 112px; }
 .st-cell { display: inline-grid; justify-items: start; gap: 2px; }
 .st-cell .by { font-size: var(--fs-13); white-space: nowrap; }
 .sort-btn {
@@ -122,7 +141,10 @@
 .sort-btn svg path { opacity: 0.35; }
 .sort-btn.is-on { color: var(--ink); font-weight: var(--fw-semi); }
 .sort-btn.is-asc svg .up, .sort-btn.is-desc svg .dn { opacity: 1; }
-th.r .sort-btn { flex-direction: row-reverse; }
+th.r .sort-btn { flex-direction: row-reverse; text-align: right; }
+/* Headers put their unit on a second line ("Locked 90%" over "(CT)", admin.js), so the table fits --container at 1440. */
+.lots-table th .sort-btn { line-height: 1.25; }
+.lots-table th .sort-btn svg { flex: none; }
 .amt { font-weight: var(--fw-medium); }
 .dt { display: grid; line-height: 1.35; font-size: var(--fs-14); }
 .dt .muted { font-size: var(--fs-13); }
@@ -175,29 +197,27 @@ th.r .sort-btn { flex-direction: row-reverse; }
   .lots-table { min-width: 0; display: block; }
   .lots-table thead { display: none; }
   .lots-table tbody { display: block; }
+  /* Compact row, about 80 px: wallet and amount, then status and time left. The row opens the wallet sheet, which holds
+     the dates, the 10% and 90% parts, copy, explorer and tx links, so those stay off the row. */
   .lots-table tbody tr {
-    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-8) var(--s-16); padding: var(--s-8) 0 var(--s-16); border-bottom: 1px solid var(--line);
-    grid-template-areas: "wallet wallet" "amount status" "req unl" "left tx";
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 var(--s-12); padding: 2px 0 var(--s-12); border-bottom: 1px solid var(--line); align-items: center;
+    grid-template-areas: "wallet amount" "status left";
   }
-  /* Compact card: the 10% and 90% parts are fixed shares of the amount (and in the wallet sheet), dates sit on one line. */
-  .lots-table td.c-instant, .lots-table td.c-locked { display: none; }
+  .lots-table td.c-instant, .lots-table td.c-locked, .lots-table td.c-requested, .lots-table td.c-unlocks, .lots-table td.c-tx, .lots-table .w-tools, .lots-table .st-cell .by { display: none; }
+  .lots-table td::before { display: none; }
+  .amt-u { display: inline; font-size: var(--fs-13); font-weight: var(--fw-medium); color: var(--ink-2); }
+  .left-d { display: none; }
+  .left-m { display: inline; }
   .lots-table .dt { display: flex; flex-wrap: wrap; gap: 0 var(--s-8); }
   .lots-table .dt .muted { font-size: var(--fs-14); }
   .lots-table tbody tr:hover td, .lots-table tbody tr.row-open:active td { background: transparent; }
   .lots-table tbody tr.row-open { transition: transform var(--dur-release) var(--ease-spring); }
   .lots-table tbody tr.row-open:active { transform: scale(var(--press-scale-card)); transition-duration: var(--dur-press); transition-timing-function: var(--ease-out); }
   .lots-table td { display: block; height: auto; padding: 0; border: 0; width: auto; min-width: 0; }
-  .lots-table td.r { text-align: left; }
-  .lots-table td::before { content: attr(data-label); display: block; font-size: var(--fs-13); color: var(--ink-2); margin-bottom: 2px; }
   .lots-table td.c-wallet { grid-area: wallet; }
-  .lots-table td.c-amount { grid-area: amount; }
-  .lots-table td.c-requested { grid-area: req; }
-  .lots-table td.c-unlocks { grid-area: unl; }
-  .lots-table td.c-left { grid-area: left; }
-  .lots-table td.c-status { grid-area: status; align-self: end; justify-self: start; }
-  .lots-table td.c-tx { grid-area: tx; align-self: end; justify-self: start; width: auto; text-align: left; }
-  .lots-table td.c-tx .icon-btn { margin: -10px 0 -12px -12px; }
-  .lots-table td.c-wallet::before { display: none; }
+  .lots-table td.c-amount { grid-area: amount; justify-self: end; text-align: right; white-space: nowrap; }
+  .lots-table td.c-left { grid-area: left; justify-self: end; text-align: right; font-size: var(--fs-14); }
+  .lots-table td.c-status { grid-area: status; justify-self: start; }
   .lots-table td.c-amount .amt { font-size: var(--fs-16); font-weight: var(--fw-semi); }
   .lots-table tr.empty { display: block; }
   .lots-table tr.empty td::before { display: none; }
@@ -250,10 +270,15 @@ th.r .sort-btn { flex-direction: row-reverse; }
 .big-amt { font-weight: var(--fw-semi); }
 .big-side { display: flex; align-items: center; gap: var(--s-8); justify-content: flex-end; flex-wrap: wrap; }
 .big-more { padding: var(--s-12) 0 0; border-top: 1px solid var(--line); }
+/* Phones: two lines, amount and status, then time and wallet. */
 @media (max-width: 599px) {
-  .big-item { grid-template-columns: auto minmax(0, 1fr); }
-  .big-side { grid-column: 2; justify-content: flex-start; }
-  .big-side .w-open { margin-left: calc(var(--s-8) * -1); }
+  .big-item { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "amt tag" "meta wallet"; gap: 0 var(--s-12); min-height: 0; padding: var(--s-8) 0 2px; }
+  .big-ico { display: none; }
+  .big-main, .big-side { display: contents; }
+  .big-amt { grid-area: amt; }
+  .big-meta { grid-area: meta; }
+  .big-side .tag { grid-area: tag; justify-self: end; }
+  .big-side .w-open { grid-area: wallet; justify-self: end; margin: 0 calc(var(--s-8) * -1) 0 0; }
 }
 
 /* ---------- wallet sheet ---------- */

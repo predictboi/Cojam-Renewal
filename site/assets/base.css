@@ -154,7 +154,8 @@ a:hover { color: var(--brand-hover); }
 /* ---------- toast ---------- */
 .toasts { position: fixed; z-index: 60; left: 50%; bottom: var(--s-24); transform: translateX(-50%); display: grid; gap: var(--s-8); width: min(420px, calc(100vw - 32px)); }
 .toast { display: flex; align-items: center; gap: var(--s-12); padding: var(--s-12) var(--s-16); border-radius: var(--r-control); background: var(--ink); color: var(--surface); font-size: var(--fs-14); box-shadow: var(--shadow-pop); }
-.toast .btn { min-height: 32px; background: transparent; color: var(--sky); border-color: transparent; padding: 0 var(--s-8); margin-left: auto; }
+.toast:has(.btn) { padding-top: var(--s-4); padding-bottom: var(--s-4); padding-right: var(--s-4); }
+.toast .btn { min-height: 44px; background: transparent; color: var(--sky); border-color: transparent; padding: 0 var(--s-8); margin-left: auto; }
 
 /* ---------- skeleton ---------- */
 .skel { display: inline-block; min-width: 4em; height: 1em; border-radius: 4px; background: var(--inset); vertical-align: middle; animation: skel 1.2s ease-in-out infinite; }
@@ -194,8 +195,9 @@ a:hover { color: var(--brand-hover); }
 .track-mid { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-size: var(--fs-13); color: var(--ink-2); text-align: right; }
 .track-mid svg { flex: none; }
 .track.is-ready .track-day::before { transform: none; }
-/* Released reads calm: grey fills, the check icon says done. */
-.track.is-released .track-day::before, .track.is-released .track-now { background: var(--line-strong); }
+/* Released reads done and calm: a light sky fill (not live data, not empty), and a check beside the release date. */
+.track.is-released .track-day::before, .track.is-released .track-now { background: var(--sky-soft); }
+.track-cap svg { display: inline-block; vertical-align: -2px; margin-right: 4px; color: var(--ink); }
 .track.is-released .track-day::before { transform: none; }
 .track-lg .track-amt { font-size: var(--fs-24); }
 .track-lg .track-instant .track-amt { font-size: var(--fs-20); }

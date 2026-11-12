@@ -5,8 +5,25 @@
   function ct(n, dp) { return CJ.t("fu.ct", { n: f.amount(n, dp) }); }
 
   function paint() {
-    var w = document.getElementById("hero-window");
-    if (w) w.innerHTML = CJ.t("hero.window", { start: '<span class="num">' + f.date(c.windowStart) + "</span>", end: '<span class="num">' + f.date(c.windowEnd) + "</span>" });
+    // Live window state, worked out the same way as the swap app and the status page (whole days, rounded down).
+    var ws = CJ.windowState(), n = CJ.now(), live, sub, dates = { start: f.date(c.windowStart), end: f.date(c.windowEnd) };
+    // a date never breaks across lines (Japanese and Korean would split it anywhere)
+    var nb = function (d) { return '<span class="hero-date">' + d + "</span>"; }, datesHtml = { start: nb(dates.start), end: nb(dates.end) };
+    if (ws === "open") {
+      var left = CJ.daysLeft ? CJ.daysLeft() : Math.floor((c.windowEnd - n) / CJ.DAY);
+      live = CJ.t(left === 1 ? "hero.live.open.one" : "hero.live.open", { n: f.amount(left, 0) });
+      sub = CJ.t("hero.window", datesHtml);
+    } else if (ws === "upcoming") {
+      var until = Math.ceil((c.windowStart - n) / CJ.DAY);
+      live = CJ.t(until === 1 ? "hero.live.soon.one" : "hero.live.soon", { date: dates.start, n: f.amount(until, 0) });
+      sub = CJ.t("hero.window", datesHtml);
+    } else {
+      live = CJ.t("hero.live.closed");
+      sub = CJ.t("hero.window.closed", datesHtml);
+    }
+    set("hero-live", live);
+    var hw = document.getElementById("hero-window"); if (hw) hw.innerHTML = sub;
+    var dot = document.getElementById("hero-dot"); if (dot) dot.classList.toggle("is-stale", ws !== "open");
     var tr = document.getElementById("hero-track");
     if (tr) CJ.track(tr, null, { large: true, amount: 125000, demoDays: 3.4 });
 
@@ -38,6 +55,15 @@
     // Timeline
     set("tl-open", f.date(c.windowStart));
     set("tl-close", f.date(c.windowEnd));
+    // Each event is done, now or later, from the live window state; the key above the list says what the dots mean.
+    var states = ws === "upcoming" ? ["later", "later", "later", "later"] : ws === "open" ? ["done", "now", "later", "later"] : ["done", "done", "done", "now"];
+    document.querySelectorAll("#tl-list .tl-item").forEach(function (li, i) {
+      var st = states[i] || "later";
+      li.classList.remove("is-done", "is-now", "is-later"); li.classList.add("is-" + st);
+      var tag = li.querySelector(".tl-state"); if (!tag) return;
+      tag.className = "tl-state" + (st === "now" ? " tag tag-sky" : "");
+      tag.textContent = CJ.t("tl." + st);
+    });
 
     // Contract facts
     // Exact supply as text; motion.js counts up to it the first time it is seen and ends on this exact text.
@@ -58,4 +84,28 @@
   }
   document.addEventListener("cj:lang", paint);
   paint();
+
+  // Phones: the concept previews sit in one snapping row; the dots under it show which card is in view.
+  var row = document.getElementById("mocks"), dots = document.getElementById("mocks-dots");
+  if (row && dots) {
+    var cards = [].slice.call(row.querySelectorAll(".mock"));
+    dots.innerHTML = cards.map(function () { return "<span></span>"; }).join("");
+    var mark = function () {
+      var r = row.getBoundingClientRect(), best = 0, bestD = Infinity;
+      cards.forEach(function (cd, i) { var d = Math.abs(cd.getBoundingClientRect().left - r.left - parseFloat(getComputedStyle(row).paddingLeft || 0)); if (d < bestD) { bestD = d; best = i; } });
+      [].forEach.call(dots.children, function (d, i) { d.classList.toggle("is-on", i === best); });
+    };
+    // A row that scrolls can be reached and scrolled by keyboard; on wider screens it is a plain grid.
+    var mq = window.matchMedia("(max-width: 599px)");
+    var sync = function () {
+      if (mq.matches) { row.setAttribute("tabindex", "0"); row.setAttribute("role", "region"); row.setAttribute("aria-label", CJ.t("fu.row")); }
+      else { row.removeAttribute("tabindex"); row.removeAttribute("role"); row.removeAttribute("aria-label"); }
+      mark();
+    };
+    var raf = 0;
+    row.addEventListener("scroll", function () { if (!raf) raf = requestAnimationFrame(function () { raf = 0; mark(); }); }, { passive: true });
+    if (mq.addEventListener) mq.addEventListener("change", sync); else if (mq.addListener) mq.addListener(sync);
+    document.addEventListener("cj:lang", sync);
+    sync();
+  }
 })();

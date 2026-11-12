@@ -14,6 +14,9 @@
 </head>
 <body data-page="status" data-root="../" data-foot="compact">
 <div id="cj-top"></div>
+<script src="../assets/system.js"></script>
+<script src="../assets/i18n/shell.js"></script>
+<script src="../assets/shell.js"></script>
 <main id="main" class="st">
   <div class="container">
 
@@ -28,16 +31,16 @@
       </div>
     </header>
 
-    <div class="note note-warn st-sample" role="note">
-      <span id="st-sample-icon"></span>
-      <div class="note-body"><strong data-i18n="status.sample.title">Sample data.</strong> <span data-i18n="status.sample.body">Live figures come from the Kaia chain at launch.</span></div>
-    </div>
-
     <div class="note note-warn st-error" id="st-error" role="alert" hidden>
       <span id="st-error-icon"></span>
       <div class="note-body"><span id="st-error-text"></span>
         <div class="note-action"><button type="button" class="btn" id="st-retry"><span id="st-retry-icon"></span><span data-i18n="status.error.retry">Retry</span></button></div>
       </div>
+    </div>
+
+    <div class="note note-info st-sample" role="note">
+      <span id="st-sample-icon"></span>
+      <div class="note-body"><strong data-i18n="status.sample.title">Sample data.</strong> <span data-i18n="status.sample.body">Live figures come from the Kaia chain at launch.</span></div>
     </div>
 
     <section class="panel st-top" aria-labelledby="st-hero-label" aria-busy="false" id="st-top">
@@ -78,14 +81,18 @@
       </section>
 
       <section class="panel st-unlock" aria-labelledby="st-unlock-title">
-        <div class="st-panel-head">
-          <h2 class="st-h2" id="st-unlock-title" data-i18n="status.unlock.title">Every swap on one track</h2>
-          <p class="small muted" data-i18n="status.unlock.sub"></p>
+        <div class="st-unlock-main">
+          <div class="st-panel-head">
+            <h2 class="st-h2" id="st-unlock-title" data-i18n="status.unlock.title">Every swap on one track</h2>
+            <p class="small muted" data-i18n="status.unlock.sub"></p>
+          </div>
+          <div id="st-track" class="track track-lg track-agg"></div>
         </div>
-        <div id="st-track" class="track track-lg track-agg"></div>
-        <h3 class="st-cal-h small" data-i18n="status.unlock.list">Unlocking next</h3>
-        <ol class="st-cal" id="st-cal"></ol>
-        <p class="small st-cal-total" id="st-cal-total"></p>
+        <div class="st-unlock-side">
+          <h3 class="st-cal-h small" data-i18n="status.unlock.list">Locked CT by lock day</h3>
+          <ol class="st-cal" id="st-cal"></ol>
+          <p class="small st-cal-total" id="st-cal-total"></p>
+        </div>
       </section>
     </div>
 
@@ -116,12 +123,9 @@
   </div>
 </main>
 <div id="cj-foot"></div>
-<script src="../assets/system.js"></script>
 <script src="../assets/motion.js"></script>
 <script src="../assets/wallet.js"></script>
-<script src="../assets/i18n/shell.js"></script>
 <script src="../assets/i18n/status.js"></script>
-<script src="../assets/shell.js"></script>
 <script src="../assets/pages/status.js"></script>
 </body>
 </html>
