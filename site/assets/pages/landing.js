@@ -8,12 +8,12 @@
     var w = document.getElementById("hero-window");
     if (w) w.textContent = CJ.t("hero.window", { start: f.date(c.windowStart), end: f.date(c.windowEnd) });
     var tr = document.getElementById("hero-track");
-    if (tr) CJ.track(tr, null, { large: true, amountText: f.amount(125000), demoDays: 3.4 });
+    if (tr) CJ.track(tr, null, { large: true, amount: 125000, demoDays: 3.4 });
 
-    // How it works: the same track, shown full so each stop lines up with a step.
+    // How it works: the same track, shown full so each part lines up with a step.
     var ht = document.getElementById("how-track");
-    if (ht) CJ.track(ht, null, { amountText: f.amount(12500), demoDays: 7 });
-    [["how-ico-1", "swap"], ["how-ico-2", "lock"], ["how-ico-3", "unlock"]].forEach(function (p) {
+    if (ht) CJ.track(ht, null, { amount: 12500, demoDays: 7 });
+    [["how-ico-1", "swap"], ["how-ico-2", "wallet"], ["how-ico-3", "lock"], ["how-ico-4", "unlock"]].forEach(function (p) {
       var el = document.getElementById(p[0]); if (el) el.innerHTML = CJ.icon(p[1], 20);
     });
     document.querySelectorAll(".how .help > summary").forEach(function (s) { if (!s.firstChild) s.innerHTML = CJ.icon("help", 18); });

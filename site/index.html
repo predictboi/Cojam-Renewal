@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cojam: the OG prediction market is back</title>
-<meta name="description" content="Swap old CT for new CT one for one on Kaia. Each swap unlocks after 7 days.">
+<meta name="description" content="Swap old CT for new CT one for one on Kaia. 10% arrives at once, the other 90% is sent to your wallet automatically 7 days later.">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
@@ -19,7 +19,7 @@
     <div class="container hero-grid">
       <div class="hero-copy">
         <h1 data-i18n="hero.title">The OG prediction market, since 2019.</h1>
-        <p class="hero-lede" data-i18n="hero.lede">Cojam is back on Kaia. Swap your old CT for new CT, one for one.</p>
+        <p class="hero-lede" data-i18n="hero.lede">Cojam is back on Kaia. Swap your old CT for new CT, one for one: 10% arrives at once, the rest 7 days later.</p>
         <div class="hero-actions">
           <a class="btn btn-primary btn-lg" href="migrate/" data-i18n="hero.cta">Swap CT</a>
           <a class="btn btn-ghost btn-lg" href="#how" data-i18n="hero.how">How the swap works</a>
@@ -31,7 +31,7 @@
           <span class="small muted" id="hero-window"></span>
         </div>
         <div id="hero-track" class="track track-lg"></div>
-        <figcaption id="hero-card-cap" class="small muted" data-i18n="hero.card.cap">Swap any amount. It stays locked for 7 days, then you claim it to your wallet.</figcaption>
+        <figcaption id="hero-card-cap" class="small muted" data-i18n="hero.card.cap">Swap any amount. 10% of the new CT arrives in the same transaction. The other 90% is locked for 7 days, then sent to your wallet automatically.</figcaption>
       </figure>
     </div>
   </section>
@@ -40,7 +40,7 @@
     <div class="container">
       <div class="section-head">
         <h2 id="how-h" data-i18n="how.title">How the swap works</h2>
-        <p data-i18n="how.lede">Three steps, each signed in your own wallet.</p>
+        <p data-i18n="how.lede">You sign twice in your own wallet, to approve and to swap. The rest happens on its own.</p>
       </div>
       <div id="how-track" class="track how-track"></div>
       <ol class="how-steps">
@@ -54,17 +54,25 @@
         </li>
         <li class="how-step">
           <span class="how-ico" id="how-ico-2"></span>
-          <h3 data-i18n="how.s2.title">7 day lock</h3>
+          <h3 data-i18n="how.s2.title">10% arrives now</h3>
           <div class="how-body muted">
-            <span data-i18n="how.s2.body">Your new CT waits 7 days, one tick per day.</span>
-            <details class="help"><summary data-i18n-attr="aria-label:how.help.lock.label"></summary><div class="help-pop" data-i18n="how.help.lock"></div></details>
+            <span data-i18n="how.s2.body">In the same transaction, 10% of your new CT lands in your wallet.</span>
+            <details class="help"><summary data-i18n-attr="aria-label:how.help.split.label"></summary><div class="help-pop" data-i18n="how.help.split"></div></details>
           </div>
         </li>
         <li class="how-step">
           <span class="how-ico" id="how-ico-3"></span>
-          <h3 data-i18n="how.s3.title">Claim new CT</h3>
+          <h3 data-i18n="how.s3.title">90% after 7 days</h3>
           <div class="how-body muted">
-            <span data-i18n="how.s3.body">Then claim it to your wallet. Each step costs a little gas.</span>
+            <span data-i18n="how.s3.body">The other 90% is locked for 7 days, one tick per day.</span>
+            <details class="help"><summary data-i18n-attr="aria-label:how.help.lock.label"></summary><div class="help-pop" data-i18n="how.help.lock"></div></details>
+          </div>
+        </li>
+        <li class="how-step">
+          <span class="how-ico" id="how-ico-4"></span>
+          <h3 data-i18n="how.s4.title">Sent to your wallet automatically</h3>
+          <div class="how-body muted">
+            <span data-i18n="how.s4.body">Cojam sends the 90% to your wallet and pays the gas. You can also claim it yourself.</span>
             <details class="help"><summary data-i18n-attr="aria-label:how.help.gas.label"></summary><div class="help-pop" data-i18n="how.help.gas"></div></details>
           </div>
         </li>
@@ -76,32 +84,32 @@
     <div class="container">
       <div class="section-head">
         <h2 id="tl-h" data-i18n="tl.title">One year to swap</h2>
-        <p data-i18n="tl.lede">Swaps are open for 1 year. Claims stay open after that.</p>
+        <p data-i18n="tl.lede">Swaps are open for 1 year from launch. Locked remainders still release after that.</p>
       </div>
       <ol class="tl" id="tl-list">
         <li class="tl-item">
           <span class="tl-dot" aria-hidden="true"></span>
           <span class="tl-when num" id="tl-open"></span>
           <h3 data-i18n="tl.open.title">Window opens</h3>
-          <p class="muted small" data-i18n="tl.open.body">Open to every holder.</p>
+          <p class="muted small" data-i18n="tl.open.body">On launch, the day the swap contract is deployed. Open to every holder.</p>
         </li>
         <li class="tl-item">
           <span class="tl-dot" aria-hidden="true"></span>
-          <span class="tl-when" data-i18n="tl.each.when">7 days after each swap</span>
-          <h3 data-i18n="tl.each.title">Each swap unlocks</h3>
-          <p class="muted small" data-i18n="tl.each.body">Claim it any time after.</p>
+          <span class="tl-when" data-i18n="tl.each.when">On every swap</span>
+          <h3 data-i18n="tl.each.title">10% now, 90% 7 days later</h3>
+          <p class="muted small" data-i18n="tl.each.body">10% arrives in the swap itself. The 90% is sent to your wallet automatically 7 days later.</p>
         </li>
         <li class="tl-item">
           <span class="tl-dot" aria-hidden="true"></span>
           <span class="tl-when num" id="tl-close"></span>
           <h3 data-i18n="tl.close.title">Window closes</h3>
-          <p class="muted small" data-i18n="tl.close.body">No new swaps. Unswapped new CT returns to the Cojam treasury wallet.</p>
+          <p class="muted small" data-i18n="tl.close.body">1 year after launch. No new swaps. Unswapped new CT goes to the new treasury multisig.</p>
         </li>
         <li class="tl-item">
           <span class="tl-dot" aria-hidden="true"></span>
           <span class="tl-when" data-i18n="tl.after.when">After the window</span>
-          <h3 data-i18n="tl.after.title">Claims stay open</h3>
-          <p class="muted small" data-i18n="tl.after.body">Locked swaps can still be claimed.</p>
+          <h3 data-i18n="tl.after.title">Remainders still release</h3>
+          <p class="muted small" data-i18n="tl.after.body">The locked 90% of earlier swaps is still sent to its owners.</p>
         </li>
       </ol>
     </div>
@@ -243,14 +251,15 @@
         <a class="btn faq-docs" href="docs/" data-i18n="faq.docs">Read the swap docs</a>
       </div>
       <div class="faq-list">
-        <details class="faq-item"><summary><span data-i18n="faq.q1">My CT is on an exchange. What do I do?</span></summary><p data-i18n="faq.a1">Nothing yet. Supporting exchanges will swap it for you. The list will be announced.</p></details>
-        <details class="faq-item"><summary><span data-i18n="faq.q2">My CT is in a Klayswap pool.</span></summary><p data-i18n="faq.a2">Remove your liquidity first so the CT is back in your wallet, then swap it.</p></details>
-        <details class="faq-item"><summary><span data-i18n="faq.q3">What if I miss the window?</span></summary><p data-i18n="faq.a3">After the window closes, new swaps are not possible. Swaps you already made can still be claimed at any time.</p></details>
-        <details class="faq-item"><summary><span data-i18n="faq.q4">Is there a reward for swapping?</span></summary><p data-i18n="faq.a4">No. It is one for one: 1 old CT gives 1 new CT, with no bonus and no penalty.</p></details>
-        <details class="faq-item"><summary><span data-i18n="faq.q5">Why the 7 day lock?</span></summary><p data-i18n="faq.a5">It spreads new CT out over time instead of releasing it all at once, and gives time to catch mistakes or abuse before tokens move.</p></details>
-        <details class="faq-item"><summary><span data-i18n="faq.q6">Which wallets work?</span></summary><p data-i18n="faq.a6">Kaia Wallet, MetaMask with the Kaia network added, and wallets that connect through WalletConnect.</p></details>
-        <details class="faq-item"><summary><span data-i18n="faq.q7">What does it cost?</span></summary><p data-i18n="faq.a7">Only Kaia network gas, paid in KAIA, for the approval, the swap and the claim. Cojam charges no fee.</p></details>
-        <details class="faq-item"><summary><span data-i18n="faq.q8">Is it safe?</span></summary><p data-i18n="faq.a8">You keep custody the whole time and sign every step yourself. Never share your seed phrase: no one from Cojam will ever ask for it.</p></details>
+        <details class="faq-item"><summary><span data-i18n="faq.q1">My CT is on an exchange. What do I do?</span></summary><p data-i18n="faq.a1"></p></details>
+        <details class="faq-item"><summary><span data-i18n="faq.q2">My CT is in a Klayswap pool.</span></summary><p data-i18n="faq.a2"></p></details>
+        <details class="faq-item"><summary><span data-i18n="faq.q5">Why is 90% locked for 7 days?</span></summary><p data-i18n="faq.a5"></p></details>
+        <details class="faq-item"><summary><span data-i18n="faq.q9">Do I need to come back for the 90%?</span></summary><p data-i18n="faq.a9"></p></details>
+        <details class="faq-item"><summary><span data-i18n="faq.q3">What if I miss the window?</span></summary><p data-i18n="faq.a3"></p></details>
+        <details class="faq-item"><summary><span data-i18n="faq.q4">Is there a reward for swapping?</span></summary><p data-i18n="faq.a4"></p></details>
+        <details class="faq-item"><summary><span data-i18n="faq.q6">Which wallets work?</span></summary><p data-i18n="faq.a6"></p></details>
+        <details class="faq-item"><summary><span data-i18n="faq.q7">What does it cost?</span></summary><p data-i18n="faq.a7"></p></details>
+        <details class="faq-item"><summary><span data-i18n="faq.q8">Is it safe?</span></summary><p data-i18n="faq.a8"></p></details>
       </div>
     </div>
   </section>
@@ -260,7 +269,7 @@
       <div class="cta-band">
         <div class="cta-copy">
           <h2 id="cta-h" data-i18n="cta.title">Ready to swap?</h2>
-          <p class="muted" data-i18n="cta.body">Swap any amount now and claim it 7 days later.</p>
+          <p class="muted" data-i18n="cta.body">Swap any amount now. 10% arrives at once and the rest follows 7 days later, automatically.</p>
         </div>
         <a class="btn btn-primary btn-lg" href="migrate/" data-i18n="cta.btn">Swap CT</a>
       </div>

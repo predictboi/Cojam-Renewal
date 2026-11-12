@@ -1,7 +1,8 @@
 // Deploys the Cojam migration to the Kairos testnet (chain id 1001).
 //   npx hardhat run scripts/deploy-kairos.js --network kairos
-// Reads PRIVATE_KEY, KAIROS_RPC_URL, TREASURY_ADDRESS, OLD_TOKEN_ADDRESS,
-// START_TIME and GRACE_PERIOD_DAYS from the environment (see .env.example).
+// Reads PRIVATE_KEY, KAIROS_RPC_URL, TREASURY_ADDRESS, OLD_TOKEN_ADDRESS and
+// GRACE_PERIOD_DAYS from the environment (see .env.example).
+// The migration window opens in the deploy block and lasts 365 days.
 // Mainnet is refused on purpose: a mainnet deploy is a separate, reviewed step.
 const { ethers, network } = require("hardhat");
 
@@ -38,13 +39,11 @@ async function main() {
     console.log(`MockOldCojam (test old CT) deployed: ${oldAddress}`);
   }
 
-  const latest = (await ethers.provider.getBlock("latest")).timestamp;
-  const start = process.env.START_TIME ? BigInt(process.env.START_TIME) : BigInt(latest) + 3600n;
   const graceDays = BigInt(process.env.GRACE_PERIOD_DAYS || "30");
   const grace = graceDays * 86400n;
 
   const Migration = await ethers.getContractFactory("CojamMigration");
-  const migration = await Migration.deploy(oldAddress, treasury, start, grace);
+  const migration = await Migration.deploy(oldAddress, treasury, grace);
   await migration.waitForDeployment();
   const migrationAddress = await migration.getAddress();
   const tokenAddress = await migration.NEW_TOKEN();
@@ -65,8 +64,8 @@ async function main() {
     newToken: tokenAddress,
     migration: migrationAddress,
     treasury,
-    start: start.toString(),
-    end: (await migration.END()).toString(),
+    windowStart: (await migration.WINDOW_START()).toString(),
+    windowEnd: (await migration.WINDOW_END()).toString(),
     sweepOpensAt: (await migration.SWEEP_OPENS_AT()).toString(),
     totalSupply: supply.toString(),
     reserve: reserve.toString(),

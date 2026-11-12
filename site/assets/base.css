@@ -142,22 +142,29 @@ a:hover { color: var(--brand-hover); }
 .steps li.is-done { color: var(--ink); border-top-color: var(--ink-2); }
 .steps li.is-done::before { content: "\2713"; background: var(--ink); color: var(--surface); }
 
-/* ---------- the swap track (signature) ---------- */
+/* ---------- the swap track (signature) ----------
+   Top: old CT swapped (left), the 90% and its date (right). Rail: the 10% block paid at once, then one tick per lock day.
+   Foot: the 10% amount under its block (left), the lock state (right). The 10% block is sized to scale: 10 against 90. */
 .track { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-12) var(--s-16); align-items: end; }
 .track-end { display: grid; gap: 2px; min-width: 0; }
 .track-end.r { text-align: right; }
 .track-amt { font-size: var(--fs-20); font-weight: var(--fw-semi); line-height: 1.2; overflow-wrap: anywhere; }
 .track-unit { font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--ink-2); white-space: nowrap; }
 .track-cap { font-size: var(--fs-13); color: var(--ink-2); }
-.track-rail { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; height: 10px; }
+.track-rail { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(18px, 0.78fr) repeat(7, minmax(0, 1fr)); gap: 4px; height: 10px; }
+.track-now { border-radius: 3px; background: var(--sky); margin-right: 6px; box-shadow: inset 0 0 0 1px var(--ink-2); }
 .track-day { border-radius: 3px; background: var(--inset); box-shadow: inset 0 0 0 1px var(--line); }
 .track-day.is-full { background: var(--sky); box-shadow: none; }
 .track-day.is-today { background: linear-gradient(90deg, var(--sky) var(--part, 50%), var(--inset) var(--part, 50%)); box-shadow: inset 0 0 0 1px var(--line); }
-.track-mid { grid-column: 1 / -1; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: var(--fs-13); color: var(--ink-2); margin-top: -4px; }
+.track-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-8) var(--s-16); margin-top: -4px; min-width: 0; }
+.track-instant .track-amt { font-size: var(--fs-16); }
+.track-mid { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-size: var(--fs-13); color: var(--ink-2); text-align: right; }
+.track-mid svg { flex: none; }
 .track.is-ready .track-day { background: var(--sky); box-shadow: none; }
-.track.is-claimed .track-day { background: var(--ink-2); box-shadow: none; }
+.track.is-released .track-day, .track.is-released .track-now { background: var(--ink-2); box-shadow: none; }
 .track-lg .track-amt { font-size: var(--fs-24); }
-@media (max-width: 480px) { .track-lg .track-amt { font-size: var(--fs-20); } }
+.track-lg .track-instant .track-amt { font-size: var(--fs-20); }
+@media (max-width: 480px) { .track-lg .track-amt { font-size: var(--fs-20); } .track-lg .track-instant .track-amt { font-size: var(--fs-16); } }
 .track-lg .track-rail { height: 14px; }
 .night .track-day { background: var(--night-surface); box-shadow: inset 0 0 0 1px var(--night-line); }
 .night .track-day.is-full { background: var(--sky); box-shadow: none; }

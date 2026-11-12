@@ -1,13 +1,13 @@
 # Cojam migration contracts
 
-Smart contracts for the Cojam token migration on Kaia: old CT (`0x7f223b1607171b81ebd68d22f1ca79157fd4a44b`) to the new Cojam Token, 1:1, each swap locked for 7 days. The full design, policies and test plan are in [`../docs/CONTRACT-SPEC.md`](../docs/CONTRACT-SPEC.md).
+Smart contracts for the Cojam token migration on Kaia: old CT (`0x7f223b1607171b81ebd68d22f1ca79157fd4a44b`) to the new Cojam Token, 1:1. On each swap 10% of the new CT arrives at once and 90% is locked for 7 days, then released to the holder (by the holder, or by anyone such as the team's keeper bot, always paid to the holder). The window opens at deploy and lasts 365 days. The full design, policies and test plan are in [`../docs/CONTRACT-SPEC.md`](../docs/CONTRACT-SPEC.md).
 
 These contracts have **not** been audited.
 
 | File | What it is |
 | --- | --- |
 | `contracts/CojamToken.sol` | New CT. Plain OpenZeppelin ERC-20 plus EIP-2612 permit. Fixed supply, minted once to the migration contract. No owner, mint, pause, blacklist, fee or upgrade. |
-| `contracts/CojamMigration.sol` | Swap. Deploys `CojamToken` in its constructor, takes old CT through `migrate`, pays matured lots through `claim`, sends the unowed remainder to the treasury through `sweep` after the window plus grace. No admin key. |
+| `contracts/CojamMigration.sol` | Swap. Deploys `CojamToken` in its constructor and opens the window. `migrate` takes old CT, pays 10% at once and opens a 7 day lot for the rest. `claim` (owner), `claimFor` and `claimForMany` (anyone, paid to the owner) release matured lots. `sweep` sends the unowed remainder to the treasury after the window plus grace. No admin key. |
 | `contracts/mocks/*` | Test only stand ins: old CT with pause and freeze, fee on transfer token, malicious re-entering token, decimals token, Safe style contract wallet. Never deploy these to mainnet. |
 | `test/CojamMigration.test.js` | Unit tests. |
 | `test/fuzz.test.js` | Randomized sequences checked against a model, with invariants after every step. |
@@ -51,8 +51,8 @@ Fork knobs: `KAIA_RPC_URL` (default `https://public-en.node.kaia.io`), `SKIP_FOR
 npm run deploy:kairos
 ```
 
-The script deploys `CojamMigration` (which deploys `CojamToken` and mints the whole supply to itself), then checks that the reserve equals the total supply and that the deployer holds no new CT, and prints every address and timestamp as JSON. Verify both contracts on Kaiascan; the `CojamToken` constructor argument is the migration contract address.
+The script deploys `CojamMigration` (which deploys `CojamToken`, mints the whole supply to itself and opens the 365 day window in the deploy block), then checks that the reserve equals the total supply and that the deployer holds no new CT, and prints every address and timestamp as JSON. Verify both contracts on Kaiascan; the `CojamToken` constructor argument is the migration contract address.
 
 `npm run deploy:local` runs the same script against the in-process Hardhat network as a dry run.
 
-Mainnet deployment is deliberately not scripted here. It follows the launch checklist in the spec.
+Mainnet deployment is deliberately not scripted here: because the deploy opens the window, it is the launch itself and follows the launch checklist in the spec.

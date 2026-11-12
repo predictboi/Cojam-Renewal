@@ -24,6 +24,8 @@
   function led() { return L.get(); }
   function lots(status) { return led().lots.filter(function (l) { return !status || L.lotStatus(l) === status; }); }
   function sum(arr) { return arr.reduce(function (a, l) { return a + l.amount; }, 0); }
+  function sumL(arr) { return arr.reduce(function (a, l) { return a + l.locked; }, 0); }
+  function sp(v) { return CJ.split(v); }
   function ids(arr) { return arr.map(function (l) { return l.id; }).join(","); }
   function byId(id) { return led().lots.filter(function (l) { return l.id === id; })[0]; }
   function isClosed() { return ui.closed || CJ.windowState() === "closed"; }
@@ -75,10 +77,16 @@
   function summary(amt) {
     return '<dl class="mg-rows">' +
       row(t("sum.send"), num(t("sum.send.v", { amount: A(amt) }))) +
-      row(t("f.receive"), num(t("f.receive.v", { amount: A(amt) }))) +
-      row(t("f.unlock") + help("help.lock"), t("f.unlock.v", { date: F.date(unlockAt()), rel: F.rel(unlockAt()) })) +
+      splitRows(amt) +
       row(t("gas.k") + help("help.gas"), num(t("f.gas.v", { amount: gas(ui.phase === "swap" ? GAS.swap : GAS.approve + GAS.swap) })), null, t("f.gas.have", { amount: gas(led().wallet.kaia) })) +
       "</dl>";
+  }
+
+  // "You get now: X new CT (10%)" and "On <date>: Y new CT (90%)", shared by the form, approve and swap views.
+  function splitRows(amt, ids) {
+    var p = sp(amt);
+    return row(t("f.now") + help("help.split"), num(t("f.now.v", { amount: A(p.instant) })), ids ? "mg-now" : null) +
+      row(t("f.later", { date: F.date(unlockAt()) }) + help("help.lock"), num(t("f.later.v", { amount: A(p.locked) })), ids ? "mg-later" : null, t("f.later.sub"));
   }
 
   // ---------- views ----------
@@ -108,11 +116,11 @@
       '<div class="mg-actions"><button type="button" class="btn btn-block" data-act="switch-wallet">' + I("wallet", 18) + "<span>" + t("em.switch") + "</span></button></div>";
   };
   V.form = function () {
-    var Ld = led(), rpc = ui.error === "rpc", ready = lots("claimable");
+    var Ld = led(), rpc = ui.error === "rpc", ready = lots("releasing");
     if (ui.text == null) ui.text = plain(Ld.oldCT);
     var bal = rpc ? (ui.loading ? '<span class="skel"></span>' : t("f.balance.unknown")) : t("f.balance", { amount: A(Ld.oldCT) });
     var h = head(t("f.title"));
-    if (ready.length && !isClosed()) h += note("info", t("f.claimnote", { amount: A(sum(ready)) }), '<button type="button" class="btn" data-act="to-claim">' + t("f.claimnote.btn") + "</button>");
+    if (ready.length && !isClosed()) h += note("info", t("f.claimnote", { amount: A(sumL(ready)) }), '<button type="button" class="btn" data-act="to-claim">' + t("f.claimnote.btn") + "</button>");
     h += '<form id="mg-form" novalidate><div class="field">' +
       '<div class="field-label"><label for="mg-amt">' + t("f.label") + '</label><span id="mg-bal" class="num">' + bal + "</span></div>" +
       '<div class="field-box" id="mg-box"><input id="mg-amt" name="amount" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="mg-msg" value="' + esc(rpc ? "" : ui.text) + '"' + (rpc ? " disabled" : "") + ">" +
@@ -124,9 +132,8 @@
       return h + "</form>";
     }
     h += '<dl class="mg-rows">' +
-      row(t("f.receive"), "", "mg-recv") +
+      splitRows(0, true) +
       row(t("rate.k") + help("help.rate"), num(t("rate.v"))) +
-      row(t("f.unlock") + help("help.lock"), t("f.unlock.v", { date: F.date(unlockAt()), rel: F.rel(unlockAt()) })) +
       row(t("gas.k") + help("help.gas"), "", "mg-gas") +
       "</dl>" +
       '<div id="mg-gas-err"></div>';
@@ -136,7 +143,7 @@
     return h;
   };
   V.review = function () {
-    return head(t("rv.title"), { back: true }) + '<p class="mg-lead">' + t("rv.body", { amount: A(ui.amount), days: C.lockDays }) + "</p>" +
+    return head(t("rv.title"), { back: true }) + '<p class="mg-lead">' + t("rv.body", { amount: A(ui.amount), instant: A(sp(ui.amount).instant), locked: A(sp(ui.amount).locked), days: C.lockDays }) + "</p>" +
       '<div class="mg-trackbox"><div data-track-demo="' + ui.amount + '"></div></div>' +
       '<label class="mg-check mg-check-lg"><input type="checkbox" id="mg-rv-check"> <span>' + t("rv.check") + "</span></label>" +
       '<div class="mg-actions">' + primary(t("rv.cta", { amount: A(ui.amount) }), "review-ok", ' id="mg-rv-go" disabled') + "</div>";
@@ -150,7 +157,7 @@
   V.swap = function () {
     var res = led().contract.reserveEmpty;
     return head(t("sw.title"), { back: true }) + steps(2) +
-      '<p class="mg-lead">' + t("sw.body", { amount: A(ui.amount), date: F.date(unlockAt()) }) + "</p>" +
+      '<p class="mg-lead">' + t("sw.body", { amount: A(ui.amount), instant: A(sp(ui.amount).instant), locked: A(sp(ui.amount).locked), date: F.date(unlockAt()) }) + "</p>" +
       summary(ui.amount) + gasError(GAS.swap) +
       (res ? note("error", withHelp(t("er.reserve"), "help.reserve"), '<a class="btn" href="' + DOCS + '#support">' + t("er.reserve.fix") + "</a>") : "") +
       '<div class="mg-actions">' + cta(t("sw.cta", { amount: A(ui.amount) }), "swap", res || gasShort(GAS.swap) ? " disabled" : "") + "</div>";
@@ -180,7 +187,7 @@
     var lot = byId(ui.lotId);
     if (!lot) { ui.phase = "form"; return V[computeView()](); }
     return head(t("ok.title"), { badge: "lock" }) +
-      '<p class="mg-lead">' + t("ok.body", { amount: A(lot.amount), date: F.date(lot.unlockAt) }) + "</p>" +
+      '<p class="mg-lead">' + t("ok.body", { instant: A(lot.instant), locked: A(lot.locked), date: F.date(lot.unlockAt) }) + "</p>" +
       '<div class="mg-trackbox"><div data-track="' + lot.id + '" data-large></div>' +
       '<p class="mg-count small" data-count="' + lot.unlockAt + '">' + I("clock", 16) + "<span></span></p></div>" +
       '<p class="small">' + txLink(lot.txSwap, t("h.tx.swap")) + "</p>" +
@@ -188,29 +195,30 @@
       '<button type="button" class="btn btn-ghost btn-lg" data-act="add">' + I("plus", 18) + "<span>" + t("ok.add") + "</span></button></div>";
   };
   V.claim = function () {
-    var ready = lots("claimable"), amt = sum(ready), many = ready.length > 1, Ld = led();
+    var ready = lots("releasing"), amt = sumL(ready), many = ready.length > 1, Ld = led();
     var h = head(t("cl.title"), { badge: "unlock" }) +
       '<p class="mg-lead">' + (many ? t("cl.body.many", { count: ready.length }) : t("cl.body.one")) + "</p>";
-    h += many ? '<dl class="mg-rows">' + ready.map(function (l) { return row(t("track.swapped", { date: F.date(l.swappedAt) }), num(t("h.v", { amount: A(l.amount) }))); }).join("") + "</dl>"
+    h += many ? '<dl class="mg-rows">' + ready.map(function (l) { return row(t("track.swapped", { date: F.date(l.swappedAt) }), num(t("h.v", { amount: A(l.locked) }))); }).join("") + "</dl>"
       : '<div class="mg-trackbox"><div data-track="' + ready[0].id + '" data-large></div></div>';
-    h += '<dl class="mg-rows">' + row(t("gas.k") + help("help.gas"), num(t("f.gas.v", { amount: gas(GAS.claim) })), null, t("f.gas.have", { amount: gas(Ld.wallet.kaia) })) + "</dl>";
+    h += '<dl class="mg-rows">' + row(t("gas.k") + help("help.gas"), num(t("f.gas.v", { amount: gas(GAS.claim) })), null, t("cl.gas.sub", { amount: gas(Ld.wallet.kaia) })) + "</dl>";
     h += gasError(GAS.claim);
     h += '<div class="mg-actions">' + cta(t(many ? "cl.cta.all" : "cl.cta", { amount: A(amt) }), "claim", ' data-ids="' + ids(ready) + '"' + (gasShort(GAS.claim) ? " disabled" : ""));
     if (Ld.oldCT > 0 && !isClosed()) h += '<button type="button" class="btn btn-block" data-act="to-swap">' + t("cl.swapmore") + "</button>";
     return h + "</div>";
   };
   V.claimed = function () {
-    var got = (ui.claimIds || []).map(byId).filter(Boolean);
+    var got = (ui.claimIds || []).map(byId).filter(function (l) { return l && l.releasedAt; });
     if (!got.length) { ui.phase = "form"; return V[computeView()](); }
+    var you = got[0].releasedBy === "you";
     return head(t("cd.title"), { badge: "check" }) +
-      '<p class="mg-lead">' + t("cd.body", { amount: A(sum(got)) }) + "</p>" +
+      '<p class="mg-lead">' + t(you ? "cd.body.you" : "cd.body.keeper", { amount: A(sumL(got)), date: F.date(got[0].releasedAt) }) + "</p>" +
       '<div class="mg-trackbox"><div data-track-claimed data-large></div></div>' +
-      '<p class="small">' + txLink(got[0].txClaim, t("h.tx.claim")) + "</p>" +
+      '<p class="small">' + txLink(got[0].txRelease, t("h.tx.release")) + "</p>" +
       '<div class="mg-actions mg-actions-row">' + primary(t("cd.done"), "done") +
       '<button type="button" class="btn btn-ghost btn-lg" data-act="add">' + I("plus", 18) + "<span>" + t("ok.add") + "</span></button></div>";
   };
   V.closed = function () {
-    var ready = lots("claimable"), amt = sum(ready);
+    var ready = lots("releasing"), amt = sumL(ready);
     var fix = ready.length
       ? '<button type="button" class="btn btn-primary" data-act="claim" data-ids="' + ids(ready) + '">' + t(ready.length > 1 ? "cl.cta.all" : "cl.cta", { amount: A(amt) }) + "</button>"
       : '<button type="button" class="btn" data-act="see-hist">' + t("er.closed.fix") + "</button>";
@@ -236,7 +244,7 @@
     if (ph === "review" || ph === "approve" || ph === "swap") return ph;
     if (ui.error === "rpc") return "form";
     if (isClosed()) return "closed";
-    if (lots("claimable").length && ui.mode !== "swap") return "claim";
+    if (lots("releasing").length && ui.mode !== "swap") return "claim";
     if (Ld.oldCT <= 0) return "empty";
     if (Ld.allowance > 0 && !ui.partialOff) return "partial";
     return "form";
@@ -258,7 +266,9 @@
     input.setAttribute("aria-invalid", s.msg ? "true" : "false");
     msg.className = "field-msg" + (s.msg ? " is-error" : "");
     msg.innerHTML = s.msg ? '<span class="mg-msg-t">' + I("warn", 16) + "<span>" + esc(s.msg) + "</span></span>" + (s.over ? '<button type="button" class="btn mg-fix" data-act="max">' + t("f.usemax") + "</button>" : "") : "";
-    $("mg-recv").innerHTML = num(t("f.receive.v", { amount: A(v) }));
+    var p = sp(v);
+    $("mg-now").innerHTML = num(t("f.now.v", { amount: A(p.instant) }));
+    $("mg-later").firstChild.innerHTML = t("f.later.v", { amount: A(p.locked) });
     $("mg-gas").innerHTML = num(t("f.gas.v", { amount: gas(need) })) + '<span class="mg-sub">' + t("f.gas.have", { amount: gas(Ld.wallet.kaia) }) + "</span>";
     var short = Ld.wallet.kaia < need;
     $("mg-gas-err").innerHTML = short ? gasError(need) : "";
@@ -333,19 +343,20 @@
       chain(function (tx) {
         var lot = L.swap(amt); lot.txSwap = tx; L.save();
         ui.lotId = lot.id; ui.phase = "success"; ui.wait = null; ui.text = null; ui.reviewed = false; ui.mode = null;
-        render(true); CJ.toast(t("toast.swapped"));
+        render(true); CJ.toast(t("toast.swapped", { amount: A(lot.instant) }));
       });
     });
   }
   function doClaim(idList) {
-    var list = idList.map(byId).filter(function (l) { return l && L.lotStatus(l) === "claimable"; });
+    var list = idList.map(byId).filter(function (l) { return l && L.lotStatus(l) === "releasing"; });
     if (!list.length) return;
-    var amt = sum(list);
+    var amt = sumL(list);
     ui.claimIds = list.map(function (l) { return l.id; });
     startWallet("claim", amt, function () {
       chain(function (tx) {
         var before = led().wallet.kaia;
-        ui.claimIds.forEach(function (id) { var lot = L.claim(id); if (lot) lot.txClaim = tx; });
+        // A lot the keeper released while the wallet was open is simply skipped: it is already in the wallet.
+        ui.claimIds.forEach(function (id) { var lot = L.claim(id); if (lot) lot.txRelease = tx; });
         led().wallet.kaia = Math.max(0, +(before - GAS.claim).toFixed(4)); // one transaction for the whole batch
         ui.phase = "claimed"; ui.wait = null; ui.mode = null;
         L.save(); render(true); CJ.toast(t("toast.claimed", { amount: A(amt) }));
@@ -358,7 +369,7 @@
     if (p === "wallet") return cancelWallet();
     if (p === "review" || p === "approve" || p === "swap") { ui.phase = "form"; ui.error = null; ui.reviewed = false; if (p === "swap") ui.partialOff = true; return render(true); }
     if (p === "success" || p === "claimed") return done();
-    if (ui.view === "form" && ui.mode === "swap" && lots("claimable").length) { ui.mode = null; render(true); }
+    if (ui.view === "form" && ui.mode === "swap" && lots("releasing").length) { ui.mode = null; render(true); }
   }
 
   // ---------- render ----------
@@ -369,13 +380,14 @@
     panel.innerHTML = '<div class="mg-view' + (v !== lastView ? " is-enter" : "") + '" data-view="' + v + '">' + V[ui.view = computeView()]() + "</div>";
     lastView = v;
     panel.querySelectorAll("[data-track]").forEach(function (el) { var lot = byId(el.getAttribute("data-track")); if (lot) CJ.track(el, lot, { large: el.hasAttribute("data-large") }); });
-    panel.querySelectorAll("[data-track-demo]").forEach(function (el) { CJ.track(el, null, { large: true, amountText: A(+el.getAttribute("data-track-demo")) }); });
+    panel.querySelectorAll("[data-track-demo]").forEach(function (el) { CJ.track(el, null, { large: true, amount: +el.getAttribute("data-track-demo") }); });
     var ct = panel.querySelector("[data-track-claimed]");
     if (ct) {
       var got = (ui.claimIds || []).map(byId).filter(Boolean);
       CJ.track(ct, {
-        amount: sum(got), swappedAt: Math.min.apply(null, got.map(function (l) { return l.swappedAt; })),
-        unlockAt: Math.max.apply(null, got.map(function (l) { return l.unlockAt; })), claimedAt: got[0].claimedAt
+        amount: sum(got), instant: got.reduce(function (a, l) { return a + l.instant; }, 0), locked: sumL(got),
+        swappedAt: Math.min.apply(null, got.map(function (l) { return l.swappedAt; })),
+        unlockAt: Math.max.apply(null, got.map(function (l) { return l.unlockAt; })), releasedAt: got[0].releasedAt, releasedBy: got[0].releasedBy
       }, { large: true });
     }
     CJ.renderAddrs(panel);

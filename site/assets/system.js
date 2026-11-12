@@ -14,8 +14,10 @@
     newToken: { name: "Cojam Token", symbol: "CT", decimals: 18, address: null, supply: 4083262533.956 },
     swapContract: { address: null },
     ratio: 1,
+    instantPercent: 10, // paid in the swap transaction; the rest is locked
     lockDays: 7,
-    // Mock window. Real dates are set at launch; the window is one year.
+    keeperDelayMin: 30, // mock keeper sends an unlocked lot this long after unlock
+    // Mock window. Launch is the swap contract's deploy date; the window is open for 1 year from it.
     windowStart: Date.UTC(2026, 11, 1),
     windowEnd: Date.UTC(2027, 11, 1),
     officialUrl: null, // new domain, to be announced
@@ -105,52 +107,87 @@
     return { ok: true, value: v };
   }
 
+  // ---------- 10% now, 90% after the lock ----------
+  // Same rule as the contract: instant = 10% rounded down to the smallest unit, locked = the rest, so nothing is lost.
+  // The mock works in micro units (6 decimals); the contract does the same in wei.
+  function split(amt) {
+    var u = Math.round((+amt || 0) * 1e6), i = Math.floor(u * config.instantPercent / 100);
+    return { instant: i / 1e6, locked: (u - i) / 1e6 };
+  }
+
   // ---------- mock ledger ----------
-  var KEY = "cj.ledger.v1";
+  // v2: lots carry instant and locked parts and a release (keeper or holder). v1 ledgers are ignored.
+  var KEY = "cj.ledger.v2";
+  var KEEPER_MS = config.keeperDelayMin * 60000;
   function freshLedger() {
     return {
       wallet: { connected: false, address: "0x3fA9c2E07b1d4C6e8A52bD90f1e7C4a6D2b8E915", network: "kaia", kaia: 2.48 },
       oldCT: 125000,
       newCT: 0,
       allowance: 0,
-      lots: [], // {id, amount, swappedAt, unlockAt, claimedAt, txSwap, txClaim}
+      lots: [], // {id, amount, instant, locked, swappedAt, unlockAt, releasedAt, releasedBy, txSwap, txRelease}
       contract: { paused: false, reserveEmpty: false }
     };
   }
   if (params.get("reset") === "1") { try { localStorage.removeItem(KEY); } catch (e) {} }
   var ledger;
   try { ledger = JSON.parse(localStorage.getItem(KEY)) || freshLedger(); } catch (e) { ledger = freshLedger(); }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(ledger)); } catch (e) {} emit(); }
+  function persist() { try { localStorage.setItem(KEY, JSON.stringify(ledger)); } catch (e) {} }
+  function save() { persist(); emit(); }
   function emit() { document.dispatchEvent(new CustomEvent("cj:ledger", { detail: ledger })); }
   function fakeTx() { var h = "0x"; for (var i = 0; i < 64; i++) h += "0123456789abcdef"[(Math.random() * 16) | 0]; return h; }
-  function lotStatus(lot) { if (lot.claimedAt) return "claimed"; return now() >= lot.unlockAt ? "claimable" : "locked"; }
+  // Mock keeper: a lot still locked at unlockAt + 30 minutes is released to its owner then. Applied lazily on read,
+  // credited once, and saved without an event so a render never triggers another render.
+  function settle() {
+    var n = now(), changed = false;
+    ledger.lots.forEach(function (l) {
+      if (l.releasedAt || n < l.unlockAt + KEEPER_MS) return;
+      l.releasedAt = l.unlockAt + KEEPER_MS; l.releasedBy = "keeper"; l.txRelease = fakeTx();
+      ledger.newCT = +(ledger.newCT + l.locked).toFixed(6); changed = true;
+    });
+    if (changed) persist();
+  }
+  // Works for ledger lots and for any lot shaped object (admin, previews).
+  function lotStatus(lot) {
+    if (ledger.lots.indexOf(lot) > -1) settle();
+    if (lot.releasedAt) return "released";
+    return now() >= lot.unlockAt ? "releasing" : "locked";
+  }
   var ledgerApi = {
-    get: function () { return ledger; },
+    get: function () { settle(); return ledger; },
     save: save,
     reset: function () { ledger = freshLedger(); save(); },
     connect: function () { ledger.wallet.connected = true; save(); },
     disconnect: function () { ledger.wallet.connected = false; save(); },
     setNetwork: function (n) { ledger.wallet.network = n; save(); },
     approve: function (amt) { ledger.allowance = amt; save(); },
+    // Called only once the mock chain confirms the swap: the 10% lands in the wallet in the same transaction.
     swap: function (amt) {
-      var t0 = now();
-      var lot = { id: "L" + t0.toString(36), amount: amt, swappedAt: t0, unlockAt: t0 + config.lockDays * DAY, claimedAt: null, txSwap: fakeTx(), txClaim: null };
+      var t0 = now(), sp = split(amt);
+      var lot = { id: "L" + t0.toString(36), amount: amt, instant: sp.instant, locked: sp.locked, swappedAt: t0, unlockAt: t0 + config.lockDays * DAY,
+        releasedAt: null, releasedBy: null, txSwap: fakeTx(), txRelease: null };
       ledger.oldCT = Math.max(0, +(ledger.oldCT - amt).toFixed(6));
+      ledger.newCT = +(ledger.newCT + sp.instant).toFixed(6);
       ledger.allowance = Math.max(0, +(ledger.allowance - amt).toFixed(6));
       ledger.wallet.kaia = Math.max(0, +(ledger.wallet.kaia - 0.012).toFixed(4));
       ledger.lots.unshift(lot); save(); return lot;
     },
+    // The holder releases an unlocked lot before the keeper does. Pays the owner, never anyone else.
     claim: function (id) {
+      settle();
       var lot = ledger.lots.filter(function (l) { return l.id === id; })[0];
-      if (!lot || lotStatus(lot) !== "claimable") return null;
-      lot.claimedAt = now(); lot.txClaim = fakeTx(); ledger.newCT = +(ledger.newCT + lot.amount).toFixed(6);
+      if (!lot || lotStatus(lot) !== "releasing") return null;
+      lot.releasedAt = now(); lot.releasedBy = "you"; lot.txRelease = fakeTx();
+      ledger.newCT = +(ledger.newCT + lot.locked).toFixed(6);
       ledger.wallet.kaia = Math.max(0, +(ledger.wallet.kaia - 0.006).toFixed(4));
       save(); return lot;
     },
     lotStatus: lotStatus,
+    // instant: every 10% already paid; locked, releasing, released: the 90% parts by status.
     totals: function () {
-      var r = { locked: 0, claimable: 0, claimed: 0 };
-      ledger.lots.forEach(function (l) { r[lotStatus(l)] += l.amount; });
+      settle();
+      var r = { instant: 0, locked: 0, releasing: 0, released: 0 };
+      ledger.lots.forEach(function (l) { r.instant += l.instant; r[lotStatus(l)] += l.locked; });
       return r;
     }
   };
@@ -191,31 +228,44 @@
   }
 
   // ---------- swap track ----------
-  // lot: {amount, swappedAt, unlockAt, claimedAt} or null for the explainer version.
+  // Reads left to right: old CT swapped, the 10% block paid at once, the 7 day rail for the 90%, the 90% at the right end.
+  // lot: {amount, instant, locked, swappedAt, unlockAt, releasedAt, releasedBy} or null for the explainer version,
+  // which takes opts.amount (number) and opts.demoDays.
   function track(el, lot, opts) {
     opts = opts || {};
     var status = lot ? lotStatus(lot) : "demo";
     var days = config.lockDays, html = "";
+    var total = lot ? lot.amount : (opts.amount || 0);
+    var sp = lot && lot.instant != null ? { instant: lot.instant, locked: lot.locked } : split(total);
+    var done = status === "releasing" || status === "released";
     var elapsed = lot ? Math.max(0, Math.min(days, (now() - lot.swappedAt) / DAY)) : (opts.demoDays || 0);
     for (var i = 0; i < days; i++) {
       var cls = "track-day";
-      if (status === "claimable" || status === "claimed" || elapsed >= i + 1) cls += " is-full";
-      else if (elapsed > i) { cls += " is-today"; }
-      var part = elapsed > i && elapsed < i + 1 ? ' style="--part:' + Math.round((elapsed - i) * 100) + '%"' : "";
+      if (done || elapsed >= i + 1) cls += " is-full";
+      else if (elapsed > i) cls += " is-today";
+      var part = !done && elapsed > i && elapsed < i + 1 ? ' style="--part:' + Math.round((elapsed - i) * 100) + '%"' : "";
       html += '<span class="' + cls + '"' + part + "></span>";
     }
-    var amt = lot ? amount(lot.amount) : (opts.amountText || "");
+    var by = lot && lot.releasedBy === "you" ? "track.by_you" : lot && lot.releasedBy === "holder" ? "track.by_holder" : "track.by_keeper";
     var leftCap = lot ? t("track.swapped", { date: date(lot.swappedAt) }) : t("track.left");
-    var rightCap = !lot ? t("track.right") : status === "claimed" ? t("track.claimed", { date: date(lot.claimedAt) }) : status === "claimable" ? t("track.ready") : t("track.unlocks", { date: date(lot.unlockAt) });
-    var mid = !lot ? t("track.mid", { days: days }) : status === "locked" ? t("track.left_days", { rel: rel(lot.unlockAt) }) : status === "claimable" ? t("track.mid_ready") : t("track.mid_done");
-    el.className = "track" + (opts.large ? " track-lg" : "") + (status === "claimable" ? " is-ready" : "") + (status === "claimed" ? " is-claimed" : "");
+    var nowCap = lot ? t("track.now_done") : t("track.now");
+    var rightCap = status === "demo" ? t("track.right", { days: days })
+      : status === "locked" ? t("track.unlocks", { date: date(lot.unlockAt) })
+      : status === "releasing" ? t("track.sending")
+      : t("track.released", { date: date(lot.releasedAt) });
+    var mid = status === "demo" ? t("track.mid", { days: days })
+      : status === "locked" ? t("track.left_days", { rel: rel(lot.unlockAt) })
+      : status === "releasing" ? t("track.mid_ready") : t(by);
+    var a = amount(total), ai = amount(sp.instant), al = amount(sp.locked);
+    el.className = "track" + (opts.large ? " track-lg" : "") + (status === "releasing" ? " is-ready" : "") + (status === "released" ? " is-released" : "");
     el.setAttribute("role", "img");
-    el.setAttribute("aria-label", t("track.aria", { amount: amt, mid: mid, right: rightCap }));
+    el.setAttribute("aria-label", t("track.aria", { amount: a, instant: ai, locked: al, right: rightCap, mid: mid }));
     el.innerHTML =
-      '<div class="track-end"><span class="track-cap">' + leftCap + '</span><span class="track-amt"><span class="num">' + amt + '</span> <span class="track-unit">' + t("unit.old") + "</span></span></div>" +
-      '<div class="track-end r"><span class="track-cap">' + rightCap + '</span><span class="track-amt"><span class="num">' + amt + '</span> <span class="track-unit">' + t("unit.new") + "</span></span></div>" +
-      '<div class="track-rail">' + html + "</div>" +
-      '<div class="track-mid">' + icon(status === "claimable" || status === "claimed" ? "unlock" : "lock", 14) + "<span>" + mid + "</span></div>";
+      '<div class="track-end"><span class="track-cap">' + leftCap + '</span><span class="track-amt"><span class="num">' + a + '</span> <span class="track-unit">' + t("unit.old") + "</span></span></div>" +
+      '<div class="track-end r"><span class="track-cap">' + rightCap + '</span><span class="track-amt"><span class="num">' + al + '</span> <span class="track-unit">' + t("unit.new") + "</span></span></div>" +
+      '<div class="track-rail"><span class="track-now"></span>' + html + "</div>" +
+      '<div class="track-foot"><span class="track-end track-instant"><span class="track-cap">' + nowCap + '</span><span class="track-amt"><span class="num">' + ai + '</span> <span class="track-unit">' + t("unit.new") + "</span></span></span>" +
+      '<span class="track-mid">' + icon(done ? "unlock" : "lock", 14) + "<span>" + mid + "</span></span></div>";
   }
 
   // ---------- toasts and copy ----------
@@ -258,7 +308,7 @@
     config: config, params: params, DAY: DAY, now: now,
     dict: dict, t: t, lang: function () { return lang; }, setLang: setLang, applyI18n: applyI18n,
     fmt: { amount: amount, compact: compact, pct: pct, date: date, dateTime: dateTime, rel: rel, addr: shortAddr },
-    parseAmount: parseAmount, ledger: ledgerApi, windowState: windowState,
+    parseAmount: parseAmount, split: split, ledger: ledgerApi, windowState: windowState,
     icon: icon, track: track, toast: toast, copy: copy, renderAddrs: renderAddrs, fakeTx: fakeTx,
     state: params.get("state")
   };

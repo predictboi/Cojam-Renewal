@@ -7,6 +7,8 @@ interface IMigration {
     function migrate(uint256 amount) external returns (uint256);
     function claim(uint256 maxLots) external returns (uint256);
     function sweep() external returns (uint256);
+    function claimFor(address user, uint256 maxLots) external returns (uint256);
+    function claimForMany(address[] calldata users, uint256 maxLotsEach) external returns (uint256);
 }
 
 /// @notice Old token stand in that misbehaves inside transferFrom. TEST ONLY.
@@ -18,6 +20,8 @@ interface IMigration {
 ///   4 re-enter migrate inside try/catch and record whether it succeeded
 ///   5 credit the recipient more than `value` (inflating transfer)
 ///   6 move nothing but return true (lying transfer)
+///   7 re-enter claimFor and bubble the revert
+///   8 re-enter claimForMany and bubble the revert
 contract MockMaliciousToken is ERC20 {
     uint8 public mode;
     IMigration public target;
@@ -57,6 +61,12 @@ contract MockMaliciousToken is ERC20 {
             return true;
         } else if (mode == 6) {
             return true;
+        } else if (mode == 7) {
+            target.claimFor(from, 1);
+        } else if (mode == 8) {
+            address[] memory users = new address[](1);
+            users[0] = from;
+            target.claimForMany(users, 1);
         }
         return super.transferFrom(from, to, value);
     }

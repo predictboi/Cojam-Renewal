@@ -434,7 +434,7 @@ describe("CojamMigration: sweep", function () {
 });
 
 describe("CojamMigration: reentrancy", function () {
-  for (const [mode, label] of [[1, "migrate"], [2, "claim"], [3, "sweep"]]) {
+  for (const [mode, label] of [[1, "migrate"], [2, "claim"], [3, "sweep"], [7, "claimFor"], [8, "claimForMany"]]) {
     it(`a malicious old token re-entering ${label} from transferFrom is rejected`, async function () {
       const { alice, migration, oldToken } = await deploySystem("MockMaliciousToken");
       await oldToken.connect(alice).approve(await migration.getAddress(), 10n * E18);

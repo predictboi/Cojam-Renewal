@@ -4,7 +4,7 @@
 const { expect } = require("chai");
 const { ethers, network } = require("hardhat");
 const { time, reset, impersonateAccount, setBalance } = require("@nomicfoundation/hardhat-network-helpers");
-const { SUPPLY, DAY, LOCK, GRACE, E18 } = require("./helpers");
+const { SUPPLY, LOCK, GRACE, E18, split } = require("./helpers");
 
 const RPC = process.env.KAIA_RPC_URL || "https://public-en.node.kaia.io";
 const OLD_CT = "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b";
@@ -62,7 +62,7 @@ describe("fork: real old CT on Kaia mainnet", function () {
   });
 
   describe("on a local fork", function () {
-    let old, migration, newToken, start, treasury, holder, other, owner, balanceSlot;
+    let old, migration, newToken, treasury, holder, other, keeper, owner, balanceSlot;
 
     // Credit a test wallet with old CT by writing the balances mapping slot directly,
     // instead of moving a real holder's tokens. This does not change totalSupply.
@@ -73,10 +73,9 @@ describe("fork: real old CT on Kaia mainnet", function () {
 
     before(async function () {
       await reset(RPC, forkBlock);
-      [, treasury, holder, other] = await ethers.getSigners();
+      [, treasury, holder, other, keeper] = await ethers.getSigners();
       old = await ethers.getContractAt(OLD_ABI, OLD_CT);
-      start = BigInt(await time.latest()) + DAY;
-      migration = await (await ethers.getContractFactory("CojamMigration")).deploy(OLD_CT, treasury.address, start, GRACE);
+      migration = await (await ethers.getContractFactory("CojamMigration")).deploy(OLD_CT, treasury.address, GRACE);
       newToken = await ethers.getContractAt("CojamToken", await migration.NEW_TOKEN());
 
       for (let slot = 0; slot <= 20 && balanceSlot === undefined; slot++) {
@@ -93,7 +92,6 @@ describe("fork: real old CT on Kaia mainnet", function () {
       await impersonateAccount(OLD_OWNER);
       await setBalance(OLD_OWNER, 10n * E18);
       owner = await ethers.getSigner(OLD_OWNER);
-      await time.increaseTo(start);
     });
 
     it("deploys against the real old CT (supply and decimals guards pass)", async function () {
@@ -101,17 +99,20 @@ describe("fork: real old CT on Kaia mainnet", function () {
       expect(await newToken.balanceOf(await migration.getAddress())).to.equal(SUPPLY);
     });
 
-    it("migrates real old CT 1:1 (no transfer fee) and claims after 7 days", async function () {
+    it("migrates real old CT 1:1 (no transfer fee): 10% at once, 90% released by a keeper after 7 days", async function () {
       const bal = 1_234_567n * E18 + 89n;
+      const [instant, locked] = split(bal);
       await credit(holder.address, bal);
       await old.connect(holder).approve(await migration.getAddress(), bal);
       await expect(migration.connect(holder).migrate(bal)).to.emit(migration, "Migrated");
       expect(await old.balanceOf(holder.address)).to.equal(0n);
       expect(await old.balanceOf(await migration.getAddress())).to.equal(bal);
-      expect((await migration.lotOf(holder.address, 0))[0]).to.equal(bal);
+      expect(await newToken.balanceOf(holder.address)).to.equal(instant);
+      expect((await migration.lotOf(holder.address, 0))[0]).to.equal(locked);
       await time.increase(LOCK);
-      await migration.connect(holder).claim(10);
+      await migration.connect(keeper).claimFor(holder.address, 10);
       expect(await newToken.balanceOf(holder.address)).to.equal(bal);
+      expect(await newToken.balanceOf(keeper.address)).to.equal(0n);
     });
 
     it("real pause() by the old owner: migrate reverts, claims of existing lots still pay, unPause() restores", async function () {
@@ -124,7 +125,7 @@ describe("fork: real old CT on Kaia mainnet", function () {
       expect(await old.paused()).to.equal(true);
       await expect(migration.connect(other).migrate(10n * E18)).to.be.reverted;
       expect(await migration.lotCount(other.address)).to.equal(1n);
-      await expect(migration.connect(other).claim(10)).to.changeTokenBalance(newToken, other, 40n * E18);
+      await expect(migration.connect(other).claim(10)).to.changeTokenBalance(newToken, other, 36n * E18);
 
       await old.connect(owner).unPause();
       await expect(migration.connect(other).migrate(10n * E18)).to.emit(migration, "Migrated");
