@@ -48,7 +48,7 @@
     return '<details class="help"><summary aria-label="' + esc(t("help.label")) + '">' + I("help", 18) + '</summary><div class="help-pop">' + t(key) + "</div></details>";
   }
   // A sentence with a help toggle kept beside it, so the toggle never wraps onto a line of its own.
-  function withHelp(text, key, cls) { return '<p class="mg-hh' + (cls ? " " + cls : "") + '"><span>' + text + "</span>" + help(key) + "</p>"; }
+  function withHelp(text, key, cls) { return '<div class="mg-hh' + (cls ? " " + cls : "") + '"><span>' + text + "</span>" + help(key) + "</div>"; }
   function row(k, v, id, sub) {
     return '<div class="mg-row"><dt>' + k + "</dt><dd" + (id ? ' id="' + id + '"' : "") + ">" + v + (sub ? '<span class="mg-sub">' + sub + "</span>" : "") + "</dd></div>";
   }
@@ -61,7 +61,7 @@
   }
   function note(kind, msg, fix, id) {
     var ic = kind === "error" || kind === "warn" ? "warn" : "info";
-    return '<div class="note note-' + kind + ' mg-note"' + (id ? ' id="' + id + '"' : "") + ">" + I(ic, 18) + '<div class="note-body">' + (/^<p/.test(msg) ? msg : "<p>" + msg + "</p>") + (fix ? '<div class="note-action mg-fixes">' + fix + "</div>" : "") + "</div></div>";
+    return '<div class="note note-' + kind + ' mg-note"' + (id ? ' id="' + id + '"' : "") + ">" + I(ic, 18) + '<div class="note-body">' + (/^<(p|div)/.test(msg) ? msg : "<p>" + msg + "</p>") + (fix ? '<div class="note-action mg-fixes">' + fix + "</div>" : "") + "</div></div>";
   }
   function primary(label, act, extra) { return '<button type="button" class="btn btn-primary btn-lg btn-block" data-act="' + act + '"' + (extra || "") + ">" + label + "</button>"; }
   // The primary action, or the rejected note with Try again in its place.
@@ -388,7 +388,7 @@
     announce();
   }
   function announce() {
-    var h = $("mg-h"), n = panel.querySelector(".note-error p, .note-warn p");
+    var h = $("mg-h"), n = panel.querySelector(".note-error .note-body > p, .note-warn .note-body > p, .note-error .mg-hh > span");
     var s = (h ? h.textContent : "") + (n ? ". " + n.textContent : "");
     if (s && s !== lastLive) { lastLive = s; live.textContent = s; }
   }

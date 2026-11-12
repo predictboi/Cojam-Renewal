@@ -138,7 +138,7 @@ CJ.dict({
     "top.col.rank": "Rank",
     "top.col.wallet": "Wallet",
     "top.col.amount": "Swapped (CT)",
-    "top.col.share": "Share of swapped",
+    "top.col.share": "Share",
     "top.col.lots": "Requests",
 
     "big.title": "Large swap watch",

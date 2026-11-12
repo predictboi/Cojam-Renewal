@@ -22,6 +22,10 @@ body[data-page="admin"] .container { max-width: 1280px; }
 .kpi-v { font-size: var(--fs-20); font-weight: var(--fw-semi); line-height: 1.2; overflow-wrap: anywhere; }
 .kpi-u { font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--ink-2); white-space: nowrap; }
 .kpi-sub { font-size: var(--fs-13); color: var(--ink-2); line-height: 1.45; }
+@media (max-width: 479px) {
+  .kpi-grid { grid-template-columns: minmax(0, 1fr); }
+  .kpi { padding: var(--s-12) var(--s-16); }
+}
 @media (min-width: 900px) {
   .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .kpi { padding: var(--s-16) var(--s-24) var(--s-24); }
@@ -234,6 +238,7 @@ html:has(.sheet[open]) { overflow: hidden; }
 .sheet::backdrop { background: color-mix(in srgb, var(--ink) 40%, transparent); }
 @keyframes sheet-in { from { transform: translateX(24px); opacity: 0; } }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); padding: var(--s-12) var(--s-12) var(--s-12) var(--s-24); border-bottom: 1px solid var(--line); }
+.sheet-head h2 { font-size: var(--fs-20); letter-spacing: -0.01em; }
 .sheet-close { width: 44px; padding: 0; }
 .sheet-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: var(--s-24); }
 .sheet-addr { display: flex; align-items: center; gap: var(--s-8); padding: var(--s-4) var(--s-4) var(--s-4) var(--s-12); background: var(--inset); border-radius: var(--r-control); }
