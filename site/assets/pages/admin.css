@@ -14,7 +14,7 @@ body[data-page="admin"] .container { max-width: 1280px; }
 .adm-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sky); box-shadow: 0 0 0 3px var(--sky-tint); }
 
 /* ---------- KPI row: one panel, tiles split by hairlines ---------- */
-.adm-kpis { padding: 0; overflow: hidden; }
+.adm .adm-kpis { padding: 0; overflow: hidden; }
 .kpi-grid { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); }
 .kpi { background: var(--surface); padding: var(--s-16); display: grid; gap: var(--s-4); align-content: start; min-width: 0; }
 .kpi dt { font-size: var(--fs-14); color: var(--ink-2); }
@@ -64,6 +64,7 @@ body[data-page="admin"] .container { max-width: 1280px; }
   position: absolute; top: 0; z-index: 2; pointer-events: none; display: grid; gap: 2px; padding: var(--s-8) var(--s-12);
   background: var(--ink); color: var(--surface); border-radius: var(--r-control); font-size: var(--fs-13); line-height: 1.35; white-space: nowrap; box-shadow: var(--shadow-pop);
 }
+.chart .tip[hidden] { display: none; }
 .chart .tip strong { font-size: var(--fs-14); font-weight: var(--fw-semi); }
 .adm-chart-foot { line-height: 1.5; }
 .adm-tableview > summary {
@@ -79,13 +80,15 @@ body[data-page="admin"] .container { max-width: 1280px; }
 
 /* ---------- swap requests ---------- */
 .lots-tools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s-12) var(--s-24); margin-top: var(--s-24); }
-.lots-search { flex: 1 1 280px; max-width: 420px; min-width: 0; }
+.lots-search { flex: 1 1 100%; min-width: 0; }
+.lots-search-box { max-width: 480px; }
 .lots-search-box { display: flex; align-items: center; gap: var(--s-8); min-height: 48px; padding: 0 var(--s-12); background: var(--inset); border: 1px solid var(--line); border-radius: var(--r-control); color: var(--ink-2); }
 .lots-search-box:focus-within { border-color: var(--brand); }
 .lots-search-box input { flex: 1; min-width: 0; min-height: 46px; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: var(--fs-16); outline: none; }
 .lots-search-box input::placeholder { color: var(--ink-2); }
 .lots-filter { display: grid; gap: var(--s-4); min-width: 0; }
 .lots-count { margin-top: var(--s-16); color: var(--ink); }
+.lots-sort-m { display: none; }
 .lots-count .muted { margin-left: var(--s-8); }
 .lots-wrap { margin-top: var(--s-8); overflow-x: auto; border-top: 1px solid var(--line); }
 .lots-table { min-width: 980px; }
@@ -145,28 +148,39 @@ th.r .sort-btn { flex-direction: row-reverse; }
 .pg-of { margin-left: auto; }
 .pg-of + .pg-btn { order: 0; }
 
-/* Stacked rows on small screens: the header becomes a row of sort buttons, each request a two column block. */
+/* Stacked rows on small screens: a sort menu replaces the header, each request becomes a two column block. */
 @media (max-width: 759px) {
-  .lots-wrap { overflow: visible; border-top: 0; }
+  .lots-filter, .lots-filter .seg { width: 100%; }
+  .lots-filter .seg { flex-wrap: nowrap; }
+  .lots-filter .seg-btn { flex: 1 1 auto; padding: 0 var(--s-8); font-size: var(--fs-13); }
+  .lots-sort-m { display: grid; gap: var(--s-4); margin-top: var(--s-16); }
+  .lots-sort-box { display: flex; align-items: center; background: var(--inset); border: 1px solid var(--line); border-radius: var(--r-control); }
+  .lots-sort-box:focus-within { border-color: var(--brand); }
+  .lots-sort-box select { flex: 1; min-width: 0; min-height: 44px; padding: 0 var(--s-12); border: 0; background: transparent; color: var(--ink); font: inherit; font-size: var(--fs-16); outline: none; }
+  .lots-count .muted { display: block; margin-left: 0; }
+  .lots-wrap { overflow: visible; }
   .lots-table { min-width: 0; display: block; }
-  .lots-table thead, .lots-table tbody { display: block; }
-  .lots-table thead tr { display: flex; flex-wrap: wrap; gap: var(--s-4); padding-bottom: var(--s-12); border-bottom: 1px solid var(--line); }
-  .lots-table thead th { display: block; height: auto; padding: 0; border: 0; }
-  .lots-table thead th.c-tx { display: none; }
-  .lots-table .sort-btn { margin: 0; padding: 0 var(--s-12); border-radius: 999px; box-shadow: inset 0 0 0 1px var(--line-strong); font-size: var(--fs-13); }
-  .lots-table .sort-btn.is-on { box-shadow: inset 0 0 0 1px var(--ink-2); }
-  th.r .sort-btn { flex-direction: row; }
-  .lots-table tbody tr { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-8) var(--s-16); padding: var(--s-12) 0 var(--s-16); border-bottom: 1px solid var(--line); }
+  .lots-table thead { display: none; }
+  .lots-table tbody { display: block; }
+  .lots-table tbody tr {
+    display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-8) var(--s-16); padding: var(--s-8) 0 var(--s-16); border-bottom: 1px solid var(--line);
+    grid-template-areas: "wallet wallet" "amount status" "req unl" "left tx";
+  }
   .lots-table tbody tr:hover td { background: transparent; }
-  .lots-table td { display: block; height: auto; padding: 0; border: 0; width: auto; text-align: left; min-width: 0; }
+  .lots-table td { display: block; height: auto; padding: 0; border: 0; width: auto; min-width: 0; }
+  .lots-table td.r { text-align: left; }
   .lots-table td::before { content: attr(data-label); display: block; font-size: var(--fs-12); color: var(--ink-2); margin-bottom: 2px; }
-  .lots-table td.c-wallet { grid-column: 1 / -1; }
-  .lots-table td.c-wallet::before, .lots-table td.c-tx::before, .lots-table td.c-status::before { display: none; }
-  .lots-table td.c-amount .amt { font-size: var(--fs-16); }
-  .lots-table td.c-status { align-self: center; justify-self: end; }
-  .lots-table td.c-tx { text-align: right; align-self: end; justify-self: end; width: auto; }
-  .lots-table td.c-tx .icon-btn { margin-right: -10px; }
-  .lots-table td.c-left { align-self: center; }
+  .lots-table td.c-wallet { grid-area: wallet; }
+  .lots-table td.c-amount { grid-area: amount; }
+  .lots-table td.c-requested { grid-area: req; }
+  .lots-table td.c-unlocks { grid-area: unl; }
+  .lots-table td.c-left { grid-area: left; }
+  .lots-table td.c-status { grid-area: status; align-self: end; justify-self: start; }
+  .lots-table td.c-tx { grid-area: tx; align-self: end; justify-self: start; width: auto; text-align: left; }
+  .lots-table td.c-tx::before { display: none; }
+  .lots-table td.c-tx .icon-btn { margin-left: -12px; }
+  .lots-table td.c-wallet::before { display: none; }
+  .lots-table td.c-amount .amt { font-size: var(--fs-16); font-weight: var(--fw-semi); }
   .lots-table tr.empty { display: block; }
   .lots-table tr.empty td::before { display: none; }
   .pg-nums { display: none; }
@@ -185,7 +199,7 @@ th.r .sort-btn { flex-direction: row-reverse; }
 .share-bar { display: block; width: 88px; height: 8px; border-radius: 4px; background: var(--inset); overflow: hidden; }
 .share-bar > span { display: block; height: 100%; border-radius: 4px; background: var(--sky); min-width: 2px; }
 @media (max-width: 599px) {
-  .top-table .share-bar { display: none; }
+  .top-table .share-bar, .top-table .c-lots { display: none; }
   .top-table th, .top-table td { padding-left: var(--s-8); padding-right: var(--s-8); }
 }
 

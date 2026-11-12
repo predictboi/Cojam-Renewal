@@ -287,13 +287,22 @@
         "<span>" + t(c.label) + "</span>" + SORT_ICO + "</button></th>";
     }).join("");
   }
+  var SORT_OPTS = ["requested.desc", "requested.asc", "amount.desc", "amount.asc", "unlocks.asc", "unlocks.desc", "left.asc", "status.asc", "status.desc", "wallet.asc"];
+  function renderSortSelect() {
+    var cur = S.key + "." + S.dir, sel = $("lots-sort");
+    var opts = SORT_OPTS.indexOf(cur) < 0 ? SORT_OPTS.concat([cur]) : SORT_OPTS;
+    sel.innerHTML = opts.map(function (o) {
+      var label = SORT_OPTS.indexOf(o) > -1 ? t("sort." + o) : t("sort.by", { col: t(COLS.filter(function (c) { return c.k === S.key; })[0].label) });
+      return '<option value="' + o + '"' + (o === cur ? " selected" : "") + ">" + esc(label) + "</option>";
+    }).join("");
+  }
   function cell(col, html, cls) { return '<td class="' + (cls || "") + '" data-label="' + esc(t(col)) + '">' + html + "</td>"; }
   function renderTable() {
     var rows = filtered(), total = rows.length, pages = Math.max(1, Math.ceil(total / PER_PAGE));
     if (S.page > pages) S.page = pages;
     var from = (S.page - 1) * PER_PAGE, slice = rows.slice(from, from + PER_PAGE), sum = 0;
     rows.forEach(function (l) { sum += l.amount; });
-    renderHead();
+    renderHead(); renderSortSelect();
     ["f-status", "f-amt", "f-range"].forEach(function (id) {
       var cur = String(id === "f-status" ? S.status : id === "f-amt" ? S.amt : S.range);
       document.querySelectorAll("#" + id + " .seg-btn").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.v === cur)); });
@@ -350,12 +359,12 @@
     $("top-sub").textContent = t("top.sub", { pct: F.pct(topSum / sw, 1) });
     var maxShare = list.length ? list[0].total / sw : 1;
     $("top-table").innerHTML = '<thead><tr><th scope="col" class="r c-rank">' + t("top.col.rank") + '</th><th scope="col">' + t("top.col.wallet") + '</th><th scope="col" class="r">' + t("top.col.amount") +
-      '</th><th scope="col" class="c-share">' + t("top.col.share") + '</th><th scope="col" class="r">' + t("top.col.lots") + "</th></tr></thead><tbody>" +
+      '</th><th scope="col" class="c-share">' + t("top.col.share") + '</th><th scope="col" class="r c-lots">' + t("top.col.lots") + "</th></tr></thead><tbody>" +
       list.map(function (w, i) {
         var share = w.total / sw;
         return '<tr><td class="r num muted c-rank">' + (i + 1) + "</td><td>" + walletBtn(w.addr) + '</td><td class="r num">' + amt0(w.total) + "</td>" +
           '<td class="c-share"><span class="share"><span class="share-bar" aria-hidden="true"><span style="width:' + (share / maxShare * 100).toFixed(1) + '%"></span></span><span class="num">' + F.pct(share, 1) + "</span></span></td>" +
-          '<td class="r num">' + w.lots.length + "</td></tr>";
+          '<td class="r num c-lots">' + w.lots.length + "</td></tr>";
       }).join("") + "</tbody>";
   }
 
@@ -481,6 +490,7 @@
   var qTimer;
   $("lots-q").addEventListener("input", function () { clearTimeout(qTimer); var v = this.value; qTimer = setTimeout(function () { S.q = v; S.page = 1; renderTable(); }, 120); });
   $("lots-export").addEventListener("click", exportCsv);
+  $("lots-sort").addEventListener("change", function () { var p = this.value.split("."); S.key = p[0]; S.dir = p[1]; S.page = 1; renderTable(); });
   $("big-input").addEventListener("change", function () { setThreshold(this.value); });
   $("big-input").addEventListener("keydown", function (e) { if (e.key === "Enter") setThreshold(this.value); });
   $("big-input").addEventListener("blur", function () { if (!this.getAttribute("aria-invalid")) this.value = amt0(threshold); });
