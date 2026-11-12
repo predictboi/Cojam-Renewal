@@ -1,4 +1,12 @@
 /* Cojam design tokens. Every colour, font, size and radius used on the site lives here. */
+
+/* Latin fallback while Pretendard loads: Arial (or Helvetica, or the metric twin Liberation Sans) scaled to Pretendard's
+   widths, so text keeps its line breaks when the web font arrives and a slow network does not shift the page.
+   Measured against Pretendard Variable: regular 101%, medium 102.7%, semibold and up 98.7%. Hangul and kana have no glyph
+   here and fall through to the next font in the stack. */
+@font-face { font-family: "Pretendard Fallback"; src: local("Arial"), local("ArialMT"), local("Helvetica"), local("Liberation Sans"); font-weight: 100 449; size-adjust: 101%; }
+@font-face { font-family: "Pretendard Fallback"; src: local("Arial"), local("ArialMT"), local("Helvetica"), local("Liberation Sans"); font-weight: 450 549; size-adjust: 102.7%; }
+@font-face { font-family: "Pretendard Fallback"; src: local("Arial Bold"), local("Arial-BoldMT"), local("Helvetica Bold"), local("Liberation Sans Bold"); font-weight: 550 900; size-adjust: 98.7%; }
 :root {
   /* brand */
   --brand: #124CC4;          /* primary action and current selection only (white text 7.35:1) */
@@ -35,8 +43,8 @@
   --night-warn: #F5B556;     /* amber on the night ground: warnings only */
 
   /* type */
-  --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
-  --font-ja: "Pretendard JP Variable", "Pretendard JP", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font: "Pretendard Variable", Pretendard, "Pretendard Fallback", -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-ja: "Pretendard JP Variable", "Pretendard JP", "Pretendard Fallback", "Hiragino Sans", "Noto Sans JP", sans-serif;
   --font-data: ui-monospace, "SF Mono", Menlo, Consolas, monospace; /* addresses and tx hashes only */
   --fs-12: 12px; --fs-13: 13px; --fs-14: 14px; --fs-16: 16px; --fs-20: 20px; --fs-24: 24px; --fs-32: 32px;
   --fs-display: clamp(36px, 5.2vw, 56px);

@@ -17,7 +17,6 @@ CJ.dict({
 
     "docs.before.site": "<strong>Check the site.</strong> The official web address is announced at launch. Type it yourself or use a bookmark, and check the address bar before you connect a wallet.",
     "docs.before.wallet": "<strong>Use a wallet that works on Kaia.</strong> Kaia Wallet, MetaMask with the Kaia network added (chain ID 8217), or any wallet that connects through WalletConnect.",
-    "docs.before.gas": "<strong>Use Kaia Wallet to swap for free.</strong> With Kaia Wallet, Cojam pays the network fee for approving, swapping and claiming. With MetaMask, keep a little KAIA in the same wallet for each transaction.",
 
     "docs.step1.t": "Connect",
     "docs.step1.b": "Open the Swap page, choose Connect wallet and pick your wallet. If it is on another network, the page offers one button to switch to Kaia.",
@@ -76,7 +75,22 @@ CJ.dict({
     "docs.c.audit": "Audit in progress",
     "docs.c.audit_b": "The report will be linked here when it is published.",
 
-    "docs.contact.b": "Official support channels are to be announced. Until then, treat any account that offers help in a DM as a scam.",
+    "docs.contact.b": "<strong>The support channel opens at launch.</strong> Until then, never trust DMs: anyone who offers help in a DM is not Cojam. The answers on this page and the safety rules cover what you need today.",
+    "docs.contact.safety": "Read the safety rules",
+    "docs.s.wallets": "Which wallet should I use?",
+    "docs.w.lede": "The connect sheet offers three ways in. The swap is the same in each; only the network fee differs.",
+    "docs.w.kaia.t": "Kaia Wallet",
+    "docs.w.kaia.tag": "Free, recommended",
+    "docs.w.kaia.b": "Cojam pays the network fee for approving, swapping and claiming, so you need no KAIA. On a phone, choose Open in Kaia Wallet.",
+    "docs.w.mm.t": "MetaMask",
+    "docs.w.mm.tag": "Small KAIA fee",
+    "docs.w.mm.b": "You pay a small network fee in KAIA for each approval, swap and claim. Keep a little KAIA in the same wallet. On a phone, choose Open in MetaMask.",
+    "docs.w.wc.t": "WalletConnect",
+    "docs.w.wc.tag": "Small KAIA fee for now",
+    "docs.w.wc.b": "Connects other wallet apps. For now you pay a small network fee in KAIA for each step, as with MetaMask.",
+    "docs.example": "Example",
+    "docs.sp.reserve.t": "The app says the reserve is empty",
+    "docs.sp.reserve.b": "This should not happen: the reserve holds the full new supply. If it does, new swaps pause and nothing leaves your wallet, so your old CT stays where it is. Do not send CT to anyone who offers to swap it for you. Check the Status page and try again later.",
     "docs.cta": "Go to Swap"
   },
   ko: {
@@ -96,7 +110,6 @@ CJ.dict({
 
     "docs.before.site": "<strong>사이트를 확인하세요.</strong> 공식 웹 주소는 출시 시 공지합니다. 직접 입력하거나 즐겨찾기를 이용하고, 지갑을 연결하기 전에 주소창을 확인하세요.",
     "docs.before.wallet": "<strong>Kaia에서 작동하는 지갑을 사용하세요.</strong> Kaia Wallet, Kaia 네트워크(체인 ID 8217)를 추가한 MetaMask, 또는 WalletConnect로 연결되는 지갑을 사용할 수 있습니다.",
-    "docs.before.gas": "<strong>Kaia Wallet으로 무료로 교환하세요.</strong> Kaia Wallet을 쓰면 승인, 교환, 수령의 네트워크 수수료를 Cojam이 부담합니다. MetaMask를 쓴다면 트랜잭션마다 쓸 KAIA를 같은 지갑에 조금 남겨 두세요.",
 
     "docs.step1.t": "연결",
     "docs.step1.b": "교환 페이지를 열고 지갑 연결을 눌러 지갑을 선택하세요. 지갑이 다른 네트워크에 있으면 Kaia로 전환하는 버튼이 표시됩니다.",
@@ -155,7 +168,22 @@ CJ.dict({
     "docs.c.audit": "보안 감사 진행 중",
     "docs.c.audit_b": "보고서가 공개되면 여기에 링크합니다.",
 
-    "docs.contact.b": "공식 고객 지원 채널은 추후 공지합니다. 그전까지 DM으로 도움을 제안하는 계정은 모두 사기로 간주하세요.",
+    "docs.contact.b": "<strong>고객 지원 채널은 출시와 함께 엽니다.</strong> 그전까지는 DM을 절대 믿지 마세요. DM으로 도움을 제안하는 사람은 Cojam이 아닙니다. 지금 필요한 내용은 이 페이지의 안내와 안전 수칙에서 확인할 수 있습니다.",
+    "docs.contact.safety": "안전 수칙 보기",
+    "docs.s.wallets": "어떤 지갑을 써야 하나요?",
+    "docs.w.lede": "지갑 연결 화면에는 세 가지 방법이 있습니다. 교환 방식은 모두 같고, 네트워크 수수료만 다릅니다.",
+    "docs.w.kaia.t": "Kaia Wallet",
+    "docs.w.kaia.tag": "무료, 추천",
+    "docs.w.kaia.b": "승인, 교환, 수령의 네트워크 수수료를 Cojam이 부담하므로 KAIA가 필요 없습니다. 휴대폰에서는 Kaia Wallet에서 열기를 고르세요.",
+    "docs.w.mm.t": "MetaMask",
+    "docs.w.mm.tag": "소액의 KAIA 수수료",
+    "docs.w.mm.b": "승인, 교환, 수령마다 소액의 네트워크 수수료를 KAIA로 냅니다. 같은 지갑에 KAIA를 조금 남겨 두세요. 휴대폰에서는 MetaMask에서 열기를 고르세요.",
+    "docs.w.wc.t": "WalletConnect",
+    "docs.w.wc.tag": "현재 소액의 KAIA 수수료",
+    "docs.w.wc.b": "다른 지갑 앱을 연결합니다. 현재로서는 MetaMask와 마찬가지로 단계마다 소액의 네트워크 수수료를 KAIA로 냅니다.",
+    "docs.example": "예시",
+    "docs.sp.reserve.t": "준비금이 비어 있다는 안내가 나올 때",
+    "docs.sp.reserve.b": "준비금에는 신규 공급량 전체가 들어 있으므로 이런 일은 없어야 합니다. 만약 그렇다면 새로운 교환이 일시 중단되며 지갑에서는 아무것도 빠져나가지 않으므로, 기존 CT는 그대로 남아 있습니다. 대신 교환해 주겠다는 사람에게 CT를 보내지 마세요. 현황 페이지를 확인하고 나중에 다시 시도하세요.",
     "docs.cta": "교환 페이지로 이동"
   },
   ja: {
@@ -175,7 +203,6 @@ CJ.dict({
 
     "docs.before.site": "<strong>サイトを確認してください。</strong>公式URLはローンチ時にお知らせします。自分で入力するかブックマークを使い、ウォレットを接続する前にアドレスバーを確認してください。",
     "docs.before.wallet": "<strong>Kaiaに対応したウォレットを使ってください。</strong>Kaia Wallet、Kaiaネットワーク(チェーンID 8217)を追加したMetaMask、またはWalletConnectで接続できるウォレットが使えます。",
-    "docs.before.gas": "<strong>Kaia Walletなら無料で交換できます。</strong>Kaia Walletでは、承認、交換、受け取りのネットワーク手数料をCojamが負担します。MetaMaskの場合は、各トランザクション用に少額のKAIAを同じウォレットに用意してください。",
 
     "docs.step1.t": "接続",
     "docs.step1.b": "交換ページを開き、「ウォレットを接続」を選んでウォレットを選択します。別のネットワークに接続している場合は、Kaiaに切り替えるボタンが表示されます。",
@@ -234,7 +261,22 @@ CJ.dict({
     "docs.c.audit": "監査中",
     "docs.c.audit_b": "レポートが公開され次第、ここにリンクします。",
 
-    "docs.contact.b": "公式サポート窓口は追ってお知らせします。それまでは、DMで手助けを申し出るアカウントはすべて詐欺とみなしてください。",
+    "docs.contact.b": "<strong>サポート窓口はローンチ時に開設します。</strong>それまではDMを決して信用しないでください。DMで手助けを申し出る人はCojamではありません。現時点で必要な情報は、このページの説明と安全のための注意で確認できます。",
+    "docs.contact.safety": "安全のための注意を見る",
+    "docs.s.wallets": "どのウォレットを使えばよいですか？",
+    "docs.w.lede": "ウォレット接続の画面には3つの方法があります。交換の手順はどれも同じで、ネットワーク手数料だけが異なります。",
+    "docs.w.kaia.t": "Kaia Wallet",
+    "docs.w.kaia.tag": "無料、おすすめ",
+    "docs.w.kaia.b": "承認、交換、受け取りのネットワーク手数料をCojamが負担するため、KAIAは不要です。スマートフォンでは「Kaia Walletで開く」を選んでください。",
+    "docs.w.mm.t": "MetaMask",
+    "docs.w.mm.tag": "少額のKAIA手数料",
+    "docs.w.mm.b": "承認、交換、受け取りのたびに、少額のネットワーク手数料をKAIAで支払います。同じウォレットに少額のKAIAを用意してください。スマートフォンでは「MetaMaskで開く」を選んでください。",
+    "docs.w.wc.t": "WalletConnect",
+    "docs.w.wc.tag": "現在は少額のKAIA手数料",
+    "docs.w.wc.b": "ほかのウォレットアプリを接続します。現時点では、MetaMaskと同様に手順ごとに少額のネットワーク手数料をKAIAで支払います。",
+    "docs.example": "例",
+    "docs.sp.reserve.t": "リザーブが空と表示された場合",
+    "docs.sp.reserve.b": "リザーブには新CTの全供給量が入っているため、本来は起こりません。もし起きた場合は新たな交換が一時停止し、ウォレットからは何も出ていかないため、旧CTはそのまま残ります。代わりに交換すると申し出る人にCTを送らないでください。状況ページを確認し、時間をおいて再度お試しください。",
     "docs.cta": "交換ページへ"
   }
 });

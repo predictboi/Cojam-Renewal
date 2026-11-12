@@ -10,6 +10,26 @@
   }
   document.addEventListener("cj:lang", paint);
   paint();
+  CJ.ready();
+
+  // Row icons (fixed size boxes in the markup, so filling them moves nothing).
+  document.querySelectorAll("[data-ico]").forEach(function (el) { el.innerHTML = CJ.icon(el.getAttribute("data-ico"), 20); });
+
+  // Special cases: open on wide screens, one tap each on phones (the inline script under the list closes them before
+  // first paint). A link to a case opens it.
+  var cases = [].slice.call(document.querySelectorAll(".dc-case"));
+  var narrow = window.matchMedia("(max-width: 599px)");
+  function syncCases() {
+    cases.forEach(function (d) {
+      var sm = d.querySelector("summary");
+      if (narrow.matches) sm.removeAttribute("tabindex"); else { d.open = true; sm.setAttribute("tabindex", "-1"); }
+    });
+  }
+  cases.forEach(function (d) { d.querySelector("summary").addEventListener("click", function (e) { if (!narrow.matches) e.preventDefault(); }); });
+  syncCases();
+  if (narrow.addEventListener) narrow.addEventListener("change", syncCases);
+  function openTarget() { var d = location.hash && document.getElementById(location.hash.slice(1)); if (d && d.classList.contains("dc-case")) d.open = true; }
+  window.addEventListener("hashchange", openTarget);
 
   // Mobile jump list closes after a choice.
   var jump = document.querySelector(".dc-jump");
@@ -35,7 +55,7 @@
   window.addEventListener("hashchange", spy);
   spy();
 
-  // Fix links from the swap app open this page at an anchor (#gas, #exchange, #pool, #special, #contact). The browser
+  // Fix links from the swap app open this page at an anchor (#gas, #exchange, #pool, #special, #reserve). The browser
   // jumps before fonts, the lock track and late layout settle, so land on the target again once they have.
   var target = location.hash && document.getElementById(location.hash.slice(1));
   if (target) {

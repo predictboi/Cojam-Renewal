@@ -207,3 +207,41 @@ kbd { display: inline-flex; align-items: center; justify-content: center; min-wi
 @media (max-width: 480px) {
   .mg-sticky { margin-left: calc(var(--s-16) * -1); margin-right: calc(var(--s-16) * -1); padding-left: var(--s-16); padding-right: var(--s-16); }
 }
+
+/* Returning holder: the keeper sent a lot's 90% while they were away. One note per lot until dismissed. */
+.note-sky { background: var(--sky-tint); color: var(--ink); }
+.mg-kept { align-items: center; padding-right: var(--s-4); }
+.mg-kept svg:first-child { margin-top: 0; }
+.mg-kept-x { flex: none; width: 44px; min-height: 44px; padding: 0; color: var(--ink-2); }
+.mg-kept-x:hover { color: var(--ink); }
+
+/* ---------- reserved heights until migrate.js has painted (CJ.ready) ----------
+   The panel and the history are empty in the HTML. system.js sets html[data-wallet] at parse time from the ledger, so the
+   reservation matches the view that will appear: the disconnected explainer, or a connected step with the compact head. */
+#mg-window { min-height: 22px; }
+html:not(.cj-ready) #mg-panel { min-height: 621px; }
+html:not(.cj-ready) #mg-hist { min-height: 332px; }
+html[data-wallet="on"]:not(.cj-ready) #mg-panel { min-height: 482px; }
+@media (max-width: 767px) { html:not(.cj-ready) #mg-panel { min-height: 693px; } }
+@media (max-width: 599px) {
+  html:not(.cj-ready) #mg-panel { min-height: 760px; }
+  html[data-wallet="on"]:not(.cj-ready) #mg-panel { min-height: 509px; }
+  html:not(.cj-ready) #mg-hist { min-height: 316px; }
+  html:not(.cj-ready) #mg-window { min-height: 44px; }
+  /* the compact head a connected wallet gets, from the first paint */
+  html[data-wallet="on"]:not(.cj-ready) .mg { padding-top: var(--s-16); }
+  html[data-wallet="on"]:not(.cj-ready) .mg-head { display: flex; flex-direction: column; margin-bottom: var(--s-12); }
+  html[data-wallet="on"]:not(.cj-ready) .mg-head h1 { font-size: var(--fs-20); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  html[data-wallet="on"]:not(.cj-ready) .mg-head .mg-window { order: 1; display: flex; margin-top: 0; }
+  html[data-wallet="on"]:not(.cj-ready) .mg-head .mg-lede { display: none; }
+}
+
+/* Claim view, one lot: the lead's second sentence sits under the track on a phone (mg-narrow) and in the lead elsewhere. */
+.mg-narrow { display: none; margin: 0; }
+@media (max-width: 599px) {
+  .mg-wide { display: none; }
+  .mg-narrow { display: block; }
+  /* success and claim heads: the badge sits beside the heading, so the track starts higher */
+  .mg-vhead:has(> .mg-badge) { grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: var(--s-12); }
+  .mg-vhead:has(> .mg-badge) > .mg-back { grid-column: 1 / -1; }
+}

@@ -22,7 +22,7 @@
 
     <header class="dc-head">
       <h1 data-i18n="docs.title">Swap guide</h1>
-      <p class="dc-lede" data-i18n="docs.lede"></p>
+      <p class="dc-lede" data-i18n="docs.lede">How to swap old CT for new CT on Kaia, how 10% now and 90% after 7 days works, what it costs and how to stay safe.</p>
     </header>
 
     <details class="dc-jump">
@@ -30,6 +30,7 @@
       <nav data-i18n-attr="aria-label:docs.jump" aria-label="Jump to a section">
         <ol>
           <li><a href="#before"  data-i18n="docs.s.before">Before you start</a></li>
+          <li><a href="#wallets"  data-i18n="docs.s.wallets">Which wallet should I use?</a></li>
           <li><a href="#steps"  data-i18n="docs.s.steps">Step by step</a></li>
           <li><a href="#lock"  data-i18n="docs.s.lock">Lock rules</a></li>
           <li><a href="#special"  data-i18n="docs.s.special">Special cases</a></li>
@@ -45,6 +46,7 @@
       <p class="dc-toc-h" data-i18n="docs.toc">On this page</p>
       <ol>
           <li><a href="#before" data-toc data-i18n="docs.s.before">Before you start</a></li>
+          <li><a href="#wallets" data-toc data-i18n="docs.s.wallets">Which wallet should I use?</a></li>
           <li><a href="#steps" data-toc data-i18n="docs.s.steps">Step by step</a></li>
           <li><a href="#lock" data-toc data-i18n="docs.s.lock">Lock rules</a></li>
           <li><a href="#special" data-toc data-i18n="docs.s.special">Special cases</a></li>
@@ -61,7 +63,33 @@
         <ul class="dc-list">
           <li><span data-i18n-html="docs.before.site"><strong>Check the site.</strong> The official web address is announced at launch. Type it yourself or use a bookmark, and check the address bar before you connect a wallet.</span></li>
           <li><span data-i18n-html="docs.before.wallet"><strong>Use a wallet that works on Kaia.</strong> Kaia Wallet, MetaMask with the Kaia network added (chain ID 8217), or any wallet that connects through WalletConnect.</span></li>
-          <li><span data-i18n-html="docs.before.gas"></span></li>
+        </ul>
+      </section>
+      <section class="dc-sec" id="wallets" aria-labelledby="wallets-h">
+        <h2 class="dc-h2" id="wallets-h" data-i18n="docs.s.wallets">Which wallet should I use?</h2>
+        <p class="dc-sec-lede" data-i18n="docs.w.lede">The connect sheet offers three ways in. The swap is the same in each; only the network fee differs.</p>
+        <ul class="dc-rows dc-wallets">
+          <li class="dc-row">
+            <span class="dc-row-ico" data-ico="wallet" aria-hidden="true"></span>
+            <div class="dc-row-main">
+              <p class="dc-row-t"><span class="dc-h3" data-i18n="docs.w.kaia.t">Kaia Wallet</span> <span class="tag tag-sky" data-i18n="docs.w.kaia.tag">Free, recommended</span></p>
+              <p class="dc-row-b" data-i18n="docs.w.kaia.b">Cojam pays the network fee for approving, swapping and claiming, so you need no KAIA. On a phone, choose Open in Kaia Wallet.</p>
+            </div>
+          </li>
+          <li class="dc-row">
+            <span class="dc-row-ico" data-ico="wallet" aria-hidden="true"></span>
+            <div class="dc-row-main">
+              <p class="dc-row-t"><span class="dc-h3" data-i18n="docs.w.mm.t">MetaMask</span> <span class="tag" data-i18n="docs.w.mm.tag">Small KAIA fee</span></p>
+              <p class="dc-row-b" data-i18n="docs.w.mm.b">You pay a small network fee in KAIA for each approval, swap and claim. Keep a little KAIA in the same wallet. On a phone, choose Open in MetaMask.</p>
+            </div>
+          </li>
+          <li class="dc-row">
+            <span class="dc-row-ico" data-ico="link" aria-hidden="true"></span>
+            <div class="dc-row-main">
+              <p class="dc-row-t"><span class="dc-h3" data-i18n="docs.w.wc.t">WalletConnect</span> <span class="tag" data-i18n="docs.w.wc.tag">Small KAIA fee for now</span></p>
+              <p class="dc-row-b" data-i18n="docs.w.wc.b">Connects other wallet apps. For now you pay a small network fee in KAIA for each step, as with MetaMask.</p>
+            </div>
+          </li>
         </ul>
       </section>
       <section class="dc-sec" id="steps" aria-labelledby="steps-h">
@@ -77,15 +105,15 @@
           </li>
           <li class="dc-step">
             <h3 class="dc-h3" data-i18n="docs.step3.t">Swap</h3>
-            <p data-i18n="docs.step3.b"></p>
+            <p data-i18n="docs.step3.b">Enter an amount (your full balance is filled in) and confirm. Your old CT goes to the swap contract, and in the same transaction 10% of the new CT arrives in your wallet. The other 90% is locked for 7 days.</p>
           </li>
           <li class="dc-step">
             <h3 class="dc-h3" data-i18n="docs.step4.t">Wait 7 days</h3>
-            <p data-i18n="docs.step4.b"></p>
+            <p data-i18n="docs.step4.b">The Swap page shows the date and a countdown for the 90%. You can close the page; nothing else is needed while you wait.</p>
           </li>
           <li class="dc-step">
-            <h3 class="dc-h3" data-i18n="docs.step5.t"></h3>
-            <p data-i18n="docs.step5.b"></p>
+            <h3 class="dc-h3" data-i18n="docs.step5.t">Receive the 90%</h3>
+            <p data-i18n="docs.step5.b">After 7 days a Cojam keeper sends the 90% to your wallet automatically, shortly after the unlock, and pays the gas. You do not need to come back. If you do not want to wait, open the Swap page with the same wallet and choose Claim.</p>
           </li>
           <li class="dc-step">
             <h3 class="dc-h3" data-i18n="docs.step6.t">Add new CT to your wallet</h3>
@@ -96,60 +124,69 @@
       </section>
       <section class="dc-sec" id="lock" aria-labelledby="lock-h">
         <h2 class="dc-h2" id="lock-h" data-i18n="docs.s.lock">Lock rules</h2>
-        <figure class="panel dc-trackbox"><div id="dc-track"></div></figure>
+        <figure class="panel dc-trackbox"><span class="tag" data-i18n="docs.example">Example</span><div id="dc-track" class="track"></div></figure>
         <ul class="dc-list">
-          <li><span data-i18n="docs.lock.lot"></span></li>
-          <li><span data-i18n="docs.lock.split"></span></li>
-          <li><span data-i18n="docs.lock.time"></span></li>
-          <li><span data-i18n="docs.lock.keeper"></span></li>
-          <li><span data-i18n="docs.lock.claim"></span></li>
-          <li><span data-i18n="docs.lock.why"></span></li>
+          <li><span data-i18n="docs.lock.lot">Each swap is its own lot. 10% of it arrives at once, and the other 90% has its own 7 day lock. Swap twice and you get two lots with two unlock dates.</span></li>
+          <li><span data-i18n="docs.lock.split">The 10% is rounded down to the smallest unit of CT and the locked part is the rest, so the two always add up to exactly what you swapped.</span></li>
+          <li><span data-i18n="docs.lock.time">The lock starts when the swap is confirmed on chain and ends exactly 7 days later.</span></li>
+          <li><span data-i18n="docs.lock.keeper">After the unlock, anyone can trigger the release, but it always pays the wallet that swapped. Cojam runs a keeper that sends it shortly after the unlock and pays the gas. No one can redirect it.</span></li>
+          <li><span data-i18n="docs.lock.claim">You can also claim it yourself at any time after the unlock, for example if the keeper is late. There is no deadline.</span></li>
+          <li><span data-i18n="docs.lock.why">Why the lock: it deters swap abuse and favours real holders. Only 10% is free at once, so swapping just to sell straight away does not pay.</span></li>
           <li><span id="dc-window"></span></li>
-          <li><span data-i18n="docs.lock.reserve"></span></li>
+          <li><span data-i18n="docs.lock.reserve">New CT that is not swapped by the end of the window goes to the new Cojam treasury multisig, whose address is published at launch.</span></li>
         </ul>
       </section>
       <section class="dc-sec" id="special" aria-labelledby="special-h">
         <h2 class="dc-h2" id="special-h" data-i18n="docs.s.special">Special cases</h2>
-        <dl class="dc-cases">
-          <div class="dc-case" id="exchange">
-            <dt class="dc-h3" data-i18n="docs.sp.exchange.t">CT on an exchange</dt>
-            <dd data-i18n="docs.sp.exchange.b">The exchange handles the swap for CT it holds for you. The list of exchanges is to be announced. Follow your exchange's own notice.</dd>
-          </div>
-          <div class="dc-case" id="pool">
-            <dt class="dc-h3" data-i18n="docs.sp.pool.t">CT in a Klayswap pool</dt>
-            <dd data-i18n="docs.sp.pool.b">Remove your liquidity first so the CT is back in your wallet, then swap it.</dd>
-          </div>
-          <div class="dc-case">
-            <dt class="dc-h3" data-i18n="docs.sp.multisig.t">Smart contract wallets and multisigs</dt>
-            <dd data-i18n="docs.sp.multisig.b"></dd>
-          </div>
-          <div class="dc-case">
-            <dt class="dc-h3" data-i18n="docs.sp.lost.t">Lost access</dt>
-            <dd data-i18n="docs.sp.lost.b">If you lost the seed phrase or private key for a wallet, no one can move its CT, including Cojam. The team cannot swap on your behalf.</dd>
-          </div>
-          <div class="dc-case">
-            <dt class="dc-h3" data-i18n="docs.sp.small.t">Very small balances</dt>
-            <dd data-i18n="docs.sp.small.b"></dd>
-          </div>
-        </dl>
+        <ul class="dc-rows dc-cases">
+          <li><details class="dc-case smooth" id="exchange" open>
+            <summary class="dc-case-s"><span class="dc-row-ico" data-ico="globe" aria-hidden="true"></span><span class="dc-h3" data-i18n="docs.sp.exchange.t">CT on an exchange</span></summary>
+            <p class="dc-row-b" data-i18n="docs.sp.exchange.b">The exchange handles the swap for CT it holds for you. The list of exchanges is to be announced. Follow your exchange's own notice.</p>
+          </details></li>
+          <li><details class="dc-case smooth" id="pool" open>
+            <summary class="dc-case-s"><span class="dc-row-ico" data-ico="swap" aria-hidden="true"></span><span class="dc-h3" data-i18n="docs.sp.pool.t">CT in a Klayswap pool</span></summary>
+            <p class="dc-row-b" data-i18n="docs.sp.pool.b">Remove your liquidity first so the CT is back in your wallet, then swap it.</p>
+          </details></li>
+          <li><details class="dc-case smooth" id="multisig" open>
+            <summary class="dc-case-s"><span class="dc-row-ico" data-ico="shield" aria-hidden="true"></span><span class="dc-h3" data-i18n="docs.sp.multisig.t">Smart contract wallets and multisigs</span></summary>
+            <p class="dc-row-b" data-i18n="docs.sp.multisig.b">Any Kaia wallet that can approve and call the swap contract can swap. A multisig needs its signers for the approval and the swap. The 90% is released to the same address that swapped.</p>
+          </details></li>
+          <li><details class="dc-case smooth" id="lost" open>
+            <summary class="dc-case-s"><span class="dc-row-ico" data-ico="lock" aria-hidden="true"></span><span class="dc-h3" data-i18n="docs.sp.lost.t">Lost access</span></summary>
+            <p class="dc-row-b" data-i18n="docs.sp.lost.b">If you lost the seed phrase or private key for a wallet, no one can move its CT, including Cojam. The team cannot swap on your behalf.</p>
+          </details></li>
+          <li><details class="dc-case smooth" id="small" open>
+            <summary class="dc-case-s"><span class="dc-row-ico" data-ico="info" aria-hidden="true"></span><span class="dc-h3" data-i18n="docs.sp.small.t">Very small balances</span></summary>
+            <p class="dc-row-b" data-i18n="docs.sp.small.b">Any amount above 0 can be swapped. With MetaMask, the gas in KAIA may cost more than a very small amount of CT is worth; with Kaia Wallet the swap is free.</p>
+          </details></li>
+          <li><details class="dc-case smooth" id="reserve" open>
+            <summary class="dc-case-s"><span class="dc-row-ico" data-ico="warn" aria-hidden="true"></span><span class="dc-h3" data-i18n="docs.sp.reserve.t">The app says the reserve is empty</span></summary>
+            <p class="dc-row-b" data-i18n="docs.sp.reserve.b">This should not happen: the reserve holds the full new supply. If it does, new swaps pause and nothing leaves your wallet, so your old CT stays where it is. Do not send CT to anyone who offers to swap it for you. Check the Status page and try again later.</p>
+          </details></li>
+        </ul>
+        <script>
+          // Phones: the cases start closed so the section is about one screen tall; the case a link points at stays open.
+          (function () { if (!window.matchMedia || !matchMedia("(max-width: 599px)").matches) return; var h = location.hash.slice(1);
+            [].forEach.call(document.querySelectorAll(".dc-case"), function (d) { if (d.id !== h) d.open = false; }); })();
+        </script>
       </section>
       <section class="dc-sec" id="fees" aria-labelledby="fees-h">
         <h2 class="dc-h2" id="fees-h" data-i18n="docs.s.fees">Fees</h2>
-        <p data-i18n="docs.fees.b"></p>
+        <p data-i18n="docs.fees.b">The swap charges no fee and the rate is always 1 old CT to 1 new CT. The only cost is the Kaia network fee, and with Kaia Wallet Cojam pays it for you.</p>
         <ul class="dc-list dc-fees">
-          <li><span data-i18n-html="docs.fees.kaia"></span></li>
-          <li><span data-i18n-html="docs.fees.mm"></span></li>
-          <li><span data-i18n-html="docs.fees.payer"></span></li>
-          <li><span data-i18n-html="docs.fees.down"></span></li>
-          <li><span data-i18n-html="docs.fees.release"></span></li>
+          <li><span data-i18n-html="docs.fees.kaia"><strong>Kaia Wallet: free.</strong> Kaia supports fee delegation: you sign the transaction in your wallet, and Cojam's fee payer co-signs it and pays the fee. You need no KAIA to approve, swap or claim. Over WalletConnect, plan on a small KAIA fee for now.</span></li>
+          <li><span data-i18n-html="docs.fees.mm"><strong>MetaMask: a small fee in KAIA.</strong> MetaMask cannot sign Kaia fee delegated transactions, so you pay the network fee yourself for each approval, swap and claim. Your wallet shows the exact fee before you confirm.</span></li>
+          <li><span data-i18n-html="docs.fees.payer"><strong>What the fee payer can do.</strong> It only pays fees for approving old CT to the swap contract, swapping and claiming on the Cojam contracts, with a limit per wallet. It cannot sign for you and can never move your tokens.</span></li>
+          <li><span data-i18n-html="docs.fees.down"><strong>If the fee payer is busy.</strong> The Swap page says so and nothing is sent. Retry, or pay the fee yourself in KAIA.</span></li>
+          <li><span data-i18n-html="docs.fees.release"><strong>The automatic release is always free.</strong> The keeper pays the gas to send you the 90%, from the same Cojam gas wallet.</span></li>
         </ul>
         <div class="dc-sub" id="gas" aria-labelledby="gas-h">
           <h3 class="dc-h3" id="gas-h" data-i18n="docs.gas.t">Get KAIA for MetaMask</h3>
-          <p data-i18n="docs.gas.b"></p>
+          <p data-i18n="docs.gas.b">Only MetaMask users need KAIA. With Kaia Wallet the swap is free, so the simplest fix is to swap with Kaia Wallet instead.</p>
           <ul class="dc-list">
-            <li><span data-i18n-html="docs.gas.buy"></span></li>
-            <li><span data-i18n-html="docs.gas.net"></span></li>
-            <li><span data-i18n-html="docs.gas.much"></span></li>
+            <li><span data-i18n-html="docs.gas.buy"><strong>Buy KAIA</strong> on an exchange that lists it, then withdraw it to the same wallet address that holds your old CT.</span></li>
+            <li><span data-i18n-html="docs.gas.net"><strong>Pick the Kaia network when you withdraw.</strong> KAIA sent on another network does not arrive in your Kaia wallet.</span></li>
+            <li><span data-i18n-html="docs.gas.much"><strong>How much:</strong> Kaia fees are small, and well under 1 KAIA covers approving, swapping and claiming. Your wallet shows the exact fee before you confirm.</span></li>
           </ul>
         </div>
       </section>
@@ -178,7 +215,8 @@
       </section>
       <section class="dc-sec" id="contact" aria-labelledby="contact-h">
         <h2 class="dc-h2" id="contact-h" data-i18n="docs.s.contact">Contact</h2>
-        <p data-i18n="docs.contact.b">Official support channels are to be announced. Until then, treat any account that offers help in a DM as a scam.</p>
+        <p data-i18n-html="docs.contact.b"><strong>The support channel opens at launch.</strong> Until then, never trust DMs: anyone who offers help in a DM is not Cojam. The answers on this page and the safety rules cover what you need today.</p>
+        <p class="dc-cta"><a class="btn" href="#safety" data-i18n="docs.contact.safety">Read the safety rules</a></p>
       </section>
     </article>
 

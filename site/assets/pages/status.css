@@ -165,3 +165,45 @@
 .st-skel-list .skel { display: block; height: 20px; }
 .st-fig .skel { display: block; }
 .st-hero-num .skel { height: 0.9em; }
+
+/* Term help beside a figure label */
+.st-label .help { margin-left: 2px; vertical-align: -6px; }
+.st-label .help > summary { width: 32px; height: 32px; margin: -4px; }
+/* Phones: 5 recent cards, then the rest on request */
+.st-more { margin-top: var(--s-12); }
+.st-card:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+/* Wide screens: the error note is one line with Retry at its end */
+@media (min-width: 720px) {
+  .st-error { align-items: center; }
+  .st-error > svg { margin-top: 0; }
+  .st-error .note-body { display: flex; align-items: center; justify-content: space-between; gap: var(--s-16); }
+  .st-error .note-action { margin-top: 0; flex: none; }
+}
+
+/* ---------- reserved heights until status.js has painted (CJ.ready) ---------- */
+html:not(.cj-ready) .st-head { min-height: 68px; }
+html:not(.cj-ready) .st-hero { min-height: 380px; }
+html:not(.cj-ready) #st-figs { min-height: 380px; }
+html:not(.cj-ready) .st-daily { min-height: 417px; }
+html:not(.cj-ready) .st-unlock { min-height: 414px; }
+html:not(.cj-ready) #st-recent-body { min-height: 600px; }
+#st-error-text { display: inline-block; min-height: 1.5em; }
+@media (min-width: 1024px) and (max-width: 1279px) { html:not(.cj-ready) .st-hero, html:not(.cj-ready) #st-figs { min-height: 399px; } }
+@media (max-width: 1023px) {
+  html:not(.cj-ready) .st-head { min-height: 128px; }
+  html:not(.cj-ready) .st-hero { min-height: 330px; }
+  html:not(.cj-ready) #st-figs { min-height: 396px; }
+  html:not(.cj-ready) .st-unlock { min-height: 722px; }
+}
+@media (max-width: 719px) { html:not(.cj-ready) #st-figs { min-height: 422px; } html:not(.cj-ready) .st-daily { min-height: 377px; } html:not(.cj-ready) #st-recent-body { min-height: 546px; } }
+@media (max-width: 599px) { html:not(.cj-ready) #st-recent-body { min-height: 801px; } }
+@media (max-width: 599px) {
+  html:not(.cj-ready) .st-head { min-height: 154px; }
+  html:not(.cj-ready) .st-hero { min-height: 358px; }
+  html:not(.cj-ready) #st-figs { min-height: 575px; }
+  html:not(.cj-ready) .st-daily { min-height: 400px; }
+  html:not(.cj-ready) .st-unlock { min-height: 810px; }
+}
+@media (max-width: 374px) { html:not(.cj-ready) .st-hero { min-height: 390px; } html:not(.cj-ready) #st-figs { min-height: 594px; } }
+#st-error-icon, #st-sample-icon { display: inline-block; flex: none; width: 18px; height: 18px; margin-top: 3px; }
+#st-retry-icon { display: inline-block; flex: none; width: 16px; height: 16px; }

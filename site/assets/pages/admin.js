@@ -111,6 +111,13 @@
       kpi(t("gas.today"), amt0(g.txToday), t("unit.tx"), t("gas.spent", { kaia: F.amount(g.kaiaToday, 3) })) +
       kpi(t("gas.total"), amt0(g.tx), t("unit.tx"), t("gas.spent", { kaia: F.amount(g.kaia, 3) }));
     $("gas-note").textContent = t("gas.note", { n: pl("n.release", g.releasesToday) });
+    // The fee payer's limits come from configuration (CJ.config.sponsor mirrors the server defaults), never from sample data.
+    var L = C.sponsor, lim = function (k, v) { return "<div><dt>" + t(k) + '</dt><dd class="num">' + v + "</dd></div>"; };
+    $("gas-limits").innerHTML =
+      lim("gas.lim.wallet", t("gas.lim.wallet_v", { n: amt0(L.walletTxPerDay) })) +
+      lim("gas.lim.budget", t("gas.lim.kaia_v", { n: amt0(L.dailyBudgetKaia) })) +
+      lim("gas.lim.floor", t("gas.lim.kaia_v", { n: amt0(L.balanceFloorKaia) })) +
+      lim("gas.lim.min", t("gas.lim.min_v", { n: amt0(L.minOldCt) }));
     paintNotesToggles();
   }
 
@@ -130,6 +137,20 @@
       b.setAttribute("aria-expanded", String(on)); grid.classList.toggle("show-notes", on); paintNotesToggles();
     });
     grid.parentNode.insertBefore(b, grid.nextSibling);
+  });
+
+  // Phones: "Top wallets" and "Large swap watch" sit under the long request list, so each opens on request.
+  // Wide screens hide the toggle and always show the body (admin.css).
+  document.querySelectorAll(".adm-coll-btn").forEach(function (b) {
+    b.insertAdjacentHTML("beforeend", I("chevron", 16));
+    b.addEventListener("click", function () {
+      var on = b.getAttribute("aria-expanded") !== "true";
+      b.setAttribute("aria-expanded", String(on)); b.closest(".adm-coll").classList.toggle("is-open", on);
+      b.firstChild.textContent = t(on ? b.dataset.hide : b.dataset.show);
+    });
+  });
+  document.addEventListener("cj:lang", function () {
+    document.querySelectorAll(".adm-coll-btn").forEach(function (b) { b.firstChild.textContent = t(b.getAttribute("aria-expanded") === "true" ? b.dataset.hide : b.dataset.show); });
   });
 
   // ---------- bar chart (inline SVG, one series, keyboard and pointer readout) ----------
@@ -537,5 +558,6 @@
 
   derive();
   renderAll();
+  CJ.ready();
   setInterval(paintStamp, 1000);
 })();

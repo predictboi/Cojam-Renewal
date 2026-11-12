@@ -313,3 +313,50 @@ html:has(.sheet[open]) { overflow: hidden; }
 .sheet-lot-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4) var(--s-12); margin-top: var(--s-8); }
 .sheet-txs { display: inline-flex; gap: var(--s-8); }
 .sheet-tx { display: inline-flex; align-items: center; color: var(--ink-2); }
+
+/* ---------- gas wallet: fee limits (configuration, CJ.config.sponsor) ---------- */
+.adm-limits { padding: var(--s-12) var(--s-16); border-bottom: 1px solid var(--line); display: grid; gap: var(--s-8); }
+.adm-limits-h { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4) var(--s-8); }
+.adm-limits-t { font-size: var(--fs-14); font-weight: var(--fw-semi); }
+.adm-limits-list { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-8) var(--s-16); min-height: 92px; }
+.adm-limits-list > div { min-width: 0; }
+.adm-limits-list dt { font-size: var(--fs-13); color: var(--ink-2); }
+.adm-limits-list dd { margin: 0; font-size: var(--fs-14); font-weight: var(--fw-medium); }
+@media (min-width: 900px) {
+  .adm-limits { padding: var(--s-16) var(--s-24); }
+  .adm-limits-list { grid-template-columns: repeat(4, minmax(0, 1fr)); min-height: 42px; }
+}
+
+/* ---------- phones: top wallets and large swap watch open on request ---------- */
+.adm-coll-btn { display: none; }
+@media (max-width: 599px) {
+  .adm-coll-btn {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--s-8); width: 100%; min-height: 44px; margin-top: var(--s-12); padding: 0 var(--s-12);
+    border: 1px solid var(--line); border-radius: var(--r-control); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--fs-14); font-weight: var(--fw-medium); cursor: pointer;
+  }
+  .adm-coll-btn svg { flex: none; color: var(--ink-2); transform: rotate(90deg); transition: transform var(--dur) var(--ease); }
+  .adm-coll-btn[aria-expanded="true"] svg { transform: rotate(-90deg); }
+  .adm-coll:not(.is-open) .adm-coll-body { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .adm-coll-btn svg { transition: none; } }
+
+/* ---------- reserved heights until admin.js has painted (CJ.ready) ---------- */
+html:not(.cj-ready) #kpi-grid { min-height: 294px; }
+html:not(.cj-ready) #gas-grid { min-height: 138px; }
+html:not(.cj-ready) .adm-charts { min-height: 515px; }
+@media (max-width: 1279px) { html:not(.cj-ready) #kpi-grid { min-height: 304px; } }
+@media (max-width: 1039px) { html:not(.cj-ready) .adm-charts { min-height: 909px; } }
+@media (max-width: 899px) { html:not(.cj-ready) #kpi-grid { min-height: 462px; } html:not(.cj-ready) #gas-grid { min-height: 212px; } html:not(.cj-ready) .adm-charts { min-height: 950px; } }
+@media (max-width: 767px) { html:not(.cj-ready) #kpi-grid { min-height: 499px; } html:not(.cj-ready) .adm-charts { min-height: 973px; } }
+@media (max-width: 599px) { html:not(.cj-ready) #kpi-grid { min-height: 254px; } html:not(.cj-ready) #gas-grid { min-height: 126px; } html:not(.cj-ready) .adm-charts { min-height: 1088px; } }
+@media (max-width: 374px) { html:not(.cj-ready) #kpi-grid { min-height: 271px; } }
+/* icon placeholders hold the size of the icon that replaces them */
+#adm-note-ico, #adm-refresh-ico, #lots-export-ico, #lots-search-ico { display: inline-block; flex: none; width: 18px; height: 18px; }
+#adm-note-ico { margin-top: 3px; }
+html:not(.cj-ready) #gas-note { min-height: 46px; }
+@media (max-width: 1023px) { html:not(.cj-ready) #gas-note { min-height: 69px; } }
+@media (max-width: 599px) {
+  html:not(.cj-ready) #gas-note { min-height: 91px; }
+  /* the "Show notes" toggle admin.js adds under each tile grid */
+  html:not(.cj-ready) #kpi-grid, html:not(.cj-ready) #gas-grid { margin-bottom: 44px; }
+}

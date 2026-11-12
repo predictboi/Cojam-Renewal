@@ -32,7 +32,7 @@
       </div>
     </header>
 
-    <div class="note adm-note" role="note"><span id="adm-note-ico"></span><div class="note-body" data-i18n="head.note"></div></div>
+    <div class="note adm-note" role="note"><span id="adm-note-ico"></span><div class="note-body" data-i18n="head.note">Sample data. At launch this page reads Migrated and Claimed events from the swap contract on Kaia; the caller of each Claimed event shows whether the keeper or the holder released the lot. Read only: no one can move user funds from here.</div></div>
     <p class="sr-only" id="adm-status" role="status" aria-live="polite"></p>
 
     <section class="panel adm-kpis" aria-labelledby="kpi-h">
@@ -46,6 +46,11 @@
         <p class="muted small" data-i18n="gas.sub">Cojam's fee payer. It pays the network fee for fee delegated approve, swap and claim transactions, and for every keeper release.</p>
       </div>
       <dl class="kpi-grid" id="gas-grid"></dl>
+      <div class="adm-limits">
+        <p class="adm-limits-h"><span class="adm-limits-t" data-i18n="gas.limits">Fee limits</span> <span class="tag" data-i18n="gas.limits_tag">Server limits (configurable)</span></p>
+        <dl class="adm-limits-list" id="gas-limits"></dl>
+        <p class="muted small" data-i18n="gas.limits_sub">A wallet over its limit, or a day over budget, sees the swap app's fee payer error and can pay the fee in KAIA itself.</p>
+      </div>
       <p class="adm-gas-note small" id="gas-note"></p>
     </section>
 
@@ -54,7 +59,7 @@
         <div class="adm-panel-head">
           <div>
             <h2 id="unl-h" data-i18n="unl.title">Unlock schedule</h2>
-            <p class="muted small" data-i18n="unl.sub"></p>
+            <p class="muted small" data-i18n="unl.sub">The locked 90% unlocking per day, today and the next 7 days (UTC days). The keeper sends each lot shortly after it unlocks.</p>
           </div>
         </div>
         <p class="adm-soon" id="unl-soon"></p>
@@ -146,30 +151,34 @@
     </section>
 
     <div class="adm-pair">
-      <section class="panel" aria-labelledby="top-h">
+      <section class="panel adm-coll" aria-labelledby="top-h">
         <div class="adm-panel-head">
           <div>
             <h2 id="top-h" data-i18n="top.title">Top wallets by amount swapped</h2>
             <p class="muted small" id="top-sub"></p>
           </div>
         </div>
-        <div class="adm-tv-wrap"><table class="table top-table" id="top-table"></table></div>
+        <button type="button" class="adm-coll-btn" aria-expanded="false" aria-controls="top-body" data-show="top.show" data-hide="top.hide"><span data-i18n="top.show">Show the top 10 wallets</span></button>
+        <div class="adm-coll-body" id="top-body"><div class="adm-tv-wrap"><table class="table top-table" id="top-table"></table></div></div>
       </section>
 
-      <section class="panel" aria-labelledby="big-h">
+      <section class="panel adm-coll" aria-labelledby="big-h">
         <div class="adm-panel-head">
           <div>
             <h2 id="big-h" data-i18n="big.title">Large swap watch</h2>
             <p class="muted small" data-i18n="big.sub">Requests at or above the threshold, newest first. The threshold is saved in this browser.</p>
           </div>
         </div>
+        <p class="adm-big-sum small" id="big-sum"></p>
+        <button type="button" class="adm-coll-btn" aria-expanded="false" aria-controls="big-body" data-show="big.show" data-hide="big.hide"><span data-i18n="big.show">Show the threshold and requests</span></button>
+        <div class="adm-coll-body" id="big-body">
         <div class="big-th">
           <label class="big-th-label small" for="big-input" data-i18n="big.threshold">Threshold</label>
           <span class="big-th-box"><input id="big-input" inputmode="decimal" autocomplete="off"><span class="field-unit" data-i18n="unit.ct">CT</span></span>
           <span class="small muted" id="big-msg"></span>
         </div>
-        <p class="adm-big-sum small" id="big-sum"></p>
         <ul class="big-list" id="big-list"></ul>
+        </div>
       </section>
     </div>
 

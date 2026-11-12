@@ -101,6 +101,10 @@
   }
 
   // ---------- figures and the supply split ----------
+  // Term help: the same shared popover as the swap app, so "keeper", "being sent" and "reserve" are explained where they appear.
+  function help(key) {
+    return '<details class="help"><summary aria-label="' + esc(t("status.help.label")) + '">' + I("help", 18) + '</summary><div class="help-pop">' + t(key) + "</div></details>";
+  }
   function fig(label, value, unit, sub, count, key) {
     var c = count != null ? ' data-count="' + count + '" data-count-key="st-' + key + '"' : "";
     return '<div class="st-fig"><dt class="st-label">' + label + "</dt>" +
@@ -115,11 +119,11 @@
     $("st-fees").textContent = t("status.fees", { kaia: F.amount(m.gas.kaia, 2), n: whole(m.gas.tx) });
     var left = daysLeft(m.now), closed = CJ.windowState() === "closed";
     $("st-figs").innerHTML =
-      fig(t("status.fig.instant"), whole(m.instant), ct, t("status.fig.instant_sub"), m.instant, "instant") +
-      fig(t("status.fig.locked"), whole(m.locked), ct, m.sending ? t("status.fig.locked_sub_sending", { n: whole(m.sending) }) : t("status.fig.locked_sub"), m.locked, "locked") +
-      fig(t("status.fig.released"), whole(m.released), ct, t("status.fig.released_sub"), m.released, "released") +
+      fig(t("status.fig.instant") + help("status.help.instant"), whole(m.instant), ct, t("status.fig.instant_sub"), m.instant, "instant") +
+      fig(t("status.fig.locked") + help("status.help.locked"), whole(m.locked), ct, m.sending ? t("status.fig.locked_sub_sending", { n: whole(m.sending) }) : t("status.fig.locked_sub"), m.locked, "locked") +
+      fig(t("status.fig.released") + help("status.help.released"), whole(m.released), ct, t("status.fig.released_sub"), m.released, "released") +
       fig(t("status.fig.holders"), t("status.fig.holders_value", { n: whole(m.holders) }), "", t("status.fig.holders_sub", { pct: F.pct(m.holders / m.oldHolders, 1), n: whole(m.oldHolders) })) +
-      fig(t("status.fig.reserve"), whole(m.reserve), ct, t("status.fig.reserve_sub"), m.reserve, "reserve") +
+      fig(t("status.fig.reserve") + help("status.help.reserve"), whole(m.reserve), ct, t("status.fig.reserve_sub"), m.reserve, "reserve") +
       (closed
         ? fig(t("status.fig.time"), t("status.fig.time_closed"), "", t("status.fig.time_closed_sub", { date: F.date(C.windowEnd) }))
         : fig(t("status.fig.time"), t(left === 1 ? "status.fig.time_value_one" : "status.fig.time_value", { n: whole(left) }), "", t("status.fig.time_sub", { date: F.date(C.windowEnd) })));
@@ -280,7 +284,7 @@
       esc(t("status.tx.aria", { hash: F.addr(r.tx) })) + '"><span class="st-hash">' + F.addr(r.tx) + "</span>" + I("ext", 16) + "</a>";
   }
   // One vocabulary and one tag style per status, the same as the swap app and the admin monitor.
-  function statusTag(r) {
+  function statusTag(r, when) {
     var l = r.lot, s = l.status;
     var tag = s === "locked" ? '<span class="tag tag-locked">' + I("lock", 14) + t("status.tag.locked") + "</span>"
       : s === "releasing" ? '<span class="tag tag-sending">' + I("unlock", 14) + t("status.tag.sending") + "</span>"
@@ -288,13 +292,18 @@
     var note = s === "locked" ? t("status.st.later", { date: shortDate(l.unlockAt) })
       : s === "releasing" ? t("status.st.lock_ended")
       : t(l.releasedBy === "holder" ? "status.st.by_holder" : "status.st.by_keeper");
+    if (when) note = t("status.st.when", { note: note, time: when });
     return tag + ' <span class="st-later small muted">' + note + "</span>";
   }
   function unitFor(r) { return r.type === "release" ? t("unit.new") : t("unit.old"); }
   function timeEl(r) { return '<time datetime="' + new Date(r.at).toISOString() + '" title="' + esc(F.dateTime(r.at)) + '">' + F.rel(r.at) + "</time>"; }
-  var recentKey = "";
+  var recentKey = "", allCards = false, PHONE_CARDS = 5;
+  var phone = window.matchMedia("(max-width: 719px)");
   function paintRecent(soft) {
-    var rows = M.events, body = $("st-recent-body"), key = view + CJ.lang() + rows.map(function (r) { return r.tx + r.lot.status; }).join("");
+    var rows = M.events, body = $("st-recent-body");
+    // Phones: the 5 newest cards, and a button for the rest.
+    var cut = view === "cards" && phone.matches && !allCards && rows.length > PHONE_CARDS;
+    var key = view + CJ.lang() + cut + rows.map(function (r) { return r.tx + r.lot.status; }).join("");
     document.querySelectorAll(".st-view .seg-btn").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.view === view)); });
     // a refresh with the same rows only updates the relative times, so focus and scroll stay put
     if (soft && key === recentKey) {
@@ -319,15 +328,24 @@
             '<td class="r">' + txLink(r) + "</td></tr>";
         }).join("") + "</tbody></table></div></div>";
     } else {
-      body.innerHTML = '<ul class="st-cards">' + rows.map(function (r) {
-        return '<li class="panel st-card">' +
+      var shown = cut ? rows.slice(0, PHONE_CARDS) : rows;
+      body.innerHTML = '<ul class="st-cards">' + shown.map(function (r, i) {
+        var rel = r.type === "release";
+        return '<li class="panel st-card"' + (i === PHONE_CARDS ? ' tabindex="-1" id="st-card-more"' : "") + ">" +
           '<p class="st-card-amt"><span class="num">' + amtR(r.amount) + '</span> <span class="st-unit">' + unitFor(r) + "</span></p>" +
-          '<p class="small muted">' + t("status.act." + r.type) + " " + timeEl(r) + "</p>" +
-          '<div class="st-card-row">' + statusTag(r) + "</div>" +
+          (rel ? "" : '<p class="small muted">' + t("status.act." + r.type) + " " + timeEl(r) + "</p>") +
+          '<div class="st-card-row">' + statusTag(r, rel ? timeEl(r) : null) + "</div>" +
           '<div class="st-card-foot"><span class="st-hash small">' + F.addr(r.lot.wallet) + "</span>" + txLink(r) + "</div></li>";
-      }).join("") + "</ul>";
+      }).join("") + "</ul>" +
+        (cut ? '<button type="button" class="btn btn-block st-more" id="st-more">' + t("status.recent.more", { n: rows.length }) + "</button>" : "");
     }
   }
+  $("st-recent-body").addEventListener("click", function (e) {
+    if (!e.target.closest("#st-more")) return;
+    allCards = true; paintRecent();
+    var c = $("st-card-more"); if (c) c.focus();
+  });
+  if (phone.addEventListener) phone.addEventListener("change", function () { if (M && mode !== "loading") paintRecent(); });
   document.querySelectorAll(".st-view .seg-btn").forEach(function (b) {
     b.addEventListener("click", function () {
       view = b.dataset.view;
@@ -355,6 +373,7 @@
   bindChart();
   if (mode !== "loading") read();
   paintAll();
+  CJ.ready();
 
   // live stamp ticks every second; the mock read runs every 15 seconds while live
   setInterval(function () {

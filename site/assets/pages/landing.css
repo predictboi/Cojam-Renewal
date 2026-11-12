@@ -170,4 +170,16 @@
 @media (max-width: 479px) { .cta-band .btn { width: 100%; } }
 @media (min-width: 960px) { .cta-band { padding: var(--s-48); } }
 .how-fee { display: flex; align-items: center; gap: var(--s-8); margin-top: var(--s-32); padding-top: var(--s-16); border-top: 1px solid var(--line); color: var(--ink); font-weight: var(--fw-medium); }
-.how-fee > span:first-child { flex: none; display: inline-flex; color: var(--ink-2); }
+.how-fee > span:first-child { flex: none; display: inline-flex; width: 18px; height: 18px; color: var(--ink-2); }
+
+/* Japanese hero title: one unbreakable span per phrase (landing.js), and a size at which the longest phrase,
+   元祖予測マーケット。 (10 characters), fits a 360 px screen. */
+.hero-ph { white-space: nowrap; }
+@media (max-width: 399px) { :lang(ja) .hero-copy h1 { font-size: 30px; } }
+
+/* ---------- reserved heights until landing.js has painted (CJ.ready), so a slow network does not shift the hero ---------- */
+.hero-live { min-height: 24px; }
+#hero-window { min-height: 22px; }
+html:not(.cj-ready) #hero-track { min-height: 123px; }
+@media (max-width: 374px) { html:not(.cj-ready) #hero-track { min-height: 147px; } }
+@media (min-width: 600px) { html:not(.cj-ready) #hero-track { min-height: 132px; } }

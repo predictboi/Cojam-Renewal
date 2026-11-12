@@ -21,6 +21,13 @@
       live = CJ.t("hero.live.closed");
       sub = CJ.t("hero.window.closed", datesHtml);
     }
+    // Hero title: a language that marks its phrases (Japanese, with a zero width space) gets one unbreakable span per
+    // phrase, so no browser breaks inside a word such as マーケット (Safari has no word-break: auto-phrase).
+    var h1 = document.querySelector(".hero-copy h1"), title = CJ.t("hero.title"), segs = title.split("\u200b");
+    if (h1) {
+      if (segs.length > 1) h1.innerHTML = segs.map(function (p) { return '<span class="hero-ph">' + p.replace(/[&<>]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]; }) + "</span>"; }).join("<wbr>");
+      else if (h1.textContent !== title) h1.textContent = title;
+    }
     set("hero-live", live);
     var hw = document.getElementById("hero-window"); if (hw) hw.innerHTML = sub;
     var dot = document.getElementById("hero-dot"); if (dot) dot.classList.toggle("is-stale", ws !== "open");
@@ -84,6 +91,7 @@
   }
   document.addEventListener("cj:lang", paint);
   paint();
+  CJ.ready();
 
   // Phones: the concept previews sit in one snapping row; the dots under it show which card is in view.
   var row = document.getElementById("mocks"), dots = document.getElementById("mocks-dots");

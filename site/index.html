@@ -56,7 +56,7 @@
           <h3 data-i18n="how.s1.title">Swap old CT</h3>
           <div class="how-body muted">
             <span data-i18n="how.s1.body">Approve, then swap any amount, one for one.</span>
-            <details class="help"><summary data-i18n-attr="aria-label:how.help.approval.label"></summary><div class="help-pop" data-i18n="how.help.approval"></div></details>
+            <details class="help"><summary data-i18n-attr="aria-label:how.help.approval.label"></summary><div class="help-pop" data-i18n="how.help.approval">Approval lets the swap contract take the exact amount of old CT you chose. Your wallet asks you to sign it before the swap.</div></details>
           </div>
         </li>
         <li class="how-step">
@@ -64,7 +64,7 @@
           <h3 data-i18n="how.s2.title">10% arrives now</h3>
           <div class="how-body muted">
             <span data-i18n="how.s2.body">In the same transaction, 10% of your new CT lands in your wallet.</span>
-            <details class="help"><summary data-i18n-attr="aria-label:how.help.split.label"></summary><div class="help-pop" data-i18n="how.help.split"></div></details>
+            <details class="help"><summary data-i18n-attr="aria-label:how.help.split.label"></summary><div class="help-pop" data-i18n="how.help.split">10% is rounded down to the smallest unit of CT and the locked part is the rest, so the two always add up to exactly what you swap.</div></details>
           </div>
         </li>
         <li class="how-step">
@@ -72,7 +72,7 @@
           <h3 data-i18n="how.s3.title">90% after 7 days</h3>
           <div class="how-body muted">
             <span data-i18n="how.s3.body">The other 90% is locked for 7 days, one tick per day.</span>
-            <details class="help"><summary data-i18n-attr="aria-label:how.help.lock.label"></summary><div class="help-pop" data-i18n="how.help.lock"></div></details>
+            <details class="help"><summary data-i18n-attr="aria-label:how.help.lock.label"></summary><div class="help-pop" data-i18n="how.help.lock">Each swap is locked for 7 days from the moment it is confirmed. Swaps lock separately, and no one can shorten or extend the lock.</div></details>
           </div>
         </li>
         <li class="how-step">
@@ -80,7 +80,7 @@
           <h3 data-i18n="how.s4.title">Sent to your wallet automatically</h3>
           <div class="how-body muted">
             <span data-i18n="how.s4.body">Cojam sends the 90% to your wallet and pays the gas. You can also claim it yourself.</span>
-            <details class="help"><summary data-i18n-attr="aria-label:how.help.gas.label"></summary><div class="help-pop" data-i18n="how.help.gas"></div></details>
+            <details class="help"><summary data-i18n-attr="aria-label:how.help.gas.label"></summary><div class="help-pop" data-i18n="how.help.gas">After the unlock, anyone can trigger the release, but it always pays the wallet that swapped. A Cojam keeper sends it shortly after the unlock and pays the gas. If it is ever late, you can claim it yourself.</div></details>
           </div>
         </li>
       </ol>
@@ -265,15 +265,15 @@
         <a class="btn faq-docs" href="docs/" data-i18n="faq.docs">Read the swap docs</a>
       </div>
       <div class="faq-list">
-        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q1">My CT is on an exchange. What do I do?</span></summary><p data-i18n="faq.a1"></p></details>
-        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q2">My CT is in a Klayswap pool.</span></summary><p data-i18n="faq.a2"></p></details>
-        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q5">Why is 90% locked for 7 days?</span></summary><p data-i18n="faq.a5"></p></details>
-        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q9">Do I need to come back for the 90%?</span></summary><p data-i18n="faq.a9"></p></details>
-        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q3">What if I miss the window?</span></summary><p data-i18n="faq.a3"></p></details>
-        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q4">Is there a reward for swapping?</span></summary><p data-i18n="faq.a4"></p></details>
-        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q6">Which wallets work?</span></summary><p data-i18n="faq.a6"></p></details>
-        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q7">What does it cost?</span></summary><p data-i18n="faq.a7"></p></details>
-        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q8">Is it safe?</span></summary><p data-i18n="faq.a8"></p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q1">My CT is on an exchange. What do I do?</span></summary><p data-i18n="faq.a1">Nothing for now. The exchange handles the swap for you. The list of exchanges will be announced.</p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q2">My CT is in a Klayswap pool.</span></summary><p data-i18n="faq.a2">Remove your liquidity first so the CT is back in your wallet, then swap it here.</p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q5">Why is 90% locked for 7 days?</span></summary><p data-i18n="faq.a5">It deters swap abuse and favours real holders. Only 10% is free at once, so swapping just to sell straight away does not pay. The rule is the same for every holder and every amount.</p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q9">Do I need to come back for the 90%?</span></summary><p data-i18n="faq.a9">No. After 7 days Cojam sends it to your wallet automatically. You can also claim it yourself any time after the unlock, for example if you do not want to wait. Either way it goes only to the wallet that swapped.</p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q3">What if I miss the window?</span></summary><p data-i18n="faq.a3">After the window closes, 1 year after launch, no new swaps are possible. New CT that was not swapped goes to the new Cojam treasury multisig, whose address is published at launch. The locked 90% of swaps you already made is still sent to you.</p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q4">Is there a reward for swapping?</span></summary><p data-i18n="faq.a4">No. It is one for one: 1 old CT gives 1 new CT, with no bonus and no fee from Cojam.</p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q6">Which wallets work?</span></summary><p data-i18n="faq.a6">Kaia Wallet, MetaMask with the Kaia network added, and wallets that connect through WalletConnect.</p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q7">What does it cost?</span></summary><p data-i18n="faq.a7">Nothing with Kaia Wallet: Cojam pays the network fee for the approval, the swap and the release through Kaia fee delegation. MetaMask cannot sign fee delegated transactions, so with MetaMask you pay a small fee in KAIA yourself. Cojam charges no swap fee.</p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q8">Is it safe?</span></summary><p data-i18n="faq.a8">You keep custody the whole time and sign every step yourself. The locked 90% can only ever be sent to the wallet that swapped. Never share your seed phrase: no one from Cojam will ever ask for it.</p></details>
       </div>
     </div>
   </section>

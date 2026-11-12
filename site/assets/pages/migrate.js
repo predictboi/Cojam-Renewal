@@ -79,6 +79,16 @@
     var ic = kind === "error" || kind === "warn" ? "warn" : "info";
     return '<div class="note note-' + kind + ' mg-note"' + (id ? ' id="' + id + '"' : "") + ">" + I(ic, 18) + '<div class="note-body">' + (/^<(p|div)/.test(msg) ? msg : "<p>" + msg + "</p>") + (fix ? '<div class="note-action mg-fixes">' + fix + "</div>" : "") + "</div></div>";
   }
+  // Reserve empty: no support channel exists before launch, so the fix is the docs answer for this case.
+  function reserveNote() { return note("error", withHelp(t("er.reserve"), "help.reserve"), '<a class="btn" href="' + DOCS + '#reserve">' + t("er.reserve.fix") + "</a>"); }
+  // Returning holder: one note per lot the keeper released while they were away, until they dismiss it (kept in the ledger).
+  function keeperNotes() {
+    return led().lots.filter(function (l) { return l.releasedBy === "keeper" && l.releasedAt && !l.seenRelease; }).map(function (l) {
+      return '<div class="note note-sky mg-note mg-kept" data-lot="' + l.id + '">' + I("check", 18) + '<div class="note-body"><p>' +
+        t("kp.note", { amount: A(l.locked), date: F.date(l.releasedAt) }) + '</p></div><button type="button" class="btn btn-ghost mg-kept-x" data-act="seen" data-ids="' + l.id + '" aria-label="' +
+        esc(t("kp.dismiss.aria", { amount: A(l.locked) })) + '">' + I("x", 18) + "</button></div>";
+    }).join("");
+  }
   function primary(label, act, extra) { return '<button type="button" class="btn btn-primary btn-lg btn-block" data-act="' + act + '"' + (extra || "") + ">" + label + "</button>"; }
   // The primary action, or the rejected note with Try again in its place.
   function cta(label, act, extra) {
@@ -132,7 +142,7 @@
     var link = function (href, k) {
       return '<li><a class="mg-link" href="' + href + '"><span><span class="mg-link-t">' + t(k) + '</span><span class="mg-link-s">' + t(k + ".sub") + "</span></span>" + I("chevron", 18) + "</a></li>";
     };
-    return head(t(done ? "em.done.title" : "em.title")) + '<p class="mg-lead">' + t(done ? "em.done.body" : "em.body") + "</p>" +
+    return head(t(done ? "em.done.title" : "em.title")) + keeperNotes() + '<p class="mg-lead">' + t(done ? "em.done.body" : "em.body") + "</p>" +
       (done ? "" : '<ul class="mg-links">' + link(DOCS + "#exchange", "em.exchange") + link(DOCS + "#pool", "em.pool") + link(DOCS + "#special", "em.faq") + "</ul>") +
       '<div class="mg-actions"><button type="button" class="btn btn-block" data-act="switch-wallet">' + I("wallet", 18) + "<span>" + t("em.switch") + "</span></button></div>";
   };
@@ -140,7 +150,7 @@
     var Ld = led(), rpc = ui.error === "rpc", ready = lots("releasing");
     if (ui.text == null) ui.text = plain(Ld.oldCT);
     var bal = rpc ? (ui.loading ? '<span class="skel"></span>' : t("f.balance.unknown")) : t("f.balance", { amount: A(Ld.oldCT) });
-    var h = head(t("f.title"));
+    var h = head(t("f.title")) + keeperNotes();
     if (ready.length && !isClosed()) h += note("info", t("f.claimnote", { amount: A(sumL(ready)) }), '<button type="button" class="btn" data-act="to-claim">' + t("f.claimnote.btn") + "</button>");
     h += '<form id="mg-form" novalidate><div class="field">' +
       '<div class="field-label"><label for="mg-amt">' + t("f.label") + '</label><span id="mg-bal" class="num">' + bal + "</span></div>" +
@@ -158,7 +168,7 @@
       feeRow(0) +
       "</dl>" +
       '<div id="mg-gas-err"></div>';
-    if (Ld.contract.reserveEmpty) h += note("error", withHelp(t("er.reserve"), "help.reserve"), '<a class="btn" href="' + DOCS + '#contact">' + t("er.reserve.fix") + "</a>");
+    if (Ld.contract.reserveEmpty) h += reserveNote();
     h += '<div class="mg-actions"><button type="submit" class="btn btn-primary btn-lg btn-block" id="mg-go" data-primary></button></div>' +
       '<p class="mg-hint small muted" id="mg-hint"></p></form>';
     return h;
@@ -180,7 +190,7 @@
     return head(t("sw.title"), { back: true }) + steps(2) +
       '<p class="mg-lead">' + t("sw.body", { amount: A(ui.amount), instant: A(sp(ui.amount).instant), locked: A(sp(ui.amount).locked), date: F.date(unlockAt()) }) + "</p>" +
       summary(ui.amount) + gasError(GAS.swap) +
-      (res ? note("error", withHelp(t("er.reserve"), "help.reserve"), '<a class="btn" href="' + DOCS + '#contact">' + t("er.reserve.fix") + "</a>") : "") +
+      (res ? reserveNote() : "") +
       '<div class="mg-actions">' + cta(t("sw.cta", { amount: A(ui.amount) }), "swap", res || gasShort(GAS.swap) ? " disabled" : "") + "</div>";
   };
   V.partial = function () {
@@ -218,22 +228,28 @@
   function addRow() { return '<div class="mg-addrow"><button type="button" class="btn btn-ghost" data-act="add">' + I("plus", 18) + "<span>" + t("ok.add") + "</span></button></div>"; }
   V.claim = function () {
     var ready = lots("releasing"), amt = sumL(ready), many = ready.length > 1, Ld = led();
-    var h = head(t("cl.title"), { badge: "unlock" }) +
-      '<p class="mg-lead">' + (many ? t("cl.body.many", { count: ready.length, days: C.lockDays, min: C.keeperDelayMin })
-        : t("cl.body.one", { amount: A(ready[0].locked), date: F.date(ready[0].unlockAt), days: C.lockDays, min: C.keeperDelayMin })) + "</p>";
+    var h = head(t("cl.title"), { badge: "unlock" }) + keeperNotes() +
+      (many ? '<p class="mg-lead">' + t("cl.body.many", { count: ready.length, days: C.lockDays, min: C.keeperDelayMin }) + "</p>"
+        // One lot: on a phone the lead keeps its first sentence and the second goes under the track, so the track clears
+        // the sticky claim button on arrival (iPhone 15 included). Each copy is display:none at the other width.
+        : '<p class="mg-lead">' + t("cl.one.a", { amount: A(ready[0].locked), date: F.date(ready[0].unlockAt), days: C.lockDays }) +
+          ' <span class="mg-wide">' + t("cl.one.b", { min: C.keeperDelayMin }) + "</span></p>");
     // Lots are named by their swap time (UTC), so two swaps from the same day are told apart.
     h += many ? '<dl class="mg-rows">' + ready.map(function (l) { return row(t("track.swapped", { date: F.swapWhen(l) }), num(t("h.v", { amount: A(l.locked) }))); }).join("") + "</dl>"
-      : '<div class="mg-trackbox"><div data-track="' + ready[0].id + '" data-large></div></div>';
+      : '<div class="mg-trackbox"><div data-track="' + ready[0].id + '" data-large></div><p class="small muted mg-narrow">' + t("cl.one.b", { min: C.keeperDelayMin }) + "</p></div>";
+    // The second action sits inline, as a ghost row under the track, so only the claim sticks on a phone and the track
+    // is never behind a two button bar.
+    if (Ld.oldCT > 0 && !isClosed()) h += '<div class="mg-addrow"><button type="button" class="btn btn-ghost" data-act="to-swap">' + I("swap", 18) + "<span>" + t("cl.swapmore") + "</span></button></div>";
     h += '<dl class="mg-rows">' + feeRow(GAS.claim) + "</dl>";
     h += gasError(GAS.claim);
-    h += '<div class="mg-actions">' + cta(t(many ? "cl.cta.all" : "cl.cta", { amount: A(amt) }), "claim", ' data-ids="' + ids(ready) + '"' + (gasShort(GAS.claim) ? " disabled" : ""));
-    if (Ld.oldCT > 0 && !isClosed()) h += '<button type="button" class="btn btn-block" data-act="to-swap">' + t("cl.swapmore") + "</button>";
-    return h + "</div>";
+    return h + '<div class="mg-actions">' + cta(t(many ? "cl.cta.all" : "cl.cta", { amount: A(amt) }), "claim", ' data-ids="' + ids(ready) + '"' + (gasShort(GAS.claim) ? " disabled" : "")) + "</div>";
   };
   V.claimed = function () {
     var got = (ui.claimIds || []).map(byId).filter(function (l) { return l && l.releasedAt; });
     if (!got.length) { ui.phase = "form"; return V[computeView()](); }
     var you = got[0].releasedBy === "you";
+    var newly = got.filter(function (l) { return l.releasedBy === "keeper" && !l.seenRelease; });
+    if (newly.length) { newly.forEach(function (l) { l.seenRelease = true; }); L.persist(); }
     return head(t("cd.title"), { badge: "check" }) +
       '<p class="mg-lead">' + t(you ? "cd.body.you" : "cd.body.keeper", { amount: A(sumL(got)), date: F.date(got[0].releasedAt) }) + "</p>" +
       '<div class="mg-trackbox"><div data-track-claimed data-large></div></div>' +
@@ -245,7 +261,7 @@
     var fix = ready.length
       ? '<button type="button" class="btn btn-primary" data-act="claim" data-ids="' + ids(ready) + '">' + t(ready.length > 1 ? "cl.cta.all" : "cl.cta", { amount: A(amt) }) + "</button>"
       : '<button type="button" class="btn" data-act="see-hist">' + t("er.closed.fix") + "</button>";
-    return head(t("f.title")) + '<p class="mg-lead muted">' + t("f.balance", { amount: A(led().oldCT) }) + "</p>" +
+    return head(t("f.title")) + keeperNotes() + '<p class="mg-lead muted">' + t("f.balance", { amount: A(led().oldCT) }) + "</p>" +
       note("warn", t("er.closed", { date: F.date(C.windowEnd) }), ui.error === "rejected" || ui.error === "sponsor" ? "" : fix) +
       ((ui.error === "rejected" || ui.error === "sponsor") && ready.length ? cta("", "claim", ' data-ids="' + ids(ready) + '"') : "");
   };
@@ -368,7 +384,8 @@
       chain(function () {
         spendGas(GAS.approve); L.approve(amt);
         ui.phase = "swap"; ui.wait = null; ui.partialOff = true;
-        render(true); CJ.toast(t("toast.approved", { amount: A(amt) }));
+        // No toast: on a phone it sat over the step 2 lead and the fee row. The step 2 heading and lead say it, and so does the live region.
+        render(true); say(t("toast.approved", { amount: A(amt) }) + ". " + ($("mg-h") ? $("mg-h").textContent : ""));
       });
     });
   }
@@ -460,8 +477,15 @@
     paintWindow();
     tick();
     if (typing && $("mg-amt")) { var i = $("mg-amt"); i.focus(); try { i.setSelectionRange(sel[0], sel[1]); } catch (e) {} }
-    else if (focus) { var h = $("mg-h"); if (h) h.focus(focus === "quiet" ? { preventScroll: true } : undefined); }
+    else if (focus) { var h = $("mg-h"); if (h) { h.focus({ preventScroll: true }); if (focus !== "quiet") showHeading(h); } }
     announce();
+  }
+  // After a step change the new heading must sit below the sticky header, with or without motion. The jump is instant
+  // (behavior auto) and block start honours html scroll-padding-top, so it lands just under the header.
+  function showHeading(h) {
+    var hd = document.querySelector(".cj-header"), ceil = hd ? hd.getBoundingClientRect().bottom : 0;
+    var r = h.getBoundingClientRect(), vh = window.visualViewport ? visualViewport.height : window.innerHeight;
+    if (r.top < ceil + 4 || r.bottom > vh - 96) h.scrollIntoView({ block: "start", behavior: "auto" });
   }
   // Mobile: the single primary action sticks to the bottom of the screen while its view is in view (CSS, under 600 px),
   // and gets a top rule only while it is actually stuck. Views with two actions or an error note in place keep it inline.
@@ -511,7 +535,7 @@
   var headOpen = false;
   function paintWindow() {
     var w = $("mg-window"), head = $("mg-head"), closed = isClosed();
-    var compact = phone.matches && led().wallet.connected;
+    var compact = phone.matches && (led().wallet.connected || (ui.phase === "wallet" && ui.wait && ui.wait.kind === "connect"));
     head.classList.toggle("is-compact", compact);
     head.classList.toggle("is-open", compact && headOpen);
     // The closed view says it in its own note: the head does not repeat it.
@@ -586,6 +610,9 @@
     ui.frozen = false;
     if (b.hasAttribute("data-retry")) led().contract.sponsorDown = false; // mock: the fee payer answers on retry
     switch (a) {
+      case "seen":
+        idList.forEach(function (id) { var l = byId(id); if (l) l.seenRelease = true; });
+        L.save(); var hh = $("mg-h"); if (hh) hh.focus({ preventScroll: true }); break;
       case "pay-own": ui.payOwn = true; ui.error = null; render(true); break;
       case "connect": ui.error = null; openChooser(b); break;
       case "network": doNetwork(); break;
@@ -757,4 +784,5 @@
   paintSheets();
   if (CJ.state && STATES.indexOf(CJ.state) > -1) setState(CJ.state);
   render(false);
+  CJ.ready();
 })();

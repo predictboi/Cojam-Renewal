@@ -26,7 +26,7 @@
         <p class="muted" id="st-window"></p>
       </div>
       <div class="st-head-tools">
-        <p class="st-live small" id="st-live"><span class="live-dot" id="st-live-dot" aria-hidden="true"></span><span id="st-live-text"></span></p>
+        <p class="st-live small" id="st-live"><span class="live-dot" id="st-live-dot" aria-hidden="true"></span><span id="st-live-text">Reading the Kaia chain</span></p>
         <a class="btn btn-primary" href="../migrate/" data-i18n="status.cta">Swap CT</a>
       </div>
     </header>
@@ -37,6 +37,7 @@
         <div class="note-action"><button type="button" class="btn" id="st-retry"><span id="st-retry-icon"></span><span data-i18n="status.error.retry">Retry</span></button></div>
       </div>
     </div>
+    <script>if (/[?&]state=error(&|$)/.test(location.search)) document.getElementById("st-error").hidden = false;</script>
 
     <div class="note note-info st-sample" role="note">
       <span id="st-sample-icon"></span>
@@ -84,7 +85,7 @@
         <div class="st-unlock-main">
           <div class="st-panel-head">
             <h2 class="st-h2" id="st-unlock-title" data-i18n="status.unlock.title">Every swap on one track</h2>
-            <p class="small muted" data-i18n="status.unlock.sub"></p>
+            <p class="small muted" data-i18n="status.unlock.sub">The same track as each swap, for all of them together. Each tick is one day of the 7 day lock, and a taller tick holds more CT. Day 1 is the newest; day 7 unlocks next and is sent automatically.</p>
           </div>
           <div id="st-track" class="track track-lg track-agg"></div>
         </div>

@@ -37,16 +37,16 @@
     <details class="mg-proto" id="mg-proto" hidden>
       <summary data-i18n="pr.title">Prototype controls</summary>
       <div class="mg-proto-body">
-        <p class="small muted" data-i18n="pr.note"></p>
+        <p class="small muted" data-i18n="pr.note">Mock data only. These buttons simulate what a real wallet or network could do.</p>
         <div class="mg-proto-grid">
-          <label class="mg-check"><input type="checkbox" id="pr-reject"> <span data-i18n="pr.reject"></span></label>
-          <button type="button" class="btn btn-sm" data-proto="rpc" data-i18n="pr.rpc"></button>
-          <button type="button" class="btn btn-sm" data-proto="gas" data-i18n="pr.gas"></button>
-          <button type="button" class="btn btn-sm" data-proto="reserve" data-i18n="pr.reserve"></button>
-          <button type="button" class="btn btn-sm" data-proto="closed" data-i18n="pr.closed"></button>
-          <button type="button" class="btn btn-sm" data-proto="network" data-i18n="pr.network"></button>
-          <button type="button" class="btn btn-sm" data-proto="sponsor" data-i18n="pr.sponsor"></button>
-          <button type="button" class="btn btn-sm" data-proto="reset" data-i18n="pr.reset"></button>
+          <label class="mg-check"><input type="checkbox" id="pr-reject"> <span data-i18n="pr.reject">Reject the next wallet request</span></label>
+          <button type="button" class="btn btn-sm" data-proto="rpc" data-i18n="pr.rpc">Fail the network read</button>
+          <button type="button" class="btn btn-sm" data-proto="gas" data-i18n="pr.gas">Set KAIA to 0.001</button>
+          <button type="button" class="btn btn-sm" data-proto="reserve" data-i18n="pr.reserve">Empty the reserve</button>
+          <button type="button" class="btn btn-sm" data-proto="closed" data-i18n="pr.closed">Jump past the window end</button>
+          <button type="button" class="btn btn-sm" data-proto="network" data-i18n="pr.network">Move wallet to another network</button>
+          <button type="button" class="btn btn-sm" data-proto="sponsor" data-i18n="pr.sponsor">Make the fee payer unavailable</button>
+          <button type="button" class="btn btn-sm" data-proto="reset" data-i18n="pr.reset">Reset everything</button>
         </div>
       </div>
     </details>
@@ -58,9 +58,9 @@
       <button type="button" class="btn btn-ghost mg-icon-btn" data-close data-i18n-attr="aria-label:ch.close"></button>
     </div>
     <dl class="mg-kbd-list">
-      <div><dt><kbd>Enter</kbd></dt><dd data-i18n="kb.enter"></dd></div>
-      <div><dt><kbd>Esc</kbd></dt><dd data-i18n="kb.esc"></dd></div>
-      <div><dt><kbd>?</kbd></dt><dd data-i18n="kb.help"></dd></div>
+      <div><dt><kbd>Enter</kbd></dt><dd data-i18n="kb.enter">Submit the current step</dd></div>
+      <div><dt><kbd>Esc</kbd></dt><dd data-i18n="kb.esc">Go back one step, or cancel the wallet wait</dd></div>
+      <div><dt><kbd>?</kbd></dt><dd data-i18n="kb.help">Show this list</dd></div>
     </dl>
   </dialog>
 

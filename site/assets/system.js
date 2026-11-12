@@ -24,6 +24,9 @@
     windowStart: Date.UTC(2026, 11, 1),
     windowEnd: Date.UTC(2027, 11, 1),
     oldHolders: 22500, // old CT holder addresses, for "share of holders who swapped"
+    // Fee payer limits: the sponsor server's defaults (server/src/config.js, set by SENDER_DAILY_TX_LIMIT, DAILY_BUDGET_KAIA,
+    // MIN_FEE_PAYER_BALANCE_KAIA and MIN_SPONSORED_OLD_CT in server/.env). Configuration, not data: change both together.
+    sponsor: { walletTxPerDay: 10, dailyBudgetKaia: 50, balanceFloorKaia: 5, minOldCt: 1 },
     officialUrl: null, // new domain, to be announced
     since: 2019
   };
@@ -145,6 +148,10 @@
   if (params.get("reset") === "1") { try { localStorage.removeItem(KEY); } catch (e) {} }
   var ledger;
   try { ledger = JSON.parse(localStorage.getItem(KEY)) || freshLedger(); } catch (e) { ledger = freshLedger(); }
+  if (document.body && document.body.getAttribute("data-page") === "swap") {
+    var st = params.get("state"), on = st ? st !== "disconnected" : !!(ledger.wallet && ledger.wallet.connected);
+    document.documentElement.setAttribute("data-wallet", on ? "on" : "off");
+  }
   function persist() { try { localStorage.setItem(KEY, JSON.stringify(ledger)); } catch (e) {} }
   function save() { persist(); emit(); }
   function emit() { document.dispatchEvent(new CustomEvent("cj:ledger", { detail: ledger })); }
@@ -169,6 +176,7 @@
   var ledgerApi = {
     get: function () { settle(); return ledger; },
     save: save,
+    persist: persist, // store without the cj:ledger event (a view marking something as seen while it renders)
     reset: function () { ledger = freshLedger(); save(); },
     connect: function () { ledger.wallet.connected = true; save(); },
     disconnect: function () { ledger.wallet.connected = false; save(); },
@@ -241,7 +249,8 @@
     menu: '<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>',
     globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/>',
     chevron: '<path d="M9 6l6 6-6 6"/>',
-    refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/>'
+    refresh: '<path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 5v6h-6"/>',
+    link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>'
   };
   function icon(name, size) {
     var s = size || 18;
@@ -500,7 +509,10 @@
     parseAmount: parseAmount, split: split, ledger: ledgerApi, windowState: windowState, daysLeft: daysLeft,
     icon: icon, track: track, trackAggregate: trackAggregate, toast: toast, copy: copy, renderAddrs: renderAddrs, fakeTx: fakeTx,
     sample: { lots: sampleLots, state: sampleState, wholeParts: wholeParts, shares: shares },
-    state: params.get("state")
+    state: params.get("state"),
+    // The page script calls this after its first paint. Until then the CSS reserves the height of every container a
+    // script fills (html:not(.cj-ready) rules in each page's CSS), so a slow network does not shift the layout.
+    ready: function () { document.documentElement.classList.add("cj-ready"); }
   };
   document.documentElement.lang = lang;
 })();
