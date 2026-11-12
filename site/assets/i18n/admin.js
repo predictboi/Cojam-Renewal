@@ -97,8 +97,8 @@ CJ.dict({
 
     "col.wallet": "Wallet",
     "col.amount": "Amount (CT)",
-    "col.requested": "Requested at",
-    "col.unlocks": "Unlocks at",
+    "col.requested": "Requested (UTC)",
+    "col.unlocks": "Unlocks (UTC)",
     "col.left": "Days left",
     "col.status": "Status",
     "col.tx": "Tx",
@@ -137,7 +137,6 @@ CJ.dict({
     "big.sum": "{n} at or above {amount} CT, together {total} CT.",
     "big.sum_none": "No request at or above {amount} CT yet.",
     "big.more": "{n} more in the swap requests table.",
-    "big.show": "Show all in the table",
 
     "sheet.title": "Wallet",
     "sheet.close": "Close",
