@@ -7,7 +7,7 @@ Approved structure (2026-11-12). Every page is plain HTML, CSS and JS against mo
 - Cojam: the OG prediction market, since 2019 (founder's claim; keep the wording exactly).
 - Old token: Cojam (CT) on Kaia, `0x7f223b1607171b81ebd68d22f1ca79157fd4a44b`, 18 decimals.
 - New token: Cojam Token (CT) on Kaia, fixed supply 4,083,262,533.956 CT, plain token with no admin powers. Address: not deployed yet, show "To be announced".
-- Swap: 1:1, open to every holder, no rewards. Each swap locks the new CT for 7 days; after that the holder claims it. The window is 1 year from launch; after it no new swaps, but locked swaps can still be claimed.
+- Swap: 1:1, open to every holder, no rewards. On each swap 10% of the new CT arrives in the wallet instantly; the other 90% is locked for 7 days and then sent to the holder automatically (a keeper releases it; the holder can also claim it). The lock deters swap abuse and favours real holders. The window is 1 year from the deploy date; after it no new swaps, but locked remainders still release.
 - Gas is paid in KAIA. Wallets: Kaia Wallet, MetaMask (Kaia network added), WalletConnect.
 - CT held on an exchange: the exchange handles it (list "to be announced"). CT in a Klayswap pool: remove liquidity first.
 - Never invent numbers, partners, audits or quotes. The audit status is "Audit in progress" until a report exists. Dashboard figures in the prototype are labelled "Sample data".
