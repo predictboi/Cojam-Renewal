@@ -48,10 +48,17 @@ async function main() {
     logger.error('SWAP_CONTRACT_ADDRESS has no contract code on this chain, exiting', { swap: cfg.swapAddress });
     process.exit(1);
   }
-  const [oldToken] = swapAbi.decodeFunctionResult(
-    'OLD_TOKEN',
-    await chain.call({ to: cfg.swapAddress, data: swapAbi.encodeFunctionData('OLD_TOKEN', []) })
-  );
+  let oldToken;
+  try {
+    [oldToken] = swapAbi.decodeFunctionResult(
+      'OLD_TOKEN',
+      await chain.call({ to: cfg.swapAddress, data: swapAbi.encodeFunctionData('OLD_TOKEN', []) })
+    );
+  } catch (e) {
+    if (!e.isNodeReply) throw e;
+    logger.error('SWAP_CONTRACT_ADDRESS does not answer OLD_TOKEN(): is it the CojamMigration contract? Exiting', { swap: cfg.swapAddress });
+    process.exit(1);
+  }
   if (getAddress(oldToken) !== cfg.oldCtAddress) {
     logger.error('the swap contract points at another old token than OLD_CT_ADDRESS, exiting', {
       swapOldToken: oldToken,
