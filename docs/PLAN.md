@@ -20,6 +20,7 @@ Approved structure (2026-11-12). Every page is plain HTML, CSS and JS against mo
 | `/migrate/` | `site/migrate/index.html` | The swap app: every state below |
 | `/status/` | `site/status/index.html` | Public dashboard: swapped, locked, claimed, holders swapped, reserve left, time left, recent swaps |
 | `/docs/` | `site/docs/index.html` | Help: step by step guide, wallets, exchange and pool cases, lock rules, safety, contracts and audit |
+| `/admin/` | `site/admin/index.html` | Internal, read only, not linked from the nav, noindex: who requested a swap, when, how much, days left to unlock, unlock schedule, CSV export. Production needs access control (see below) |
 
 ## Shared foundation (do not fork it)
 
@@ -54,3 +55,7 @@ Say what happens ("Swap 12,500 old CT", "Claim 12,500 new CT"). Units on every f
 ## Design floor
 
 Light ground, white panels, one accent (`--brand`) for the primary action and the current selection only. Sky (`--sky`) is the data colour for new CT. Green and red only for gain and loss; amber only for time pressure and warnings. One primary button per view. Text at 4.5:1 or more. Visible focus. Touch targets 44 px. `prefers-reduced-motion` respected. Never `transition: all`. `overflow-x: clip` on html and body. No card inside a card. The future platform section uses the dark tokens (`--night-*`) to set the concept apart from the live swap, and every mockup carries "Concept preview, not live".
+
+## Admin dashboard access
+
+Everything the admin page shows is public chain data, and the contracts have no admin powers, so the page cannot move funds. It still should not be public: in production serve it from a separate Render service behind login (for example Cloudflare Access or a small server with basic auth), not from the public static site.

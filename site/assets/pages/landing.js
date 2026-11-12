@@ -18,6 +18,8 @@
     });
     document.querySelectorAll(".how .help > summary").forEach(function (s) { if (!s.firstChild) s.innerHTML = CJ.icon("help", 18); });
 
+    document.querySelectorAll(".faq-item > summary").forEach(function (s) { if (!s.querySelector("svg")) s.insertAdjacentHTML("beforeend", CJ.icon("chevron", 18)); });
+
     // Timeline
     set("tl-open", f.date(c.windowStart));
     set("tl-close", f.date(c.windowEnd));
