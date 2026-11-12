@@ -59,3 +59,14 @@ Light ground, white panels, one accent (`--brand`) for the primary action and th
 ## Admin dashboard access
 
 Everything the admin page shows is public chain data, and the contracts have no admin powers, so the page cannot move funds. It still should not be public: in production serve it from a separate Render service behind login (for example Cloudflare Access or a small server with basic auth), not from the public static site.
+
+## Mobile first (founder priority, 2026-11-12)
+
+Most holders arrive on a phone. Every page and every swap state must work one handed at 360 to 430 px wide.
+
+- Wallet on mobile: in a normal mobile browser with no injected wallet, the connect sheet offers "Open in Kaia Wallet" and "Open in MetaMask" deep links that reopen this page inside the wallet app's browser, plus WalletConnect. Inside a wallet's in-app browser the injected provider is detected and connects in one tap.
+- Mobile QA is a gate: real device profiles (iPhone 15, Galaxy S24, small 360 px Android), touch only, safe areas, sticky primary action within thumb reach, no zoom on input focus (16 px inputs), no hover-only affordances, keyboard does not cover the amount field.
+
+## Interaction and motion
+
+Not plain: every control answers touch. Press feedback (scale and shade on press), card lift on hover and press, a subtle ripple or glow from the touch point on primary buttons, animated swap track fill, count-up figures, smooth sheet transitions, success moment when a swap confirms. Rules: transform and opacity only, 120 to 240 ms for feedback, spring-like easing, never block input, full `prefers-reduced-motion` fallback, the accent keeps its two jobs.
