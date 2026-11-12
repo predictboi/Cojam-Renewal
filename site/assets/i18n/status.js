@@ -10,7 +10,7 @@ CJ.dict({
     "status.sample.body": "Every figure on this page is made up for the prototype. Live figures come from the Kaia chain at launch.",
 
     "status.fig.swapped": "Swapped so far",
-    "status.fig.swapped_sub": "{pct} of the fixed supply of {supply} CT",
+    "status.fig.swapped_sub": "{pct} of the fixed supply of {supply}",
     "status.fig.locked": "Locked now",
     "status.fig.locked_sub": "Unlocks within 7 days",
     "status.fig.ready": "Ready to claim",
@@ -50,11 +50,9 @@ CJ.dict({
     "status.daily.peak": "Peak",
 
     "status.unlock.title": "Unlocking in the next 7 days",
-    "status.unlock.sub": "Locked new CT by the day its 7 day lock ends. Holders claim it any time after.",
-    "status.unlock.day": "Day {n}",
-    "status.unlock.amount": "{amount} CT",
+    "status.unlock.sub": "Locked new CT by the day its 7 day lock ends. Holders can claim it any time after that.",
+    "status.unlock.today": "Later today",
     "status.unlock.total": "{amount} CT locked in total",
-    "status.unlock.aria": "{date}: {amount} CT unlocks",
 
     "status.recent.title": "Recent swaps and claims",
     "status.recent.sub": "The latest activity on the swap contract, newest first.",

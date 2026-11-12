@@ -31,7 +31,7 @@ const path=require('path'), fs=require('fs');
       if(!vis(el)||el.closest('svg'))return; const s=getComputedStyle(el); const t=own(el);
       if(t){
         const fs=parseFloat(s.fontSize); const mono=/mono/i.test(s.fontFamily.split(',')[0]);
-        if(mono){ const words=/[A-Za-z]{3,}/.test(t.replace(/USDC|USDP|USDT|SOL|BONK|pUSD|WIF|JUP/g,'')); const inTable=!!el.closest('table,[role="table"],[role="row"]');
+        if(mono&&/^\s*0x[0-9a-f\u2026.]+\s*$/i.test(t)){} else if(mono){ const words=/[A-Za-z]{3,}/.test(t.replace(/USDC|USDP|USDT|SOL|BONK|pUSD|WIF|JUP/g,'')); const inTable=!!el.closest('table,[role="table"],[role="row"]');
           if(words||fs>=20||(!inTable&&!/^[\s\d$¢%+\-−.,:KMB<>≈/a-z]*$/.test(t))) out.mono.push(id(el)+' "'+t.slice(0,40)+'" '+fs+'px'+(words?' words':'')+(fs>=20?' display':'')); }
         const fg=rgb(s.color); if(fg){ const bg=bgOf(el); const f2=over(fg,bg); const L1=lum(f2),L2=lum(bg); const cr=(Math.max(L1,L2)+.05)/(Math.min(L1,L2)+.05);
           let op=1,e=el;while(e&&e.nodeType===1){op*=+getComputedStyle(e).opacity;e=e.parentElement}

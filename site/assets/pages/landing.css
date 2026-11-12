@@ -13,6 +13,8 @@
 }
 
 /* ---------- how the swap works ---------- */
+.how.section { padding-top: var(--s-16); scroll-margin-top: calc(var(--s-96) + var(--s-32)); }
+@media (min-width: 768px) { .how.section { scroll-margin-top: var(--s-64); } }
 .how-track { margin-bottom: var(--s-32); }
 .how-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-24); grid-template-columns: minmax(0, 1fr); }
 .how-step { position: relative; display: grid; gap: var(--s-8); align-content: start; padding-top: var(--s-16); border-top: 1px solid var(--line); }
@@ -50,6 +52,11 @@
 .addr-list { display: grid; padding: var(--s-8) var(--s-24); }
 .addr-list .addr { min-height: 56px; padding: var(--s-8) 0; }
 .addr-list .addr + .addr { border-top: 1px solid var(--line); }
+.addr-list .addr-actions .btn { min-width: 44px; min-height: 44px; padding: 0; }
+@media (max-width: 599px) {
+  .addr-list .addr { padding: var(--s-12) 0; }
+  .addr-list .addr-label { flex-basis: 100%; }
+}
 .facts { margin: 0; display: grid; gap: var(--s-16); grid-template-columns: minmax(0, 1fr); }
 .fact { display: grid; gap: var(--s-4); padding-top: var(--s-12); border-top: 1px solid var(--line); min-width: 0; }
 .fact dt { font-size: var(--fs-14); color: var(--ink-2); }
@@ -99,6 +106,7 @@
 /* ---------- faq ---------- */
 .faq-grid { display: grid; gap: var(--s-8); grid-template-columns: minmax(0, 1fr); }
 .faq-list { border-top: 1px solid var(--line); min-width: 0; }
+.faq-docs { margin-top: var(--s-16); }
 .faq-item { border-bottom: 1px solid var(--line); }
 .faq-item > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: var(--s-16); min-height: 56px; padding: var(--s-12) 0; cursor: pointer; font-weight: var(--fw-medium); }
 .faq-item > summary::-webkit-details-marker { display: none; }

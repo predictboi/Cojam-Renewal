@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swap old CT for new CT: Cojam</title>
+<meta name="description" content="Swap old CT for new CT one for one on Kaia. Each swap is locked for 7 days, then you claim it.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="../assets/base.css">
+<link rel="stylesheet" href="../assets/pages/migrate.css">
+</head>
+<body data-page="swap" data-root="../">
+<div id="cj-top"></div>
+<main id="main">
+  <div class="container mg">
+    <header class="mg-head">
+      <h1 data-i18n="page.title">Swap old CT for new CT</h1>
+      <p class="mg-lede" data-i18n="page.lede">One old CT becomes one new CT on Kaia. Each swap is locked for 7 days, then you claim it to your wallet.</p>
+      <p class="mg-window small" id="mg-window"></p>
+    </header>
+
+    <div class="mg-grid">
+      <div class="mg-col">
+        <section class="panel mg-panel" id="mg-panel" aria-labelledby="mg-h"></section>
+        <p class="sr-only" id="mg-live" role="status" aria-live="polite"></p>
+        <button type="button" class="btn btn-ghost btn-sm mg-kbd-btn" id="mg-kbd-open"><span data-i18n="kb.open">Keyboard shortcuts</span> <kbd>?</kbd></button>
+      </div>
+      <section class="panel mg-hist" id="mg-hist" aria-labelledby="mg-hist-h"></section>
+    </div>
+
+    <details class="mg-proto" id="mg-proto" hidden>
+      <summary data-i18n="pr.title">Prototype controls</summary>
+      <div class="mg-proto-body">
+        <p class="small muted" data-i18n="pr.note"></p>
+        <div class="mg-proto-grid">
+          <label class="mg-check"><input type="checkbox" id="pr-reject"> <span data-i18n="pr.reject"></span></label>
+          <button type="button" class="btn btn-sm" data-proto="rpc" data-i18n="pr.rpc"></button>
+          <button type="button" class="btn btn-sm" data-proto="gas" data-i18n="pr.gas"></button>
+          <button type="button" class="btn btn-sm" data-proto="reserve" data-i18n="pr.reserve"></button>
+          <button type="button" class="btn btn-sm" data-proto="closed" data-i18n="pr.closed"></button>
+          <button type="button" class="btn btn-sm" data-proto="network" data-i18n="pr.network"></button>
+          <button type="button" class="btn btn-sm" data-proto="reset" data-i18n="pr.reset"></button>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <dialog class="mg-sheet" id="mg-chooser" aria-labelledby="mg-chooser-h">
+    <div class="mg-sheet-head">
+      <h2 id="mg-chooser-h" data-i18n="ch.title">Connect a wallet</h2>
+      <button type="button" class="btn btn-ghost mg-icon-btn" data-close data-i18n-attr="aria-label:ch.close"></button>
+    </div>
+    <div class="mg-opts" id="mg-opts"></div>
+    <p class="small muted mg-sheet-note" data-i18n="ch.note"></p>
+  </dialog>
+
+  <dialog class="mg-sheet" id="mg-kbd" aria-labelledby="mg-kbd-h">
+    <div class="mg-sheet-head">
+      <h2 id="mg-kbd-h" data-i18n="kb.title">Keyboard shortcuts</h2>
+      <button type="button" class="btn btn-ghost mg-icon-btn" data-close data-i18n-attr="aria-label:ch.close"></button>
+    </div>
+    <dl class="mg-kbd-list">
+      <div><dt><kbd>Enter</kbd></dt><dd data-i18n="kb.enter"></dd></div>
+      <div><dt><kbd>Esc</kbd></dt><dd data-i18n="kb.esc"></dd></div>
+      <div><dt><kbd>?</kbd></dt><dd data-i18n="kb.help"></dd></div>
+    </dl>
+  </dialog>
+
+  <div class="mg-menu" id="mg-menu" role="menu" hidden></div>
+</main>
+<div id="cj-foot"></div>
+<script src="../assets/system.js"></script>
+<script src="../assets/i18n/shell.js"></script>
+<script src="../assets/i18n/migrate.js"></script>
+<script src="../assets/shell.js"></script>
+<script src="../assets/pages/migrate.js"></script>
+</body>
+</html>
