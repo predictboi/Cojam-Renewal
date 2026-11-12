@@ -22,10 +22,10 @@ This file holds what is specific to Cojam and overrides the handoff where they d
 | Type | Pretendard Variable for EN and KO, Pretendard JP Variable for JA (switched by `:lang(ja)`), tabular numerals (confirmed) |
 | Chain | Kaia mainnet (chain id 8217) for both old and new token |
 | Positioning | "The OG prediction market, since 2019." The landing also previews the future Cojam platform as clearly labelled concept mockups: predict with the token, derivatives on outcomes, loans against positions, margin on predictions |
-| Migration | Open 1:1 swap, CT to new token, no rewards or incentives. Each swap is locked for 7 days, then released (holder claims after unlock) |
-| New token | Plain standard fungible token (KIP-7 / ERC-20 compatible, 18 decimals), no pause, no blacklist, no mint, no owner powers, so it stays listing neutral. Fixed supply equal to the old supply after burns: 4,083,262,533.956 |
-| Old token admin | The team does NOT control the old owner key. That owner can still pause old CT at any time, which would block `transferFrom` based migration: keep a snapshot plus claim fallback in the spec |
-| Open decisions | Exclusion of unidentified large wallets (top 10 hold 65.6%), migration window and late policy, new token name and ticker, domain |
+| Migration | Open 1:1 swap, old CT to new CT, no rewards or incentives, every address treated the same (no exclusions; much of the supply sits on exchanges). Each swap is locked for 7 days, then released (holder claims after unlock). The swap window is 1 year; after it the swap contract stops accepting swaps (claims of already locked swaps still work) |
+| New token | Name "Cojam Token", ticker CT (kept). Plain standard fungible token (KIP-7 / ERC-20 compatible, 18 decimals), no pause, no blacklist, no mint, no owner powers, so it stays listing neutral. Fixed supply equal to the old supply after burns: 4,083,262,533.956 CT. In UI copy say "old CT" and "new CT" and always show full addresses |
+| Old token admin | The team does NOT control the old owner key; the founder accepts this and focuses on the new token. No snapshot fallback planned |
+| Open decisions | What happens to the unswapped reserve after the window (burn or a published treasury address), launch date, domain |
 | Domain | New domain, name TBD. X and Telegram come later |
 | Deploy | Render static site from `site/` via `render.yaml` |
 | Old token | "Cojam" (CT), Kaia (formerly Klaytn), `0x7f223b1607171b81ebd68d22f1ca79157fd4a44b`, 18 decimals, supply 4,083,262,533.956 after burns, owner `0xeb1622d0377da1f9815bfc6eff61afe3257a0518`, pausable, not paused (checked on chain 2026-11-12). Ticker CT is now reused by other tokens on MEXC: always show the full address. Details in `research/01-cojam-history.md` |

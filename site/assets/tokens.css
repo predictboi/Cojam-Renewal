@@ -1,0 +1,58 @@
+/* Cojam design tokens. Every colour, font, size and radius used on the site lives here. */
+:root {
+  /* brand */
+  --brand: #124CC4;          /* primary action and current selection only (white text 7.35:1) */
+  --brand-hover: #0F3FA6;    /* white text 9.2:1 */
+  --brand-tint: #E7EEFB;     /* selected background; brand text on it 6.31:1 */
+  --sky: #97DBFF;            /* data colour for new CT; dark ink on it */
+  --sky-tint: #E3F5FF;
+
+  /* light ground */
+  --bg: #F5F7FB;
+  --surface: #FFFFFF;
+  --inset: #EEF2F9;
+  --line: #DCE3EF;
+  --line-strong: #C3CDDF;
+  --ink: #0B1530;
+  --ink-2: #4A5672;          /* 6.8:1 on --bg, 6.5:1 on --inset */
+  --on-brand: #FFFFFF;
+  --on-sky: #0B1530;
+
+  /* status */
+  --up: #0E7A4D;   --up-tint: #E4F4EC;
+  --down: #B42318; --down-tint: #FCE9E7;
+  --warn: #8A5300; --warn-tint: #FFF4E0;
+
+  /* night ground: the future platform previews only */
+  --night-bg: #0A1433;
+  --night-surface: #111C40;
+  --night-line: #24305A;
+  --night-ink: #FFFFFF;
+  --night-ink-2: #A9B4D0;    /* 8.7:1 on --night-bg */
+  --night-up: #5FD49A;
+  --night-down: #FF8A7A;
+
+  /* type */
+  --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-ja: "Pretendard JP Variable", "Pretendard JP", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-data: ui-monospace, "SF Mono", Menlo, Consolas, monospace; /* addresses and tx hashes only */
+  --fs-12: 12px; --fs-13: 13px; --fs-14: 14px; --fs-16: 16px; --fs-20: 20px; --fs-24: 24px; --fs-32: 32px;
+  --fs-display: clamp(36px, 5.2vw, 56px);
+  --fw-regular: 400; --fw-medium: 500; --fw-semi: 600;
+
+  /* space and shape */
+  --s-4: 4px; --s-8: 8px; --s-12: 12px; --s-16: 16px; --s-24: 24px; --s-32: 32px; --s-48: 48px; --s-64: 64px; --s-96: 96px;
+  --r-control: 8px;
+  --r-panel: 12px;
+  --container: 1120px;
+  --gutter: 16px;
+  --shadow-pop: 0 8px 24px rgba(11, 21, 48, 0.12);
+
+  /* motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --dur: 160ms;
+
+  color-scheme: light;
+}
+:lang(ja) { --font: var(--font-ja); }
+@media (min-width: 768px) { :root { --gutter: 32px; } }

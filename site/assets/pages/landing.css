@@ -1,0 +1,13 @@
+/* Landing page layout. Components come from base.css. */
+.hero { padding: var(--s-48) 0 var(--s-64); }
+.hero-grid { display: grid; gap: var(--s-32); grid-template-columns: minmax(0, 1fr); align-items: center; }
+.hero-copy h1 { max-width: 11em; }
+.hero-lede { margin-top: var(--s-16); font-size: var(--fs-20); line-height: 1.5; color: var(--ink-2); max-width: 26em; }
+.hero-actions { display: flex; flex-wrap: wrap; gap: var(--s-8); margin-top: var(--s-32); }
+.hero-card { margin: 0; display: grid; gap: var(--s-24); padding: var(--s-24); }
+.hero-card-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s-12); flex-wrap: wrap; }
+@media (min-width: 960px) {
+  .hero { padding: var(--s-96) 0; }
+  .hero-grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: var(--s-64); }
+  .hero-card { padding: var(--s-32); }
+}

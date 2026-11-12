@@ -3,27 +3,47 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Cojam</title>
-<meta name="description" content="Cojam is coming back. The new site is in preparation.">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<title>Cojam: the OG prediction market is back</title>
+<meta name="description" content="Swap old CT for new CT one for one on Kaia. Each swap unlocks after 7 days.">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
-<link rel="stylesheet" href="/assets/base.css">
+<link rel="stylesheet" href="assets/base.css">
+<link rel="stylesheet" href="assets/pages/landing.css">
 </head>
-<body>
-<header class="bar">
-  <a class="brand" href="/" aria-label="Cojam home"><img src="/assets/cojam-mark.svg" alt="" width="28" height="28"><span>Cojam</span></a>
-  <nav class="lang" aria-label="Language">
-    <button type="button" data-lang="en">EN</button>
-    <button type="button" data-lang="ko">한국어</button>
-    <button type="button" data-lang="ja">日本語</button>
-  </nav>
-</header>
-<main class="hold">
-  <img class="mark" src="/assets/cojam-mark.svg" alt="" width="96" height="96">
-  <h1 data-i18n="hold.title">Cojam is coming back.</h1>
-  <p data-i18n="hold.body">The new site and the token migration are in preparation. Official announcements will appear only on this domain.</p>
+<body data-page="home" data-root="./">
+<div id="cj-top"></div>
+<main id="main">
+
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-copy">
+        <h1 data-i18n="hero.title">The OG prediction market, since 2019.</h1>
+        <p class="hero-lede" data-i18n="hero.lede">Cojam is back on Kaia. Swap your old CT for new CT, one for one.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary btn-lg" href="migrate/" data-i18n="hero.cta">Swap CT</a>
+          <a class="btn btn-ghost btn-lg" href="#how" data-i18n="hero.how">How the swap works</a>
+        </div>
+      </div>
+      <figure class="hero-card panel" aria-labelledby="hero-card-cap">
+        <div class="hero-card-head">
+          <span class="tag tag-sky" data-i18n="hero.card.tag">1 old CT = 1 new CT</span>
+          <span class="small muted" id="hero-window"></span>
+        </div>
+        <div id="hero-track" class="track track-lg"></div>
+        <figcaption id="hero-card-cap" class="small muted" data-i18n="hero.card.cap">Swap any amount. It stays locked for 7 days, then you claim it to your wallet.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <!-- Sections below the hero are built in assets/pages/landing.js and this file. -->
+
 </main>
-<script src="/assets/i18n.js"></script>
+<div id="cj-foot"></div>
+<script src="assets/system.js"></script>
+<script src="assets/i18n/shell.js"></script>
+<script src="assets/i18n/landing.js"></script>
+<script src="assets/shell.js"></script>
+<script src="assets/pages/landing.js"></script>
 </body>
 </html>
