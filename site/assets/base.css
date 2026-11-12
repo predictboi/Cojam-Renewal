@@ -195,9 +195,8 @@ a:hover { color: var(--brand-hover); }
 .track-mid { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-size: var(--fs-13); color: var(--ink-2); text-align: right; }
 .track-mid svg { flex: none; }
 .track.is-ready .track-day::before { transform: none; }
-/* Released reads done and calm: a light sky fill (not live data, not empty), and a check beside the release date. */
+/* Released reads done and calm: a light sky fill (not live data, not empty); the check sits at the right end of the foot. */
 .track.is-released .track-day::before, .track.is-released .track-now { background: var(--sky-soft); }
-.track-cap svg { display: inline-block; vertical-align: -2px; margin-right: 4px; color: var(--ink); }
 .track.is-released .track-day::before { transform: none; }
 .track-lg .track-amt { font-size: var(--fs-24); }
 .track-lg .track-instant .track-amt { font-size: var(--fs-20); }

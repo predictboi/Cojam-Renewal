@@ -7,6 +7,21 @@
 .mg-window { display: inline-flex; align-items: center; gap: var(--s-8); margin-top: var(--s-12); color: var(--ink-2); }
 .mg-window svg { flex: none; }
 .mg-window.is-closed { color: var(--warn); }
+.mg-window[hidden] { display: none; }
+/* Phone, wallet connected: one line title, the window line as a disclosure for the lede (paintWindow in migrate.js). */
+.mg-win-btn { display: inline-flex; align-items: center; gap: var(--s-8); min-height: 44px; margin: 0; padding: 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.mg-win-btn > svg { flex: none; }
+.mg-win-btn > svg:last-child { transform: rotate(90deg); transition: transform var(--dur) var(--ease); }
+.mg-win-btn[aria-expanded="true"] > svg:last-child { transform: rotate(-90deg); }
+.mg-win-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 4px; }
+@media (max-width: 599px) {
+  .mg:has(.mg-head.is-compact) { padding-top: var(--s-16); }
+  .mg-head.is-compact { display: flex; flex-direction: column; margin-bottom: var(--s-12); }
+  .mg-head.is-compact h1 { font-size: var(--fs-20); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mg-head.is-compact .mg-window { order: 1; display: flex; margin-top: 0; }
+  .mg-head.is-compact .mg-lede { order: 2; display: none; margin-top: 0; font-size: var(--fs-14); }
+  .mg-head.is-compact.is-open .mg-lede { display: block; }
+}
 
 /* two columns from 1024px: the swap panel, the history beside it */
 .mg-grid { display: grid; gap: var(--s-24); grid-template-columns: minmax(0, 1fr); align-items: start; }
@@ -74,6 +89,10 @@
 .mg-actions { display: grid; gap: var(--s-8); padding-top: var(--s-8); }
 .mg-actions-row { grid-template-columns: minmax(0, 1fr); }
 @media (min-width: 560px) { .mg-actions-row { grid-template-columns: minmax(0, 1fr) auto; } }
+.mg-addrow { display: flex; }
+.mg-addrow .btn { margin-left: calc(var(--s-12) * -1); }
+/* split rows with no valid amount yet */
+.mg-ph { color: var(--ink-2); font-weight: var(--fw-regular); }
 .mg-hint { text-align: center; }
 
 /* steps */
@@ -126,7 +145,7 @@ kbd { display: inline-flex; align-items: center; justify-content: center; min-wi
 .mg-totals dt { font-size: var(--fs-13); color: var(--ink-2); }
 .mg-totals dd { margin: 0; font-size: var(--fs-14); font-weight: var(--fw-semi); overflow-wrap: anywhere; }
 .mg-totals .num { white-space: normal; }
-@media (min-width: 600px) and (max-width: 1023px), (min-width: 1200px) { .mg-totals { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-12); } }
+/* Two columns at every width: four did not leave room for "112,500 new CT" on one line. */
 .mg-lots { list-style: none; margin: 0; padding: 0; }
 .mg-lot { padding: var(--s-16) 0; border-bottom: 1px solid var(--line); display: grid; gap: var(--s-12); }
 .mg-lot:last-child { border-bottom: 0; padding-bottom: 0; }

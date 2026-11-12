@@ -1,6 +1,7 @@
 // Cojam wallet connection: environment detection, mobile deep links and the connect sheet. Mock only: picking a wallet
 // calls back into the page (the swap app runs CJ.ledger.connect with wallet.kind set); nothing talks to a real wallet.
-// Load order on every page: system.js, wallet.js, i18n/*.js, shell.js, page script. Styles: assets/wallet.css.
+// Load order: system.js, i18n/shell.js and shell.js before <main>; motion.js, this file, i18n/<page>.js and the page script at
+// the end of <body>. Styles: assets/wallet.css.
 //
 // Sources (checked 2026-11-12):
 // - MetaMask dapp deep link: "https://link.metamask.io/dapp/{dappUrl}" opens the URL in the MetaMask mobile in-app

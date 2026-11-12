@@ -53,7 +53,7 @@ CJ.dict({
     "docs.sp.small.b": "Any amount above 0 can be swapped. With MetaMask, the gas in KAIA may cost more than a very small amount of CT is worth; with Kaia Wallet the swap is free.",
 
     "docs.fees.b": "The swap charges no fee and the rate is always 1 old CT to 1 new CT. The only cost is the Kaia network fee, and with Kaia Wallet Cojam pays it for you.",
-    "docs.fees.kaia": "<strong>Kaia Wallet: free.</strong> Kaia supports fee delegation: you sign the transaction in your wallet, and Cojam's fee payer co-signs it and pays the fee. You need no KAIA to approve, swap or claim. WalletConnect wallets that support fee delegation work the same way.",
+    "docs.fees.kaia": "<strong>Kaia Wallet: free.</strong> Kaia supports fee delegation: you sign the transaction in your wallet, and Cojam's fee payer co-signs it and pays the fee. You need no KAIA to approve, swap or claim. Over WalletConnect, plan on a small KAIA fee for now.",
     "docs.fees.mm": "<strong>MetaMask: a small fee in KAIA.</strong> MetaMask cannot sign Kaia fee delegated transactions, so you pay the network fee yourself for each approval, swap and claim. Your wallet shows the exact fee before you confirm.",
     "docs.fees.payer": "<strong>What the fee payer can do.</strong> It only pays fees for approving old CT to the swap contract, swapping and claiming on the Cojam contracts, with a limit per wallet. It cannot sign for you and can never move your tokens.",
     "docs.fees.down": "<strong>If the fee payer is busy.</strong> The Swap page says so and nothing is sent. Retry, or pay the fee yourself in KAIA.",
@@ -132,7 +132,7 @@ CJ.dict({
     "docs.sp.small.b": "0보다 큰 수량은 모두 교환할 수 있습니다. MetaMask를 쓰면 CT가 아주 적을 때 KAIA로 내는 가스가 CT의 가치보다 클 수 있습니다. Kaia Wallet을 쓰면 교환이 무료입니다.",
 
     "docs.fees.b": "교환 수수료는 없으며, 비율은 항상 기존 CT 1개당 신규 CT 1개입니다. 비용은 Kaia 네트워크 수수료뿐이며, Kaia Wallet을 쓰면 Cojam이 대신 부담합니다.",
-    "docs.fees.kaia": "<strong>Kaia Wallet: 무료.</strong> Kaia는 수수료 대납을 지원합니다. 사용자가 지갑에서 트랜잭션에 서명하면 Cojam 대납지갑이 함께 서명하고 수수료를 냅니다. 승인, 교환, 수령에 KAIA가 필요 없습니다. 수수료 대납을 지원하는 WalletConnect 지갑도 같은 방식으로 작동합니다.",
+    "docs.fees.kaia": "<strong>Kaia Wallet: 무료.</strong> Kaia는 수수료 대납을 지원합니다. 사용자가 지갑에서 트랜잭션에 서명하면 Cojam 대납지갑이 함께 서명하고 수수료를 냅니다. 승인, 교환, 수령에 KAIA가 필요 없습니다. WalletConnect로 연결하면 현재로서는 소액의 KAIA 수수료가 듭니다.",
     "docs.fees.mm": "<strong>MetaMask: 소액의 KAIA 수수료.</strong> MetaMask는 Kaia 수수료 대납 트랜잭션에 서명할 수 없으므로, 승인, 교환, 수령마다 네트워크 수수료를 직접 냅니다. 확인하기 전에 지갑에서 정확한 수수료를 보여 줍니다.",
     "docs.fees.payer": "<strong>대납지갑이 할 수 있는 일.</strong> 교환 컨트랙트에 대한 기존 CT 승인과 Cojam 컨트랙트에서의 교환, 수령에 대해서만 지갑별 한도 안에서 수수료를 냅니다. 사용자 대신 서명할 수 없으며, 사용자의 토큰도 절대 옮길 수 없습니다.",
     "docs.fees.down": "<strong>대납지갑이 혼잡할 때.</strong> 교환 페이지에 안내가 표시되며 아무것도 전송되지 않습니다. 다시 시도하거나 KAIA로 수수료를 직접 내세요.",
@@ -211,7 +211,7 @@ CJ.dict({
     "docs.sp.small.b": "0より大きい数量であれば交換できます。MetaMaskでは、ごく少額のCTの場合、KAIAで支払うガス代がCTの価値を上回ることがあります。Kaia Walletなら交換は無料です。",
 
     "docs.fees.b": "交換手数料はかからず、レートは常に旧CT 1枚につき新CT 1枚です。費用はKaiaのネットワーク手数料のみで、Kaia WalletならCojamが負担します。",
-    "docs.fees.kaia": "<strong>Kaia Wallet: 無料。</strong>Kaiaは手数料の肩代わりに対応しています。ウォレットでトランザクションに署名すると、Cojamのガス代ウォレットが連署して手数料を支払います。承認、交換、受け取りにKAIAは不要です。手数料の肩代わりに対応したWalletConnectウォレットも同様です。",
+    "docs.fees.kaia": "<strong>Kaia Wallet: 無料。</strong>Kaiaは手数料の肩代わりに対応しています。ウォレットでトランザクションに署名すると、Cojamのガス代ウォレットが連署して手数料を支払います。承認、交換、受け取りにKAIAは不要です。WalletConnect経由の場合は、現時点では少額のKAIA手数料がかかります。",
     "docs.fees.mm": "<strong>MetaMask: 少額のKAIA手数料。</strong>MetaMaskはKaiaの手数料の肩代わりに対応したトランザクションに署名できないため、承認、交換、受け取りのたびにネットワーク手数料をご自身で支払います。確定する前に、ウォレットに正確な手数料が表示されます。",
     "docs.fees.payer": "<strong>ガス代ウォレットにできること。</strong>交換コントラクトへの旧CTの承認と、Cojamコントラクトでの交換と受け取りの手数料のみを、ウォレットごとの上限内で支払います。あなたの代わりに署名することはできず、トークンを動かすことも決してできません。",
     "docs.fees.down": "<strong>ガス代ウォレットが混雑している場合。</strong>交換ページにその旨が表示され、何も送信されません。再試行するか、KAIAで手数料をご自身で支払ってください。",

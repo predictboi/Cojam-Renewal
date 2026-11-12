@@ -203,6 +203,14 @@
     }
   };
 
+  // When a lot was swapped: the date, plus the time (UTC) when this wallet has another lot from the same UTC day,
+  // so two lots are always told apart without crowding every caption with a time.
+  function swapWhen(lot) {
+    var d = Math.floor(lot.swappedAt / DAY);
+    var twin = ledger.lots.some(function (l) { return l !== lot && l.id !== lot.id && Math.floor(l.swappedAt / DAY) === d; });
+    return twin ? lotTime(lot.swappedAt) : date(lot.swappedAt);
+  }
+
   // ---------- window ----------
   // Whole days left in the swap window (or until ts). One formula for every page: swap, status and admin say the same number.
   function daysLeft(ts) { return Math.floor(((ts == null ? config.windowEnd : ts) - now()) / DAY); }
@@ -260,19 +268,19 @@
       html += '<span class="' + cls + '"' + part + "></span>";
     }
     var by = lot && lot.releasedBy === "you" ? "track.by_you" : lot && lot.releasedBy === "holder" ? "track.by_holder" : "track.by_keeper";
-    var leftCap = lot ? t("track.swapped", { date: lotTime(lot.swappedAt) }) : t("track.left");
+    var leftCap = lot ? t("track.swapped", { date: swapWhen(lot) }) : t("track.left");
     var nowCap = lot ? t("track.now_done") : t("track.now");
     var rightCap = status === "demo" ? t("track.right", { days: days })
       : status === "locked" ? t("track.unlocks", { date: date(lot.unlockAt) })
       : status === "releasing" ? t("track.sending")
-      : icon("check", 14) + t("track.released", { date: date(lot.releasedAt) });
+      : t("track.released", { date: date(lot.releasedAt) });
     var mid = status === "demo" ? t("track.mid", { days: days })
       : status === "locked" ? t("track.left_days", { rel: rel(lot.unlockAt) })
       : status === "releasing" ? t("track.mid_ready") : t(by);
     var a = amount(total), ai = amount(sp.instant), al = amount(sp.locked);
     el.className = "track" + (opts.large ? " track-lg" : "") + (status === "releasing" ? " is-ready" : "") + (status === "released" ? " is-released" : "");
     el.setAttribute("role", "img");
-    el.setAttribute("aria-label", t("track.aria", { amount: a, instant: ai, locked: al, right: rightCap.replace(/<[^>]+>/g, ""), mid: mid }));
+    el.setAttribute("aria-label", t("track.aria", { amount: a, instant: ai, locked: al, right: rightCap, mid: mid }));
     el.innerHTML =
       '<div class="track-end"><span class="track-cap">' + leftCap + '</span><span class="track-amt"><span class="num">' + a + '</span> <span class="track-unit">' + t("unit.old") + "</span></span></div>" +
       '<div class="track-end r"><span class="track-cap">' + rightCap + '</span><span class="track-amt"><span class="num">' + al + '</span> <span class="track-unit">' + t("unit.new") + "</span></span></div>" +
@@ -488,7 +496,7 @@
   window.CJ = {
     config: config, params: params, DAY: DAY, now: now,
     dict: dict, t: t, lang: function () { return lang; }, setLang: setLang, applyI18n: applyI18n,
-    fmt: { amount: amount, compact: compact, pct: pct, date: date, dateTime: dateTime, lotTime: lotTime, rel: rel, addr: shortAddr },
+    fmt: { amount: amount, compact: compact, pct: pct, date: date, dateTime: dateTime, lotTime: lotTime, swapWhen: swapWhen, rel: rel, addr: shortAddr },
     parseAmount: parseAmount, split: split, ledger: ledgerApi, windowState: windowState, daysLeft: daysLeft,
     icon: icon, track: track, trackAggregate: trackAggregate, toast: toast, copy: copy, renderAddrs: renderAddrs, fakeTx: fakeTx,
     sample: { lots: sampleLots, state: sampleState, wholeParts: wholeParts, shares: shares },
