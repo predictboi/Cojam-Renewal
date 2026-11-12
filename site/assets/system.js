@@ -11,7 +11,8 @@
     gasSymbol: "KAIA",
     explorer: "https://kaiascan.io",
     oldToken: { name: "Cojam", symbol: "CT", decimals: 18, address: "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b" },
-    newToken: { name: "Cojam Token", symbol: "CT", decimals: 18, address: null, supply: 4083262533.956 },
+    // Exact supply, checked on chain: 4083262533956000100000000000 base units. Use supplyText wherever the figure is shown.
+    newToken: { name: "Cojam Token", symbol: "CT", decimals: 18, address: null, supply: 4083262533.9560001, supplyText: "4,083,262,533.9560001" },
     swapContract: { address: null },
     ratio: 1,
     instantPercent: 10, // paid in the swap transaction; the rest is locked
@@ -121,12 +122,13 @@
   var KEEPER_MS = config.keeperDelayMin * 60000;
   function freshLedger() {
     return {
-      wallet: { connected: false, address: "0x3fA9c2E07b1d4C6e8A52bD90f1e7C4a6D2b8E915", network: "kaia", kaia: 2.48 },
+      // kind: the wallet app chosen (kaia, mm, wc). Gas: Kaia Wallet and WalletConnect are fee delegated, MetaMask pays in KAIA.
+      wallet: { connected: false, address: "0x3fA9c2E07b1d4C6e8A52bD90f1e7C4a6D2b8E915", network: "kaia", kaia: 2.48, kind: null },
       oldCT: 125000,
       newCT: 0,
       allowance: 0,
       lots: [], // {id, amount, instant, locked, swappedAt, unlockAt, releasedAt, releasedBy, txSwap, txRelease}
-      contract: { paused: false, reserveEmpty: false }
+      contract: { paused: false, reserveEmpty: false, sponsorDown: false }
     };
   }
   if (params.get("reset") === "1") { try { localStorage.removeItem(KEY); } catch (e) {} }
@@ -169,7 +171,6 @@
       ledger.oldCT = Math.max(0, +(ledger.oldCT - amt).toFixed(6));
       ledger.newCT = +(ledger.newCT + sp.instant).toFixed(6);
       ledger.allowance = Math.max(0, +(ledger.allowance - amt).toFixed(6));
-      ledger.wallet.kaia = Math.max(0, +(ledger.wallet.kaia - 0.012).toFixed(4));
       ledger.lots.unshift(lot); save(); return lot;
     },
     // The holder releases an unlocked lot before the keeper does. Pays the owner, never anyone else.
@@ -179,7 +180,6 @@
       if (!lot || lotStatus(lot) !== "releasing") return null;
       lot.releasedAt = now(); lot.releasedBy = "you"; lot.txRelease = fakeTx();
       ledger.newCT = +(ledger.newCT + lot.locked).toFixed(6);
-      ledger.wallet.kaia = Math.max(0, +(ledger.wallet.kaia - 0.006).toFixed(4));
       save(); return lot;
     },
     lotStatus: lotStatus,

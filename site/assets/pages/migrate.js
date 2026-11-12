@@ -14,7 +14,7 @@
   var ui = freshUi();
   function freshUi() {
     return { phase: "form", text: null, amount: 0, error: null, errKind: null, wait: null, frozen: false, closed: false,
-      lotId: null, claimIds: null, mode: null, reviewed: false, partialOff: false, loading: false, walletKey: "kaia", view: null };
+      lotId: null, claimIds: null, mode: null, reviewed: false, partialOff: false, loading: false, walletKey: "kaia", view: null, payOwn: false };
   }
   var timer = null, lastView = null, lastLive = "";
 
@@ -42,6 +42,16 @@
     return o.join(" ");
   }
   function unlockAt() { return CJ.now() + C.lockDays * DAY; }
+  // Fee delegation: Kaia Wallet and WalletConnect wallets sign fee delegated transactions and Cojam's fee payer pays the fee.
+  // MetaMask cannot sign them, so MetaMask users (or anyone who chose to pay after a fee payer error) pay in KAIA.
+  function kind() { var w = led().wallet; return w.kind || w.app || ui.walletKey || "kaia"; }
+  function sponsored() { return kind() !== "mm" && !ui.payOwn; }
+  function feeRow(need) {
+    var r = sponsored()
+      ? row(t("gas.k") + help("help.sponsor"), num(t("f.gas.free")), null, t("f.gas.free.sub"))
+      : row(t("gas.k") + help("help.gas"), num(t("f.gas.v", { amount: gas(need) })), null, t("f.gas.have", { amount: gas(led().wallet.kaia) }));
+    return r.replace('<div class="mg-row">', '<div class="mg-row" id="mg-feerow">');
+  }
   function gasNeed(amt) { return led().allowance >= amt && amt > 0 ? GAS.swap : GAS.approve + GAS.swap; }
   function txLink(hash, label) {
     return '<a class="mg-tx" href="' + C.explorer + "/tx/" + hash + '" target="_blank" rel="noopener"><span>' + label + '</span> <span class="mg-hash">' + F.addr(hash) + "</span>" + I("ext", 14) + "</a>";
@@ -69,7 +79,14 @@
   // The primary action, or the rejected note with Try again in its place.
   function cta(label, act, extra) {
     if (ui.error === "rejected") return note("error", t("er.rejected"), '<button type="button" class="btn btn-primary" data-act="' + act + '"' + (extra || "") + ">" + t("er.retry") + "</button>");
+    if (ui.error === "sponsor") return sponsorNote(act, extra);
     return primary(label, act, extra);
+  }
+  // The fee payer could not pay (busy, or this wallet reached its limit): retry, or pay the fee in KAIA yourself.
+  function sponsorNote(act, extra) {
+    return note("error", withHelp(t("er.sponsor"), "help.sponsor"),
+      '<button type="button" class="btn btn-primary" data-retry data-act="' + act + '"' + (extra || "").replace(" disabled", "") + ">" + I("refresh", 18) + "<span>" + t("er.retry") + "</span></button>" +
+      '<button type="button" class="btn" data-act="pay-own">' + t("er.sponsor.own") + "</button>");
   }
   function steps(cur) {
     return '<ol class="steps mg-steps" aria-label="' + esc(t("st.aria")) + '"><li' + (cur === 1 ? ' aria-current="step"' : ' class="is-done"') + ">" + t("st.approve") + "</li><li" + (cur === 2 ? ' aria-current="step"' : "") + ">" + t("st.swap") + "</li></ol>";
@@ -78,7 +95,7 @@
     return '<dl class="mg-rows">' +
       row(t("sum.send"), num(t("sum.send.v", { amount: A(amt) }))) +
       splitRows(amt) +
-      row(t("gas.k") + help("help.gas"), num(t("f.gas.v", { amount: gas(ui.phase === "swap" ? GAS.swap : GAS.approve + GAS.swap) })), null, t("f.gas.have", { amount: gas(led().wallet.kaia) })) +
+      feeRow(ui.phase === "swap" ? GAS.swap : GAS.approve + GAS.swap) +
       "</dl>";
   }
 
@@ -97,7 +114,7 @@
       row(t("rate.k") + help("help.rate"), num(t("rate.v"))) +
       row(t("lock.k") + help("help.lock"), t("lock.v", { days: C.lockDays })) +
       row(t("window.k"), t("window.v", { date: F.date(C.windowEnd) })) +
-      row(t("gas.k") + help("help.gas"), t("gas.v")) +
+      row(t("gas.k") + help("help.sponsor"), t("gas.v")) +
       "</dl>" +
       '<h3 class="mg-h3">' + t("dc.addrs") + '</h3><div class="mg-addrs"><div class="addr" data-addr="old"></div><div class="addr" data-addr="new"></div><div class="addr" data-addr="swap"></div></div>' +
       '<div class="mg-actions">' + cta(t("dc.cta"), "connect") + "</div>";
@@ -134,7 +151,7 @@
     h += '<dl class="mg-rows">' +
       splitRows(0, true) +
       row(t("rate.k") + help("help.rate"), num(t("rate.v"))) +
-      row(t("gas.k") + help("help.gas"), "", "mg-gas") +
+      feeRow(0) +
       "</dl>" +
       '<div id="mg-gas-err"></div>';
     if (Ld.contract.reserveEmpty) h += note("error", withHelp(t("er.reserve"), "help.reserve"), '<a class="btn" href="' + DOCS + '#support">' + t("er.reserve.fix") + "</a>");
@@ -200,7 +217,7 @@
       '<p class="mg-lead">' + (many ? t("cl.body.many", { count: ready.length }) : t("cl.body.one")) + "</p>";
     h += many ? '<dl class="mg-rows">' + ready.map(function (l) { return row(t("track.swapped", { date: F.date(l.swappedAt) }), num(t("h.v", { amount: A(l.locked) }))); }).join("") + "</dl>"
       : '<div class="mg-trackbox"><div data-track="' + ready[0].id + '" data-large></div></div>';
-    h += '<dl class="mg-rows">' + row(t("gas.k") + help("help.gas"), num(t("f.gas.v", { amount: gas(GAS.claim) })), null, t("cl.gas.sub", { amount: gas(Ld.wallet.kaia) })) + "</dl>";
+    h += '<dl class="mg-rows">' + feeRow(GAS.claim) + "</dl>";
     h += gasError(GAS.claim);
     h += '<div class="mg-actions">' + cta(t(many ? "cl.cta.all" : "cl.cta", { amount: A(amt) }), "claim", ' data-ids="' + ids(ready) + '"' + (gasShort(GAS.claim) ? " disabled" : ""));
     if (Ld.oldCT > 0 && !isClosed()) h += '<button type="button" class="btn btn-block" data-act="to-swap">' + t("cl.swapmore") + "</button>";
@@ -223,14 +240,17 @@
       ? '<button type="button" class="btn btn-primary" data-act="claim" data-ids="' + ids(ready) + '">' + t(ready.length > 1 ? "cl.cta.all" : "cl.cta", { amount: A(amt) }) + "</button>"
       : '<button type="button" class="btn" data-act="see-hist">' + t("er.closed.fix") + "</button>";
     return head(t("f.title")) + '<p class="mg-lead muted">' + t("f.balance", { amount: A(led().oldCT) }) + "</p>" +
-      note("warn", t("er.closed", { date: F.date(C.windowEnd) }), ui.error === "rejected" ? "" : fix) +
-      (ui.error === "rejected" && ready.length ? cta("", "claim", ' data-ids="' + ids(ready) + '"') : "");
+      note("warn", t("er.closed", { date: F.date(C.windowEnd) }), ui.error === "rejected" || ui.error === "sponsor" ? "" : fix) +
+      ((ui.error === "rejected" || ui.error === "sponsor") && ready.length ? cta("", "claim", ' data-ids="' + ids(ready) + '"') : "");
   };
 
-  function gasShort(need) { return led().wallet.kaia < need; }
+  function gasShort(need) { return !sponsored() && led().wallet.kaia < need; }
   function gasError(need) {
     if (!gasShort(need)) return "";
-    return note("error", t("er.nogas", { need: gas(need), have: gas(led().wallet.kaia) }), '<a class="btn" href="' + DOCS + '#gas">' + t("er.nogas.fix") + "</a>");
+    var mm = kind() === "mm";
+    return note("error", t(mm ? "er.nogas" : "er.nogas.own", { need: gas(need), have: gas(led().wallet.kaia) }),
+      (mm ? '<button type="button" class="btn" data-act="switch-wallet">' + t("er.nogas.kaia") + "</button>" : "") +
+      '<a class="btn" href="' + DOCS + '#fees">' + t("er.nogas.fix") + "</a>");
   }
 
   function computeView() {
@@ -269,8 +289,9 @@
     var p = sp(v);
     $("mg-now").innerHTML = num(t("f.now.v", { amount: A(p.instant) }));
     $("mg-later").firstChild.innerHTML = t("f.later.v", { amount: A(p.locked) });
-    $("mg-gas").innerHTML = num(t("f.gas.v", { amount: gas(need) })) + '<span class="mg-sub">' + t("f.gas.have", { amount: gas(Ld.wallet.kaia) }) + "</span>";
-    var short = Ld.wallet.kaia < need;
+    var fr = $("mg-feerow"), nf = feeRow(need);
+    if (fr && fr.outerHTML !== nf) { if (!fr.querySelector("details[open]")) fr.outerHTML = nf; }
+    var short = gasShort(need);
     $("mg-gas-err").innerHTML = short ? gasError(need) : "";
     go.disabled = !s.ok || short || Ld.contract.reserveEmpty;
     go.textContent = s.ok ? t("f.cta", { amount: A(v) }) : t("f.cta.empty");
@@ -278,7 +299,7 @@
   }
   function submitForm() {
     var s = formState(), Ld = led();
-    if (!s.ok || Ld.contract.reserveEmpty || Ld.wallet.kaia < gasNeed(s.value)) return;
+    if (!s.ok || Ld.contract.reserveEmpty || gasShort(gasNeed(s.value))) return;
     ui.amount = s.value; ui.error = null;
     if (ui.amount > BIG && !ui.reviewed) ui.phase = "review";
     else ui.phase = Ld.allowance >= ui.amount ? "swap" : "approve";
@@ -299,6 +320,11 @@
         ui.phase = ui.wait.prev; ui.error = "rejected"; ui.errKind = kind; ui.wait = null;
         render(true); return;
       }
+      if ((kind === "approve" || kind === "swap" || kind === "claim") && sponsored() && led().contract.sponsorDown) {
+        ui.phase = ui.wait.prev; ui.error = "sponsor"; ui.errKind = kind; ui.wait = null;
+        if (kind === "claim") ui.mode = null;
+        render(true); return;
+      }
       ok();
     }, WALLET_MS);
   }
@@ -315,11 +341,12 @@
     render(true);
     CJ.toast(t("toast.cancelled"));
   }
-  function spendGas(x) { var Ld = led(); Ld.wallet.kaia = Math.max(0, +(Ld.wallet.kaia - x).toFixed(4)); }
+  // Only a self paid transaction costs the wallet KAIA; a fee delegated one is paid by Cojam's fee payer.
+  function spendGas(x) { if (sponsored()) return; var Ld = led(); Ld.wallet.kaia = Math.max(0, +(Ld.wallet.kaia - x).toFixed(4)); }
   function doConnect(key) {
     ui.walletKey = key;
     startWallet("connect", 0, function () {
-      led().wallet.app = key; L.connect();
+      led().wallet.app = led().wallet.kind = key; L.connect();
       ui.phase = "form"; ui.wait = null; ui.text = null;
       render(true); CJ.toast(t("toast.connected"));
     });
@@ -341,6 +368,7 @@
     var amt = ui.amount;
     startWallet("swap", amt, function () {
       chain(function (tx) {
+        spendGas(GAS.swap);
         var lot = L.swap(amt); lot.txSwap = tx; L.save();
         ui.lotId = lot.id; ui.phase = "success"; ui.wait = null; ui.text = null; ui.reviewed = false; ui.mode = null;
         render(true); CJ.toast(t("toast.swapped", { amount: A(lot.instant) }));
@@ -354,16 +382,15 @@
     ui.claimIds = list.map(function (l) { return l.id; });
     startWallet("claim", amt, function () {
       chain(function (tx) {
-        var before = led().wallet.kaia;
         // A lot the keeper released while the wallet was open is simply skipped: it is already in the wallet.
         ui.claimIds.forEach(function (id) { var lot = L.claim(id); if (lot) lot.txRelease = tx; });
-        led().wallet.kaia = Math.max(0, +(before - GAS.claim).toFixed(4)); // one transaction for the whole batch
+        spendGas(GAS.claim); // one transaction for the whole batch
         ui.phase = "claimed"; ui.wait = null; ui.mode = null;
         L.save(); render(true); CJ.toast(t("toast.claimed", { amount: A(amt) }));
       });
     });
   }
-  function done() { ui.phase = "form"; ui.text = null; ui.mode = null; ui.error = null; ui.reviewed = false; ui.frozen = false; render(true); }
+  function done() { ui.phase = "form"; ui.text = null; ui.mode = null; ui.error = null; ui.reviewed = false; ui.frozen = false; ui.payOwn = false; render(true); }
   function back() {
     var p = ui.phase;
     if (p === "wallet") return cancelWallet();
@@ -467,7 +494,9 @@
     var b = e.target.closest("[data-act]"); if (!b || b.disabled) return;
     var a = b.getAttribute("data-act"), idList = (b.getAttribute("data-ids") || "").split(",").filter(Boolean);
     ui.frozen = false;
+    if (b.hasAttribute("data-retry")) led().contract.sponsorDown = false; // mock: the fee payer answers on retry
     switch (a) {
+      case "pay-own": ui.payOwn = true; ui.error = null; render(true); break;
       case "connect": ui.error = null; openChooser(b); break;
       case "network": doNetwork(); break;
       case "max": ui.text = plain(led().oldCT); var i = $("mg-amt"); if (i) { i.value = ui.text; updateForm(); i.focus(); } break;
@@ -592,6 +621,7 @@
     if (k === "reserve") { Ld.contract.reserveEmpty = !Ld.contract.reserveEmpty; L.save(); }
     if (k === "closed") { ui.closed = !ui.closed; render(true); }
     if (k === "network") { L.setNetwork("ethereum"); }
+    if (k === "sponsor") { Ld.contract.sponsorDown = !Ld.contract.sponsorDown; L.save(); }
     if (k === "reset") { clearTimeout(timer); L.reset(); ui = freshUi(); render(true); }
   });
 
