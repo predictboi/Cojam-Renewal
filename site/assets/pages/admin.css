@@ -22,6 +22,17 @@ body[data-page="admin"] .container { max-width: 1280px; }
 .kpi-v { font-size: var(--fs-20); font-weight: var(--fw-semi); line-height: 1.2; overflow-wrap: anywhere; }
 .kpi-u { font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--ink-2); white-space: nowrap; }
 .kpi-sub { font-size: var(--fs-13); color: var(--ink-2); line-height: 1.45; }
+/* amber only for time pressure: overdue releases, a short gas runway */
+.kpi.is-warn { background: var(--warn-tint); }
+.kpi.is-warn dt, .kpi.is-warn .kpi-v, .kpi.is-warn .kpi-u, .kpi.is-warn .kpi-sub { color: var(--warn); }
+
+/* ---------- gas wallet ---------- */
+.adm .adm-gas { padding: 0; overflow: hidden; }
+.adm-gas-head { padding: var(--s-16) var(--s-16) var(--s-12); border-bottom: 1px solid var(--line); }
+.adm-gas-head p { margin-top: var(--s-4); max-width: 60em; }
+.adm-gas .kpi-grid { border-bottom: 1px solid var(--line); }
+.adm-gas-note { padding: var(--s-12) var(--s-16); color: var(--ink); }
+@media (min-width: 900px) { .adm-gas-head { padding: var(--s-24) var(--s-24) var(--s-16); } .adm-gas-note { padding: var(--s-12) var(--s-24); } }
 @media (max-width: 479px) {
   .kpi-grid { grid-template-columns: minmax(0, 1fr); }
   .kpi { padding: var(--s-12) var(--s-16); }
@@ -95,13 +106,15 @@ body[data-page="admin"] .container { max-width: 1280px; }
 .lots-sort-m { display: none; }
 .lots-count .muted { margin-left: var(--s-8); }
 .lots-wrap { margin-top: var(--s-8); overflow-x: auto; border-top: 1px solid var(--line); }
-.lots-table { min-width: 980px; }
+.lots-table { min-width: 1120px; }
 .lots-table th { padding: 0 var(--s-12); height: 48px; }
 .lots-table td { padding: var(--s-4) var(--s-12); height: 56px; }
 .lots-table tbody tr:hover td { background: var(--bg); }
 .lots-table .c-tx { width: 64px; text-align: center; }
 .lots-table .c-wallet { width: 230px; }
 .lots-table .c-status { width: 150px; }
+.st-cell { display: inline-grid; justify-items: start; gap: 2px; }
+.st-cell .by { font-size: var(--fs-13); white-space: nowrap; }
 .sort-btn {
   display: inline-flex; align-items: center; gap: var(--s-4); min-height: 44px; padding: 0 var(--s-4); margin: 0 calc(var(--s-4) * -1);
   border: 0; border-radius: 6px; background: transparent; color: var(--ink-2); font: inherit; font-size: var(--fs-14); font-weight: var(--fw-medium); cursor: pointer; white-space: nowrap;
@@ -114,11 +127,11 @@ th.r .sort-btn { flex-direction: row-reverse; }
 .amt { font-weight: var(--fw-medium); }
 .dt { display: grid; line-height: 1.35; font-size: var(--fs-14); }
 .dt .muted { font-size: var(--fs-13); }
-.left-claimed { color: var(--ink-2); }
-.left-claimable { font-weight: var(--fw-medium); }
+.left-released { color: var(--ink-2); }
+.left-releasing { font-weight: var(--fw-medium); }
 .is-soon { color: var(--warn); font-weight: var(--fw-medium); }
 .tag svg { flex: none; }
-.tag.st-claimed { background: transparent; box-shadow: inset 0 0 0 1px var(--line-strong); }
+.tag.st-released { background: transparent; box-shadow: inset 0 0 0 1px var(--line-strong); }
 .tag.st-locked { color: var(--ink); }
 
 .w-cell { display: flex; align-items: center; gap: 2px; min-width: 0; }
@@ -168,7 +181,7 @@ th.r .sort-btn { flex-direction: row-reverse; }
   .lots-table tbody { display: block; }
   .lots-table tbody tr {
     display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-8) var(--s-16); padding: var(--s-8) 0 var(--s-16); border-bottom: 1px solid var(--line);
-    grid-template-areas: "wallet wallet" "amount status" "req unl" "left tx";
+    grid-template-areas: "wallet wallet" "amount status" "instant locked" "req unl" "left tx";
   }
   .lots-table tbody tr:hover td { background: transparent; }
   .lots-table td { display: block; height: auto; padding: 0; border: 0; width: auto; min-width: 0; }
@@ -176,6 +189,8 @@ th.r .sort-btn { flex-direction: row-reverse; }
   .lots-table td::before { content: attr(data-label); display: block; font-size: var(--fs-12); color: var(--ink-2); margin-bottom: 2px; }
   .lots-table td.c-wallet { grid-area: wallet; }
   .lots-table td.c-amount { grid-area: amount; }
+  .lots-table td.c-instant { grid-area: instant; }
+  .lots-table td.c-locked { grid-area: locked; }
   .lots-table td.c-requested { grid-area: req; }
   .lots-table td.c-unlocks { grid-area: unl; }
   .lots-table td.c-left { grid-area: left; }

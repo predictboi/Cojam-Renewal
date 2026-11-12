@@ -1,10 +1,13 @@
 // Admin swap monitor. Read only. Mock: a seeded generator stands in for the swap contract's
-// Migrated(user, lotId, oldAmount, newAmount, unlockAt) and Claimed(user, lotId, amount) events.
+// Migrated(user, lotId, ...) and Claimed(user, lotId, amount, caller) events. Claimed's caller tells a keeper release from a holder claim.
+// Fee delegation: the same Cojam gas wallet pays approve, swap and claim for fee delegated wallets, and every keeper release.
 (function () {
   var DAY = CJ.DAY, HOUR = 3600000, C = CJ.config, F = CJ.fmt, I = CJ.icon;
   var t = function (k, v) { return CJ.t(k, v); };
   var $ = function (id) { return document.getElementById(id); };
-  var SUPPLY = C.newToken.supply, HOLDERS = 22500, PER_PAGE = 25, BIG_KEY = "cj.admin.bigThreshold";
+  var SUPPLY = C.newToken.supply, HOLDERS = 22500, OVERDUE = HOUR, FEE = { approve: 0.004, swap: 0.012, release: 0.006 };
+  var KEEPER_LATE = CJ.params.get("keeper") === "late", GAS_LOW = CJ.params.get("gas") === "low";
+  var PER_PAGE = 25, BIG_KEY = "cj.admin.bigThreshold";
   var SEARCH_ICO = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>';
   var DL_ICO = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v11"/><path d="M7 10.5l5 5 5-5"/><path d="M5 20h14"/></svg>';
   var SORT_ICO = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path class="up" d="M8 10l4-4 4 4"/><path class="dn" d="M8 14l4 4 4-4"/></svg>';
@@ -40,8 +43,12 @@
         if (pool.length && R() < 0.3) wallet = pool[Math.floor(Math.pow(R(), 1.5) * pool.length)];
         else { wallet = hex(R, 40); pool.push(wallet); }
         var at = C.windowStart + d * DAY + Math.floor(R() * (DAY - 60000));
-        var never = R() < 0.16, delay = -Math.log(Math.max(R(), 1e-9)) * 1.3 * DAY + 5 * 60000;
-        day.push({ wallet: wallet, amount: amt, swappedAt: at, unlockAt: at + C.lockDays * DAY, claimAt: never ? Infinity : at + C.lockDays * DAY + delay, txSwap: hex(R, 64), txClaim: hex(R, 64) });
+        // Release: most lots by the keeper a few minutes after unlock, some claimed first by the holder, a few sent late.
+        var r = R(), by = r < 0.09 ? "holder" : "keeper";
+        var delay = by === "holder" ? (2 + R() * 20) * 60000 : r > 0.975 ? (70 + R() * 230) * 60000 : (4 + R() * 24) * 60000;
+        var unlock = at + C.lockDays * DAY, sp = CJ.split(amt), kind = R() < 0.78 ? (R() < 0.85 ? "kaia" : "wc") : "mm";
+        day.push({ wallet: wallet, amount: amt, instant: sp.instant, locked: sp.locked, kind: kind, swappedAt: at, unlockAt: unlock,
+          releaseAt: unlock + delay, releasedBy: by, txSwap: hex(R, 64), txRelease: hex(R, 64) });
       }
       day.sort(function (a, b) { return a.swappedAt - b.swappedAt; });
       day.forEach(function (l) { perWallet[l.wallet] = (perWallet[l.wallet] || 0) + 1; l.n = perWallet[l.wallet]; l.id = out.length + 1; out.push(l); });
@@ -58,19 +65,45 @@
     var lots = [], wallets = {};
     RAW.forEach(function (r) {
       if (r.swappedAt > n) return;
-      var claimed = r.claimAt <= n;
-      var l = { id: r.id, n: r.n, wallet: r.wallet, amount: r.amount, swappedAt: r.swappedAt, unlockAt: r.unlockAt, claimedAt: claimed ? r.claimAt : null, txSwap: r.txSwap, txClaim: claimed ? r.txClaim : null };
-      l.status = claimed ? "claimed" : (n >= l.unlockAt ? "claimable" : "locked");
+      // ?keeper=late: the keeper stalls for lots that unlocked in the last 6 hours (to show the overdue alert)
+      var due = KEEPER_LATE && r.releasedBy === "keeper" && r.unlockAt > n - 6 * HOUR ? Infinity : r.releaseAt;
+      var rel = due <= n;
+      var l = { id: r.id, n: r.n, wallet: r.wallet, kind: r.kind, amount: r.amount, instant: r.instant, locked: r.locked, swappedAt: r.swappedAt, unlockAt: r.unlockAt,
+        releasedAt: rel ? r.releaseAt : null, releasedBy: rel ? r.releasedBy : null, txSwap: r.txSwap, txRelease: rel ? r.txRelease : null };
+      l.status = rel ? "released" : (n >= l.unlockAt ? "releasing" : "locked");
+      l.overdue = l.status === "releasing" && n - l.unlockAt > OVERDUE;
       lots.push(l);
-      var w = wallets[l.wallet] || (wallets[l.wallet] = { addr: l.wallet, total: 0, lots: [], locked: 0, claimable: 0, claimed: 0 });
-      w.total += l.amount; w.lots.push(l); w[l.status] += l.amount;
+      var w = wallets[l.wallet] || (wallets[l.wallet] = { addr: l.wallet, total: 0, lots: [], instant: 0, locked: 0, releasing: 0, released: 0 });
+      w.total += l.amount; w.lots.push(l); w.instant += l.instant; w[l.status] += l.locked;
     });
-    var tot = { swapped: 0, locked: 0, claimable: 0, claimed: 0, nLocked: 0, nClaimable: 0, nClaimed: 0 };
+    var tot = { swapped: 0, instant: 0, locked: 0, releasing: 0, released: 0, nLocked: 0, nReleasing: 0, nReleased: 0, byKeeper: 0, byHolder: 0, overdue: 0, nOverdue: 0 };
     lots.forEach(function (l) {
-      tot.swapped += l.amount; tot[l.status] += l.amount;
+      tot.swapped += l.amount; tot.instant += l.instant; tot[l.status] += l.locked;
       tot["n" + l.status.charAt(0).toUpperCase() + l.status.slice(1)]++;
+      if (l.releasedBy === "keeper") tot.byKeeper++; else if (l.releasedBy === "holder") tot.byHolder++;
+      if (l.overdue) { tot.overdue += l.locked; tot.nOverdue++; }
     });
-    D = { now: n, lots: lots, wallets: wallets, walletList: Object.keys(wallets).map(function (k) { return wallets[k]; }), tot: tot };
+    D = { now: n, lots: lots, wallets: wallets, walletList: Object.keys(wallets).map(function (k) { return wallets[k]; }), tot: tot, gas: gasWallet(lots, n) };
+  }
+
+  // Gas wallet (sample): every fee delegated approve and swap, every holder claim from a fee delegated wallet, every keeper release.
+  function gasWallet(lots, n) {
+    var today = Math.floor(n / DAY) * DAY, g = { tx: 0, kaia: 0, txToday: 0, kaiaToday: 0, releasesToday: 0, week: 0 };
+    function add(at, fee, release) {
+      g.tx++; g.kaia += fee;
+      if (at >= today) { g.txToday++; g.kaiaToday += fee; if (release) g.releasesToday++; }
+      if (at >= n - 7 * DAY) g.week += fee;
+    }
+    lots.forEach(function (l) {
+      var free = l.kind !== "mm";
+      if (free) { add(l.swappedAt - 60000, FEE.approve); add(l.swappedAt, FEE.swap); }
+      if (l.releasedAt && (l.releasedBy === "keeper" || free)) add(l.releasedAt, FEE.release, l.releasedBy === "keeper");
+    });
+    var days = Math.min(7, Math.max(1, (n - C.windowStart) / DAY));
+    g.rate = (n - C.windowStart >= 7 * DAY ? g.week / 7 : g.kaia / days);
+    g.balance = Math.max(0, (GAS_LOW ? g.kaia + g.rate * 4.2 : 60) - g.kaia);
+    g.runway = g.rate > 0 ? g.balance / g.rate : Infinity;
+    return g;
   }
 
   // ---------- formatting ----------
@@ -91,12 +124,13 @@
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
   function statusTag(s) {
-    var ico = s === "locked" ? "lock" : s === "claimable" ? "unlock" : "check";
-    return '<span class="tag st-' + s + (s === "claimable" ? " tag-sky" : "") + '">' + I(ico, 14) + "<span>" + t("st." + s) + "</span></span>";
+    var ico = s === "locked" ? "lock" : s === "releasing" ? "unlock" : "check";
+    return '<span class="tag st-' + s + (s === "releasing" ? " tag-sky" : "") + '">' + I(ico, 14) + "<span>" + t("st." + s) + "</span></span>";
   }
+  function byLine(l) { return l.releasedBy ? '<span class="by small muted">' + t(l.releasedBy === "keeper" ? "by.keeper" : "by.holder") + "</span>" : ""; }
   function leftText(l) {
-    if (l.status === "claimed") return t("left.claimed", { date: dShort(l.claimedAt) });
-    if (l.status === "claimable") return t("left.ready");
+    if (l.status === "released") return t("left.released", { date: dShort(l.releasedAt) });
+    if (l.status === "releasing") return t(l.overdue ? "left.overdue" : "left.releasing", { time: dur(D.now - l.unlockAt) });
     return dur(l.unlockAt - D.now);
   }
   function walletBtn(addr, cls) {
@@ -130,15 +164,29 @@
       win = kpi(t("kpi.window"), amt0(Math.floor(left / DAY)), t(Math.floor(left / DAY) === 1 ? "n.day.one" : "n.day.other", { n: "" }).trim(), t("kpi.window_sub", { date: dOnly(C.windowEnd), start: dOnly(C.windowStart) }));
     } else if (ws === "closed") win = kpi(t("kpi.window"), t("kpi.window_closed"), "", t("kpi.window_closed_sub", { date: dOnly(C.windowEnd) }));
     else win = kpi(t("kpi.window"), t("kpi.window_upcoming"), "", t("kpi.window_sub", { date: dOnly(C.windowEnd), start: dOnly(C.windowStart) }));
+    var od = T.nOverdue > 0;
     $("kpi-grid").innerHTML =
-      kpi(t("kpi.swapped"), amt0(T.swapped), ct, t("kpi.swapped_sub", { pct: F.pct(T.swapped / SUPPLY, 2) })) +
-      kpi(t("kpi.requests"), amt0(D.lots.length), t("unit.requests"), t("kpi.requests_sub", { n: amt0(nW) })) +
+      kpi(t("kpi.swapped"), amt0(T.swapped), ct, t("kpi.swapped_sub", { pct: F.pct(T.swapped / SUPPLY, 2), supply: C.newToken.supplyText, n: amt0(D.lots.length) })) +
       kpi(t("kpi.wallets"), amt0(nW), t("unit.wallets"), t("kpi.wallets_sub", { n: amt0(HOLDERS) }) + ", " + F.pct(nW / HOLDERS, 1)) +
       kpi(t("kpi.reserve"), amt0(SUPPLY - T.swapped), ct, t("kpi.reserve_sub", { pct: F.pct((SUPPLY - T.swapped) / SUPPLY, 2) })) +
-      kpi(t("kpi.locked"), amt0(T.locked), ct, t("kpi.locked_sub", { n: amt0(T.nLocked) })) +
-      kpi(t("kpi.claimable"), amt0(T.claimable), ct, t("kpi.claimable_sub", { n: amt0(T.nClaimable) })) +
-      kpi(t("kpi.claimed"), amt0(T.claimed), ct, t("kpi.claimed_sub", { n: amt0(T.nClaimed) })) +
-      win;
+      win +
+      kpi(t("kpi.instant"), amt0(T.instant), ct, t("kpi.instant_sub", { n: amt0(D.lots.length) })) +
+      kpi(t("kpi.locked"), amt0(T.locked + T.releasing), ct, t("kpi.locked_sub", { n: amt0(T.nLocked), m: amt0(T.nReleasing) })) +
+      kpi(t("kpi.released"), amt0(T.released), ct, t("kpi.released_sub", { k: amt0(T.byKeeper), h: amt0(T.byHolder) })) +
+      kpi(t("kpi.overdue"), amt0(T.overdue), ct, od ? t("kpi.overdue_sub", { n: pl("n.req", T.nOverdue) }) : t("kpi.overdue_none"), od ? "is-warn" : "");
+    renderGas();
+  }
+
+  // ---------- gas wallet ----------
+  function renderGas() {
+    var g = D.gas, low = g.runway < 7, k = t("unit.kaia");
+    $("gas-grid").innerHTML =
+      kpi(t("gas.balance"), F.amount(g.balance, 2), k, t("gas.balance_sub")) +
+      kpi(t("gas.runway"), isFinite(g.runway) ? amt0(Math.floor(g.runway)) : "∞", t(Math.floor(g.runway) === 1 ? "n.day.one" : "n.day.other", { n: "" }).trim(),
+        t(low ? "gas.runway_low" : "gas.runway_sub", { rate: F.amount(g.rate, 3) }), low ? "is-warn" : "") +
+      kpi(t("gas.today"), amt0(g.txToday), t("unit.tx"), t("gas.spent", { kaia: F.amount(g.kaiaToday, 3) })) +
+      kpi(t("gas.total"), amt0(g.tx), t("unit.tx"), t("gas.spent", { kaia: F.amount(g.kaia, 3) }));
+    $("gas-note").textContent = t("gas.note", { n: pl("n.release", g.releasesToday) });
   }
 
   // ---------- bar chart (inline SVG, one series, keyboard and pointer readout) ----------
@@ -217,8 +265,8 @@
     D.lots.forEach(function (l) {
       if (l.status !== "locked") return;
       var i = Math.floor((l.unlockAt - today) / DAY);
-      if (i >= 0 && i < 14) { days[i].v += l.amount; days[i].c++; total += l.amount; }
-      if (l.unlockAt - n <= DAY) { soonAmt += l.amount; soonN++; }
+      if (i >= 0 && i < 14) { days[i].v += l.locked; days[i].c++; total += l.locked; }
+      if (l.unlockAt - n <= DAY) { soonAmt += l.locked; soonN++; }
     });
     var soon = $("unl-soon");
     soon.className = "adm-soon" + (soonN ? " is-on" : "");
@@ -255,13 +303,15 @@
 
   // ---------- swap requests table ----------
   var S = { q: "", status: "all", amt: 0, range: "all", key: "requested", dir: "desc", page: 1 };
-  var STATUS_ORDER = { locked: 0, claimable: 1, claimed: 2 };
+  var STATUS_ORDER = { locked: 0, releasing: 1, released: 2 };
   var COLS = [
     { k: "wallet", label: "col.wallet", dir: "asc", v: function (l) { return l.wallet; } },
     { k: "amount", label: "col.amount", r: true, dir: "desc", v: function (l) { return l.amount; } },
+    { k: "instant", label: "col.instant", r: true, dir: "desc", v: function (l) { return l.instant; } },
+    { k: "locked", label: "col.locked", r: true, dir: "desc", v: function (l) { return l.locked; } },
     { k: "requested", label: "col.requested", dir: "desc", v: function (l) { return l.swappedAt; } },
     { k: "unlocks", label: "col.unlocks", dir: "asc", v: function (l) { return l.unlockAt; } },
-    { k: "left", label: "col.left", dir: "asc", v: function (l) { return l.status === "locked" ? l.unlockAt - D.now : l.status === "claimable" ? -1 : 1e15 + l.claimedAt; } },
+    { k: "left", label: "col.left", dir: "asc", v: function (l) { return l.status === "locked" ? l.unlockAt - D.now : l.status === "releasing" ? l.unlockAt - D.now : 1e15 + l.releasedAt; } },
     { k: "status", label: "col.status", dir: "asc", v: function (l) { return STATUS_ORDER[l.status] * 1e14 + l.unlockAt; } },
     { k: "tx", label: "col.tx", nosort: true }
   ];
@@ -271,7 +321,7 @@
       if (S.status !== "all" && l.status !== S.status) return false;
       if (l.amount < S.amt) return false;
       if (l.swappedAt < since) return false;
-      if (q && l.wallet.indexOf(q) < 0 && l.txSwap.indexOf(q) < 0 && (!l.txClaim || l.txClaim.indexOf(q) < 0)) return false;
+      if (q && l.wallet.indexOf(q) < 0 && l.txSwap.indexOf(q) < 0 && (!l.txRelease || l.txRelease.indexOf(q) < 0)) return false;
       return true;
     });
     var col = COLS.filter(function (c) { return c.k === S.key; })[0], m = S.dir === "asc" ? 1 : -1;
@@ -287,7 +337,7 @@
         "<span>" + t(c.label) + "</span>" + SORT_ICO + "</button></th>";
     }).join("");
   }
-  var SORT_OPTS = ["requested.desc", "requested.asc", "amount.desc", "amount.asc", "unlocks.asc", "unlocks.desc", "left.asc", "status.asc", "status.desc", "wallet.asc"];
+  var SORT_OPTS = ["requested.desc", "requested.asc", "amount.desc", "amount.asc", "locked.desc", "unlocks.asc", "unlocks.desc", "left.asc", "status.asc", "status.desc", "wallet.asc"];
   function renderSortSelect() {
     var cur = S.key + "." + S.dir, sel = $("lots-sort");
     var opts = SORT_OPTS.indexOf(cur) < 0 ? SORT_OPTS.concat([cur]) : SORT_OPTS;
@@ -310,16 +360,18 @@
     $("lots-count").innerHTML = '<span class="num">' + t("lots.count", { n: amt0(total), total: amt0(D.lots.length), amount: amt0(sum) }) + "</span>" +
       (total ? ' <span class="muted">' + t("lots.count_page", { from: amt0(from + 1), to: amt0(from + slice.length) }) + "</span>" : "");
     if (!total) {
-      $("lots-body").innerHTML = '<tr class="empty"><td colspan="7"><div class="lots-empty"><p>' + t("lots.empty") + '</p><button type="button" class="btn" id="lots-clear">' + t("lots.clear") + "</button></div></td></tr>";
+      $("lots-body").innerHTML = '<tr class="empty"><td colspan="' + COLS.length + '"><div class="lots-empty"><p>' + t("lots.empty") + '</p><button type="button" class="btn" id="lots-clear">' + t("lots.clear") + "</button></div></td></tr>";
     } else {
       $("lots-body").innerHTML = slice.map(function (l) {
         return '<tr class="row-' + l.status + '">' +
           cell("col.wallet", '<div class="w-cell">' + walletBtn(l.wallet) + '<span class="w-tools">' + walletTools(l.wallet) + "</span></div>", "c-wallet") +
           cell("col.amount", '<span class="num amt">' + amt(l.amount) + "</span>", "r c-amount") +
+          cell("col.instant", '<span class="num">' + amt(l.instant) + "</span>", "r c-instant") +
+          cell("col.locked", '<span class="num">' + amt(l.locked) + "</span>", "r c-locked") +
           cell("col.requested", '<span class="dt"><span class="num">' + dOnly(l.swappedAt) + '</span><span class="num muted">' + tOnly(l.swappedAt) + "</span></span>", "c-requested") +
           cell("col.unlocks", '<span class="dt"><span class="num">' + dOnly(l.unlockAt) + '</span><span class="num muted">' + tOnly(l.unlockAt) + "</span></span>", "c-unlocks") +
-          cell("col.left", '<span class="num left-' + l.status + (l.status === "locked" && l.unlockAt - D.now <= DAY ? " is-soon" : "") + '">' + leftText(l) + "</span>", "c-left") +
-          cell("col.status", statusTag(l.status), "c-status") +
+          cell("col.left", '<span class="num left-' + l.status + ((l.status === "locked" && l.unlockAt - D.now <= DAY) || l.overdue ? " is-soon" : "") + '">' + leftText(l) + "</span>", "c-left") +
+          cell("col.status", '<span class="st-cell">' + statusTag(l.status) + byLine(l) + "</span>", "c-status") +
           cell("col.tx", txLink(l.txSwap), "c-tx") + "</tr>";
       }).join("");
     }
@@ -340,9 +392,11 @@
   function csvCell(v) { v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
   function exportCsv() {
     var rows = filtered();
-    var head = ["lot_id", "wallet", "wallet_lot", "amount_ct", "requested_at_utc", "unlocks_at_utc", "status", "claimed_at_utc", "swap_tx", "claim_tx"];
+    var head = ["lot_id", "wallet", "wallet_lot", "swapped_old_ct", "instant_new_ct", "locked_new_ct", "requested_at_utc", "unlocks_at_utc", "status", "overdue",
+      "released_at_utc", "released_by", "fee_paid_by", "swap_tx", "release_tx"];
     var lines = [head.join(",")].concat(rows.map(function (l) {
-      return [l.id, l.wallet, l.n, l.amount, iso(l.swappedAt), iso(l.unlockAt), l.status, iso(l.claimedAt), l.txSwap, l.txClaim || ""].map(csvCell).join(",");
+      return [l.id, l.wallet, l.n, l.amount, l.instant, l.locked, iso(l.swappedAt), iso(l.unlockAt), l.status, l.overdue ? "yes" : "no",
+        iso(l.releasedAt), l.releasedBy || "", l.kind === "mm" ? "holder" : "cojam", l.txSwap, l.txRelease || ""].map(csvCell).join(",");
     }));
     var blob = new Blob([lines.join("\n") + "\n"], { type: "text/csv;charset=utf-8" });
     var a = document.createElement("a"), d = new Date(D.now).toISOString().slice(0, 16).replace(/[-:]/g, "").replace("T", "-");
@@ -404,8 +458,8 @@
       '<div class="sheet-addr"><span class="sheet-addr-v">' + w.addr + '</span><span class="w-tools">' + walletTools(w.addr) + "</span></div>" +
       '<dl class="sheet-stats">' +
         stat("sheet.total", amt(w.total), "CT") + stat("sheet.lots", w.lots.length) +
-        stat("sheet.locked", amt(w.locked), "CT") + stat("sheet.claimable", amt(w.claimable), "CT") +
-        stat("sheet.claimed", amt(w.claimed), "CT") + stat("sheet.share", F.pct(w.total / (D.tot.swapped || 1), 2)) +
+        stat("sheet.instant", amt(w.instant), "CT") + stat("sheet.locked", amt(w.locked + w.releasing), "CT") +
+        stat("sheet.released", amt(w.released), "CT") + stat("sheet.share", F.pct(w.total / (D.tot.swapped || 1), 2)) +
         stat("sheet.first", dt(first)) +
       "</dl>" +
       '<h3 class="sheet-h3">' + t("sheet.lots_h") + "</h3>" +
@@ -414,9 +468,9 @@
           '<div class="sheet-track" data-lot="' + l.id + '"></div>' +
           '<div class="sheet-lot-meta small"><span class="muted num">' + t("sheet.requested", { time: dt(l.swappedAt) }) + "</span>" +
           '<span class="sheet-txs"><span class="sheet-tx">' + t("sheet.swap_tx") + txLink(l.txSwap) + "</span>" +
-          (l.txClaim ? '<span class="sheet-tx">' + t("sheet.claim_tx") + txLink(l.txClaim, "row.claim_tx") + "</span>" : "") + "</span></div></li>";
+          (l.txRelease ? '<span class="sheet-tx">' + t("sheet.release_tx") + txLink(l.txRelease, "row.release_tx") + "</span>" : "") + "</span></div></li>";
       }).join("") + "</ol>";
-    lots.forEach(function (l) { CJ.track($("sheet-body").querySelector('[data-lot="' + l.id + '"]'), { amount: l.amount, swappedAt: l.swappedAt, unlockAt: l.unlockAt, claimedAt: l.claimedAt }); });
+    lots.forEach(function (l) { CJ.track($("sheet-body").querySelector('[data-lot="' + l.id + '"]'), l); });
   }
   function openSheet(addr, from) {
     sheetWallet = addr; opener = from || document.activeElement;

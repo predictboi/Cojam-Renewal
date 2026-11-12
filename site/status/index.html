@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Swap status: Cojam</title>
-<meta name="description" content="How much old CT has been swapped for new CT on Kaia, what is locked, what is claimed and how long the swap window stays open.">
+<meta name="description" content="How much old CT has been swapped for new CT on Kaia, what was paid at once, what is locked, what is released and how long the swap window stays open.">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
@@ -37,6 +37,7 @@
         <h2 class="st-label" id="st-hero-label" data-i18n="status.fig.swapped">Swapped so far</h2>
         <p class="st-hero-value"><span id="st-swapped" class="st-hero-num"></span> <span class="st-unit" data-i18n="unit.ct">CT</span></p>
         <p class="small muted" id="st-swapped-sub"></p>
+        <p class="small st-fees" id="st-fees"></p>
         <div class="st-split">
           <h3 class="st-split-title small" data-i18n="status.split.title">Where the new CT supply is</h3>
           <div class="st-bar" id="st-bar" role="img"></div>
@@ -71,7 +72,7 @@
       <section class="panel st-unlock" aria-labelledby="st-unlock-title">
         <div class="st-panel-head">
           <h2 class="st-h2" id="st-unlock-title" data-i18n="status.unlock.title">Unlocking in the next 7 days</h2>
-          <p class="small muted" data-i18n="status.unlock.sub">Locked new CT by the day its 7 day lock ends. Holders claim it any time after.</p>
+          <p class="small muted" data-i18n="status.unlock.sub"></p>
         </div>
         <ol class="st-cal" id="st-cal"></ol>
         <p class="small st-cal-total" id="st-cal-total"></p>
@@ -81,7 +82,7 @@
     <section class="st-recent" aria-labelledby="st-recent-title">
       <div class="st-recent-head">
         <div>
-          <h2 class="st-h2" id="st-recent-title" data-i18n="status.recent.title">Recent swaps and claims</h2>
+          <h2 class="st-h2" id="st-recent-title" data-i18n="status.recent.title">Recent swaps and releases</h2>
           <p class="small muted" data-i18n="status.recent.sub">The latest activity on the swap contract, newest first.</p>
         </div>
         <div class="st-seg" role="group" data-i18n-attr="aria-label:status.view.label">

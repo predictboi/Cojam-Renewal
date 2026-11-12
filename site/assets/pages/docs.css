@@ -48,6 +48,7 @@
 .dc-trackbox { margin: 0 0 var(--s-24); padding: var(--s-24); }
 
 .dc-cases { margin: 0; display: grid; gap: var(--s-16); }
+.dc-fees { margin-top: var(--s-16); }
 .dc-case dd { margin: var(--s-4) 0 0; color: var(--ink-2); }
 
 .dc-addrs { display: grid; gap: var(--s-8); padding: var(--s-16) var(--s-24); margin-bottom: var(--s-24); }

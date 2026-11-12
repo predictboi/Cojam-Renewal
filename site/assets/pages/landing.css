@@ -124,3 +124,5 @@
 .cta-band .btn { flex: none; }
 @media (max-width: 479px) { .cta-band .btn { width: 100%; } }
 @media (min-width: 960px) { .cta-band { padding: var(--s-48); } }
+.how-fee { display: flex; align-items: center; gap: var(--s-8); margin-top: var(--s-32); padding-top: var(--s-16); border-top: 1px solid var(--line); color: var(--ink); font-weight: var(--fw-medium); }
+.how-fee > span:first-child { flex: none; display: inline-flex; color: var(--ink-2); }

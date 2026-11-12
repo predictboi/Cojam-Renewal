@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Cojam: swap monitor</title>
-<meta name="description" content="Internal read only monitor of swap requests, unlocks and claims.">
+<meta name="description" content="Internal read only monitor of swap requests, unlocks, releases and the gas wallet.">
 <link rel="icon" href="../favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
@@ -28,7 +28,7 @@
       </div>
     </header>
 
-    <div class="note adm-note" role="note"><span id="adm-note-ico"></span><div class="note-body" data-i18n="head.note">Sample data. At launch this page reads Migrated and Claimed events from the swap contract on Kaia. Read only: no one can move user funds from here.</div></div>
+    <div class="note adm-note" role="note"><span id="adm-note-ico"></span><div class="note-body" data-i18n="head.note"></div></div>
     <p class="sr-only" id="adm-status" role="status" aria-live="polite"></p>
 
     <section class="panel adm-kpis" aria-labelledby="kpi-h">
@@ -36,12 +36,21 @@
       <dl class="kpi-grid" id="kpi-grid"></dl>
     </section>
 
+    <section class="panel adm-gas" aria-labelledby="gas-h">
+      <div class="adm-gas-head">
+        <h2 id="gas-h" data-i18n="gas.title">Gas wallet</h2>
+        <p class="muted small" data-i18n="gas.sub">Cojam's fee payer. It pays the network fee for fee delegated approve, swap and claim transactions, and for every keeper release.</p>
+      </div>
+      <dl class="kpi-grid" id="gas-grid"></dl>
+      <p class="adm-gas-note small" id="gas-note"></p>
+    </section>
+
     <div class="adm-charts">
       <section class="panel adm-chart" aria-labelledby="unl-h">
         <div class="adm-panel-head">
           <div>
             <h2 id="unl-h" data-i18n="unl.title">Unlock schedule</h2>
-            <p class="muted small" data-i18n="unl.sub">New CT unlocking per day for the next 14 days (UTC days).</p>
+            <p class="muted small" data-i18n="unl.sub"></p>
           </div>
         </div>
         <p class="adm-soon" id="unl-soon"></p>
@@ -93,8 +102,8 @@
           <div class="seg" role="group" aria-labelledby="f-status-l" id="f-status">
             <button type="button" class="seg-btn" data-v="all" data-i18n="f.all">All</button>
             <button type="button" class="seg-btn" data-v="locked" data-i18n="st.locked">Locked</button>
-            <button type="button" class="seg-btn" data-v="claimable" data-i18n="st.claimable">Ready to claim</button>
-            <button type="button" class="seg-btn" data-v="claimed" data-i18n="st.claimed">Claimed</button>
+            <button type="button" class="seg-btn" data-v="releasing" data-i18n="st.releasing">Releasing</button>
+            <button type="button" class="seg-btn" data-v="released" data-i18n="st.released">Released</button>
           </div>
         </div>
         <div class="lots-filter">

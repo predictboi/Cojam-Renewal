@@ -48,7 +48,8 @@
 .mg-row dt { display: flex; align-items: center; gap: var(--s-4); color: var(--ink-2); min-height: 24px; }
 .mg-row dd { margin: 0; text-align: right; color: var(--ink); font-weight: var(--fw-medium); min-width: 0; display: grid; justify-items: end; gap: 2px; padding-top: 1px; }
 .mg-sub { font-size: var(--fs-13); font-weight: var(--fw-regular); color: var(--ink-2); }
-#mg-recv { font-size: var(--fs-16); font-weight: var(--fw-semi); }
+#mg-now, #mg-later { font-size: var(--fs-16); font-weight: var(--fw-semi); }
+#mg-later .mg-sub { font-size: var(--fs-13); }
 
 /* larger hit area on help toggles without moving the layout */
 .mg .help > summary { width: 32px; height: 32px; margin: -4px; }
@@ -120,10 +121,11 @@ kbd { display: inline-flex; align-items: center; justify-content: center; min-wi
 .mg-hist-head h2 { font-size: var(--fs-20); }
 .mg-hist-head h2:focus { outline: none; }
 .mg-hist-lead { margin-top: var(--s-8); }
-.mg-totals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-12); margin: var(--s-16) 0 0; padding: var(--s-12) 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.mg-totals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-12) var(--s-16); margin: var(--s-16) 0 0; padding: var(--s-12) 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
 .mg-totals dt { font-size: var(--fs-13); color: var(--ink-2); }
 .mg-totals dd { margin: 0; font-size: var(--fs-14); font-weight: var(--fw-semi); overflow-wrap: anywhere; }
 .mg-totals .num { white-space: normal; }
+@media (min-width: 600px) and (max-width: 1023px), (min-width: 1200px) { .mg-totals { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-12); } }
 .mg-lots { list-style: none; margin: 0; padding: 0; }
 .mg-lot { padding: var(--s-16) 0; border-bottom: 1px solid var(--line); display: grid; gap: var(--s-12); }
 .mg-lot:last-child { border-bottom: 0; padding-bottom: 0; }

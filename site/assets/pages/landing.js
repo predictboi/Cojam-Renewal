@@ -6,7 +6,7 @@
 
   function paint() {
     var w = document.getElementById("hero-window");
-    if (w) w.textContent = CJ.t("hero.window", { start: f.date(c.windowStart), end: f.date(c.windowEnd) });
+    if (w) w.innerHTML = CJ.t("hero.window", { start: '<span class="num">' + f.date(c.windowStart) + "</span>", end: '<span class="num">' + f.date(c.windowEnd) + "</span>" });
     var tr = document.getElementById("hero-track");
     if (tr) CJ.track(tr, null, { large: true, amount: 125000, demoDays: 3.4 });
 
@@ -16,6 +16,7 @@
     [["how-ico-1", "swap"], ["how-ico-2", "wallet"], ["how-ico-3", "lock"], ["how-ico-4", "unlock"]].forEach(function (p) {
       var el = document.getElementById(p[0]); if (el) el.innerHTML = CJ.icon(p[1], 20);
     });
+    var fee = document.getElementById("how-fee-ico"); if (fee) fee.innerHTML = CJ.icon("wallet", 18);
     document.querySelectorAll(".how .help > summary").forEach(function (s) { if (!s.firstChild) s.innerHTML = CJ.icon("help", 18); });
 
     document.querySelectorAll(".faq-item > summary").forEach(function (s) { if (!s.querySelector("svg")) s.insertAdjacentHTML("beforeend", CJ.icon("chevron", 18)); });
@@ -25,7 +26,7 @@
     set("tl-close", f.date(c.windowEnd));
 
     // Contract facts
-    set("ct-supply", CJ.t("ct.supply.value", { n: f.amount(c.newToken.supply, 3) }));
+    set("ct-supply", CJ.t("ct.supply.value", { n: c.newToken.supplyText }));
 
     // Concept previews: illustrative numbers only.
     set("m1-yes", f.pct(0.62, 0)); set("m1-no", f.pct(0.38, 0));

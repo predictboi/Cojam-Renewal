@@ -11,7 +11,7 @@
     "start": "node src/index.js",
     "start:api": "node src/index.js api",
     "start:keeper": "node src/index.js keeper",
-    "test": "node --test test/"
+    "test": "node --test test/*.test.js"
   },
   "license": "MIT",
   "dependencies": {

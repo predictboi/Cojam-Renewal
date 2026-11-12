@@ -1,6 +1,7 @@
 // Status page: public swap dashboard. Every figure is seeded mock data, deterministic for a given mock time.
 (function () {
-  var C = CJ.config, DAY = CJ.DAY, SUPPLY = C.newToken.supply, LOCK = C.lockDays * DAY;
+  var C = CJ.config, DAY = CJ.DAY, SUPPLY = C.newToken.supply, SUPPLY_TEXT = C.newToken.supplyText, LOCK = C.lockDays * DAY;
+  var NOW_SHARE = C.instantPercent / 100, KEEP = C.keeperDelayMin * 60000; // 10% paid at once; keeper sends the 90% shortly after unlock
   var $ = function (id) { return document.getElementById(id); };
   var t = CJ.t, F = CJ.fmt;
   var VIEW_KEY = "cj.status.view";
@@ -30,13 +31,12 @@
   // Day d of the window swaps vol(d) old CT, spread evenly over that day; it unlocks evenly 7 days later.
   function dayVol(d) { return Math.round((92e6 * Math.exp(-d / 5) + 13e6) * (0.82 + 0.36 * rnd(d, 1))); }
   function dayHolders(d) { return Math.round(dayVol(d) / 255000 * (0.85 + 0.3 * rnd(d, 2))); }
-  function claimedShare(daysSinceUnlock) { return Math.min(0.9, 0.42 + 0.1 * daysSinceUnlock); }
   function overlap(a0, a1, b0, b1) { return Math.max(0, Math.min(a1, b1) - Math.max(a0, b0)); }
 
   function model() {
     var nowReal = now(), nowCap = Math.min(nowReal, C.windowEnd);
     var today = Math.floor((nowCap - C.windowStart) / DAY);
-    var days = [], swapped = 0, locked = 0, claimed = 0, holders = 0;
+    var days = [], swapped = 0, locked = 0, holders = 0;
     var todayStart = Math.floor(nowReal / DAY) * DAY, buckets = [0, 0, 0, 0, 0, 0, 0, 0];
     for (var d = 0; d <= today; d++) {
       var s = C.windowStart + d * DAY, e = Math.min(s + DAY, nowCap), span = e - s;
@@ -44,18 +44,19 @@
       var frac = span / DAY, vol = dayVol(d) * frac, h = Math.round(dayHolders(d) * frac);
       days.push({ d: d, start: s, vol: vol, holders: h, partial: frac < 1 });
       swapped += vol; holders += h;
-      // unlock span for this day's lots
-      var u0 = s + LOCK, u1 = e + LOCK;
-      var stillLocked = vol * overlap(nowReal, Infinity, u0, u1) / span;
-      locked += stillLocked;
-      var unlocked = vol - stillLocked;
-      if (unlocked > 0) claimed += unlocked * claimedShare((nowReal - u0) / DAY);
-      for (var k = 0; k < 8; k++) buckets[k] += vol * overlap(Math.max(nowReal, todayStart + k * DAY), todayStart + (k + 1) * DAY, u0, u1) / span;
+      // the 90% of this day's swaps unlocks 7 days later and the keeper sends it shortly after
+      var u0 = s + LOCK, u1 = e + LOCK, part = vol * (1 - NOW_SHARE);
+      locked += part * overlap(nowReal, Infinity, u0 + KEEP, u1 + KEEP) / span;
+      for (var k = 0; k < 8; k++) buckets[k] += part * overlap(Math.max(nowReal, todayStart + k * DAY), todayStart + (k + 1) * DAY, u0, u1) / span;
     }
-    var ready = Math.max(0, swapped - locked - claimed);
+    var instant = swapped * NOW_SHARE, released = Math.max(0, swapped - instant - locked);
+    // Fee delegation (sample): about 78% of requests come from Kaia Wallet or WalletConnect, whose approve and swap Cojam pays;
+    // every keeper release is paid by Cojam too.
+    var requests = holders * 1.25, releases = requests * (released / Math.max(1, swapped * (1 - NOW_SHARE)));
+    var feeTx = requests * 2 * 0.78 + releases * 0.9, feeKaia = requests * 0.78 * 0.016 + releases * 0.9 * 0.006;
     return {
-      now: nowReal, days: days, swapped: swapped, locked: locked, ready: ready, claimed: claimed,
-      holders: holders, reserve: SUPPLY - swapped, buckets: buckets, todayStart: todayStart
+      now: nowReal, days: days, swapped: swapped, instant: instant, locked: locked, released: released,
+      holders: holders, reserve: SUPPLY - swapped, buckets: buckets, todayStart: todayStart, feeTx: feeTx, feeKaia: feeKaia
     };
   }
 
@@ -70,9 +71,10 @@
         if (at <= tNow && at >= C.windowStart) {
           var u = rnd(slot, 5);
           var amt = Math.round(Math.pow(10, 2.2 + 4.4 * Math.pow(u, 1.5)) * (rnd(slot, 6) < 0.4 ? 100 : 1)) / (rnd(slot, 6) < 0.4 ? 100 : 1);
-          var claim = rnd(slot, 7) < 0.32 && at - LOCK > C.windowStart;
+          var release = rnd(slot, 7) < 0.32 && at - LOCK > C.windowStart, sp = CJ.split(amt);
           out.push({
-            at: at, amount: amt, type: claim ? "claim" : "swap",
+            at: at, amount: release ? sp.locked : amt, instant: sp.instant, type: release ? "release" : "swap",
+            by: rnd(slot, 8) < 0.84 ? "keeper" : "holder",
             wallet: hex(mix(slot) ^ 0x51ed27, 40), tx: hex(mix(slot ^ 0x7a3c11), 64),
             unlockAt: at + LOCK
           });
@@ -103,23 +105,24 @@
   function paintFigures() {
     var m = M, ct = t("unit.ct");
     $("st-swapped").textContent = whole(m.swapped);
-    $("st-swapped-sub").textContent = t("status.fig.swapped_sub", { pct: F.pct(m.swapped / SUPPLY, 1), supply: F.amount(SUPPLY, 3) + "\u00a0" + t("unit.ct") });
+    $("st-swapped-sub").textContent = t("status.fig.swapped_sub", { pct: F.pct(m.swapped / SUPPLY, 1), supply: SUPPLY_TEXT + "\u00a0" + t("unit.ct") });
+    $("st-fees").textContent = t("status.fees", { kaia: whole(m.feeKaia), n: whole(m.feeTx) });
 
     var left = Math.max(0, Math.ceil((C.windowEnd - m.now) / DAY)), closed = CJ.windowState() === "closed";
     $("st-figs").innerHTML =
+      fig(t("status.fig.instant"), whole(m.instant), ct, t("status.fig.instant_sub")) +
       fig(t("status.fig.locked"), whole(m.locked), ct, t("status.fig.locked_sub")) +
-      fig(t("status.fig.ready"), whole(m.ready), ct, t("status.fig.ready_sub")) +
-      fig(t("status.fig.claimed"), whole(m.claimed), ct, t("status.fig.claimed_sub", { pct: F.pct(m.swapped ? m.claimed / m.swapped : 0, 1) })) +
+      fig(t("status.fig.released"), whole(m.released), ct, t("status.fig.released_sub")) +
       fig(t("status.fig.holders"), t("status.fig.holders_value", { n: F.amount(m.holders, 0) }), "", t("status.fig.holders_sub", { pct: F.pct(m.holders / 22500, 1) })) +
       fig(t("status.fig.reserve"), whole(m.reserve), ct, t("status.fig.reserve_sub")) +
       (closed
         ? fig(t("status.fig.time"), t("status.fig.time_closed"), "", t("status.fig.time_closed_sub", { date: F.date(C.windowEnd) }))
         : fig(t("status.fig.time"), t("status.fig.time_value", { n: F.amount(left, 0) }), "", t("status.fig.time_sub", { date: F.date(C.windowEnd) })));
 
-    // supply split: claimed, locked or ready, not swapped yet
+    // supply split: in holders' wallets (the 10% plus released 90%), locked 90%, not swapped yet
     var parts = [
-      { key: "claimed", v: m.claimed, cls: "is-claimed" },
-      { key: "held", v: m.locked + m.ready, cls: "is-held" },
+      { key: "wallets", v: m.instant + m.released, cls: "is-claimed" },
+      { key: "locked", v: m.locked, cls: "is-held" },
       { key: "reserve", v: m.reserve, cls: "is-reserve" }
     ];
     var bar = $("st-bar");
@@ -263,12 +266,14 @@
     return '<a class="btn btn-ghost btn-sm st-tx" href="' + C.explorer + "/tx/" + r.tx + '" target="_blank" rel="noopener" aria-label="' +
       t("status.tx.aria", { hash: F.addr(r.tx) }) + '"><span class="st-hash">' + F.addr(r.tx) + "</span>" + CJ.icon("ext", 16) + "</a>";
   }
+  // Swapped: the 10% paid at once and the date of the 90%. Released: who sent it.
   function statusTag(r) {
-    return r.type === "claim"
-      ? '<span class="tag">' + t("status.st.claimed") + "</span>"
-      : '<span class="tag tag-sky">' + CJ.icon("lock", 14) + t("status.st.locked", { date: shortDate(r.unlockAt) }) + "</span>";
+    return r.type === "release"
+      ? '<span class="tag">' + CJ.icon("check", 14) + t(r.by === "keeper" ? "status.st.keeper" : "status.st.holder") + "</span>"
+      : '<span class="tag tag-sky">' + t("status.st.instant", { amount: F.amount(r.instant) }) + "</span>" +
+        ' <span class="st-later small muted">' + t("status.st.later", { date: shortDate(r.unlockAt) }) + "</span>";
   }
-  function unitFor(r) { return r.type === "claim" ? t("unit.new") : t("unit.old"); }
+  function unitFor(r) { return r.type === "release" ? t("unit.new") : t("unit.old"); }
 
   var recentKey = "";
   function paintRecent(soft) {
@@ -317,7 +322,7 @@
   function paintAll() {
     M = model();
     paintHead(); paintFigures(); paintCalendar(); paintChart(); paintRecent(); paintLive();
-    $("st-contracts-note").textContent = t("status.contracts.note", { supply: F.amount(SUPPLY, 3) });
+    $("st-contracts-note").textContent = t("status.contracts.note", { supply: SUPPLY_TEXT });
   }
 
   $("st-sample-icon").outerHTML = CJ.icon("info", 18);

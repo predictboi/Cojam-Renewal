@@ -5,8 +5,8 @@
 
   function paint() {
     $("dc-window").textContent = t("docs.lock.window", { start: F.date(C.windowStart), end: F.date(C.windowEnd) });
-    $("dc-supply").textContent = t("docs.c.supply", { supply: F.amount(C.newToken.supply, 3) });
-    CJ.track($("dc-track"), null, { amountText: F.amount(12500), demoDays: 3.4 });
+    $("dc-supply").textContent = t("docs.c.supply", { supply: C.newToken.supplyText });
+    CJ.track($("dc-track"), null, { amount: 12500, demoDays: 3.4 });
   }
   document.addEventListener("cj:lang", paint);
   paint();

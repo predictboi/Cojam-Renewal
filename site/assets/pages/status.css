@@ -135,3 +135,8 @@
   .st-addrs .addr { padding: var(--s-4) 0; }
   .st-addrs .addr-label { flex-basis: 100%; }
 }
+
+/* ---------- mechanism details ---------- */
+.st-fees { color: var(--ink); max-width: 34em; }
+.st-later { white-space: nowrap; }
+.st-card .st-later { margin-left: var(--s-4); }

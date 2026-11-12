@@ -26,6 +26,8 @@
   function sum(arr) { return arr.reduce(function (a, l) { return a + l.amount; }, 0); }
   function sumL(arr) { return arr.reduce(function (a, l) { return a + l.locked; }, 0); }
   function sp(v) { return CJ.split(v); }
+  // month and day, short enough to sit beside the amount at 390 px; the full date is in the help and on the track
+  function md(ts) { return new Intl.DateTimeFormat({ en: "en-US", ko: "ko-KR", ja: "ja-JP" }[CJ.lang()], { month: "short", day: "numeric", timeZone: "UTC" }).format(ts); }
   function ids(arr) { return arr.map(function (l) { return l.id; }).join(","); }
   function byId(id) { return led().lots.filter(function (l) { return l.id === id; })[0]; }
   function isClosed() { return ui.closed || CJ.windowState() === "closed"; }
@@ -103,7 +105,7 @@
   function splitRows(amt, ids) {
     var p = sp(amt);
     return row(t("f.now") + help("help.split"), num(t("f.now.v", { amount: A(p.instant) })), ids ? "mg-now" : null) +
-      row(t("f.later", { date: F.date(unlockAt()) }) + help("help.lock"), num(t("f.later.v", { amount: A(p.locked) })), ids ? "mg-later" : null, t("f.later.sub"));
+      row(t("f.later", { date: md(unlockAt()) }) + help("help.lock"), num(t("f.later.v", { amount: A(p.locked) })), ids ? "mg-later" : null, t("f.later.sub"));
   }
 
   // ---------- views ----------

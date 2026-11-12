@@ -265,7 +265,7 @@
       '<div class="track-end r"><span class="track-cap">' + rightCap + '</span><span class="track-amt"><span class="num">' + al + '</span> <span class="track-unit">' + t("unit.new") + "</span></span></div>" +
       '<div class="track-rail"><span class="track-now"></span>' + html + "</div>" +
       '<div class="track-foot"><span class="track-end track-instant"><span class="track-cap">' + nowCap + '</span><span class="track-amt"><span class="num">' + ai + '</span> <span class="track-unit">' + t("unit.new") + "</span></span></span>" +
-      '<span class="track-mid">' + icon(done ? "unlock" : "lock", 14) + "<span>" + mid + "</span></span></div>";
+      '<span class="track-mid">' + icon(status === "released" ? "check" : done ? "unlock" : "lock", 14) + "<span>" + mid + "</span></span></div>";
   }
 
   // ---------- toasts and copy ----------
