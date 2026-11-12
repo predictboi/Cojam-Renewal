@@ -36,7 +36,236 @@
     </div>
   </section>
 
-  <!-- Sections below the hero are built in assets/pages/landing.js and this file. -->
+  <section class="section how" id="how" aria-labelledby="how-h">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="how-h" data-i18n="how.title">How the swap works</h2>
+        <p data-i18n="how.lede">Three steps, all signed in your own wallet.</p>
+      </div>
+      <div id="how-track" class="track how-track"></div>
+      <ol class="how-steps">
+        <li class="how-step">
+          <span class="how-ico" id="how-ico-1"></span>
+          <h3 data-i18n="how.s1.title">Swap old CT</h3>
+          <div class="how-body muted">
+            <span data-i18n="how.s1.body">Approve the swap contract, then swap any amount.</span>
+            <details class="help"><summary data-i18n-attr="aria-label:how.help.approval.label"></summary><div class="help-pop" data-i18n="how.help.approval"></div></details>
+          </div>
+        </li>
+        <li class="how-step">
+          <span class="how-ico" id="how-ico-2"></span>
+          <h3 data-i18n="how.s2.title">7 day lock</h3>
+          <div class="how-body muted">
+            <span data-i18n="how.s2.body">Your new CT is held for 7 days, one tick per day.</span>
+            <details class="help"><summary data-i18n-attr="aria-label:how.help.lock.label"></summary><div class="help-pop" data-i18n="how.help.lock"></div></details>
+          </div>
+        </li>
+        <li class="how-step">
+          <span class="how-ico" id="how-ico-3"></span>
+          <h3 data-i18n="how.s3.title">Claim new CT</h3>
+          <div class="how-body muted">
+            <span data-i18n="how.s3.body">After the lock ends, claim it to your wallet. Each step costs a little gas.</span>
+            <details class="help"><summary data-i18n-attr="aria-label:how.help.gas.label"></summary><div class="help-pop" data-i18n="how.help.gas"></div></details>
+          </div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section timeline" id="timeline" aria-labelledby="tl-h">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="tl-h" data-i18n="tl.title">One year to swap</h2>
+        <p data-i18n="tl.lede">The window is open for 1 year. Claims never close.</p>
+      </div>
+      <ol class="tl" id="tl-list">
+        <li class="tl-item">
+          <span class="tl-dot" aria-hidden="true"></span>
+          <span class="tl-when num" id="tl-open"></span>
+          <h3 data-i18n="tl.open.title">Window opens</h3>
+          <p class="muted small" data-i18n="tl.open.body">Swaps start for every holder.</p>
+        </li>
+        <li class="tl-item">
+          <span class="tl-dot" aria-hidden="true"></span>
+          <span class="tl-when" data-i18n="tl.each.when">7 days after each swap</span>
+          <h3 data-i18n="tl.each.title">Each swap unlocks</h3>
+          <p class="muted small" data-i18n="tl.each.body">Claim it any time after that.</p>
+        </li>
+        <li class="tl-item">
+          <span class="tl-dot" aria-hidden="true"></span>
+          <span class="tl-when num" id="tl-close"></span>
+          <h3 data-i18n="tl.close.title">Window closes</h3>
+          <p class="muted small" data-i18n="tl.close.body">No new swaps after this date. New CT that was not swapped returns to the Cojam treasury wallet.</p>
+        </li>
+        <li class="tl-item">
+          <span class="tl-dot" aria-hidden="true"></span>
+          <span class="tl-when" data-i18n="tl.after.when">After the window</span>
+          <h3 data-i18n="tl.after.title">Claims stay open</h3>
+          <p class="muted small" data-i18n="tl.after.body">Swaps already locked can still be claimed.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="section contracts" id="contracts" aria-labelledby="ct-h">
+    <div class="container contracts-grid">
+      <div class="section-head">
+        <h2 id="ct-h" data-i18n="ct.title">Contracts on Kaia</h2>
+        <p data-i18n="ct.lede">Always check the full address. The ticker CT is used by other tokens elsewhere.</p>
+      </div>
+      <div class="contracts-body">
+        <div class="panel addr-list">
+          <div class="addr" data-addr="old"></div>
+          <div class="addr" data-addr="new"></div>
+          <div class="addr" data-addr="swap"></div>
+        </div>
+        <dl class="facts">
+          <div class="fact">
+            <dt data-i18n="ct.supply.label">New CT supply</dt>
+            <dd id="ct-supply"></dd>
+          </div>
+          <div class="fact">
+            <dt data-i18n="ct.admin.label">Admin powers</dt>
+            <dd data-i18n="ct.admin.value">None: no pause, no mint, no blacklist</dd>
+          </div>
+          <div class="fact">
+            <dt data-i18n="ct.audit.label">Audit</dt>
+            <dd><span class="tag" data-i18n="ct.audit.value">Audit in progress</span></dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="section night future" id="future" aria-labelledby="fu-h">
+    <div class="container">
+      <div class="section-head">
+        <h2 id="fu-h" data-i18n="fu.title">Where Cojam is going</h2>
+        <p data-i18n="fu.lede">Ideas for the platform new CT is built for. These are concept previews: nothing here is live, and every number is a made up example.</p>
+      </div>
+      <div class="mocks">
+
+        <figure class="panel mock" aria-labelledby="m1-h">
+          <div class="mock-head">
+            <h3 id="m1-h" data-i18n="fu.m1.title">Predict with CT</h3>
+            <span class="mock-tag" data-i18n="fu.concept">Concept preview, not live</span>
+          </div>
+          <div class="mock-ui" aria-hidden="true">
+            <p class="mock-q" data-i18n="fu.q">Will the Kaia network set a new daily transaction record in March?</p>
+            <div class="mock-outcomes">
+              <div class="mock-out is-picked"><span data-i18n="fu.yes">Yes</span><span class="num" id="m1-yes"></span></div>
+              <div class="mock-out"><span data-i18n="fu.no">No</span><span class="num" id="m1-no"></span></div>
+            </div>
+            <div class="mock-rows">
+              <div class="mock-row"><span data-i18n="fu.m1.stake">Stake</span><span class="num" id="m1-stake"></span></div>
+              <div class="mock-row"><span data-i18n="fu.m1.payout">Paid out if Yes</span><span class="num" id="m1-pay"></span></div>
+            </div>
+            <span class="mock-btn" data-i18n="fu.m1.btn">Place prediction</span>
+          </div>
+          <figcaption class="mock-cap" data-i18n="fu.m1.cap">Stake CT on an outcome. Correct predictions share the pool.</figcaption>
+        </figure>
+
+        <figure class="panel mock" aria-labelledby="m2-h">
+          <div class="mock-head">
+            <h3 id="m2-h" data-i18n="fu.m2.title">Outcome derivatives</h3>
+            <span class="mock-tag" data-i18n="fu.concept">Concept preview, not live</span>
+          </div>
+          <div class="mock-ui" aria-hidden="true">
+            <div class="mock-row mock-row-top"><span data-i18n="fu.m2.price">Yes price</span><span><span class="num mock-big" id="m2-price"></span> <span class="mock-chg num" id="m2-chg"></span></span></div>
+            <svg class="mock-chart" viewBox="0 0 300 96" preserveAspectRatio="none" role="presentation">
+              <line class="mock-grid" x1="0" y1="24" x2="300" y2="24"/>
+              <line class="mock-grid" x1="0" y1="48" x2="300" y2="48"/>
+              <line class="mock-grid" x1="0" y1="72" x2="300" y2="72"/>
+              <line class="mock-entry" x1="0" y1="62" x2="300" y2="62"/>
+              <polyline class="mock-line" points="0,66 25,62 50,68 75,58 100,60 125,52 150,55 175,44 200,46 225,36 250,38 275,30 300,26"/>
+              <circle class="mock-dot" cx="300" cy="26" r="3.5"/>
+            </svg>
+            <div class="mock-rows">
+              <div class="mock-row"><span data-i18n="fu.m2.pos">Position</span><span class="num" id="m2-pos"></span></div>
+              <div class="mock-row"><span data-i18n="fu.m2.pnl">Change since entry</span><span class="num mock-up" id="m2-pnl"></span></div>
+            </div>
+            <div class="mock-pair"><span class="mock-btn" data-i18n="fu.m2.buy">Buy Yes</span><span class="mock-btn" data-i18n="fu.m2.sell">Sell Yes</span></div>
+          </div>
+          <figcaption class="mock-cap" data-i18n="fu.m2.cap">Trade a position on an outcome price before the result is in.</figcaption>
+        </figure>
+
+        <figure class="panel mock" aria-labelledby="m3-h">
+          <div class="mock-head">
+            <h3 id="m3-h" data-i18n="fu.m3.title">Loans against positions</h3>
+            <span class="mock-tag" data-i18n="fu.concept">Concept preview, not live</span>
+          </div>
+          <div class="mock-ui" aria-hidden="true">
+            <div class="mock-rows">
+              <div class="mock-row"><span data-i18n="fu.m3.coll">Collateral</span><span class="num" id="m3-coll"></span></div>
+              <div class="mock-row"><span data-i18n="fu.m3.value">Position value</span><span class="num" id="m3-val"></span></div>
+              <div class="mock-row"><span data-i18n="fu.m3.borrow">Borrow</span><span class="num mock-big" id="m3-borrow"></span></div>
+            </div>
+            <div class="ltv">
+              <div class="mock-row"><span data-i18n="fu.m3.ltv">Loan to value</span><span class="num" id="m3-ltv"></span></div>
+              <div class="ltv-bar"><span class="ltv-fill"></span></div>
+              <div class="mock-row xs"><span class="num" id="m3-min"></span><span class="num" id="m3-max"></span></div>
+            </div>
+            <span class="mock-btn" data-i18n="fu.m3.btn">Borrow CT</span>
+          </div>
+          <figcaption class="mock-cap" data-i18n="fu.m3.cap">Borrow CT against an open prediction without closing it.</figcaption>
+        </figure>
+
+        <figure class="panel mock" aria-labelledby="m4-h">
+          <div class="mock-head">
+            <h3 id="m4-h" data-i18n="fu.m4.title">Margin on predictions</h3>
+            <span class="mock-tag" data-i18n="fu.concept">Concept preview, not live</span>
+          </div>
+          <div class="mock-ui" aria-hidden="true">
+            <div class="mock-row"><span data-i18n="fu.m4.lev">Leverage</span></div>
+            <div class="mock-lev">
+              <span class="mock-chip num">1x</span><span class="mock-chip num">2x</span><span class="mock-chip num is-picked">3x</span><span class="mock-chip num">5x</span>
+            </div>
+            <div class="mock-rows">
+              <div class="mock-row"><span data-i18n="fu.m4.margin">Your margin</span><span class="num" id="m4-margin"></span></div>
+              <div class="mock-row"><span data-i18n="fu.m4.size">Position size</span><span class="num" id="m4-size"></span></div>
+              <div class="mock-row"><span data-i18n="fu.m4.entry">Entry price, Yes</span><span class="num" id="m4-entry"></span></div>
+              <div class="mock-row"><span data-i18n="fu.m4.liq">Liquidation price</span><span class="num mock-down" id="m4-liq"></span></div>
+            </div>
+            <span class="mock-btn" data-i18n="fu.m4.btn">Open position</span>
+          </div>
+          <figcaption class="mock-cap" data-i18n="fu.m4.cap">Take a larger position with less CT, with a clear liquidation price.</figcaption>
+        </figure>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="section faq" id="faq" aria-labelledby="faq-h">
+    <div class="container faq-grid">
+      <div class="section-head">
+        <h2 id="faq-h" data-i18n="faq.title">Questions</h2>
+        <p><span data-i18n="faq.lede">More detail in the</span> <a href="docs/" data-i18n="faq.docs">swap docs</a></p>
+      </div>
+      <div class="faq-list">
+        <details class="faq-item"><summary><span data-i18n="faq.q1">My CT is on an exchange. What do I do?</span></summary><p data-i18n="faq.a1">Nothing yet. Supporting exchanges will swap it for you. The list will be announced.</p></details>
+        <details class="faq-item"><summary><span data-i18n="faq.q2">My CT is in a Klayswap pool.</span></summary><p data-i18n="faq.a2">Remove your liquidity first so the CT is back in your wallet, then swap it.</p></details>
+        <details class="faq-item"><summary><span data-i18n="faq.q3">What if I miss the window?</span></summary><p data-i18n="faq.a3">After the window closes, new swaps are not possible. Swaps you already made can still be claimed at any time.</p></details>
+        <details class="faq-item"><summary><span data-i18n="faq.q4">Is there a reward for swapping?</span></summary><p data-i18n="faq.a4">No. It is one for one: 1 old CT gives 1 new CT, with no bonus and no penalty.</p></details>
+        <details class="faq-item"><summary><span data-i18n="faq.q5">Why the 7 day lock?</span></summary><p data-i18n="faq.a5">It spreads new CT out over time instead of releasing it all at once, and gives time to catch mistakes or abuse before tokens move.</p></details>
+        <details class="faq-item"><summary><span data-i18n="faq.q6">Which wallets work?</span></summary><p data-i18n="faq.a6">Kaia Wallet, MetaMask with the Kaia network added, and wallets that connect through WalletConnect.</p></details>
+        <details class="faq-item"><summary><span data-i18n="faq.q7">What does it cost?</span></summary><p data-i18n="faq.a7">Only Kaia network gas, paid in KAIA, for the approval, the swap and the claim. Cojam charges no fee.</p></details>
+        <details class="faq-item"><summary><span data-i18n="faq.q8">Is it safe?</span></summary><p data-i18n="faq.a8">You keep custody the whole time and sign every step yourself. Never share your seed phrase: no one from Cojam will ever ask for it.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="cta" aria-labelledby="cta-h">
+    <div class="container">
+      <div class="cta-band">
+        <div class="cta-copy">
+          <h2 id="cta-h" data-i18n="cta.title">Ready to swap?</h2>
+          <p class="muted" data-i18n="cta.body">Connect your wallet, swap any amount and claim it 7 days later.</p>
+        </div>
+        <a class="btn btn-primary btn-lg" href="migrate/" data-i18n="cta.btn">Swap CT</a>
+      </div>
+    </div>
+  </section>
+
 
 </main>
 <div id="cj-foot"></div>
