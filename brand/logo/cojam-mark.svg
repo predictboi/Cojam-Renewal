@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2048" height="2048" viewBox="0 0 2048 2048">
+  <defs>
+    <mask id="notch" maskUnits="userSpaceOnUse" x="0" y="0" width="2048" height="2048">
+      <rect width="2048" height="2048" fill="#fff"/>
+      <rect x="1633.60" y="922.30" width="609.60" height="263.96" fill="#000"/>
+      <circle cx="1502.54" cy="1053.46" r="365.76" fill="#fff"/>
+    </mask>
+    <mask id="slot" maskUnits="userSpaceOnUse" x="0" y="0" width="2048" height="2048">
+      <rect width="2048" height="2048" fill="#fff"/>
+      <rect x="1031.62" y="940.48" width="711.20" height="192.74" fill="#000"/>
+    </mask>
+  </defs>
+  <circle cx="1024" cy="1024" r="1016.0" fill="#124CC4" mask="url(#notch)"/>
+  <path fill="#FFFFFF" fill-rule="evenodd" mask="url(#slot)" d="M 462.25 1030.40 a 569.37 569.37 0 1 0 1138.73 0 a 569.37 569.37 0 1 0 -1138.73 0 Z M 779.96 1030.40 a 251.66 251.66 0 1 0 503.33 0 a 251.66 251.66 0 1 0 -503.33 0 Z"/>
+</svg>
