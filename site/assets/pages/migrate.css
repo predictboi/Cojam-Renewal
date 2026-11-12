@@ -68,7 +68,6 @@
 .mg-note p { margin: 0; }
 .mg-fixes { display: flex; flex-wrap: wrap; gap: var(--s-8); margin-top: var(--s-12); }
 .mg-note .btn:not(.btn-primary):not(.btn-ghost) { background: var(--surface); }
-.note-info { background: var(--inset); color: var(--ink); }
 
 /* actions */
 .mg-actions { display: grid; gap: var(--s-8); padding-top: var(--s-8); }
@@ -165,7 +164,6 @@ kbd { display: inline-flex; align-items: center; justify-content: center; min-wi
 .mg-menu-addr { padding: var(--s-4) var(--s-8) var(--s-8); font-family: var(--font-data); font-size: var(--fs-13); overflow-wrap: anywhere; border-bottom: 1px solid var(--line); margin-bottom: var(--s-4); }
 .mg-menu-item { width: 100%; justify-content: flex-start; font-size: var(--fs-14); }
 /* the header wallet button is a real control on this page: full touch target */
-.cj-wallet { min-height: 44px; }
 .cj-wallet[aria-expanded="true"] { border-color: var(--ink-2); }
 
 /* ---------- prototype controls ---------- */
