@@ -11,8 +11,10 @@ import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20P
 /// no pause, no blacklist, no fee and no upgrade path.
 /// @dev ERC20Permit (EIP-2612) only adds signature based approvals for holders.
 contract CojamToken is ERC20, ERC20Permit {
-    /// @notice Equal to the old CT supply after burns: 4,083,262,533.956 CT.
-    uint256 public constant TOTAL_SUPPLY = 4_083_262_533_956 * 10 ** 15;
+    /// @notice Equal to the old CT totalSupply() on Kaia mainnet, to the last base unit:
+    /// 4,083,262,533.9560001 CT (4083262533956000100000000000 base units, read on chain
+    /// 2026-11-12). Commonly rounded to 4,083,262,533.956 CT; the extra 0.0000001 CT is real.
+    uint256 public constant TOTAL_SUPPLY = 4_083_262_533_956_000_100_000_000_000;
 
     constructor(address recipient) ERC20("Cojam Token", "CT") ERC20Permit("Cojam Token") {
         // OpenZeppelin's _mint already reverts with ERC20InvalidReceiver(address(0)).

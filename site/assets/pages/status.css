@@ -1,6 +1,7 @@
 /* Status page layout (Operate mode: dense and calm). Components come from base.css. */
 .st { padding: var(--s-32) 0 0; }
-.st > .container { display: grid; gap: var(--s-24); }
+.st > .container { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-24); }
+.st-recent, .st-recent > * { min-width: 0; }
 
 /* ---------- head ---------- */
 .st-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-16) var(--s-24); }
@@ -130,3 +131,7 @@
 .st-addrs { display: grid; gap: var(--s-8); }
 .st-addrs .addr { min-height: 44px; }
 .st-contracts p { max-width: 64em; }
+@media (max-width: 599px) {
+  .st-addrs .addr { padding: var(--s-4) 0; }
+  .st-addrs .addr-label { flex-basis: 100%; }
+}

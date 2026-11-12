@@ -1,7 +1,8 @@
 const { ethers } = require("hardhat");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
 
-const SUPPLY = 4_083_262_533_956n * 10n ** 15n; // 4,083,262,533.956 CT in base units
+// Old CT totalSupply() on Kaia mainnet (read 2026-11-12): 4,083,262,533.9560001 CT.
+const SUPPLY = 4_083_262_533_956_000_100_000_000_000n;
 const DAY = 24n * 60n * 60n;
 const WINDOW = 365n * DAY;
 const LOCK = 7n * DAY;

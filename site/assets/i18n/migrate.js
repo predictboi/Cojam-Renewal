@@ -110,7 +110,7 @@ CJ.dict({
 
     "ok.title": "Swap confirmed",
     "ok.body": "{amount} new CT is locked for you until {date}. Come back after that to claim it.",
-    "ok.count": "Unlocks {date}, in {time}",
+    "ok.left": "Time left {time}",
     "ok.add": "Add new CT to wallet",
     "ok.add.toast": "Your wallet can show new CT once its address is announced at launch.",
     "ok.done": "Done",

@@ -6,12 +6,12 @@ const { SUPPLY, DAY, WINDOW, LOCK, GRACE, E18, deploySystem, approveAndMigrate }
 const fixture = () => deploySystem("MockOldCojam");
 
 describe("CojamToken", function () {
-  it("total supply equals the old supply exactly (4,083,262,533.956 CT)", async function () {
+  it("total supply equals the old on chain supply exactly (4,083,262,533.9560001 CT)", async function () {
     const { oldToken, newToken } = await loadFixture(fixture);
     expect(await newToken.totalSupply()).to.equal(SUPPLY);
     expect(await newToken.totalSupply()).to.equal(await oldToken.totalSupply());
-    expect(await newToken.TOTAL_SUPPLY()).to.equal(4_083_262_533_956_000_000_000_000_000n);
-    expect(ethers.formatUnits(await newToken.totalSupply(), 18)).to.equal("4083262533.956");
+    expect(await newToken.TOTAL_SUPPLY()).to.equal(4_083_262_533_956_000_100_000_000_000n);
+    expect(ethers.formatUnits(await newToken.totalSupply(), 18)).to.equal("4083262533.9560001");
   });
 
   it("the whole supply sits in the swap contract at deploy; the deployer holds none", async function () {
@@ -301,17 +301,23 @@ describe("CojamMigration: claim", function () {
   });
 
   it("claims keep working after the window closes, and years later", async function () {
-    const { alice, migration, oldToken, newToken, start } = await loadFixture(fixture);
+    const { alice, bob, migration, oldToken, newToken, start } = await loadFixture(fixture);
     const end = start + WINDOW;
     await oldToken.connect(alice).approve(await migration.getAddress(), 10n * E18);
+    await oldToken.connect(bob).approve(await migration.getAddress(), 10n * E18);
+    await time.increaseTo(start);
+    await migration.connect(bob).migrate(2n * E18);
     await time.setNextBlockTimestamp(end - 1n);
     await migration.connect(alice).migrate(3n * E18);
     await time.increaseTo(end + LOCK);
     await expect(migration.connect(alice).claim(1)).to.changeTokenBalance(newToken, alice, 3n * E18);
 
-    // A second user who never claims during the window can still claim after sweep, years later.
+    // Bob never claimed: after the sweep and five more years his lot still pays in full.
+    await time.increaseTo(end + GRACE);
+    await migration.sweep();
     await time.increase(5n * 365n * DAY);
     expect(await migration.isOpen()).to.equal(false);
+    await expect(migration.connect(bob).claim(1)).to.changeTokenBalance(newToken, bob, 2n * E18);
   });
 
   it("a wallet with 60 lots claims in bounded chunks", async function () {
@@ -323,7 +329,6 @@ describe("CojamMigration: claim", function () {
 
     const tx = await migration.connect(alice).claim(25);
     const receipt = await tx.wait();
-    this.gasClaim25 = receipt.gasUsed;
     expect(await newToken.balanceOf(alice.address)).to.equal(25n * E18);
     await migration.connect(alice).claim(25);
     await migration.connect(alice).claim(25);
@@ -377,7 +382,7 @@ describe("CojamMigration: sweep", function () {
     const { bob, treasury, migration, newToken, start } = await loadFixture(migratedAndClosed);
     await time.increaseTo(start + WINDOW + GRACE);
     await migration.sweep();
-    // bob gets nothing yet; a stray transfer from the treasury arrives
+    // A stray transfer of new CT arrives after the first sweep.
     await newToken.connect(treasury).transfer(await migration.getAddress(), 9n);
     await expect(migration.sweep()).to.emit(migration, "Swept").withArgs(treasury.address, 9n);
     expect(await migration.availableReserve()).to.equal(0n);

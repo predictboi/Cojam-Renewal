@@ -5,6 +5,12 @@
   var t = CJ.t, F = CJ.fmt;
   var VIEW_KEY = "cj.status.view";
   var REFRESH = 15000;
+  // The shared mock clock starts the prototype at midnight UTC, which would leave "today" empty.
+  // The shared mock clock already sits at mid afternoon UTC (system.js).
+  var SHIFT = 0;
+  function now() { return CJ.now() + SHIFT; }
+  function rel(ts) { return F.rel(ts - SHIFT); }
+  function cmp(n) { return new Intl.NumberFormat({ en: "en-US", ko: "ko-KR", ja: "ja-JP" }[CJ.lang()], { notation: "compact", maximumFractionDigits: 1 }).format(n); }
 
   // ---------- seeded hash (unsigned 32 bit, >>> for every shift) ----------
   function mix(n) {
@@ -28,13 +34,12 @@
   function overlap(a0, a1, b0, b1) { return Math.max(0, Math.min(a1, b1) - Math.max(a0, b0)); }
 
   function model() {
-    var now = Math.min(CJ.now(), C.windowEnd);
-    var nowReal = CJ.now();
-    var today = Math.floor((now - C.windowStart) / DAY);
+    var nowReal = now(), nowCap = Math.min(nowReal, C.windowEnd);
+    var today = Math.floor((nowCap - C.windowStart) / DAY);
     var days = [], swapped = 0, locked = 0, claimed = 0, holders = 0;
     var todayStart = Math.floor(nowReal / DAY) * DAY, buckets = [0, 0, 0, 0, 0, 0, 0, 0];
     for (var d = 0; d <= today; d++) {
-      var s = C.windowStart + d * DAY, e = Math.min(s + DAY, now), span = e - s;
+      var s = C.windowStart + d * DAY, e = Math.min(s + DAY, nowCap), span = e - s;
       if (span <= 0) continue;
       var frac = span / DAY, vol = dayVol(d) * frac, h = Math.round(dayHolders(d) * frac);
       days.push({ d: d, start: s, vol: vol, holders: h, partial: frac < 1 });
@@ -57,12 +62,12 @@
   // Recent activity: one possible event per 5 minute slot, anchored to absolute time so it is stable.
   var SLOT = 300000;
   function recent(n) {
-    var now = CJ.now(), out = [], slot = Math.floor(now / SLOT), guard = 0;
+    var tNow = now(), out = [], slot = Math.floor(tNow / SLOT), guard = 0;
     while (out.length < n && guard++ < 400) {
       var r = rnd(slot, 3);
       if (r < 0.62) {
         var at = slot * SLOT + Math.floor(rnd(slot, 4) * SLOT);
-        if (at <= now && at >= C.windowStart) {
+        if (at <= tNow && at >= C.windowStart) {
           var u = rnd(slot, 5);
           var amt = Math.round(Math.pow(10, 2.2 + 4.4 * Math.pow(u, 1.5)) * (rnd(slot, 6) < 0.4 ? 100 : 1)) / (rnd(slot, 6) < 0.4 ? 100 : 1);
           var claim = rnd(slot, 7) < 0.32 && at - LOCK > C.windowStart;
@@ -85,7 +90,7 @@
     var closed = CJ.windowState() === "closed";
     $("st-window").textContent = t(closed ? "status.window.closed" : "status.window.open", { start: F.date(C.windowStart), end: F.date(C.windowEnd) });
   }
-  function paintLive() { $("st-live-text").textContent = t("status.live.updated", { rel: F.rel(lastRefresh) }); }
+  function paintLive() { $("st-live-text").textContent = t("status.live.updated", { rel: rel(lastRefresh) }); }
 
   function whole(n) { return F.amount(Math.round(n), 0); }
 
@@ -145,7 +150,7 @@
       var level = v > 0 ? Math.max(0.02, v / max) : 0;
       html += '<li class="st-cal-row"><span class="st-cal-date small">' + label + "</span>" +
         '<span class="st-cal-cell" aria-hidden="true"><span class="st-cal-fill" style="transform:scaleX(' + level.toFixed(3) + ')"></span></span>' +
-        '<span class="st-cal-amt small"><span class="num">' + F.compact(v) + '</span> <span class="muted">' + t("unit.ct") + "</span></span></li>";
+        '<span class="st-cal-amt small"><span class="num">' + cmp(v) + '</span> <span class="muted">' + t("unit.ct") + "</span></span></li>";
     });
     $("st-cal").innerHTML = html;
     $("st-cal-total").textContent = t("status.unlock.total", { amount: whole(m.locked) });
@@ -178,7 +183,7 @@
     for (var i = 0; i <= ticks; i++) {
       var tv = top * i / ticks, ty = Math.round(y(tv)) + 0.5;
       svg += '<line class="st-grid-line" x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + ty + '" y2="' + ty + '"/>';
-      svg += '<text class="st-axis" x="' + (pad.l - 8) + '" y="' + (ty + 4) + '" text-anchor="end">' + F.compact(tv) + "</text>";
+      svg += '<text class="st-axis" x="' + (pad.l - 8) + '" y="' + (ty + 4) + '" text-anchor="end">' + cmp(tv) + "</text>";
     }
     var every = Math.max(1, Math.ceil(n / Math.floor(pw / (mobile ? 52 : 60))));
     m.days.forEach(function (d, i) {
@@ -187,7 +192,10 @@
       svg += '<path class="st-col' + (i === active ? " is-active" : "") + (active > -1 && i !== active ? " is-dim" : "") + '" d="' + path + '"/>';
       var last = i === n - 1;
       if ((i % every === 0 && n - 1 - i >= every * 0.6) || last) svg += '<text class="st-axis" x="' + cx + '" y="' + (H - 8) + '" text-anchor="middle">' + dayLabel(d) + "</text>";
-      if (i === peak) svg += '<text class="st-peak" x="' + cx + '" y="' + (yt - 7) + '" text-anchor="middle">' + F.compact(d.vol) + "</text>";
+      if (i === peak) {
+        var nearLeft = band * (i + 0.5) < 28, nearRight = band * (n - i - 0.5) < 28;
+        svg += '<text class="st-peak" x="' + (nearLeft ? x : nearRight ? x + bw : cx) + '" y="' + (yt - 7) + '" text-anchor="' + (nearLeft ? "start" : nearRight ? "end" : "middle") + '">' + cmp(d.vol) + "</text>";
+      }
     });
     svg += '<line class="st-base" x1="' + pad.l + '" x2="' + (W - pad.r) + '" y1="' + (pad.t + ph + 0.5) + '" y2="' + (pad.t + ph + 0.5) + '"/>';
     svg += "</svg>";
@@ -267,7 +275,7 @@
     var rows = recent(8), body = $("st-recent-body"), key = view + rows.map(function (r) { return r.tx; }).join("");
     // a refresh with the same rows only updates the relative times, so focus and scroll stay put
     if (soft && key === recentKey) {
-      body.querySelectorAll("time[datetime]").forEach(function (el) { el.textContent = F.rel(Date.parse(el.getAttribute("datetime"))); });
+      body.querySelectorAll("time[datetime]").forEach(function (el) { el.textContent = rel(Date.parse(el.getAttribute("datetime"))); });
       return;
     }
     recentKey = key;
@@ -285,14 +293,14 @@
             "<td>" + t("status.act." + r.type) + "</td>" +
             '<td class="r"><span class="num">' + F.amount(r.amount) + '</span> <span class="muted">' + unitFor(r) + "</span></td>" +
             "<td>" + statusTag(r) + "</td>" +
-            '<td class="muted"><time datetime="' + new Date(r.at).toISOString() + '" title="' + F.dateTime(r.at) + '">' + F.rel(r.at) + "</time></td>" +
+            '<td class="muted"><time datetime="' + new Date(r.at).toISOString() + '" title="' + F.dateTime(r.at) + '">' + rel(r.at) + "</time></td>" +
             '<td class="r">' + txLink(r) + "</td></tr>";
         }).join("") + "</tbody></table></div></div>";
     } else {
       body.innerHTML = '<ul class="st-cards">' + rows.map(function (r) {
         return '<li class="panel st-card">' +
           '<p class="st-card-amt"><span class="num">' + F.amount(r.amount) + '</span> <span class="st-unit">' + unitFor(r) + "</span></p>" +
-          '<div class="st-card-row"><p class="small muted">' + t("status.act." + r.type) + ' <time datetime="' + new Date(r.at).toISOString() + '" title="' + F.dateTime(r.at) + '">' + F.rel(r.at) + "</time></p>" + statusTag(r) + "</div>" +
+          '<div class="st-card-row"><p class="small muted">' + t("status.act." + r.type) + ' <time datetime="' + new Date(r.at).toISOString() + '" title="' + F.dateTime(r.at) + '">' + rel(r.at) + "</time></p>" + statusTag(r) + "</div>" +
           '<div class="st-card-foot"><span class="st-hash small">' + F.addr(r.wallet) + "</span>" + txLink(r) + "</div></li>";
       }).join("") + "</ul>";
     }
@@ -313,14 +321,14 @@
   }
 
   $("st-sample-icon").outerHTML = CJ.icon("info", 18);
-  lastRefresh = CJ.now() - 3000;
+  lastRefresh = now() - 3000;
   bindChart();
   paintAll();
 
   // live stamp ticks every second; the mock "refetch" runs every 15 seconds
   setInterval(function () {
-    if (CJ.now() - lastRefresh >= REFRESH) {
-      lastRefresh = CJ.now();
+    if (now() - lastRefresh >= REFRESH) {
+      lastRefresh = now();
       M = model(); paintFigures(); paintCalendar(); paintChart(); paintRecent(true);
     }
     paintLive();

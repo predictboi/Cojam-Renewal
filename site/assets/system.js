@@ -25,7 +25,7 @@
   // ---------- mock clock (?days=8 moves time forward) ----------
   var offset = (parseFloat(params.get("days")) || 0) * DAY;
   // The prototype pretends today is inside the window so every state can be shown.
-  var baseNow = Math.max(Date.now(), config.windowStart + 12 * DAY);
+  var baseNow = Math.max(Date.now(), config.windowStart + 12 * DAY + 14.25 * 3600000); // mid afternoon UTC so daily figures look natural
   function now() { return baseNow + offset + (Date.now() - loadedAt); }
   var loadedAt = Date.now();
 
@@ -75,7 +75,7 @@
     var max = dp == null ? (Math.abs(n) >= 1000 ? 2 : 4) : dp;
     return new Intl.NumberFormat(loc(), { maximumFractionDigits: max, minimumFractionDigits: 0 }).format(n);
   }
-  function compact(n) { return new Intl.NumberFormat(loc(), { notation: "compact", maximumFractionDigits: 2 }).format(n); }
+  function compact(n) { return new Intl.NumberFormat(loc(), { notation: "compact", maximumFractionDigits: 1 }).format(n); }
   function pct(n, dp) { return new Intl.NumberFormat(loc(), { style: "percent", maximumFractionDigits: dp == null ? 1 : dp }).format(n); }
   function date(ts) { return new Intl.DateTimeFormat(loc(), { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(ts); }
   function dateTime(ts) { return new Intl.DateTimeFormat(loc(), { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit", timeZone: "UTC", timeZoneName: "short" }).format(ts); }

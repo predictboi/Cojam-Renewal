@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swap guide: Cojam</title>
+<meta name="description" content="How to swap old CT for new CT on Kaia: wallets, gas, the 7 day lock, special cases, fees, safety and contract addresses.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="../assets/base.css">
+<link rel="stylesheet" href="../assets/pages/docs.css">
+</head>
+<body data-page="docs" data-root="../">
+<div id="cj-top"></div>
+<main id="main" class="dc">
+  <div class="container dc-layout">
+
+    <header class="dc-head">
+      <h1 data-i18n="docs.title">Swap guide</h1>
+      <p class="dc-lede" data-i18n="docs.lede">How to swap old CT for new CT on Kaia, what the 7 day lock means and how to stay safe.</p>
+    </header>
+
+    <details class="dc-jump">
+      <summary><span data-i18n="docs.jump">Jump to a section</span></summary>
+      <nav data-i18n-attr="aria-label:docs.jump" aria-label="Jump to a section">
+        <ol>
+          <li><a href="#before"  data-i18n="docs.s.before">Before you start</a></li>
+          <li><a href="#steps"  data-i18n="docs.s.steps">Step by step</a></li>
+          <li><a href="#lock"  data-i18n="docs.s.lock">Lock rules</a></li>
+          <li><a href="#special"  data-i18n="docs.s.special">Special cases</a></li>
+          <li><a href="#fees"  data-i18n="docs.s.fees">Fees</a></li>
+          <li><a href="#safety"  data-i18n="docs.s.safety">Safety</a></li>
+          <li><a href="#contracts"  data-i18n="docs.s.contracts">Contracts and audit</a></li>
+          <li><a href="#contact"  data-i18n="docs.s.contact">Contact</a></li>
+        </ol>
+      </nav>
+    </details>
+
+    <nav class="dc-toc" data-i18n-attr="aria-label:docs.toc" aria-label="On this page">
+      <p class="dc-toc-h" data-i18n="docs.toc">On this page</p>
+      <ol>
+          <li><a href="#before" data-toc data-i18n="docs.s.before">Before you start</a></li>
+          <li><a href="#steps" data-toc data-i18n="docs.s.steps">Step by step</a></li>
+          <li><a href="#lock" data-toc data-i18n="docs.s.lock">Lock rules</a></li>
+          <li><a href="#special" data-toc data-i18n="docs.s.special">Special cases</a></li>
+          <li><a href="#fees" data-toc data-i18n="docs.s.fees">Fees</a></li>
+          <li><a href="#safety" data-toc data-i18n="docs.s.safety">Safety</a></li>
+          <li><a href="#contracts" data-toc data-i18n="docs.s.contracts">Contracts and audit</a></li>
+          <li><a href="#contact" data-toc data-i18n="docs.s.contact">Contact</a></li>
+      </ol>
+    </nav>
+
+    <article class="dc-body">
+      <section class="dc-sec" id="before" aria-labelledby="before-h">
+        <h2 class="dc-h2" id="before-h" data-i18n="docs.s.before">Before you start</h2>
+        <ul class="dc-list">
+          <li><span data-i18n-html="docs.before.site"><strong>Check the site.</strong> The official web address is announced at launch. Type it yourself or use a bookmark, and check the address bar before you connect a wallet.</span></li>
+          <li><span data-i18n-html="docs.before.wallet"><strong>Use a wallet that works on Kaia.</strong> Kaia Wallet, MetaMask with the Kaia network added (chain ID 8217), or any wallet that connects through WalletConnect.</span></li>
+          <li><span data-i18n-html="docs.before.gas"><strong>Keep some KAIA in the same wallet.</strong> Approving, swapping and claiming are separate transactions, and each one pays a small gas fee in KAIA.</span></li>
+        </ul>
+      </section>
+      <section class="dc-sec" id="steps" aria-labelledby="steps-h">
+        <h2 class="dc-h2" id="steps-h" data-i18n="docs.s.steps">Step by step</h2>
+        <ol class="dc-steps">
+          <li class="dc-step">
+            <h3 class="dc-h3" data-i18n="docs.step1.t">Connect</h3>
+            <p data-i18n="docs.step1.b">Open the Swap page, choose Connect wallet and pick your wallet. If it is on another network, the page offers one button to switch to Kaia.</p>
+          </li>
+          <li class="dc-step">
+            <h3 class="dc-h3" data-i18n="docs.step2.t">Approve</h3>
+            <p data-i18n="docs.step2.b">The first time, your wallet asks you to let the swap contract move the old CT you chose. This is its own transaction and costs a little gas.</p>
+          </li>
+          <li class="dc-step">
+            <h3 class="dc-h3" data-i18n="docs.step3.t">Swap</h3>
+            <p data-i18n="docs.step3.b">Enter an amount (your full balance is filled in) and confirm. Your old CT goes to the swap contract and the same amount of new CT is locked for you.</p>
+          </li>
+          <li class="dc-step">
+            <h3 class="dc-h3" data-i18n="docs.step4.t">Wait 7 days</h3>
+            <p data-i18n="docs.step4.b">The Swap page shows the unlock date and a countdown. You can close the page; nothing else is needed while you wait.</p>
+          </li>
+          <li class="dc-step">
+            <h3 class="dc-h3" data-i18n="docs.step5.t">Claim</h3>
+            <p data-i18n="docs.step5.b">After the unlock date, open the Swap page with the same wallet and choose Claim. The new CT moves to your wallet.</p>
+          </li>
+          <li class="dc-step">
+            <h3 class="dc-h3" data-i18n="docs.step6.t">Add new CT to your wallet</h3>
+            <p data-i18n="docs.step6.b">Choose Add new CT to wallet, or add the token by hand with the new CT address under Contracts and audit. Compare the full address, not the ticker.</p>
+          </li>
+        </ol>
+        <p class="dc-cta"><a class="btn btn-primary" href="../migrate/" data-i18n="docs.cta">Go to Swap</a></p>
+      </section>
+      <section class="dc-sec" id="lock" aria-labelledby="lock-h">
+        <h2 class="dc-h2" id="lock-h" data-i18n="docs.s.lock">Lock rules</h2>
+        <figure class="panel dc-trackbox"><div id="dc-track"></div></figure>
+        <ul class="dc-list">
+          <li><span data-i18n="docs.lock.lot">Each swap is its own lot with its own 7 day lock. Swap twice and you get two lots with two unlock dates.</span></li>
+          <li><span data-i18n="docs.lock.time">The lock starts when the swap is confirmed on chain and ends exactly 7 days later.</span></li>
+          <li><span data-i18n="docs.lock.claim">After that you can claim at any time. There is no deadline to claim.</span></li>
+          <li><span id="dc-window"></span></li>
+          <li><span data-i18n="docs.lock.reserve">New CT that is not swapped by the end of the window goes to the Cojam treasury (issuance) wallet, a multisig whose address is published at launch.</span></li>
+        </ul>
+      </section>
+      <section class="dc-sec" id="special" aria-labelledby="special-h">
+        <h2 class="dc-h2" id="special-h" data-i18n="docs.s.special">Special cases</h2>
+        <dl class="dc-cases">
+          <div class="dc-case">
+            <dt class="dc-h3" data-i18n="docs.sp.exchange.t">CT on an exchange</dt>
+            <dd data-i18n="docs.sp.exchange.b">The exchange handles the swap for CT it holds for you. The list of exchanges is to be announced. Follow your exchange's own notice.</dd>
+          </div>
+          <div class="dc-case">
+            <dt class="dc-h3" data-i18n="docs.sp.pool.t">CT in a Klayswap pool</dt>
+            <dd data-i18n="docs.sp.pool.b">Remove your liquidity first so the CT is back in your wallet, then swap it.</dd>
+          </div>
+          <div class="dc-case">
+            <dt class="dc-h3" data-i18n="docs.sp.multisig.t">Smart contract wallets and multisigs</dt>
+            <dd data-i18n="docs.sp.multisig.b">Any Kaia wallet that can approve and call the swap contract can swap. A multisig needs its signers for the approval, the swap and later the claim. The new CT is claimed by the same address that swapped.</dd>
+          </div>
+          <div class="dc-case">
+            <dt class="dc-h3" data-i18n="docs.sp.lost.t">Lost access</dt>
+            <dd data-i18n="docs.sp.lost.b">If you lost the seed phrase or private key for a wallet, no one can move its CT, including Cojam. The team cannot swap on your behalf.</dd>
+          </div>
+          <div class="dc-case">
+            <dt class="dc-h3" data-i18n="docs.sp.small.t">Very small balances</dt>
+            <dd data-i18n="docs.sp.small.b">Any amount above 0 can be swapped. For very small amounts, the gas in KAIA may cost more than the CT is worth.</dd>
+          </div>
+        </dl>
+      </section>
+      <section class="dc-sec" id="fees" aria-labelledby="fees-h">
+        <h2 class="dc-h2" id="fees-h" data-i18n="docs.s.fees">Fees</h2>
+        <p data-i18n="docs.fees.b">The swap itself charges nothing and the rate is always 1 old CT to 1 new CT. You pay only Kaia gas, in KAIA, for each approval, swap and claim. Your wallet shows the exact fee before you confirm.</p>
+      </section>
+      <section class="dc-sec" id="safety" aria-labelledby="safety-h">
+        <h2 class="dc-h2" id="safety-h" data-i18n="docs.s.safety">Safety</h2>
+        <ul class="dc-list dc-safe">
+          <li><span data-i18n-html="docs.safe.seed"><strong>Never share your seed phrase or private key.</strong> No real page or person needs it.</span></li>
+          <li><span data-i18n-html="docs.safe.dm"><strong>No one from Cojam will message you first.</strong> Anyone who contacts you about the swap in a DM is not us.</span></li>
+          <li><span data-i18n-html="docs.safe.links"><strong>Use only official links.</strong> Ignore links in replies, ads and DMs.</span></li>
+          <li><span data-i18n-html="docs.safe.send"><strong>A swap never asks you to send CT to a person or a wallet.</strong> You only interact with the swap contract.</span></li>
+          <li><span data-i18n-html="docs.safe.addr"><strong>Check full addresses.</strong> The ticker CT is used by other tokens too, including some listed on MEXC. Compare the full contract address before you add, buy or swap a token.</span></li>
+        </ul>
+      </section>
+      <section class="dc-sec" id="contracts" aria-labelledby="contracts-h">
+        <h2 class="dc-h2" id="contracts-h" data-i18n="docs.s.contracts">Contracts and audit</h2>
+        <div class="panel dc-addrs">
+          <div class="addr" data-addr="old"></div>
+          <div class="addr" data-addr="new"></div>
+          <div class="addr" data-addr="swap"></div>
+        </div>
+        <ul class="dc-list">
+          <li><span id="dc-supply"></span></li>
+          <li><span data-i18n="docs.c.plain">New CT is a plain KIP-7 token (ERC-20 compatible, 18 decimals) with no pause, no mint, no blacklist and no owner powers.</span></li>
+          <li class="dc-audit"><span class="tag tag-warn" data-i18n="docs.c.audit">Audit in progress</span> <span data-i18n="docs.c.audit_b">The report will be linked here when it is published.</span></li>
+        </ul>
+      </section>
+      <section class="dc-sec" id="contact" aria-labelledby="contact-h">
+        <h2 class="dc-h2" id="contact-h" data-i18n="docs.s.contact">Contact</h2>
+        <p data-i18n="docs.contact.b">Official support channels are to be announced. Until then, treat any account that offers help in a DM as a scam.</p>
+      </section>
+    </article>
+
+  </div>
+</main>
+<div id="cj-foot"></div>
+<script src="../assets/system.js"></script>
+<script src="../assets/i18n/shell.js"></script>
+<script src="../assets/i18n/docs.js"></script>
+<script src="../assets/shell.js"></script>
+<script src="../assets/pages/docs.js"></script>
+</body>
+</html>

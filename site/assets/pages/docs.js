@@ -1,0 +1,37 @@
+// Docs page: dynamic lines (window dates, supply), the lock example track, and the table of contents.
+(function () {
+  var C = CJ.config, F = CJ.fmt, t = CJ.t;
+  var $ = function (id) { return document.getElementById(id); };
+
+  function paint() {
+    $("dc-window").textContent = t("docs.lock.window", { start: F.date(C.windowStart), end: F.date(C.windowEnd) });
+    $("dc-supply").textContent = t("docs.c.supply", { supply: F.amount(C.newToken.supply, 3) });
+    CJ.track($("dc-track"), null, { amountText: F.amount(12500), demoDays: 3.4 });
+  }
+  document.addEventListener("cj:lang", paint);
+  paint();
+
+  // Mobile jump list closes after a choice.
+  var jump = document.querySelector(".dc-jump");
+  if (jump) jump.addEventListener("click", function (e) { if (e.target.closest("a")) jump.removeAttribute("open"); });
+
+  // Desktop table of contents: mark the section being read as the current one.
+  var links = [].slice.call(document.querySelectorAll(".dc-toc a[data-toc]"));
+  var secs = links.map(function (a) { return document.getElementById(a.getAttribute("href").slice(1)); }).filter(Boolean);
+  function mark(id) {
+    links.forEach(function (a) {
+      if (a.getAttribute("href") === "#" + id) a.setAttribute("aria-current", "location"); else a.removeAttribute("aria-current");
+    });
+  }
+  function spy() {
+    var line = 140, cur = secs[0];
+    secs.forEach(function (s) { if (s.getBoundingClientRect().top - line <= 0) cur = s; });
+    // at the very bottom the last section is current even if short
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) cur = secs[secs.length - 1];
+    if (cur) mark(cur.id);
+  }
+  var raf = 0;
+  window.addEventListener("scroll", function () { if (!raf) raf = requestAnimationFrame(function () { raf = 0; spy(); }); }, { passive: true });
+  window.addEventListener("hashchange", spy);
+  spy();
+})();

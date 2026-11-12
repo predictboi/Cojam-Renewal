@@ -16,7 +16,12 @@ module.exports = {
     },
   },
   networks: {
-    hardhat: {},
+    hardhat: {
+      // Lets the fork test run old Kaia blocks (Hardhat needs a hardfork for chain 8217).
+      chains: {
+        8217: { hardforkHistory: { shanghai: 0 } },
+      },
+    },
     kairos: {
       url: KAIROS_RPC_URL || "https://public-en-kairos.node.kaia.io",
       chainId: 1001,

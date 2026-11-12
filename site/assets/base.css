@@ -109,6 +109,7 @@ a:hover { color: var(--brand-hover); }
 .addr-tba { font-family: var(--font); font-size: var(--fs-14); color: var(--ink-2); }
 .addr-actions { display: flex; gap: var(--s-4); }
 .addr-actions .btn { min-width: 44px; min-height: 44px; padding: 0; }
+@media (max-width: 600px) { .addr-label { flex-basis: 100%; min-width: 0; } .cj-foot-addrs .addr-label { min-width: 0; } }
 
 /* ---------- help popover (details based, works without JS) ---------- */
 .help { position: relative; display: inline-block; vertical-align: middle; }
