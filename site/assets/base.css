@@ -10,6 +10,7 @@ body {
   font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
   min-height: 100vh; display: flex; flex-direction: column;
 }
+:lang(ja) h1, :lang(ja) h2, :lang(ja) h3 { word-break: auto-phrase; text-wrap: balance; }
 :lang(ko) body { word-break: keep-all; overflow-wrap: anywhere; }
 main { flex: 1; }
 img, svg { display: block; max-width: 100%; }

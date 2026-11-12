@@ -87,7 +87,7 @@
     var reserve = Math.round(SUPPLY - sw);
     $("kpi-grid").innerHTML =
       kpi(t("kpi.swapped"), amt0(sw), ct, t("kpi.swapped_sub", { pct: F.pct(sw / SUPPLY, 2), supply: C.newToken.supplyText, n: amt0(D.lots.length) }), "", sw, "swapped") +
-      kpi(t("kpi.wallets"), amt0(nW), t("unit.wallets"), t("kpi.wallets_sub", { n: amt0(HOLDERS) }) + ", " + F.pct(nW / HOLDERS, 1), "", nW, "wallets") +
+      kpi(t("kpi.wallets"), amt0(nW), t("unit.wallets"), t("kpi.wallets_sub", { n: amt0(HOLDERS), pct: F.pct(nW / HOLDERS, 1) }), "", nW, "wallets") +
       kpi(t("kpi.reserve"), amt0(reserve), ct, t("kpi.reserve_sub", { pct: F.pct(reserve / SUPPLY, 2) }), "", reserve, "reserve") +
       win +
       kpi(t("kpi.instant"), amt0(W[0]), ct, t("kpi.instant_sub", { n: amt0(D.lots.length) }), "", W[0], "instant") +

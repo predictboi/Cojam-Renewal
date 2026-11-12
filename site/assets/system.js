@@ -86,9 +86,10 @@
   function rel(ts) {
     var diff = ts - now(), abs = Math.abs(diff);
     var rtf = new Intl.RelativeTimeFormat(loc(), { numeric: "auto" });
-    if (abs < 60000) return rtf.format(Math.round(diff / 1000), "second");
-    if (abs < 3600000) return rtf.format(Math.round(diff / 60000), "minute");
-    if (abs < DAY) return rtf.format(Math.round(diff / 3600000), "hour");
+    // Round first, then pick the unit, so 59.6 minutes reads "1 hour ago" and never "60 minutes ago".
+    if (Math.round(abs / 1000) < 60) return rtf.format(Math.round(diff / 1000), "second");
+    if (Math.round(abs / 60000) < 60) return rtf.format(Math.round(diff / 60000), "minute");
+    if (Math.round(abs / 3600000) < 24) return rtf.format(Math.round(diff / 3600000), "hour");
     return rtf.format(Math.round(diff / DAY), "day");
   }
   function shortAddr(a) { return a ? a.slice(0, 6) + "…" + a.slice(-4) : ""; }
