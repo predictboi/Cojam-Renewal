@@ -1,114 +1,25 @@
-// Admin swap monitor. Read only. Mock: a seeded generator stands in for the swap contract's
-// Migrated(user, lotId, ...) and Claimed(user, lotId, amount, caller) events. Claimed's caller tells a keeper release from a holder claim.
+// Admin swap monitor. Read only. Mock: CJ.sample (system.js) stands in for the swap contract's
+// Migrated(user, lotId, ...) and Claimed(user, lotId, amount, caller) events, the same seeded set the status page reads.
+// Claimed's caller tells a keeper release from a holder claim.
 // Fee delegation: the same Cojam gas wallet pays approve, swap and claim for fee delegated wallets, and every keeper release.
 (function () {
   var DAY = CJ.DAY, HOUR = 3600000, C = CJ.config, F = CJ.fmt, I = CJ.icon;
   var t = function (k, v) { return CJ.t(k, v); };
   var $ = function (id) { return document.getElementById(id); };
-  var SUPPLY = C.newToken.supply, HOLDERS = 22500, OVERDUE = HOUR, FEE = { approve: 0.004, swap: 0.012, release: 0.006 };
-  var KEEPER_LATE = CJ.params.get("keeper") === "late", GAS_LOW = CJ.params.get("gas") === "low";
+  var SUPPLY = C.newToken.supply, HOLDERS = C.oldHolders;
   var PER_PAGE = 25, BIG_KEY = "cj.admin.bigThreshold";
   var SEARCH_ICO = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>';
   var DL_ICO = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v11"/><path d="M7 10.5l5 5 5-5"/><path d="M5 20h14"/></svg>';
   var SORT_ICO = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path class="up" d="M8 10l4-4 4 4"/><path class="dn" d="M8 14l4 4 4-4"/></svg>';
 
-  // ---------- seeded generator (stable across reloads) ----------
-  function hash(s) { var h = 2166136261 >>> 0; for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
-  function rng(seed) {
-    var a = seed >>> 0;
-    return function () {
-      a = (a + 0x6D2B79F5) >>> 0; var x = a;
-      x = Math.imul(x ^ (x >>> 15), x | 1);
-      x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
-      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
-    };
-  }
-  function hex(R, n) { var s = "0x"; for (var i = 0; i < n; i++) s += "0123456789abcdef"[(R() * 16) | 0]; return s; }
-
-  // Day by day from the window start: a launch spike that settles to a steady trickle. Each day has its own seed,
-  // so moving the mock clock adds days without changing earlier ones.
-  function generate(until) {
-    var out = [], pool = [], perWallet = {};
-    for (var d = 0; C.windowStart + d * DAY <= until && C.windowStart + d * DAY < C.windowEnd; d++) {
-      var R = rng(hash("cj-admin-" + d)), n = Math.round(90 * Math.exp(-d / 5) + 12), day = [];
-      for (var i = 0; i < n; i++) {
-        var u = R(), amt;
-        if (R() < 0.014) amt = 8e6 + Math.pow(R(), 1.6) * 140e6;          // a few very large swaps
-        else {                                                             // log normal body: many small, some mid size
-          var z = Math.sqrt(-2 * Math.log(Math.max(u, 1e-9))) * Math.cos(2 * Math.PI * R());
-          amt = Math.max(25, Math.min(9.5e6, Math.pow(10, 4.1 + 1.05 * z)));
-        }
-        amt = amt < 1000 ? Math.round(amt * 100) / 100 : (R() < 0.6 ? Math.round(amt) : Math.round(amt * 100) / 100);
-        var wallet;
-        if (pool.length && R() < 0.3) wallet = pool[Math.floor(Math.pow(R(), 1.5) * pool.length)];
-        else { wallet = hex(R, 40); pool.push(wallet); }
-        var at = C.windowStart + d * DAY + Math.floor(R() * (DAY - 60000));
-        // Release: most lots by the keeper a few minutes after unlock, some claimed first by the holder, a few sent late.
-        var r = R(), by = r < 0.09 ? "holder" : "keeper";
-        var delay = by === "holder" ? (2 + R() * 20) * 60000 : r > 0.975 ? (70 + R() * 230) * 60000 : (4 + R() * 24) * 60000;
-        var unlock = at + C.lockDays * DAY, sp = CJ.split(amt), kind = R() < 0.78 ? (R() < 0.85 ? "kaia" : "wc") : "mm";
-        day.push({ wallet: wallet, amount: amt, instant: sp.instant, locked: sp.locked, kind: kind, swappedAt: at, unlockAt: unlock,
-          releaseAt: unlock + delay, releasedBy: by, txSwap: hex(R, 64), txRelease: hex(R, 64) });
-      }
-      day.sort(function (a, b) { return a.swappedAt - b.swappedAt; });
-      day.forEach(function (l) { perWallet[l.wallet] = (perWallet[l.wallet] || 0) + 1; l.n = perWallet[l.wallet]; l.id = out.length + 1; out.push(l); });
-    }
-    return out;
-  }
-  // Generate through the end of today; derive() hides anything after the mock clock.
-  var RAW = generate(Math.floor(CJ.now() / DAY) * DAY + DAY - 1);
-
-  // ---------- derived state ----------
+  // ---------- derived state (shared sample, see CJ.sample in system.js) ----------
   var D, lastRead;
-  function derive() {
-    var n = CJ.now(); lastRead = Date.now();
-    var lots = [], wallets = {};
-    RAW.forEach(function (r) {
-      if (r.swappedAt > n) return;
-      // ?keeper=late: the keeper stalls for lots that unlocked in the last 6 hours (to show the overdue alert)
-      var due = KEEPER_LATE && r.releasedBy === "keeper" && r.unlockAt > n - 6 * HOUR ? Infinity : r.releaseAt;
-      var rel = due <= n;
-      var l = { id: r.id, n: r.n, wallet: r.wallet, kind: r.kind, amount: r.amount, instant: r.instant, locked: r.locked, swappedAt: r.swappedAt, unlockAt: r.unlockAt,
-        releasedAt: rel ? r.releaseAt : null, releasedBy: rel ? r.releasedBy : null, txSwap: r.txSwap, txRelease: rel ? r.txRelease : null };
-      l.status = rel ? "released" : (n >= l.unlockAt ? "releasing" : "locked");
-      l.overdue = l.status === "releasing" && n - l.unlockAt > OVERDUE;
-      lots.push(l);
-      var w = wallets[l.wallet] || (wallets[l.wallet] = { addr: l.wallet, total: 0, lots: [], instant: 0, locked: 0, releasing: 0, released: 0 });
-      w.total += l.amount; w.lots.push(l); w.instant += l.instant; w[l.status] += l.locked;
-    });
-    var tot = { swapped: 0, instant: 0, locked: 0, releasing: 0, released: 0, nLocked: 0, nReleasing: 0, nReleased: 0, byKeeper: 0, byHolder: 0, overdue: 0, nOverdue: 0 };
-    lots.forEach(function (l) {
-      tot.swapped += l.amount; tot.instant += l.instant; tot[l.status] += l.locked;
-      tot["n" + l.status.charAt(0).toUpperCase() + l.status.slice(1)]++;
-      if (l.releasedBy === "keeper") tot.byKeeper++; else if (l.releasedBy === "holder") tot.byHolder++;
-      if (l.overdue) { tot.overdue += l.locked; tot.nOverdue++; }
-    });
-    D = { now: n, lots: lots, wallets: wallets, walletList: Object.keys(wallets).map(function (k) { return wallets[k]; }), tot: tot, gas: gasWallet(lots, n) };
-  }
-
-  // Gas wallet (sample): every fee delegated approve and swap, every holder claim from a fee delegated wallet, every keeper release.
-  function gasWallet(lots, n) {
-    var today = Math.floor(n / DAY) * DAY, g = { tx: 0, kaia: 0, txToday: 0, kaiaToday: 0, releasesToday: 0, week: 0 };
-    function add(at, fee, release) {
-      g.tx++; g.kaia += fee;
-      if (at >= today) { g.txToday++; g.kaiaToday += fee; if (release) g.releasesToday++; }
-      if (at >= n - 7 * DAY) g.week += fee;
-    }
-    lots.forEach(function (l) {
-      var free = l.kind !== "mm";
-      if (free) { add(l.swappedAt - 60000, FEE.approve); add(l.swappedAt, FEE.swap); }
-      if (l.releasedAt && (l.releasedBy === "keeper" || free)) add(l.releasedAt, FEE.release, l.releasedBy === "keeper");
-    });
-    var days = Math.min(7, Math.max(1, (n - C.windowStart) / DAY));
-    g.rate = (n - C.windowStart >= 7 * DAY ? g.week / 7 : g.kaia / days);
-    g.balance = Math.max(0, (GAS_LOW ? g.kaia + g.rate * 4.2 : 60) - g.kaia);
-    g.runway = g.rate > 0 ? g.balance / g.rate : Infinity;
-    return g;
-  }
+  function derive() { D = CJ.sample.state(); lastRead = Date.now(); }
 
   // ---------- formatting ----------
   function loc() { return { en: "en-US", ko: "ko-KR", ja: "ja-JP" }[CJ.lang()] || "en-US"; }
-  function amt(n) { return F.amount(n); }
+  // Amount columns: always 2 decimals, so decimal points line up in a right aligned column.
+  function amt(n) { return new Intl.NumberFormat(loc(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n); }
   function amt0(n) { return F.amount(n, 0); }
   function pl(key, n) { return t(key + (n === 1 ? ".one" : ".other"), { n: amt0(n) }); }
   function dOnly(ts) { return new Intl.DateTimeFormat(loc(), { year: "numeric", month: "short", day: "numeric", timeZone: "UTC" }).format(ts); }
@@ -123,9 +34,11 @@
     return pl("n.min", m);
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  // One status vocabulary and one style per status across pages: Locked, Being sent, Released (tags in base.css).
   function statusTag(s) {
     var ico = s === "locked" ? "lock" : s === "releasing" ? "unlock" : "check";
-    return '<span class="tag st-' + s + (s === "releasing" ? " tag-sky" : "") + '">' + I(ico, 14) + "<span>" + t("st." + s) + "</span></span>";
+    var cls = s === "locked" ? "tag-locked" : s === "releasing" ? "tag-sending" : "tag-released";
+    return '<span class="tag ' + cls + '">' + I(ico, 14) + "<span>" + t("st." + s) + "</span></span>";
   }
   function byLine(l) { return l.releasedBy ? '<span class="by small muted">' + t(l.releasedBy === "keeper" ? "by.keeper" : "by.holder") + "</span>" : ""; }
   function leftText(l) {
@@ -152,9 +65,11 @@
   }
 
   // ---------- KPIs ----------
-  function kpi(label, value, unit, sub, extra) {
+  // count: the exact number behind value, so motion.js can count up to it the first time the tile is seen.
+  function kpi(label, value, unit, sub, extra, count, key) {
+    var c = count != null && isFinite(count) ? ' data-count="' + count + '" data-count-key="adm-' + key + '"' : "";
     return '<div class="kpi' + (extra ? " " + extra : "") + '"><dt>' + label + "</dt><dd>" +
-      '<span class="kpi-v"><span class="num">' + value + "</span>" + (unit ? ' <span class="kpi-u">' + unit + "</span>" : "") + "</span>" +
+      '<span class="kpi-v"><span class="num"' + c + ">" + value + "</span>" + (unit ? ' <span class="kpi-u">' + unit + "</span>" : "") + "</span>" +
       '<span class="kpi-sub">' + sub + "</span></dd></div>";
   }
   function renderKpis() {
@@ -165,14 +80,17 @@
     } else if (ws === "closed") win = kpi(t("kpi.window"), t("kpi.window_closed"), "", t("kpi.window_closed_sub", { date: dOnly(C.windowEnd) }));
     else win = kpi(t("kpi.window"), t("kpi.window_upcoming"), "", t("kpi.window_sub", { date: dOnly(C.windowEnd), start: dOnly(C.windowStart) }));
     var od = T.nOverdue > 0;
+    // whole CT parts that add up: instant + locked + released = swapped, exactly as on the status page
+    var U = T.u, W = CJ.sample.wholeParts([U.instant, U.locked + U.releasing, U.released]), sw = W[0] + W[1] + W[2];
+    var reserve = Math.round(SUPPLY - sw);
     $("kpi-grid").innerHTML =
-      kpi(t("kpi.swapped"), amt0(T.swapped), ct, t("kpi.swapped_sub", { pct: F.pct(T.swapped / SUPPLY, 2), supply: C.newToken.supplyText, n: amt0(D.lots.length) })) +
-      kpi(t("kpi.wallets"), amt0(nW), t("unit.wallets"), t("kpi.wallets_sub", { n: amt0(HOLDERS) }) + ", " + F.pct(nW / HOLDERS, 1)) +
-      kpi(t("kpi.reserve"), amt0(SUPPLY - T.swapped), ct, t("kpi.reserve_sub", { pct: F.pct((SUPPLY - T.swapped) / SUPPLY, 2) })) +
+      kpi(t("kpi.swapped"), amt0(sw), ct, t("kpi.swapped_sub", { pct: F.pct(sw / SUPPLY, 2), supply: C.newToken.supplyText, n: amt0(D.lots.length) }), "", sw, "swapped") +
+      kpi(t("kpi.wallets"), amt0(nW), t("unit.wallets"), t("kpi.wallets_sub", { n: amt0(HOLDERS) }) + ", " + F.pct(nW / HOLDERS, 1), "", nW, "wallets") +
+      kpi(t("kpi.reserve"), amt0(reserve), ct, t("kpi.reserve_sub", { pct: F.pct(reserve / SUPPLY, 2) }), "", reserve, "reserve") +
       win +
-      kpi(t("kpi.instant"), amt0(T.instant), ct, t("kpi.instant_sub", { n: amt0(D.lots.length) })) +
-      kpi(t("kpi.locked"), amt0(T.locked + T.releasing), ct, t("kpi.locked_sub", { n: amt0(T.nLocked), m: amt0(T.nReleasing) })) +
-      kpi(t("kpi.released"), amt0(T.released), ct, t("kpi.released_sub", { k: amt0(T.byKeeper), h: amt0(T.byHolder) })) +
+      kpi(t("kpi.instant"), amt0(W[0]), ct, t("kpi.instant_sub", { n: amt0(D.lots.length) }), "", W[0], "instant") +
+      kpi(t("kpi.locked"), amt0(W[1]), ct, t("kpi.locked_sub", { n: amt0(T.nLocked), m: amt0(T.nReleasing) }), "", W[1], "locked") +
+      kpi(t("kpi.released"), amt0(W[2]), ct, t("kpi.released_sub", { k: amt0(T.byKeeper), h: amt0(T.byHolder) }), "", W[2], "released") +
       kpi(t("kpi.overdue"), amt0(T.overdue), ct, od ? t("kpi.overdue_sub", { n: pl("n.req", T.nOverdue) }) : t("kpi.overdue_none"), od ? "is-warn" : "");
     renderGas();
   }
@@ -260,12 +178,13 @@
   // ---------- unlock schedule ----------
   function renderUnlock() {
     var n = D.now, today = Math.floor(n / DAY) * DAY, days = [];
-    for (var i = 0; i < 14; i++) days.push({ start: today + i * DAY, v: 0, c: 0 });
+    // 7 days: the lock is 7 days, so nothing unlocks after that.
+    for (var i = 0; i < C.lockDays + 1; i++) days.push({ start: today + i * DAY, v: 0, c: 0 });
     var soonAmt = 0, soonN = 0, total = 0;
     D.lots.forEach(function (l) {
       if (l.status !== "locked") return;
       var i = Math.floor((l.unlockAt - today) / DAY);
-      if (i >= 0 && i < 14) { days[i].v += l.locked; days[i].c++; total += l.locked; }
+      if (i >= 0 && i < days.length) { days[i].v += l.locked; days[i].c++; total += l.locked; }
       if (l.unlockAt - n <= DAY) { soonAmt += l.locked; soonN++; }
     });
     var soon = $("unl-soon");
@@ -357,13 +276,16 @@
       var cur = String(id === "f-status" ? S.status : id === "f-amt" ? S.amt : S.range);
       document.querySelectorAll("#" + id + " .seg-btn").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.v === cur)); });
     });
+    $("lots-export-label").textContent = !total ? t("lots.export_none") : total === D.lots.length ? t(total === 1 ? "lots.export_all.one" : "lots.export_all.other", { n: amt0(total) })
+      : t(total === 1 ? "lots.export_some.one" : "lots.export_some.other", { n: amt0(total) });
+    $("lots-export").disabled = !total;
     $("lots-count").innerHTML = '<span class="num">' + t("lots.count", { n: amt0(total), total: amt0(D.lots.length), amount: amt0(sum) }) + "</span>" +
       (total ? ' <span class="muted">' + t("lots.count_page", { from: amt0(from + 1), to: amt0(from + slice.length) }) + "</span>" : "");
     if (!total) {
       $("lots-body").innerHTML = '<tr class="empty"><td colspan="' + COLS.length + '"><div class="lots-empty"><p>' + t("lots.empty") + '</p><button type="button" class="btn" id="lots-clear">' + t("lots.clear") + "</button></div></td></tr>";
     } else {
       $("lots-body").innerHTML = slice.map(function (l) {
-        return '<tr class="row-' + l.status + '">' +
+        return '<tr class="row-' + l.status + ' row-open" data-row-wallet="' + l.wallet + '">' +
           cell("col.wallet", '<div class="w-cell">' + walletBtn(l.wallet) + '<span class="w-tools">' + walletTools(l.wallet) + "</span></div>", "c-wallet") +
           cell("col.amount", '<span class="num amt">' + amt(l.amount) + "</span>", "r c-amount") +
           cell("col.instant", '<span class="num">' + amt(l.instant) + "</span>", "r c-instant") +
@@ -433,7 +355,7 @@
     $("big-sum").innerHTML = rows.length ? t("big.sum", { n: pl("n.req", rows.length), amount: amt0(threshold), total: amt0(tot) }) : t("big.sum_none", { amount: amt0(threshold) });
     var shown = rows.slice(0, 8);
     $("big-list").innerHTML = shown.map(function (l) {
-      return '<li class="big-item"><span class="big-ico">' + I("warn", 16) + '</span>' +
+      return '<li class="big-item lift-row"><span class="big-ico">' + I("swap", 16) + '</span>' +
         '<div class="big-main"><span class="big-amt"><span class="num">' + amt0(l.amount) + '</span> <span class="kpi-u">CT</span></span>' +
         '<span class="big-meta small muted"><span class="num">' + dt(l.swappedAt) + "</span></span></div>" +
         '<div class="big-side">' + walletBtn(l.wallet) + statusTag(l.status) + "</div></li>";
@@ -515,6 +437,11 @@
   document.addEventListener("click", function (e) {
     var w = e.target.closest("[data-wallet]");
     if (w) { openSheet(w.dataset.wallet, w); return; }
+    // A click anywhere else on a request row opens its wallet too (links and buttons in the row keep their own action).
+    var row = e.target.closest("tr[data-row-wallet]");
+    if (row && !e.target.closest("a, button, input, select") && !(window.getSelection && String(window.getSelection()))) {
+      openSheet(row.dataset.rowWallet, row.querySelector("[data-wallet]")); return;
+    }
     var s = e.target.closest("[data-sort]");
     if (s) {
       var k = s.dataset.sort;
@@ -544,12 +471,20 @@
   var qTimer;
   $("lots-q").addEventListener("input", function () { clearTimeout(qTimer); var v = this.value; qTimer = setTimeout(function () { S.q = v; S.page = 1; renderTable(); }, 120); });
   $("lots-export").addEventListener("click", exportCsv);
+  // "/" focuses the search, unless the admin is already typing somewhere.
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "/" || e.ctrlKey || e.metaKey || e.altKey || document.querySelector("dialog[open]")) return;
+    var tag = (e.target.tagName || "").toLowerCase();
+    if (tag === "input" || tag === "textarea" || tag === "select" || e.target.isContentEditable) return;
+    e.preventDefault(); $("lots-q").focus(); $("lots-q").select();
+  });
   $("lots-sort").addEventListener("change", function () { var p = this.value.split("."); S.key = p[0]; S.dir = p[1]; S.page = 1; renderTable(); });
   $("big-input").addEventListener("change", function () { setThreshold(this.value); });
   $("big-input").addEventListener("keydown", function (e) { if (e.key === "Enter") setThreshold(this.value); });
   $("big-input").addEventListener("blur", function () { if (!this.getAttribute("aria-invalid")) this.value = amt0(threshold); });
   $("adm-refresh").addEventListener("click", function () {
     derive(); renderAll();
+    var dot = document.querySelector("#adm-stamp .live-dot"); if (dot) { dot.classList.remove("is-tick"); void dot.offsetWidth; dot.classList.add("is-tick"); }
     $("adm-status").textContent = t("head.refreshed", { time: dt(D.now) });
   });
   document.addEventListener("cj:lang", renderAll);

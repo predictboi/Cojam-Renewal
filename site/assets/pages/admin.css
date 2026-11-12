@@ -1,5 +1,6 @@
 /* Admin swap monitor layout. Components come from base.css; colours, sizes and radii from tokens.css. */
-body[data-page="admin"] .container { max-width: 1280px; }
+/* Wider for the request table, main content only: the shared header and footer keep --container. */
+.adm > .container { max-width: 1280px; }
 .adm { padding: var(--s-32) 0 0; }
 .adm > .container > * + * { margin-top: var(--s-24); }
 .adm h2 { font-size: var(--fs-20); letter-spacing: -0.01em; }
@@ -11,7 +12,6 @@ body[data-page="admin"] .container { max-width: 1280px; }
 .adm-title p { margin-top: var(--s-4); }
 .adm-live { display: flex; align-items: center; gap: var(--s-12); flex-wrap: wrap; }
 .adm-stamp { display: inline-flex; align-items: center; gap: var(--s-8); }
-.adm-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sky); box-shadow: 0 0 0 3px var(--sky-tint); }
 
 /* ---------- KPI row: one panel, tiles split by hairlines ---------- */
 .adm .adm-kpis { padding: 0; overflow: hidden; }
@@ -47,14 +47,7 @@ body[data-page="admin"] .container { max-width: 1280px; }
 .adm-panel-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--s-12) var(--s-16); }
 .adm-panel-head > div:first-child { min-width: 0; flex: 1 1 260px; }
 .adm-panel-head p { margin-top: var(--s-4); }
-.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border-radius: var(--r-control); background: var(--inset); }
-.seg-btn {
-  min-height: 44px; padding: 0 var(--s-12); border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--ink-2);
-  font: inherit; font-size: var(--fs-14); font-weight: var(--fw-medium); cursor: pointer; white-space: nowrap;
-  transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
-}
-.seg-btn:hover { color: var(--ink); background: var(--surface); }
-.seg-btn[aria-pressed="true"] { background: var(--surface); color: var(--brand); border-color: var(--brand); font-weight: var(--fw-semi); }
+/* .seg lives in base.css */
 
 /* ---------- charts ---------- */
 .adm-charts { display: grid; gap: var(--s-24); grid-template-columns: minmax(0, 1fr); }
@@ -101,6 +94,8 @@ body[data-page="admin"] .container { max-width: 1280px; }
 .lots-search-box:focus-within { border-color: var(--brand); }
 .lots-search-box input { flex: 1; min-width: 0; min-height: 46px; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: var(--fs-16); outline: none; }
 .lots-search-box input::placeholder { color: var(--ink-2); }
+.lots-kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface); color: var(--ink-2); font: inherit; font-size: var(--fs-13); }
+@media (hover: none) { .lots-kbd { display: none; } }
 .lots-filter { display: grid; gap: var(--s-4); min-width: 0; }
 .lots-count { margin-top: var(--s-16); color: var(--ink); }
 .lots-sort-m { display: none; }
@@ -109,7 +104,10 @@ body[data-page="admin"] .container { max-width: 1280px; }
 .lots-table { min-width: 1120px; }
 .lots-table th { padding: 0 var(--s-12); height: 48px; }
 .lots-table td { padding: var(--s-4) var(--s-12); height: 56px; }
-.lots-table tbody tr:hover td { background: var(--bg); }
+.lots-table td { transition: background-color var(--dur-fast) var(--ease); }
+.lots-table tbody tr.row-open { cursor: pointer; }
+@media (hover: hover) and (pointer: fine) { .lots-table tbody tr:hover td { background: var(--bg); } }
+.lots-table tbody tr.row-open:active td { background: var(--inset); transition-duration: var(--dur-press); }
 .lots-table .c-tx { width: 64px; text-align: center; }
 .lots-table .c-wallet { width: 230px; }
 .lots-table .c-status { width: 150px; }
@@ -130,9 +128,6 @@ th.r .sort-btn { flex-direction: row-reverse; }
 .left-released { color: var(--ink-2); }
 .left-releasing { font-weight: var(--fw-medium); }
 .is-soon { color: var(--warn); font-weight: var(--fw-medium); }
-.tag svg { flex: none; }
-.tag.st-released { background: transparent; box-shadow: inset 0 0 0 1px var(--line-strong); }
-.tag.st-locked { color: var(--ink); }
 
 .w-cell { display: flex; align-items: center; gap: 2px; min-width: 0; }
 .w-tools { display: inline-flex; gap: 0; }
@@ -183,7 +178,9 @@ th.r .sort-btn { flex-direction: row-reverse; }
     display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-8) var(--s-16); padding: var(--s-8) 0 var(--s-16); border-bottom: 1px solid var(--line);
     grid-template-areas: "wallet wallet" "amount status" "instant locked" "req unl" "left tx";
   }
-  .lots-table tbody tr:hover td { background: transparent; }
+  .lots-table tbody tr:hover td, .lots-table tbody tr.row-open:active td { background: transparent; }
+  .lots-table tbody tr.row-open { transition: transform var(--dur-release) var(--ease-spring); }
+  .lots-table tbody tr.row-open:active { transform: scale(var(--press-scale-card)); transition-duration: var(--dur-press); transition-timing-function: var(--ease-out); }
   .lots-table td { display: block; height: auto; padding: 0; border: 0; width: auto; min-width: 0; }
   .lots-table td.r { text-align: left; }
   .lots-table td::before { content: attr(data-label); display: block; font-size: var(--fs-12); color: var(--ink-2); margin-bottom: 2px; }
@@ -232,7 +229,7 @@ th.r .sort-btn { flex-direction: row-reverse; }
 .adm-big-sum { margin-top: var(--s-12); color: var(--ink); }
 .big-list { list-style: none; margin: var(--s-8) 0 0; padding: 0; }
 .big-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-12); padding: var(--s-8) 0; border-top: 1px solid var(--line); min-height: 60px; }
-.big-ico { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: var(--r-control); background: var(--warn-tint); color: var(--warn); }
+.big-ico { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: var(--r-control); background: var(--inset); color: var(--ink-2); }
 .big-main { display: grid; min-width: 0; line-height: 1.35; }
 .big-amt { font-weight: var(--fw-semi); }
 .big-side { display: flex; align-items: center; gap: var(--s-8); justify-content: flex-end; flex-wrap: wrap; }
@@ -249,9 +246,12 @@ html:has(.sheet[open]) { overflow: hidden; }
   position: fixed; inset: 0 0 0 auto; margin: 0; padding: 0; width: min(560px, 100vw); height: 100dvh; max-width: 100vw; max-height: none;
   border: 0; border-left: 1px solid var(--line); background: var(--surface); color: var(--ink); box-shadow: var(--shadow-pop);
 }
-.sheet[open] { display: flex; flex-direction: column; animation: sheet-in 200ms var(--ease); }
+.sheet[open] { display: flex; flex-direction: column; animation: sheet-in var(--dur-slow) var(--ease-drawer); }
 .sheet::backdrop { background: color-mix(in srgb, var(--ink) 40%, transparent); }
-@keyframes sheet-in { from { transform: translateX(24px); opacity: 0; } }
+/* Slides in from the right edge and leaves the same way (exit runs where display and overlay can transition). */
+.sheet:not([open]) { opacity: 1; translate: 100% 0; scale: 1; }
+.sheet { transition: translate var(--dur-base) var(--ease-drawer), overlay var(--dur-base) allow-discrete, display var(--dur-base) allow-discrete; }
+@keyframes sheet-in { from { translate: 100% 0; } }
 .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); padding: var(--s-12) var(--s-12) var(--s-12) var(--s-24); border-bottom: 1px solid var(--line); }
 .sheet-head h2 { font-size: var(--fs-20); letter-spacing: -0.01em; }
 .sheet-close { width: 44px; padding: 0; }

@@ -9,9 +9,8 @@
 .st-head-copy p { margin-top: var(--s-8); }
 .st-head-tools { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-16); }
 .st-live { display: inline-flex; align-items: center; gap: var(--s-8); color: var(--ink-2); min-width: 11em; }
-.st-live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--up); flex: none; animation: st-pulse 2s var(--ease) infinite; }
-@keyframes st-pulse { 50% { opacity: 0.35; } }
-@media (prefers-reduced-motion: reduce) { .st-live-dot { animation: none; } }
+/* the dot is .live-dot from base.css: sky, never green; grey while stale */
+.st-error strong { font-weight: var(--fw-semi); }
 
 .st-sample strong { font-weight: var(--fw-semi); }
 
@@ -29,7 +28,7 @@
 .st-bar { display: flex; gap: 2px; height: 28px; }
 .st-seg-part { min-width: 2px; border-radius: 4px; display: flex; align-items: center; padding: 0 var(--s-8); font-size: var(--fs-13); font-weight: var(--fw-medium); overflow: visible; }
 .st-seg-label { white-space: nowrap; }
-.is-claimed { background: var(--ink-2); color: var(--surface); }
+.is-claimed { background: var(--line-strong); color: var(--ink); }
 .is-held { background: var(--sky); color: var(--on-sky); }
 .is-reserve { background: var(--inset); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
 .st-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-4); font-size: var(--fs-14); }
@@ -61,7 +60,7 @@
 }
 
 /* ---------- panels in the grid ---------- */
-.st-grid { display: grid; gap: var(--s-24); grid-template-columns: minmax(0, 1fr); }
+.st-grid { display: grid; gap: var(--s-24); grid-template-columns: minmax(0, 1fr); align-items: start; }
 @media (min-width: 1024px) { .st-grid { grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); } }
 .st-panel-head { display: grid; gap: var(--s-4); margin-bottom: var(--s-16); }
 .st-h2 { font-size: var(--fs-20); letter-spacing: -0.01em; }
@@ -95,10 +94,10 @@
 
 /* ---------- unlock calendar: the swap track in aggregate ---------- */
 .st-cal { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
-.st-cal-row { display: grid; grid-template-columns: 6.5em minmax(0, 1fr) 6.5em; align-items: center; gap: var(--s-12); min-height: 32px; }
+.st-unlock #st-track { margin: var(--s-8) 0 var(--s-24); }
+.st-cal-h { font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--ink); padding-top: var(--s-16); border-top: 1px solid var(--line); margin-bottom: var(--s-4); }
+.st-cal-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); min-height: 32px; }
 .st-cal-date { color: var(--ink-2); white-space: nowrap; }
-.st-cal-cell { position: relative; height: 10px; border-radius: 3px; background: var(--inset); box-shadow: inset 0 0 0 1px var(--line); overflow: hidden; }
-.st-cal-fill { position: absolute; inset: 0; background: var(--sky); border-radius: 3px; transform-origin: left; }
 .st-cal-amt { text-align: right; white-space: nowrap; color: var(--ink); }
 .st-cal-total { margin-top: var(--s-12); padding-top: var(--s-12); border-top: 1px solid var(--line); color: var(--ink); }
 
@@ -106,11 +105,7 @@
 .st-recent { display: grid; gap: var(--s-16); }
 .st-recent-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-12) var(--s-24); }
 .st-recent-head p { margin-top: var(--s-4); }
-.st-seg { display: inline-flex; padding: 2px; gap: 2px; border-radius: var(--r-control); background: var(--inset); border: 1px solid var(--line); }
-.st-seg-btn { min-height: 40px; min-width: 76px; padding: 0 var(--s-16); border: 0; border-radius: 6px; background: transparent; color: var(--ink-2); font: inherit; font-size: var(--fs-14); font-weight: var(--fw-medium); cursor: pointer; transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease); }
-.st-seg-btn:hover { color: var(--ink); }
-.st-seg-btn[aria-pressed="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 1px 2px rgba(11, 21, 48, 0.08), inset 0 0 0 1px var(--line-strong); }
-@media (max-width: 719px) { .st-seg-btn { min-height: 44px; } .st-seg { padding: 0; border: 0; } }
+.st-view .seg-btn { min-width: 76px; padding: 0 var(--s-16); }
 
 .st-hash { font-family: var(--font-data); font-size: var(--fs-13); color: var(--ink); white-space: nowrap; }
 .st-tx { gap: 6px; color: var(--ink); min-height: 44px; }
@@ -140,3 +135,13 @@
 .st-fees { color: var(--ink); max-width: 34em; }
 .st-later { white-space: nowrap; }
 .st-card .st-later { margin-left: var(--s-4); }
+
+/* ---------- loading skeleton ---------- */
+.st-skel-bar { display: block; width: 100%; height: 28px; border-radius: 4px; }
+.st-skel-block { display: block; width: 100%; height: 200px; border-radius: var(--r-control); }
+.st-skel-track { height: 120px; }
+.st-track-skel { display: block; }
+.st-skel-list { display: grid; gap: var(--s-16); }
+.st-skel-list .skel { display: block; height: 20px; }
+.st-fig .skel { display: block; }
+.st-hero-num .skel { height: 0.9em; }

@@ -24,7 +24,9 @@
 
 /* ---------- body ---------- */
 .dc-body { min-width: 0; max-width: 680px; }
-.dc-sec { padding: var(--s-32) 0; border-top: 1px solid var(--line); scroll-margin-top: 128px; }
+/* Anchors land below the sticky header: html scroll-padding-top (72 px, in the shell CSS) plus this margin. */
+.dc-sec, .dc-body [id] { scroll-margin-top: var(--s-16); }
+.dc-sec { padding: var(--s-32) 0; border-top: 1px solid var(--line); }
 .dc-sec:first-child { border-top: 0; padding-top: var(--s-8); }
 .dc-h2 { font-size: var(--fs-24); letter-spacing: -0.015em; margin-bottom: var(--s-16); }
 .dc-h3 { font-size: var(--fs-16); font-weight: var(--fw-semi); line-height: 1.4; letter-spacing: 0; }
@@ -49,6 +51,12 @@
 
 .dc-cases { margin: 0; display: grid; gap: var(--s-16); }
 .dc-fees { margin-top: var(--s-16); }
+.dc-sub { margin-top: var(--s-24); padding: var(--s-16) var(--s-24); border-radius: var(--r-panel); background: var(--surface); border: 1px solid var(--line); }
+.dc-sub > * + * { margin-top: var(--s-12); }
+/* the answer a fix link from the swap app points at */
+.dc-sub:target { border-color: var(--line-strong); }
+.dc-case:target { outline: 2px solid var(--line-strong); outline-offset: 8px; border-radius: 4px; }
+@media (max-width: 599px) { .dc-sub { padding: var(--s-16); } }
 .dc-case dd { margin: var(--s-4) 0 0; color: var(--ink-2); }
 
 .dc-addrs { display: grid; gap: var(--s-8); padding: var(--s-16) var(--s-24); margin-bottom: var(--s-24); }
@@ -60,9 +68,8 @@
   .dc-layout { grid-template-columns: 220px minmax(0, 1fr); column-gap: var(--s-64); row-gap: var(--s-32); }
   .dc-head { grid-column: 2; }
   .dc-jump { display: none; }
-  .dc-toc { display: block; grid-column: 1; grid-row: 2; align-self: start; position: sticky; top: 96px; }
+  .dc-toc { display: block; grid-column: 1; grid-row: 1 / span 2; align-self: start; position: sticky; top: 96px; }
   .dc-body { grid-column: 2; grid-row: 2; }
-  .dc-sec { scroll-margin-top: 88px; }
 }
 @media (max-width: 599px) {
   .dc-addrs { padding: var(--s-12) var(--s-16); }

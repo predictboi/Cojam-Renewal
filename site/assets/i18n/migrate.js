@@ -29,14 +29,10 @@ CJ.dict({
     "dc.addrs": "Contracts on Kaia",
     "dc.cta": "Connect wallet",
 
-    "ch.title": "Connect a wallet",
     "ch.kaia": "Kaia Wallet",
-    "ch.kaia.sub": "Recommended. No KAIA needed: Cojam pays the network fee.",
     "ch.mm": "MetaMask",
-    "ch.mm.sub": "With the Kaia network added. You pay a small network fee in KAIA.",
     "ch.wc": "WalletConnect",
-    "ch.wc.sub": "Scan a code with a mobile wallet. No KAIA needed.",
-    "ch.note": "Cojam never asks for your seed phrase.",
+    "ch.web3": "Your browser wallet",
     "ch.close": "Close",
 
     "wn.title": "Switch your wallet to Kaia",

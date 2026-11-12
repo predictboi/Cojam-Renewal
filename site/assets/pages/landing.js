@@ -1,4 +1,4 @@
-// Landing page behaviour: hero track, how it works track and icons, timeline dates, contract facts, concept preview figures.
+// Landing page behaviour: hero track, how it works icons, timeline dates, contract facts, concept preview figures.
 (function () {
   var c = CJ.config, f = CJ.fmt;
   function set(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; }
@@ -10,9 +10,7 @@
     var tr = document.getElementById("hero-track");
     if (tr) CJ.track(tr, null, { large: true, amount: 125000, demoDays: 3.4 });
 
-    // How it works: the same track, shown full so each part lines up with a step.
-    var ht = document.getElementById("how-track");
-    if (ht) CJ.track(ht, null, { amount: 12500, demoDays: 7 });
+    // How it works: the steps carry the icons; the hero card holds the one track on this page.
     [["how-ico-1", "swap"], ["how-ico-2", "wallet"], ["how-ico-3", "lock"], ["how-ico-4", "unlock"]].forEach(function (p) {
       var el = document.getElementById(p[0]); if (el) el.innerHTML = CJ.icon(p[1], 20);
     });
@@ -26,7 +24,9 @@
     set("tl-close", f.date(c.windowEnd));
 
     // Contract facts
-    set("ct-supply", CJ.t("ct.supply.value", { n: c.newToken.supplyText }));
+    // Exact supply as text; motion.js counts up to it the first time it is seen and ends on this exact text.
+    var sup = document.getElementById("ct-supply");
+    if (sup) sup.innerHTML = CJ.t("ct.supply.value", { n: '<span class="num" data-count="' + c.newToken.supply + '" data-count-key="ct-supply">' + c.newToken.supplyText + "</span>" });
 
     // Concept previews: illustrative numbers only.
     set("m1-yes", f.pct(0.62, 0)); set("m1-no", f.pct(0.38, 0));

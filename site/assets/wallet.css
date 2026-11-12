@@ -1,0 +1,97 @@
+/* Cojam wallet sheet and mobile shell fixes. Linked on every page right after base.css. */
+
+/* ==========================================================================
+   SHARED: merge into base.css (shell), then delete from here.
+   The mobile help popover rule is already in base.css (max-width: 599px block).
+   ========================================================================== */
+
+/* Skip link: first Tab stop on every page. */
+.cj-skip { position: absolute; z-index: 100; left: var(--s-16); top: var(--s-8); display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--s-16); border-radius: var(--r-control); background: var(--surface); color: var(--brand); font-weight: var(--fw-medium); box-shadow: var(--shadow-pop); text-decoration: none; }
+.cj-skip:not(:focus) { width: 1px; height: 1px; min-height: 0; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; box-shadow: none; }
+
+/* Anything scrolled into view (anchors, focused headings, scrollIntoView) clears the sticky header (56 px mobile, 64 px desktop). */
+html { scroll-padding-top: 72px; }
+
+/* Mobile header: one 56 px sticky row; the nav row sits below it and scrolls away. */
+.cj-subnav { background: var(--bg); border-bottom: 1px solid var(--line); }
+.cj-subnav .cj-nav-mobile { border-top: 0; }
+@media (min-width: 768px) { .cj-subnav { display: none; } }
+@media (max-width: 767px) {
+  .cj-header-row { min-height: 56px; gap: var(--s-12); }
+  .cj-tools { gap: var(--s-4); }
+}
+
+/* Header wallet button: one line, data font for the address, short label under 400 px. */
+.cj-wallet { white-space: nowrap; flex: none; }
+.cj-addr { font-family: var(--font-data); font-size: var(--fs-13); font-variant-ligatures: none; font-feature-settings: "calt" 0, "liga" 0; }
+.cj-wl-short { display: none; }
+@media (max-width: 399px) {
+  .cj-wl-long { display: none; }
+  .cj-wl-short { display: inline; }
+  .cj-wallet { padding: 0 var(--s-12); }
+  .cj-lang { padding: 0 var(--s-4) 0 var(--s-8); }
+}
+
+/* iOS zooms into any focused field under 16 px: the language select included. */
+@media (hover: none) and (pointer: coarse) { .cj-lang select { font-size: var(--fs-16); } }
+
+/* ==========================================================================
+   Connect sheet: bottom sheet under 600 px, centred dialog above.
+   ========================================================================== */
+.cj-sheet { border: 0; padding: 0; margin: auto; width: min(440px, calc(100vw - 32px)); max-width: none; max-height: min(680px, calc(100dvh - 32px)); overflow: auto; overscroll-behavior: contain;
+  border-radius: var(--r-panel); background: var(--surface); color: var(--ink); box-shadow: var(--shadow-pop); }
+.cj-sheet::backdrop { background: color-mix(in srgb, var(--ink) 45%, transparent); }
+.cj-sheet-grip { display: none; }
+.cj-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); padding: var(--s-16) var(--s-12) 0 var(--s-24); }
+.cj-sheet-head h2 { font-size: var(--fs-20); letter-spacing: -0.01em; }
+.cj-sheet-x { width: 44px; padding: 0; flex: none; }
+.cj-sheet-body { display: grid; gap: var(--s-12); padding: var(--s-8) var(--s-24) var(--s-24); }
+.cj-sheet-lead { color: var(--ink-2); font-size: var(--fs-14); }
+.cj-sheet-back { justify-self: start; margin-left: calc(var(--s-12) * -1); padding: 0 var(--s-12) 0 var(--s-8); gap: var(--s-4); color: var(--ink-2); font-size: var(--fs-14); }
+.cj-sheet-back svg { transform: rotate(180deg); }
+.cj-sheet-note { padding-top: var(--s-4); }
+.cj-sheet-foot { margin-top: calc(var(--s-4) * -1); }
+.cj-sheet-alt { color: var(--ink-2); font-size: var(--fs-14); }
+
+.cj-opts { display: grid; gap: var(--s-8); }
+.cj-opt { display: flex; align-items: center; gap: var(--s-12); width: 100%; min-height: 64px; padding: var(--s-12) var(--s-16); border: 1px solid var(--line); border-radius: var(--r-control);
+  background: var(--surface); color: var(--ink); font: inherit; text-align: left; text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease), transform var(--dur) var(--ease); }
+.cj-opt:hover { border-color: var(--line-strong); background: var(--inset); color: var(--ink); }
+.cj-opt:active { transform: scale(0.985); background: var(--inset); }
+.cj-opt > svg { flex: none; color: var(--ink-2); margin-left: auto; }
+.cj-opt-ic { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--r-control); background: var(--inset); flex: none; }
+.cj-opt-txt { display: grid; gap: 2px; min-width: 0; }
+.cj-opt-name { display: flex; flex-wrap: wrap; align-items: center; gap: 4px var(--s-8); font-weight: var(--fw-medium); }
+.cj-opt-tag { font-weight: var(--fw-medium); }
+.cj-opt-sub { font-size: var(--fs-14); color: var(--ink-2); }
+
+.cj-steps { margin: 0; padding: 0 0 0 var(--s-24); display: grid; gap: var(--s-4); font-size: var(--fs-16); }
+.cj-steps li::marker { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.cj-linkbox { padding: var(--s-12) var(--s-16); border-radius: var(--r-control); background: var(--inset); }
+.cj-linkbox-url { display: block; font-family: var(--font-data); font-size: var(--fs-13); overflow-wrap: anywhere; color: var(--ink); }
+.cj-stores { display: grid; gap: var(--s-8); }
+
+.cj-qr { display: grid; place-items: center; aspect-ratio: 1; width: min(220px, 70%); justify-self: center; border-radius: var(--r-panel);
+  background: repeating-conic-gradient(var(--inset) 0 25%, var(--surface) 0 50%) 0 0 / 20px 20px; box-shadow: inset 0 0 0 1px var(--line); }
+.cj-qr-ph { display: grid; justify-items: center; gap: var(--s-8); padding: var(--s-12) var(--s-16); border-radius: var(--r-control); background: var(--surface); color: var(--ink-2); font-size: var(--fs-13); text-align: center; }
+
+.cj-sheet.is-open { animation: cj-sheet-pop 200ms var(--ease); }
+@keyframes cj-sheet-pop { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+@media (max-width: 599px) {
+  .cj-sheet { margin: auto 0 0; width: 100%; max-height: calc(100dvh - 40px); border-radius: 16px 16px 0 0; padding-bottom: env(safe-area-inset-bottom); }
+  .cj-sheet.is-open { animation: cj-sheet-up 240ms var(--ease); }
+  .cj-sheet.is-dragging { transition: none; }
+  .cj-sheet:not(.is-dragging) { transition: transform 200ms var(--ease); }
+  .cj-sheet-grip { display: flex; justify-content: center; padding-top: var(--s-8); touch-action: none; cursor: grab; }
+  .cj-sheet-grip span { width: 40px; height: 4px; border-radius: 2px; background: var(--line-strong); }
+  .cj-sheet-head { padding: var(--s-4) var(--s-8) 0 var(--s-16); touch-action: none; }
+  .cj-sheet-body { padding: var(--s-8) var(--s-16) var(--s-16); }
+}
+@keyframes cj-sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+
+@media (prefers-reduced-motion: reduce) {
+  .cj-sheet.is-open { animation: none; }
+  .cj-sheet:not(.is-dragging) { transition: none; }
+}

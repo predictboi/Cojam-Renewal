@@ -21,6 +21,7 @@
     // Mock window. Launch is the swap contract's deploy date; the window is open for 1 year from it.
     windowStart: Date.UTC(2026, 11, 1),
     windowEnd: Date.UTC(2027, 11, 1),
+    oldHolders: 22500, // old CT holder addresses, for "share of holders who swapped"
     officialUrl: null, // new domain, to be announced
     since: 2019
   };
@@ -243,7 +244,7 @@
       var cls = "track-day";
       if (done || elapsed >= i + 1) cls += " is-full";
       else if (elapsed > i) cls += " is-today";
-      var part = !done && elapsed > i && elapsed < i + 1 ? ' style="--part:' + Math.round((elapsed - i) * 100) + '%"' : "";
+      var part = !done && elapsed > i && elapsed < i + 1 ? ' style="--part:' + (elapsed - i).toFixed(3) + '"' : "";
       html += '<span class="' + cls + '"' + part + "></span>";
     }
     var by = lot && lot.releasedBy === "you" ? "track.by_you" : lot && lot.releasedBy === "holder" ? "track.by_holder" : "track.by_keeper";
@@ -266,6 +267,156 @@
       '<div class="track-rail"><span class="track-now"></span>' + html + "</div>" +
       '<div class="track-foot"><span class="track-end track-instant"><span class="track-cap">' + nowCap + '</span><span class="track-amt"><span class="num">' + ai + '</span> <span class="track-unit">' + t("unit.new") + "</span></span></span>" +
       '<span class="track-mid">' + icon(status === "released" ? "check" : done ? "unlock" : "lock", 14) + "<span>" + mid + "</span></span></div>";
+  }
+
+  // ---------- sample data: one seeded set for status and admin ----------
+  // Stands in for the swap contract's Migrated(user, lotId, ...) and Claimed(user, lotId, amount, caller) events until launch.
+  // CJ.sample.lots(): every generated lot through the end of the mock day, oldest first, stable across reloads:
+  //   {id, n (the wallet's nth request), wallet, kind (kaia | wc | mm), amount, instant, locked, swappedAt, unlockAt, releaseAt,
+  //    releasedBy (keeper | holder), txSwap, txRelease}
+  // CJ.sample.state(): the chain as it reads at CJ.now(). Lots gain status (locked | releasing | released), releasedAt and overdue.
+  //   tot holds every sum twice: in CT (tot.swapped ...) and in micro CT integers (tot.u.swapped ...), so parts always add up.
+  //   ?keeper=late stalls the keeper for lots unlocked in the last 6 hours; ?gas=low shortens the gas runway.
+  var sampleCache = null;
+  function hash32(str) { var h = 2166136261 >>> 0; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
+  function seeded(seed) {
+    var a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0; var x = a;
+      x = Math.imul(x ^ (x >>> 15), x | 1);
+      x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+      return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function seededHex(R, n) { var h = "0x"; for (var i = 0; i < n; i++) h += "0123456789abcdef"[(R() * 16) | 0]; return h; }
+  // Day by day from the window start: a launch spike that settles to a steady trickle. Each day has its own seed,
+  // so moving the mock clock adds days without changing earlier ones.
+  function sampleLots() {
+    var until = Math.floor(now() / DAY) * DAY + DAY - 1;
+    if (sampleCache && sampleCache.until === until) return sampleCache.lots;
+    var out = [], pool = [], perWallet = {};
+    for (var d = 0; config.windowStart + d * DAY <= until && config.windowStart + d * DAY < config.windowEnd; d++) {
+      var R = seeded(hash32("cj-admin-" + d)), n = Math.round(90 * Math.exp(-d / 5) + 12), day = [];
+      for (var i = 0; i < n; i++) {
+        var u = R(), amt;
+        if (R() < 0.014) amt = 8e6 + Math.pow(R(), 1.6) * 140e6;          // a few very large swaps
+        else {                                                             // log normal body: many small, some mid size
+          var z = Math.sqrt(-2 * Math.log(Math.max(u, 1e-9))) * Math.cos(2 * Math.PI * R());
+          amt = Math.max(25, Math.min(9.5e6, Math.pow(10, 4.1 + 1.05 * z)));
+        }
+        amt = amt < 1000 ? Math.round(amt * 100) / 100 : (R() < 0.6 ? Math.round(amt) : Math.round(amt * 100) / 100);
+        var wallet;
+        if (pool.length && R() < 0.3) wallet = pool[Math.floor(Math.pow(R(), 1.5) * pool.length)];
+        else { wallet = seededHex(R, 40); pool.push(wallet); }
+        var at = config.windowStart + d * DAY + Math.floor(R() * (DAY - 60000));
+        // Release: most lots by the keeper a few minutes after unlock, some claimed first by the holder, a few sent late.
+        var r = R(), by = r < 0.09 ? "holder" : "keeper";
+        var delay = by === "holder" ? (2 + R() * 20) * 60000 : r > 0.975 ? (70 + R() * 230) * 60000 : (4 + R() * 24) * 60000;
+        var unlock = at + config.lockDays * DAY, sp = split(amt), kind = R() < 0.78 ? (R() < 0.85 ? "kaia" : "wc") : "mm";
+        day.push({ wallet: wallet, amount: amt, instant: sp.instant, locked: sp.locked, kind: kind, swappedAt: at, unlockAt: unlock,
+          releaseAt: unlock + delay, releasedBy: by, txSwap: seededHex(R, 64), txRelease: seededHex(R, 64) });
+      }
+      day.sort(function (a, b) { return a.swappedAt - b.swappedAt; });
+      day.forEach(function (l) { perWallet[l.wallet] = (perWallet[l.wallet] || 0) + 1; l.n = perWallet[l.wallet]; l.id = out.length + 1; out.push(l); });
+    }
+    sampleCache = { until: until, lots: out };
+    return out;
+  }
+  function micro(v) { return Math.round(v * 1e6); }
+  var FEE = { approve: 0.004, swap: 0.012, release: 0.006 };
+  function sampleState(opts) {
+    opts = opts || {};
+    var keeperLate = opts.keeperLate != null ? opts.keeperLate : params.get("keeper") === "late";
+    var gasLow = opts.gasLow != null ? opts.gasLow : params.get("gas") === "low";
+    var n = now(), HOUR = 3600000, lots = [], wallets = {};
+    var U = { swapped: 0, instant: 0, locked: 0, releasing: 0, released: 0, overdue: 0 };
+    var tot = { nLocked: 0, nReleasing: 0, nReleased: 0, byKeeper: 0, byHolder: 0, nOverdue: 0 };
+    sampleLots().forEach(function (r) {
+      if (r.swappedAt > n) return;
+      var due = keeperLate && r.releasedBy === "keeper" && r.unlockAt > n - 6 * HOUR ? Infinity : r.releaseAt;
+      var rel = due <= n;
+      var l = { id: r.id, n: r.n, wallet: r.wallet, kind: r.kind, amount: r.amount, instant: r.instant, locked: r.locked, swappedAt: r.swappedAt, unlockAt: r.unlockAt,
+        releasedAt: rel ? r.releaseAt : null, releasedBy: rel ? r.releasedBy : null, txSwap: r.txSwap, txRelease: rel ? r.txRelease : null };
+      l.status = rel ? "released" : (n >= l.unlockAt ? "releasing" : "locked");
+      l.overdue = l.status === "releasing" && n - l.unlockAt > HOUR;
+      lots.push(l);
+      var w = wallets[l.wallet] || (wallets[l.wallet] = { addr: l.wallet, total: 0, lots: [], instant: 0, locked: 0, releasing: 0, released: 0, u: { total: 0, instant: 0, locked: 0, releasing: 0, released: 0 } });
+      w.u.total += micro(l.amount); w.u.instant += micro(l.instant); w.u[l.status] += micro(l.locked); w.lots.push(l);
+      U.swapped += micro(l.amount); U.instant += micro(l.instant); U[l.status] += micro(l.locked);
+      tot["n" + l.status.charAt(0).toUpperCase() + l.status.slice(1)]++;
+      if (l.releasedBy === "keeper") tot.byKeeper++; else if (l.releasedBy === "holder") tot.byHolder++;
+      if (l.overdue) { U.overdue += micro(l.locked); tot.nOverdue++; }
+    });
+    Object.keys(U).forEach(function (k) { tot[k] = U[k] / 1e6; });
+    tot.u = U;
+    var walletList = Object.keys(wallets).map(function (k) {
+      var w = wallets[k]; ["total", "instant", "locked", "releasing", "released"].forEach(function (f) { w[f] = w.u[f] / 1e6; }); return w;
+    });
+    return { now: n, lots: lots, wallets: wallets, walletList: walletList, tot: tot, gas: gasWallet(lots, n, gasLow), holders: config.oldHolders };
+  }
+  // Gas wallet (sample): every fee delegated approve and swap, every holder claim from a fee delegated wallet, every keeper release.
+  function gasWallet(lots, n, gasLow) {
+    var today = Math.floor(n / DAY) * DAY, g = { tx: 0, kaia: 0, txToday: 0, kaiaToday: 0, releasesToday: 0, week: 0 };
+    function add(at, fee, release) {
+      g.tx++; g.kaia += fee;
+      if (at >= today) { g.txToday++; g.kaiaToday += fee; if (release) g.releasesToday++; }
+      if (at >= n - 7 * DAY) g.week += fee;
+    }
+    lots.forEach(function (l) {
+      var free = l.kind !== "mm";
+      if (free) { add(l.swappedAt - 60000, FEE.approve); add(l.swappedAt, FEE.swap); }
+      if (l.releasedAt && (l.releasedBy === "keeper" || free)) add(l.releasedAt, FEE.release, l.releasedBy === "keeper");
+    });
+    var days = Math.min(7, Math.max(1, (n - config.windowStart) / DAY));
+    g.rate = (n - config.windowStart >= 7 * DAY ? g.week / 7 : g.kaia / days);
+    g.balance = Math.max(0, (gasLow ? g.kaia + g.rate * 4.2 : 60) - g.kaia);
+    g.runway = g.rate > 0 ? g.balance / g.rate : Infinity;
+    return g;
+  }
+  // Whole CT parts that add up: largest remainder rounding of micro CT parts to a whole number total.
+  // wholeParts([u1, u2, u3]) -> [w1, w2, w3] with w1 + w2 + w3 === Math.round((u1 + u2 + u3) / 1e6), or === target when given
+  // (to split a figure already shown elsewhere into parts that sum to it exactly).
+  function wholeParts(us, target) {
+    var total = 0; us.forEach(function (u) { total += u; });
+    if (target == null) target = Math.round(total / 1e6);
+    var floors = us.map(function (u) { return Math.floor(u / 1e6); }), sum = 0;
+    floors.forEach(function (f) { sum += f; });
+    var order = us.map(function (u, i) { return { i: i, r: u - floors[i] * 1e6 }; }).sort(function (a, b) { return b.r - a.r; });
+    for (var k = 0; sum < target && order.length; k = (k + 1) % order.length) { floors[order[k].i]++; sum++; }
+    for (k = order.length - 1; sum > target && k >= 0; k--) { if (floors[order[k].i] > 0) { floors[order[k].i]--; sum--; } }
+    return floors;
+  }
+  // Shares that add up to exactly 100% at the given decimals (largest remainder).
+  function shares(vals, dp) {
+    var scale = Math.pow(10, (dp == null ? 1 : dp) + 2), total = 0; vals.forEach(function (v) { total += v; });
+    if (!total) return vals.map(function () { return 0; });
+    var raw = vals.map(function (v) { return v / total * scale; }), fl = raw.map(Math.floor), sum = 0;
+    fl.forEach(function (f) { sum += f; });
+    raw.map(function (r, i) { return { i: i, r: r - fl[i] }; }).sort(function (a, b) { return b.r - a.r; }).forEach(function (o) { if (sum < scale) { fl[o.i]++; sum++; } });
+    return fl.map(function (f) { return f / scale; });
+  }
+
+  // ---------- aggregate swap track (status) ----------
+  // The same parts as the lot track. d: {swapped, instant, locked, released, days: [7 amounts, tick 1 = swapped in the last day,
+  // tick 7 = unlocks next], labels: {left, right, now, mid, aria, axisStart, axisEnd}} with amounts already formatted.
+  function trackAggregate(el, d) {
+    var max = 0, html = "";
+    d.days.forEach(function (v) { if (v > max) max = v; });
+    d.days.forEach(function (v) {
+      var lv = v > 0 && max > 0 ? Math.max(0.08, v / max) : 0;
+      html += '<span class="track-day" style="--lv:' + lv.toFixed(3) + '"></span>';
+    });
+    var L = d.labels;
+    el.className = "track track-lg track-agg";
+    el.setAttribute("role", "img");
+    el.setAttribute("aria-label", L.aria);
+    el.innerHTML =
+      '<div class="track-end"><span class="track-cap">' + L.left + '</span><span class="track-amt"><span class="num">' + d.swapped + '</span> <span class="track-unit">' + t("unit.old") + "</span></span></div>" +
+      '<div class="track-end r"><span class="track-cap">' + L.right + '</span><span class="track-amt"><span class="num">' + d.locked + '</span> <span class="track-unit">' + t("unit.new") + "</span></span></div>" +
+      '<div class="track-rail"><span class="track-now"></span>' + html + "</div>" +
+      '<div class="track-axis" aria-hidden="true"><span></span><span>' + L.axisStart + '</span><span></span><span></span><span></span><span></span><span></span><span>' + L.axisEnd + "</span></div>" +
+      '<div class="track-foot"><span class="track-end track-instant"><span class="track-cap">' + L.now + '</span><span class="track-amt"><span class="num">' + d.instant + '</span> <span class="track-unit">' + t("unit.new") + "</span></span></span>" +
+      '<span class="track-mid">' + icon("check", 14) + "<span>" + L.mid + "</span></span></div>";
   }
 
   // ---------- toasts and copy ----------
@@ -309,7 +460,8 @@
     dict: dict, t: t, lang: function () { return lang; }, setLang: setLang, applyI18n: applyI18n,
     fmt: { amount: amount, compact: compact, pct: pct, date: date, dateTime: dateTime, rel: rel, addr: shortAddr },
     parseAmount: parseAmount, split: split, ledger: ledgerApi, windowState: windowState,
-    icon: icon, track: track, toast: toast, copy: copy, renderAddrs: renderAddrs, fakeTx: fakeTx,
+    icon: icon, track: track, trackAggregate: trackAggregate, toast: toast, copy: copy, renderAddrs: renderAddrs, fakeTx: fakeTx,
+    sample: { lots: sampleLots, state: sampleState, wholeParts: wholeParts, shares: shares },
     state: params.get("state")
   };
   document.documentElement.lang = lang;

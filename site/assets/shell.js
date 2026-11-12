@@ -1,4 +1,4 @@
-// Shared shell: safety banner, header, footer. Every page has <body data-page="home|swap|status|docs" data-root="./|../">
+// Shared shell: skip link, safety banner, header, mobile nav, footer. Every page has <body data-page="home|swap|status|docs" data-root="./|../">
 // with <div id="cj-top"></div> before <main> and <div id="cj-foot"></div> after it.
 (function () {
   var b = document.body, page = b.dataset.page || "home", root = b.dataset.root || "./";
@@ -16,6 +16,7 @@
   var top = document.getElementById("cj-top");
   if (top) {
     top.outerHTML =
+      '<a class="cj-skip" href="#main" data-i18n="nav.skip"></a>' +
       '<div class="cj-banner" role="note"><div class="container">' + I("shield", 16) + '<span data-i18n="banner.text"></span></div></div>' +
       '<header class="cj-header"><div class="container cj-header-row">' +
         '<a class="cj-brand" href="' + root + '" data-i18n-attr="aria-label:nav.home"><img src="' + root + 'assets/cojam-mark.svg" alt="" width="28" height="28"><span>Cojam</span></a>' +
@@ -25,7 +26,9 @@
             '<select id="cj-lang-select"><option value="en">EN</option><option value="ko">한국어</option><option value="ja">日本語</option></select></label>' +
           (page === "swap" ? '<button type="button" class="btn btn-sm cj-wallet" id="cj-wallet"></button>' : "") +
         "</div>" +
-      "</div>" + nav("cj-nav-mobile container") + "</header>";
+      "</div></header>" +
+      // The mobile nav sits outside the sticky header, so only the 56 px top row stays on screen while scrolling.
+      '<div class="cj-subnav">' + nav("cj-nav-mobile container") + "</div>";
   }
   var foot = document.getElementById("cj-foot");
   if (foot) {
@@ -45,8 +48,18 @@
   function paintWallet() {
     var w = document.getElementById("cj-wallet"); if (!w) return;
     var L = CJ.ledger.get();
-    if (L.wallet.connected) { w.innerHTML = I("wallet", 16) + '<span class="num">' + CJ.fmt.addr(L.wallet.address) + "</span>"; w.setAttribute("aria-label", CJ.t("wallet.connected", { addr: L.wallet.address })); }
-    else { w.innerHTML = I("wallet", 16) + "<span>" + CJ.t("wallet.connect") + "</span>"; w.removeAttribute("aria-label"); }
+    // Long and short labels swap at 400 px in CSS, so the button never wraps. The address uses the data font:
+    // Pretendard's contextual alternates draw "0x" as a times sign.
+    var a = L.wallet.address;
+    if (L.wallet.connected) {
+      w.innerHTML = I("wallet", 16) + '<span class="cj-addr cj-wl-long">' + CJ.fmt.addr(a) + '</span><span class="cj-addr cj-wl-short" aria-hidden="true">' + a.slice(0, 4) + "\u2026" + a.slice(-4) + "</span>";
+      w.setAttribute("aria-label", CJ.t("wallet.connected", { addr: a }));
+    } else {
+      // The short label is English source only for now; KO and JA keep their full label (it fits) until translated.
+      var short = CJ.lang() === "en" ? CJ.t("wallet.connect.short") : CJ.t("wallet.connect");
+      w.innerHTML = I("wallet", 16) + '<span class="cj-wl-long">' + CJ.t("wallet.connect") + '</span><span class="cj-wl-short" aria-hidden="true">' + short + "</span>";
+      w.setAttribute("aria-label", CJ.t("wallet.connect"));
+    }
   }
   document.addEventListener("cj:ledger", paintWallet);
   document.addEventListener("cj:lang", function () { paintWallet(); CJ.renderAddrs(); });

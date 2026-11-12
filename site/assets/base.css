@@ -26,6 +26,7 @@ a:hover { color: var(--brand-hover); }
 .small { font-size: var(--fs-14); }
 .xs { font-size: var(--fs-13); }
 .num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+[hidden] { display: none !important; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .container { width: 100%; max-width: var(--container); margin: 0 auto; padding: 0 var(--gutter); }
 .stack > * + * { margin-top: var(--s-16); }
@@ -36,10 +37,10 @@ a:hover { color: var(--brand-hover); }
   min-height: 44px; padding: 0 var(--s-16); border-radius: var(--r-control);
   border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink);
   font: inherit; font-size: var(--fs-16); font-weight: var(--fw-medium); line-height: 1; text-decoration: none; cursor: pointer;
-  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  position: relative; isolation: isolate; overflow: hidden; /* holds the press shade and the ripple, clipped to the button */
+  transition: transform var(--dur-release) var(--ease-spring), background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
 .btn:hover { border-color: var(--ink-2); color: var(--ink); }
-.btn:active { transform: translateY(1px); }
 .btn[disabled], .btn[aria-disabled="true"] { cursor: not-allowed; background: var(--inset); border-color: var(--line); color: var(--ink-2); transform: none; }
 .btn-primary { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
 .btn-primary:hover { background: var(--brand-hover); border-color: var(--brand-hover); color: var(--on-brand); }
@@ -78,13 +79,36 @@ a:hover { color: var(--brand-hover); }
 .chip {
   display: inline-flex; align-items: center; min-height: 32px; padding: 0 var(--s-12); border-radius: 999px;
   border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--fs-14); cursor: pointer;
+  transition: transform var(--dur-release) var(--ease-spring), border-color var(--dur) var(--ease);
 }
 .chip:hover { border-color: var(--ink-2); }
+
+/* ---------- segmented control (one for the site) ----------
+   <div class="seg" role="group"><button class="seg-btn" aria-pressed="true">. Selected: brand tint with brand text (current selection). */
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border-radius: var(--r-control); background: var(--inset); }
+.seg-btn {
+  min-height: 44px; padding: 0 var(--s-12); border: 0; border-radius: 6px; background: transparent; color: var(--ink-2);
+  font: inherit; font-size: var(--fs-14); font-weight: var(--fw-medium); cursor: pointer; white-space: nowrap;
+  transition: transform var(--dur-release) var(--ease-spring), background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.seg-btn:hover { color: var(--ink); background: var(--surface); }
+.seg-btn[aria-pressed="true"], .seg-btn[aria-selected="true"] { background: var(--brand-tint); color: var(--brand); font-weight: var(--fw-semi); }
+
+/* ---------- live stamp dot (never green: green means gain) ---------- */
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sky); box-shadow: 0 0 0 3px var(--sky-tint); flex: none; }
+.live-dot.is-stale { background: var(--ink-2); box-shadow: 0 0 0 3px var(--inset); }
+
 .tag { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 6px; font-size: var(--fs-13); font-weight: var(--fw-medium); background: var(--inset); color: var(--ink-2); white-space: nowrap; }
 .tag-up { background: var(--up-tint); color: var(--up); }
 .tag-warn { background: var(--warn-tint); color: var(--warn); }
 .tag-down { background: var(--down-tint); color: var(--down); }
 .tag-sky { background: var(--sky-tint); color: var(--ink); }
+.tag svg { flex: none; }
+/* Lot status, the same on every page. Words: Locked, Being sent, Released. */
+.tag-locked { background: var(--inset); color: var(--ink); }
+.tag-sending { background: var(--sky-tint); color: var(--ink); }
+.tag-released { background: transparent; color: var(--ink-2); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.tag-audit { background: var(--inset); color: var(--ink-2); }
 
 /* ---------- notes and alerts ---------- */
 .note { display: flex; gap: var(--s-12); align-items: flex-start; padding: var(--s-12) var(--s-16); border-radius: var(--r-control); background: var(--inset); font-size: var(--fs-14); color: var(--ink); }
@@ -118,7 +142,13 @@ a:hover { color: var(--brand-hover); }
 .help > summary::-webkit-details-marker { display: none; }
 .help > summary::after { content: ""; position: absolute; inset: -10px; }
 .help > summary:hover { color: var(--ink); background: var(--inset); }
-.help-pop { position: absolute; z-index: 20; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); width: min(280px, 80vw); padding: var(--s-12) var(--s-16); background: var(--ink); color: var(--surface); border-radius: var(--r-control); font-size: var(--fs-14); line-height: 1.5; box-shadow: var(--shadow-pop); text-align: left; font-weight: var(--fw-regular); }
+.help-pop { position: absolute; z-index: 20; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); transform-origin: top center; width: min(280px, 80vw); padding: var(--s-12) var(--s-16); background: var(--ink); color: var(--surface); border-radius: var(--r-control); font-size: var(--fs-14); line-height: 1.5; box-shadow: var(--shadow-pop); text-align: left; font-weight: var(--fw-regular); white-space: normal; }
+/* Under 600 px the popover leaves its toggle and spans the nearest panel with 16 px side margins, so it never leaves the screen. */
+@media (max-width: 599px) {
+  .panel { position: relative; }
+  .help { position: static; }
+  .help-pop { left: var(--s-16); right: var(--s-16); top: auto; width: auto; max-width: none; margin-top: var(--s-8); transform: none; transform-origin: top left; }
+}
 
 /* ---------- toast ---------- */
 .toasts { position: fixed; z-index: 60; left: 50%; bottom: var(--s-24); transform: translateX(-50%); display: grid; gap: var(--s-8); width: min(420px, calc(100vw - 32px)); }
@@ -153,22 +183,32 @@ a:hover { color: var(--brand-hover); }
 .track-cap { font-size: var(--fs-13); color: var(--ink-2); }
 .track-rail { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(18px, 0.78fr) repeat(7, minmax(0, 1fr)); gap: 4px; height: 10px; }
 .track-now { align-self: center; height: calc(100% + 8px); margin-right: 6px; border-radius: 4px; background: var(--sky); }
-.track-day { border-radius: 3px; background: var(--inset); box-shadow: inset 0 0 0 1px var(--line); }
-.track-day.is-full { background: var(--sky); box-shadow: none; }
-.track-day.is-today { background: linear-gradient(90deg, var(--sky) var(--part, 50%), var(--inset) var(--part, 50%)); box-shadow: inset 0 0 0 1px var(--line); }
+/* A day tick is an empty slot; its fill is ::before, scaled, so it can animate on transform alone. --part (0 to 1) is today's share. */
+.track-day { position: relative; overflow: hidden; border-radius: 3px; background: var(--inset); box-shadow: inset 0 0 0 1px var(--line); }
+.track-day::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--sky); transform: scaleX(0); transform-origin: left center; }
+.track-day.is-full::before { transform: none; }
+.track-day.is-today::before { transform: scaleX(var(--part, 0.5)); }
 .track-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-8) var(--s-16); margin-top: -4px; min-width: 0; }
 .track-instant .track-amt { font-size: var(--fs-16); }
 .track-mid { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-size: var(--fs-13); color: var(--ink-2); text-align: right; }
 .track-mid svg { flex: none; }
-.track.is-ready .track-day { background: var(--sky); box-shadow: none; }
-.track.is-released .track-day, .track.is-released .track-now { background: var(--ink-2); box-shadow: none; }
+.track.is-ready .track-day::before { transform: none; }
+/* Released reads calm: grey fills, the check icon says done. */
+.track.is-released .track-day::before, .track.is-released .track-now { background: var(--line-strong); }
+.track.is-released .track-day::before { transform: none; }
 .track-lg .track-amt { font-size: var(--fs-24); }
 .track-lg .track-instant .track-amt { font-size: var(--fs-20); }
 @media (max-width: 480px) { .track-lg .track-amt { font-size: var(--fs-20); } .track-lg .track-instant .track-amt { font-size: var(--fs-16); } }
 .track-lg .track-rail { height: 14px; }
 .night .track-day { background: var(--night-surface); box-shadow: inset 0 0 0 1px var(--night-line); }
-.night .track-day.is-full { background: var(--sky); box-shadow: none; }
 .night .track-cap, .night .track-mid { color: var(--night-ink-2); }
+/* Aggregate track (status): the same parts, the ticks become levels. Tick 1 holds CT swapped in the last day, tick 7 unlocks next. */
+.track-agg .track-rail { height: 40px; align-items: end; }
+.track-agg .track-now { align-self: stretch; height: auto; }
+.track-agg .track-day { height: 100%; }
+.track-agg .track-day::before { transform: scaleY(var(--lv, 0)); transform-origin: center bottom; border-radius: 2px; }
+.track-axis { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(18px, 0.78fr) repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: -8px; font-size: var(--fs-12); color: var(--ink-2); text-align: center; line-height: 1.3; }
+.track-axis > :first-child { text-align: left; }
 
 /* ---------- section rhythm ---------- */
 .section { padding: var(--s-64) 0; }
@@ -179,9 +219,155 @@ a:hover { color: var(--brand-hover); }
 .night .panel { background: var(--night-surface); border-color: var(--night-line); }
 @media (min-width: 960px) { .section { padding: var(--s-96) 0; } }
 
-/* ---------- motion floor ---------- */
+/* ---------- motion layer ----------
+   Tokens in tokens.css. Transform and opacity only; colour changes stay on --ease. motion.js adds the parts CSS cannot do:
+   .is-pressed for quick taps, the ripple, tilt and sheen, track fill on scroll, count up, reveal, CJ.celebrate. */
+
+/* 1. Press. Down fast with a quick shade, back on a spring. */
+:where(.btn, .chip, .seg-btn, .pg-num, .icon-btn, .w-open, .sort-btn, .cj-nav a, .cj-nav-mobile a, .cj-brand, .cj-foot-nav a, .help > summary, .press) {
+  transition: transform var(--dur-release) var(--ease-spring), background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+:is(.btn, .chip, .seg-btn, .pg-num, .icon-btn, .w-open, .sort-btn, .cj-nav a, .cj-nav-mobile a, .cj-brand, .cj-foot-nav a, .help > summary, .press):is(:active, .is-pressed):not([disabled], [aria-disabled="true"]) {
+  transform: scale(var(--press-scale));
+  transition-duration: var(--dur-press); transition-timing-function: var(--ease-out);
+}
+:where(.chip, .seg-btn, .pg-num, .icon-btn, .press) { position: relative; isolation: isolate; }
+:is(.btn, .chip, .seg-btn, .pg-num, .icon-btn, .press)::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--press-shade);
+  opacity: 0; pointer-events: none; transition: opacity var(--dur-release) var(--ease-out);
+}
+:is(.btn, .chip, .seg-btn, .pg-num, .icon-btn, .press):is(:active, .is-pressed):not([disabled], [aria-disabled="true"])::after { opacity: 1; transition-duration: var(--dur-press); }
+.btn-primary::after { background: var(--press-shade-strong); }
+.night .btn::after { background: var(--press-shade-night); }
+
+/* 2. Ripple on the primary button, from the touch point. Clipped by .btn, never delays the action. */
+.ripple {
+  position: absolute; z-index: -1; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, var(--ripple), transparent);
+  transform: translate(-50%, -50%) scale(0.15); opacity: 0;
+  animation: cj-ripple var(--dur-reveal) var(--ease-out) forwards;
+}
+@keyframes cj-ripple { 0% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1); } }
+
+/* 3. Cards lift. .lift: a standalone card on the page ground. .lift-row: a row in a list (FAQ, history lots, large swaps).
+   The shadow is a pseudo element that fades, so nothing animates box-shadow. Hover only where a fine pointer can hover. */
+.lift { position: relative; transition: transform var(--dur-release) var(--ease-spring); }
+.lift::after {
+  content: ""; position: absolute; inset: -1px; border-radius: inherit; box-shadow: var(--shadow-lift);
+  opacity: 0; pointer-events: none; transition: opacity var(--dur-fast) var(--ease-out);
+}
+.night .lift::after { box-shadow: var(--shadow-lift-night), inset 0 0 0 1px var(--night-ink-2); }
+.lift-row, .mg-lot { position: relative; isolation: isolate; transition: transform var(--dur-release) var(--ease-spring); }
+.lift-row::before, .mg-lot::before {
+  content: ""; position: absolute; inset: 0 calc(var(--s-12) * -1); z-index: -1; border-radius: var(--r-control);
+  background: var(--surface); box-shadow: var(--shadow-lift); opacity: 0; pointer-events: none; transition: opacity var(--dur-fast) var(--ease-out);
+}
+.panel .lift-row::before, .panel .mg-lot::before { background: var(--bg); box-shadow: none; }
+@media (hover: hover) and (pointer: fine) {
+  .lift:hover, .lift-row:hover, .mg-lot:hover { transform: translateY(var(--lift)); }
+  .lift:hover::after, .lift-row:hover::before, .mg-lot:hover::before { opacity: 1; }
+}
+.lift:active, .lift-row:not(details):active, details.lift-row:has(> summary:active) {
+  transform: scale(var(--press-scale-card)); transition-duration: var(--dur-press); transition-timing-function: var(--ease-out);
+}
+/* Pointer follow tilt and sheen (motion.js, fine pointers only). */
+.tilt { transition: transform var(--dur-release) var(--ease-out); }
+.sheen-clip { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
+.sheen {
+  position: absolute; left: 0; top: 0; width: 420px; height: 420px; margin: -210px 0 0 -210px; border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--sky) 16%, transparent), transparent);
+  opacity: 0; transition: opacity var(--dur-base) var(--ease-out);
+}
+.tilt.is-tilting .sheen { opacity: 1; }
+
+/* 4. Swap track: the 10% block pops, then the day ticks fill in order (motion.js adds .is-armed, then .is-filling). */
+.track.is-armed .track-now, .track.is-armed .track-day::before { opacity: 0; }
+.track.is-filling .track-now { animation: cj-pop var(--dur-slow) var(--ease-spring) both; }
+.track.is-filling .track-day::before { animation: cj-fill var(--dur-base) var(--ease-out) both; }
+.track-agg.is-filling .track-day::before { animation-name: cj-rise; }
+.track.is-filling .track-day:nth-child(2)::before { animation-delay: 160ms; }
+.track.is-filling .track-day:nth-child(3)::before { animation-delay: 210ms; }
+.track.is-filling .track-day:nth-child(4)::before { animation-delay: 260ms; }
+.track.is-filling .track-day:nth-child(5)::before { animation-delay: 310ms; }
+.track.is-filling .track-day:nth-child(6)::before { animation-delay: 360ms; }
+.track.is-filling .track-day:nth-child(7)::before { animation-delay: 410ms; }
+.track.is-filling .track-day:nth-child(8)::before { animation-delay: 460ms; }
+@keyframes cj-pop { from { opacity: 0; transform: scale(0.4); } }
+@keyframes cj-fill { from { transform: scaleX(0); } }
+@keyframes cj-rise { from { transform: scaleY(0); } }
+/* Lock ended, being sent: a gentle highlight sweeps the rail left to right. */
+.track.is-ready .track-day::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--sheen), transparent);
+  transform: translateX(-100%); animation: cj-shimmer 2400ms var(--ease-in-out) infinite;
+}
+.track.is-ready .track-day:nth-child(3)::after { animation-delay: 50ms; }
+.track.is-ready .track-day:nth-child(4)::after { animation-delay: 100ms; }
+.track.is-ready .track-day:nth-child(5)::after { animation-delay: 150ms; }
+.track.is-ready .track-day:nth-child(6)::after { animation-delay: 200ms; }
+.track.is-ready .track-day:nth-child(7)::after { animation-delay: 250ms; }
+.track.is-ready .track-day:nth-child(8)::after { animation-delay: 300ms; }
+@keyframes cj-shimmer { 0% { transform: translateX(-100%); } 16%, 100% { transform: translateX(100%); } }
+
+/* 6. Scroll reveal, once per section, content visible without JS (motion.js arms only what is below the fold). */
+.rv-wait { opacity: 0; }
+.rv-in { animation: cj-reveal var(--dur-reveal) var(--ease-out) both; }
+/* translate and scale are separate properties, so these entries compose with any transform the element already has. */
+@keyframes cj-reveal { from { opacity: 0; translate: 0 8px; } }
+
+/* 7. Popovers, dialogs, FAQ. */
+.help[open] > .help-pop { animation: cj-pop-in var(--dur-fast) var(--ease-out); }
+@keyframes cj-pop-in { from { opacity: 0; translate: 0 -4px; scale: 0.97; } }
+dialog[open] { animation: cj-dialog-in var(--dur-base) var(--ease-out); }
+dialog[open]::backdrop { animation: cj-fade-in var(--dur-base) var(--ease-out); }
+/* Closing: fade and settle, where display and overlay can transition; elsewhere it closes at once. */
+dialog { transition: opacity var(--dur-fast) var(--ease-out), translate var(--dur-fast) var(--ease-out), scale var(--dur-fast) var(--ease-out), overlay var(--dur-fast) allow-discrete, display var(--dur-fast) allow-discrete; }
+dialog:not([open]) { opacity: 0; translate: 0 8px; scale: 0.98; }
+@keyframes cj-dialog-in { from { opacity: 0; translate: 0 8px; scale: 0.98; } }
+@keyframes cj-fade-in { from { opacity: 0; } }
+@supports (interpolate-size: allow-keywords) {
+  details.smooth { interpolate-size: allow-keywords; }
+  details.smooth::details-content { block-size: 0; overflow: hidden; transition: block-size var(--dur-base) var(--ease-out), content-visibility var(--dur-base) allow-discrete; }
+  details.smooth[open]::details-content { block-size: auto; }
+}
+details.smooth[open] > :not(summary) { animation: cj-reveal var(--dur-base) var(--ease-out) both; }
+
+/* Live stamp: one soft ring when fresh data lands. */
+.live-dot { position: relative; }
+.live-dot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--sky); opacity: 0; pointer-events: none; }
+.live-dot.is-tick::after { animation: cj-ping var(--dur-reveal) var(--ease-out); }
+@keyframes cj-ping { from { opacity: 0.7; transform: scale(1); } to { opacity: 0; transform: scale(2.6); } }
+
+/* 8. CJ.celebrate: a check that pops and a ring of sparks, once. Placed over the element, outside the layout. */
+.cj-cele { position: fixed; z-index: 70; width: 0; height: 0; pointer-events: none; }
+.cj-cele-check {
+  position: absolute; left: -28px; top: -28px; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--sky); color: var(--on-sky); animation: cj-cele-pop var(--dur-slow) var(--ease-spring) both, cj-cele-out var(--dur-base) var(--ease-out) 900ms forwards;
+}
+.cj-cele-ring {
+  position: absolute; left: -28px; top: -28px; width: 56px; height: 56px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--sky);
+  animation: cj-cele-ring var(--dur-reveal) var(--ease-out) 60ms both;
+}
+.cj-cele-spark {
+  position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%; background: var(--sky);
+  animation: cj-cele-spark var(--dur-reveal) var(--ease-out) 80ms both;
+}
+.cj-cele-spark:nth-child(even) { background: var(--ink-2); width: 4px; height: 4px; left: -2px; top: -2px; }
+.cj-cele-check.is-still { animation: none; }
+@keyframes cj-cele-pop { from { opacity: 0; transform: scale(0.5); } }
+@keyframes cj-cele-out { to { opacity: 0; transform: scale(0.9); } }
+@keyframes cj-cele-ring { from { opacity: 0.9; transform: scale(0.9); } to { opacity: 0; transform: scale(1.9); } }
+@keyframes cj-cele-spark { from { opacity: 1; transform: rotate(var(--a)) translateY(-30px) scale(1); } to { opacity: 0; transform: rotate(var(--a)) translateY(-58px) scale(0.4); } }
+
+/* ---------- reduced motion: no movement, instant states ---------- */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; transition-delay: 0ms !important; scroll-behavior: auto !important; }
+  :is(.btn, .chip, .seg-btn, .pg-num, .icon-btn, .w-open, .sort-btn, .cj-nav a, .cj-nav-mobile a, .cj-brand, .cj-foot-nav a, .help > summary, .press):is(:active, .is-pressed),
+  .lift:hover, .lift-row:hover, .mg-lot:hover, .lift:active, .lift-row:active, details.lift-row:has(> summary:active), .tilt { transform: none !important; }
+  .track.is-ready .track-day::after, .ripple, .sheen-clip, .cj-cele-ring, .cj-cele-spark, .live-dot::after { display: none; }
+  .cj-cele-check { animation: none !important; }
+  .rv-wait { opacity: 1; }
 }
 
 /* ---------- shell: banner, header, footer ---------- */
@@ -198,7 +384,9 @@ a:hover { color: var(--brand-hover); }
 .cj-nav a[aria-current="page"], .cj-nav-mobile a[aria-current="page"] { color: var(--brand); box-shadow: inset 0 -2px 0 var(--brand); border-radius: 0; }
 .cj-nav-mobile { display: flex; gap: var(--s-4); border-top: 1px solid var(--line); }
 .cj-nav-mobile a { flex: 1; justify-content: center; }
-.cj-wallet { min-height: 44px; }
+.cj-wallet { min-height: 44px; white-space: nowrap; }
+/* Pretendard's contextual alternates draw "0x" as a times sign: addresses in UI type switch them off. */
+.cj-wallet .num { font-variant-ligatures: none; font-feature-settings: "calt" 0; white-space: nowrap; }
 .cj-tools { margin-left: auto; display: flex; align-items: center; gap: var(--s-8); }
 .cj-lang { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 var(--s-8) 0 var(--s-12); border-radius: var(--r-control); color: var(--ink-2); cursor: pointer; }
 .cj-lang:hover, .cj-lang:focus-within { background: var(--inset); color: var(--ink); }
@@ -218,5 +406,7 @@ a:hover { color: var(--brand-hover); }
 .cj-foot-nav a:hover { color: var(--brand); }
 .cj-foot-addrs { display: grid; gap: var(--s-8); min-width: 0; }
 .cj-foot-addrs .addr-label { min-width: 7.5em; }
-.cj-foot-legal { margin-top: var(--s-32); padding-top: var(--s-24); border-top: 1px solid var(--line); display: grid; gap: var(--s-8); }
+.cj-foot-legal { position: relative; margin-top: var(--s-32); padding-top: var(--s-24); display: grid; gap: var(--s-8); }
+/* The rule sits inside the container padding, so it is exactly as wide as the text above it. */
+.cj-foot-legal::before { content: ""; position: absolute; top: 0; left: var(--gutter); right: var(--gutter); height: 1px; background: var(--line); }
 @media (min-width: 900px) { .cj-foot-grid { grid-template-columns: 1fr 0.5fr 2.4fr; } }

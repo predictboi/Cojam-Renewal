@@ -15,7 +15,6 @@
 /* ---------- how the swap works ---------- */
 .how.section { padding-top: var(--s-16); scroll-margin-top: calc(var(--s-96) + var(--s-32)); }
 @media (min-width: 768px) { .how.section { scroll-margin-top: var(--s-64); } }
-.how-track { margin-bottom: var(--s-32); }
 .how-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-24); grid-template-columns: minmax(0, 1fr); }
 .how-step { position: relative; display: grid; gap: var(--s-8); align-content: start; padding-top: var(--s-16); border-top: 1px solid var(--line); }
 .how-ico { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--r-control); background: var(--inset); color: var(--ink); margin-bottom: var(--s-4); }
@@ -109,8 +108,8 @@
 .faq-item { border-bottom: 1px solid var(--line); }
 .faq-item > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: var(--s-16); min-height: 56px; padding: var(--s-12) 0; cursor: pointer; font-weight: var(--fw-medium); }
 .faq-item > summary::-webkit-details-marker { display: none; }
-.faq-item > summary:hover { color: var(--brand); }
-.faq-item > summary svg { flex: none; color: var(--ink-2); transform: rotate(90deg); transition: transform var(--dur) var(--ease); }
+@media (hover: hover) and (pointer: fine) { .faq-item > summary:hover { color: var(--ink); } }
+.faq-item > summary svg { flex: none; color: var(--ink-2); transform: rotate(90deg); transition: transform var(--dur-base) var(--ease-spring); }
 .faq-item[open] > summary svg { transform: rotate(-90deg); }
 .faq-item > p { padding: 0 0 var(--s-16); color: var(--ink-2); max-width: 62ch; }
 @media (min-width: 1024px) {

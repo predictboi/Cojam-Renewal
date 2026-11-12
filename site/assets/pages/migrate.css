@@ -45,7 +45,7 @@
 /* summary rows */
 .mg-rows { margin: 0; border-top: 1px solid var(--line); }
 .mg-row { display: flex; justify-content: space-between; align-items: center; gap: var(--s-16); padding: var(--s-12) 0; border-bottom: 1px solid var(--line); font-size: var(--fs-14); }
-.mg-row dt { display: flex; align-items: center; gap: var(--s-4); color: var(--ink-2); min-height: 24px; }
+.mg-row dt { display: flex; align-items: center; gap: var(--s-4); color: var(--ink-2); min-height: 24px; flex: none; white-space: nowrap; }
 .mg-row dd { margin: 0; text-align: right; color: var(--ink); font-weight: var(--fw-medium); min-width: 0; display: grid; justify-items: end; gap: 2px; padding-top: 1px; }
 .mg-sub { font-size: var(--fs-13); font-weight: var(--fw-regular); color: var(--ink-2); }
 #mg-now, #mg-later { font-size: var(--fs-16); font-weight: var(--fw-semi); }
@@ -113,6 +113,8 @@
 .mg-link-s { font-size: var(--fs-14); color: var(--ink-2); }
 
 .mg-kbd-btn { margin-top: var(--s-8); color: var(--ink-2); min-height: 44px; }
+/* touch screens have no keyboard shortcuts to show */
+@media (hover: none), (pointer: coarse) { .mg-kbd-btn { display: none; } }
 kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; height: 24px; padding: 0 6px; border: 1px solid var(--line-strong); border-bottom-width: 2px; border-radius: 6px; background: var(--surface); color: var(--ink); font: inherit; font-size: var(--fs-13); font-weight: var(--fw-medium); }
 
 /* ---------- history ---------- */
@@ -136,22 +138,13 @@ kbd { display: inline-flex; align-items: center; justify-content: center; min-wi
 .mg-example { margin-top: var(--s-16); padding: var(--s-16); border: 1px dashed var(--line-strong); border-radius: var(--r-control); display: grid; gap: var(--s-12); justify-items: start; }
 .mg-example .track { width: 100%; }
 
-/* ---------- sheets (wallet chooser, shortcuts) ---------- */
+/* ---------- shortcut sheet (the wallet chooser is the shared sheet in assets/wallet.css) ---------- */
 .mg-sheet { border: 0; padding: var(--s-24); border-radius: var(--r-panel); background: var(--surface); color: var(--ink); width: min(420px, calc(100vw - 32px)); box-shadow: var(--shadow-pop); }
 .mg-sheet::backdrop { background: color-mix(in srgb, var(--ink) 45%, transparent); }
 .mg-sheet[open] { animation: mg-in 200ms var(--ease); }
 .mg-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); margin-bottom: var(--s-16); }
 .mg-sheet-head h2 { font-size: var(--fs-20); }
 .mg-icon-btn { width: 44px; padding: 0; margin-right: calc(var(--s-12) * -1); }
-.mg-opts { display: grid; gap: var(--s-8); }
-.mg-opt { display: flex; align-items: center; gap: var(--s-12); width: 100%; min-height: 64px; padding: var(--s-12) var(--s-16); border: 1px solid var(--line); border-radius: var(--r-control); background: var(--surface); color: var(--ink); font: inherit; text-align: left; cursor: pointer; transition: border-color var(--dur) var(--ease), background-color var(--dur) var(--ease); }
-.mg-opt:hover { border-color: var(--line-strong); background: var(--inset); }
-.mg-opt > svg { flex: none; color: var(--ink-2); margin-left: auto; }
-.mg-opt-ic { display: inline-flex; align-items: center; justify-content: center; width: 36px; height: 36px; border-radius: var(--r-control); background: var(--inset); flex: none; }
-.mg-opt-txt { display: grid; gap: 2px; min-width: 0; }
-.mg-opt-name { font-weight: var(--fw-medium); }
-.mg-opt-sub { font-size: var(--fs-14); color: var(--ink-2); }
-.mg-sheet-note { margin-top: var(--s-16); }
 .mg-kbd-list { margin: 0; display: grid; gap: var(--s-12); }
 .mg-kbd-list div { display: grid; grid-template-columns: 72px minmax(0, 1fr); align-items: center; gap: var(--s-12); }
 .mg-kbd-list dd { margin: 0; font-size: var(--fs-14); }
@@ -177,4 +170,23 @@ kbd { display: inline-flex; align-items: center; justify-content: center; min-wi
 
 @media (prefers-reduced-motion: reduce) {
   .mg-view.is-enter, .mg-sheet[open] { animation: none; }
+}
+
+/* ---------- mobile: sticky primary action ----------
+   The view's single primary action sticks to the bottom while the view is on screen, inside thumb reach, and settles in
+   place at the end of the panel. It steps aside while the amount field has focus, so the keyboard never stacks on it. */
+.mg-hint { margin-top: var(--s-8); }
+.mg-sticky-end { height: 0; }
+@media (max-width: 599px) {
+  .mg-sticky { position: sticky; bottom: 0; z-index: 6; margin-left: calc(var(--s-24) * -1); margin-right: calc(var(--s-24) * -1);
+    padding: var(--s-12) var(--s-24) calc(var(--s-12) + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid transparent;
+    transition: border-color var(--dur) var(--ease); }
+  .mg-sticky.is-stuck { border-top-color: var(--line); }
+  /* while typing, and while an error note holds the fix (no KAIA, reserve), the action stays in place under the note */
+  .mg-panel.is-typing .mg-sticky, .mg-panel:has(.note-error) .mg-sticky { position: static; }
+  html:has(.mg-sticky) { scroll-padding-bottom: 96px; }
+  body[data-page="swap"] .toasts { bottom: calc(88px + env(safe-area-inset-bottom)); }
+}
+@media (max-width: 480px) {
+  .mg-sticky { margin-left: calc(var(--s-16) * -1); margin-right: calc(var(--s-16) * -1); padding-left: var(--s-16); padding-right: var(--s-16); }
 }

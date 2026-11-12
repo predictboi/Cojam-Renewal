@@ -48,9 +48,31 @@
   --gutter: 16px;
   --shadow-pop: 0 8px 24px rgba(11, 21, 48, 0.12);
 
-  /* motion */
-  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --shadow-lift: 0 10px 24px -8px rgba(11, 21, 48, 0.16), 0 2px 6px rgba(11, 21, 48, 0.05);
+  --shadow-lift-night: 0 12px 28px -10px rgba(0, 0, 0, 0.55);
+  --sheen: rgba(255, 255, 255, 0.6);       /* shimmer highlight on sky fills */
+  --ripple: rgba(255, 255, 255, 0.32);     /* touch ripple on the primary button */
+  --press-shade: rgba(11, 21, 48, 0.07);   /* quick shade on press, light buttons */
+  --press-shade-strong: rgba(11, 21, 48, 0.16); /* on the brand fill */
+  --press-shade-night: rgba(255, 255, 255, 0.08);
+
+  /* motion: transform and opacity only, 120 to 400 ms. motion.js reads none of these; CSS owns timing. */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);           /* legacy alias, colour and border changes */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);       /* strong ease out: entries, press down, reveals */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);   /* on screen movement, shimmer sweep */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);    /* sheets and drawers */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1); /* spring back with a small overshoot: release, pops */
   --dur: 160ms;
+  --dur-press: 120ms;    /* press down */
+  --dur-release: 180ms;  /* spring back */
+  --dur-fast: 160ms;     /* hover, small popovers */
+  --dur-base: 240ms;     /* dialogs, accordions, track ticks */
+  --dur-slow: 320ms;     /* sheets, pops */
+  --dur-reveal: 400ms;   /* scroll reveal, count up */
+  --stagger: 50ms;       /* per item, never more than 60 */
+  --press-scale: 0.97;
+  --press-scale-card: 0.985;
+  --lift: -2px;
 
   color-scheme: light;
 }

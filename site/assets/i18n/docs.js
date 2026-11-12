@@ -59,6 +59,12 @@ CJ.dict({
     "docs.fees.down": "<strong>If the fee payer is busy.</strong> The Swap page says so and nothing is sent. Retry, or pay the fee yourself in KAIA.",
     "docs.fees.release": "<strong>The automatic release is always free.</strong> The keeper pays the gas to send you the 90%, from the same Cojam gas wallet.",
 
+    "docs.gas.t": "Get KAIA for MetaMask",
+    "docs.gas.b": "Only MetaMask users need KAIA. With Kaia Wallet the swap is free, so the simplest fix is to swap with Kaia Wallet instead.",
+    "docs.gas.buy": "<strong>Buy KAIA</strong> on an exchange that lists it, then withdraw it to the same wallet address that holds your old CT.",
+    "docs.gas.net": "<strong>Pick the Kaia network when you withdraw.</strong> KAIA sent on another network does not arrive in your Kaia wallet.",
+    "docs.gas.much": "<strong>How much:</strong> Kaia fees are small, and well under 1 KAIA covers approving, swapping and claiming. Your wallet shows the exact fee before you confirm.",
+
     "docs.safe.seed": "<strong>Never share your seed phrase or private key.</strong> No real page or person needs it.",
     "docs.safe.dm": "<strong>No one from Cojam will message you first.</strong> Anyone who contacts you about the swap in a DM is not us.",
     "docs.safe.links": "<strong>Use only official links.</strong> Ignore links in replies, ads and DMs.",

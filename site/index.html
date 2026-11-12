@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
 <link rel="stylesheet" href="assets/base.css">
+<link rel="stylesheet" href="assets/wallet.css">
 <link rel="stylesheet" href="assets/pages/landing.css">
 </head>
 <body data-page="home" data-root="./">
@@ -37,12 +38,11 @@
   </section>
 
   <section class="section how" id="how" aria-labelledby="how-h">
-    <div class="container">
+    <div class="container" data-reveal=".section-head, .how-step, .how-fee">
       <div class="section-head">
         <h2 id="how-h" data-i18n="how.title">How the swap works</h2>
         <p data-i18n="how.lede">You sign twice in your own wallet, to approve and to swap. The rest happens on its own.</p>
       </div>
-      <div id="how-track" class="track how-track"></div>
       <ol class="how-steps">
         <li class="how-step">
           <span class="how-ico" id="how-ico-1"></span>
@@ -82,7 +82,7 @@
   </section>
 
   <section class="section timeline" id="timeline" aria-labelledby="tl-h">
-    <div class="container">
+    <div class="container" data-reveal=".section-head, .tl-item">
       <div class="section-head">
         <h2 id="tl-h" data-i18n="tl.title">One year to swap</h2>
         <p data-i18n="tl.lede">Swaps are open for 1 year from launch. Locked remainders still release after that.</p>
@@ -117,7 +117,7 @@
   </section>
 
   <section class="section contracts" id="contracts" aria-labelledby="ct-h">
-    <div class="container contracts-grid">
+    <div class="container contracts-grid" data-reveal=".section-head, .addr-list, .fact">
       <div class="section-head">
         <h2 id="ct-h" data-i18n="ct.title">Contracts on Kaia</h2>
         <p data-i18n="ct.lede">Always check the full address. The ticker CT is used by other tokens elsewhere.</p>
@@ -131,7 +131,7 @@
         <dl class="facts">
           <div class="fact">
             <dt data-i18n="ct.supply.label">New CT supply</dt>
-            <dd id="ct-supply"></dd>
+            <dd id="ct-supply"><span class="num">4,083,262,533.9560001</span> CT, fixed</dd>
           </div>
           <div class="fact">
             <dt data-i18n="ct.admin.label">Admin powers</dt>
@@ -139,7 +139,7 @@
           </div>
           <div class="fact">
             <dt data-i18n="ct.audit.label">Audit</dt>
-            <dd><span class="tag" data-i18n="ct.audit.value">Audit in progress</span></dd>
+            <dd><span class="tag tag-audit" data-i18n="ct.audit.value">Audit in progress</span></dd>
           </div>
         </dl>
       </div>
@@ -147,14 +147,14 @@
   </section>
 
   <section class="section night future" id="future" aria-labelledby="fu-h">
-    <div class="container">
+    <div class="container" data-reveal=".section-head, .mock">
       <div class="section-head">
         <h2 id="fu-h" data-i18n="fu.title">Where Cojam is going</h2>
         <p data-i18n="fu.lede">Ideas for the platform new CT is made for. Nothing here is live, and every number is an example.</p>
       </div>
       <div class="mocks">
 
-        <figure class="panel mock" aria-labelledby="m1-h">
+        <figure class="panel mock lift" data-tilt aria-labelledby="m1-h">
           <div class="mock-head">
             <h3 id="m1-h" data-i18n="fu.m1.title">Predict with CT</h3>
             <span class="mock-tag" data-i18n="fu.concept">Concept preview, not live</span>
@@ -174,7 +174,7 @@
           <figcaption class="mock-cap" data-i18n="fu.m1.cap">Stake CT on the outcome you expect.</figcaption>
         </figure>
 
-        <figure class="panel mock" aria-labelledby="m2-h">
+        <figure class="panel mock lift" data-tilt aria-labelledby="m2-h">
           <div class="mock-head">
             <h3 id="m2-h" data-i18n="fu.m2.title">Outcome derivatives</h3>
             <span class="mock-tag" data-i18n="fu.concept">Concept preview, not live</span>
@@ -198,7 +198,7 @@
           <figcaption class="mock-cap" data-i18n="fu.m2.cap">Trade an outcome price before the result.</figcaption>
         </figure>
 
-        <figure class="panel mock" aria-labelledby="m3-h">
+        <figure class="panel mock lift" data-tilt aria-labelledby="m3-h">
           <div class="mock-head">
             <h3 id="m3-h" data-i18n="fu.m3.title">Loans against positions</h3>
             <span class="mock-tag" data-i18n="fu.concept">Concept preview, not live</span>
@@ -219,7 +219,7 @@
           <figcaption class="mock-cap" data-i18n="fu.m3.cap">Borrow CT without closing your prediction.</figcaption>
         </figure>
 
-        <figure class="panel mock" aria-labelledby="m4-h">
+        <figure class="panel mock lift" data-tilt aria-labelledby="m4-h">
           <div class="mock-head">
             <h3 id="m4-h" data-i18n="fu.m4.title">Margin on predictions</h3>
             <span class="mock-tag" data-i18n="fu.concept">Concept preview, not live</span>
@@ -245,28 +245,28 @@
   </section>
 
   <section class="section faq" id="faq" aria-labelledby="faq-h">
-    <div class="container faq-grid">
+    <div class="container faq-grid" data-reveal=".section-head, .faq-list">
       <div class="section-head">
         <h2 id="faq-h" data-i18n="faq.title">Questions</h2>
         <p data-i18n="faq.lede">Short answers here. The docs cover every case step by step.</p>
         <a class="btn faq-docs" href="docs/" data-i18n="faq.docs">Read the swap docs</a>
       </div>
       <div class="faq-list">
-        <details class="faq-item"><summary><span data-i18n="faq.q1">My CT is on an exchange. What do I do?</span></summary><p data-i18n="faq.a1"></p></details>
-        <details class="faq-item"><summary><span data-i18n="faq.q2">My CT is in a Klayswap pool.</span></summary><p data-i18n="faq.a2"></p></details>
-        <details class="faq-item"><summary><span data-i18n="faq.q5">Why is 90% locked for 7 days?</span></summary><p data-i18n="faq.a5"></p></details>
-        <details class="faq-item"><summary><span data-i18n="faq.q9">Do I need to come back for the 90%?</span></summary><p data-i18n="faq.a9"></p></details>
-        <details class="faq-item"><summary><span data-i18n="faq.q3">What if I miss the window?</span></summary><p data-i18n="faq.a3"></p></details>
-        <details class="faq-item"><summary><span data-i18n="faq.q4">Is there a reward for swapping?</span></summary><p data-i18n="faq.a4"></p></details>
-        <details class="faq-item"><summary><span data-i18n="faq.q6">Which wallets work?</span></summary><p data-i18n="faq.a6"></p></details>
-        <details class="faq-item"><summary><span data-i18n="faq.q7">What does it cost?</span></summary><p data-i18n="faq.a7"></p></details>
-        <details class="faq-item"><summary><span data-i18n="faq.q8">Is it safe?</span></summary><p data-i18n="faq.a8"></p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q1">My CT is on an exchange. What do I do?</span></summary><p data-i18n="faq.a1"></p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q2">My CT is in a Klayswap pool.</span></summary><p data-i18n="faq.a2"></p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q5">Why is 90% locked for 7 days?</span></summary><p data-i18n="faq.a5"></p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q9">Do I need to come back for the 90%?</span></summary><p data-i18n="faq.a9"></p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q3">What if I miss the window?</span></summary><p data-i18n="faq.a3"></p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q4">Is there a reward for swapping?</span></summary><p data-i18n="faq.a4"></p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q6">Which wallets work?</span></summary><p data-i18n="faq.a6"></p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q7">What does it cost?</span></summary><p data-i18n="faq.a7"></p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q8">Is it safe?</span></summary><p data-i18n="faq.a8"></p></details>
       </div>
     </div>
   </section>
 
   <section class="cta" aria-labelledby="cta-h">
-    <div class="container">
+    <div class="container" data-reveal>
       <div class="cta-band">
         <div class="cta-copy">
           <h2 id="cta-h" data-i18n="cta.title">Ready to swap?</h2>
@@ -281,6 +281,8 @@
 </main>
 <div id="cj-foot"></div>
 <script src="assets/system.js"></script>
+<script src="assets/motion.js"></script>
+<script src="assets/wallet.js"></script>
 <script src="assets/i18n/shell.js"></script>
 <script src="assets/i18n/landing.js"></script>
 <script src="assets/shell.js"></script>

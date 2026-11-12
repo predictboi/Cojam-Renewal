@@ -5,11 +5,10 @@
   var GAS = { approve: 0.004, swap: 0.012, claim: 0.006 };
   var BIG = 1000000, WALLET_MS = 1500, CHAIN_MS = 3000;
   var DOCS = (document.body.dataset.root || "../") + "docs/";
-  var WALLETS = [["kaia", "ch.kaia", "ch.kaia.sub"], ["mm", "ch.mm", "ch.mm.sub"], ["wc", "ch.wc", "ch.wc.sub"]];
 
   function $(id) { return document.getElementById(id); }
   var panel = $("mg-panel"), hist = $("mg-hist"), live = $("mg-live"), menu = $("mg-menu");
-  var chooser = $("mg-chooser"), kbd = $("mg-kbd"), wbtn = $("cj-wallet");
+  var kbd = $("mg-kbd"), wbtn = $("cj-wallet");
 
   var ui = freshUi();
   function freshUi() {
@@ -46,8 +45,10 @@
   function unlockAt() { return CJ.now() + C.lockDays * DAY; }
   // Fee delegation: Kaia Wallet and WalletConnect wallets sign fee delegated transactions and Cojam's fee payer pays the fee.
   // MetaMask cannot sign them, so MetaMask users (or anyone who chose to pay after a fee payer error) pay in KAIA.
+  // "web3" is an unknown injected wallet: treated like MetaMask, since only Kaia aware wallets sign fee delegated transactions.
   function kind() { var w = led().wallet; return w.kind || w.app || ui.walletKey || "kaia"; }
-  function sponsored() { return kind() !== "mm" && !ui.payOwn; }
+  function selfPay() { var k = kind(); return k === "mm" || k === "web3"; }
+  function sponsored() { return !selfPay() && !ui.payOwn; }
   function feeRow(need) {
     var r = sponsored()
       ? row(t("gas.k") + help("help.sponsor"), num(t("f.gas.free")), null, t("f.gas.free.sub"))
@@ -119,7 +120,7 @@
       row(t("gas.k") + help("help.sponsor"), t("gas.v")) +
       "</dl>" +
       '<h3 class="mg-h3">' + t("dc.addrs") + '</h3><div class="mg-addrs"><div class="addr" data-addr="old"></div><div class="addr" data-addr="new"></div><div class="addr" data-addr="swap"></div></div>' +
-      '<div class="mg-actions">' + cta(t("dc.cta"), "connect") + "</div>";
+      '<div class="mg-actions">' + cta(CJ.wallet.ctaLabel(), "connect") + "</div>";
   };
   V["wrong-network"] = function () {
     return head(t("wn.title")) + '<p class="mg-lead">' + t("wn.body", { id: C.chainId }) + "</p>" +
@@ -131,7 +132,7 @@
       return '<li><a class="mg-link" href="' + href + '"><span><span class="mg-link-t">' + t(k) + '</span><span class="mg-link-s">' + t(k + ".sub") + "</span></span>" + I("chevron", 18) + "</a></li>";
     };
     return head(t(done ? "em.done.title" : "em.title")) + '<p class="mg-lead">' + t(done ? "em.done.body" : "em.body") + "</p>" +
-      (done ? "" : '<ul class="mg-links">' + link(DOCS + "#exchange", "em.exchange") + link(DOCS + "#pool", "em.pool") + link(DOCS + "#faq", "em.faq") + "</ul>") +
+      (done ? "" : '<ul class="mg-links">' + link(DOCS + "#exchange", "em.exchange") + link(DOCS + "#pool", "em.pool") + link(DOCS + "#special", "em.faq") + "</ul>") +
       '<div class="mg-actions"><button type="button" class="btn btn-block" data-act="switch-wallet">' + I("wallet", 18) + "<span>" + t("em.switch") + "</span></button></div>";
   };
   V.form = function () {
@@ -142,7 +143,7 @@
     if (ready.length && !isClosed()) h += note("info", t("f.claimnote", { amount: A(sumL(ready)) }), '<button type="button" class="btn" data-act="to-claim">' + t("f.claimnote.btn") + "</button>");
     h += '<form id="mg-form" novalidate><div class="field">' +
       '<div class="field-label"><label for="mg-amt">' + t("f.label") + '</label><span id="mg-bal" class="num">' + bal + "</span></div>" +
-      '<div class="field-box" id="mg-box"><input id="mg-amt" name="amount" type="text" inputmode="decimal" autocomplete="off" spellcheck="false" aria-describedby="mg-msg" value="' + esc(rpc ? "" : ui.text) + '"' + (rpc ? " disabled" : "") + ">" +
+      '<div class="field-box" id="mg-box"><input id="mg-amt" name="amount" type="text" inputmode="decimal" enterkeyhint="go" autocomplete="off" autocorrect="off" spellcheck="false" aria-describedby="mg-msg" value="' + esc(rpc ? "" : ui.text) + '"' + (rpc ? " disabled" : "") + ">" +
       '<span class="field-unit">' + t("unit.old") + "</span>" +
       '<button type="button" class="btn mg-max" data-act="max" aria-label="' + esc(t("f.max.aria")) + '"' + (rpc ? " disabled" : "") + ">" + t("f.max") + "</button></div>" +
       '<div class="field-msg" id="mg-msg" aria-live="polite"></div></div>';
@@ -156,9 +157,9 @@
       feeRow(0) +
       "</dl>" +
       '<div id="mg-gas-err"></div>';
-    if (Ld.contract.reserveEmpty) h += note("error", withHelp(t("er.reserve"), "help.reserve"), '<a class="btn" href="' + DOCS + '#support">' + t("er.reserve.fix") + "</a>");
-    h += '<div class="mg-actions"><button type="submit" class="btn btn-primary btn-lg btn-block" id="mg-go" data-primary></button>' +
-      '<p class="mg-hint small muted" id="mg-hint"></p></div></form>';
+    if (Ld.contract.reserveEmpty) h += note("error", withHelp(t("er.reserve"), "help.reserve"), '<a class="btn" href="' + DOCS + '#contact">' + t("er.reserve.fix") + "</a>");
+    h += '<div class="mg-actions"><button type="submit" class="btn btn-primary btn-lg btn-block" id="mg-go" data-primary></button></div>' +
+      '<p class="mg-hint small muted" id="mg-hint"></p></form>';
     return h;
   };
   V.review = function () {
@@ -178,7 +179,7 @@
     return head(t("sw.title"), { back: true }) + steps(2) +
       '<p class="mg-lead">' + t("sw.body", { amount: A(ui.amount), instant: A(sp(ui.amount).instant), locked: A(sp(ui.amount).locked), date: F.date(unlockAt()) }) + "</p>" +
       summary(ui.amount) + gasError(GAS.swap) +
-      (res ? note("error", withHelp(t("er.reserve"), "help.reserve"), '<a class="btn" href="' + DOCS + '#support">' + t("er.reserve.fix") + "</a>") : "") +
+      (res ? note("error", withHelp(t("er.reserve"), "help.reserve"), '<a class="btn" href="' + DOCS + '#contact">' + t("er.reserve.fix") + "</a>") : "") +
       '<div class="mg-actions">' + cta(t("sw.cta", { amount: A(ui.amount) }), "swap", res || gasShort(GAS.swap) ? " disabled" : "") + "</div>";
   };
   V.partial = function () {
@@ -249,10 +250,10 @@
   function gasShort(need) { return !sponsored() && led().wallet.kaia < need; }
   function gasError(need) {
     if (!gasShort(need)) return "";
-    var mm = kind() === "mm";
+    var mm = selfPay();
     return note("error", t(mm ? "er.nogas" : "er.nogas.own", { need: gas(need), have: gas(led().wallet.kaia) }),
       (mm ? '<button type="button" class="btn" data-act="switch-wallet">' + t("er.nogas.kaia") + "</button>" : "") +
-      '<a class="btn" href="' + DOCS + '#fees">' + t("er.nogas.fix") + "</a>");
+      '<a class="btn" href="' + DOCS + '#gas">' + t("er.nogas.fix") + "</a>");
   }
 
   function computeView() {
@@ -420,6 +421,7 @@
       }, { large: true });
     }
     CJ.renderAddrs(panel);
+    stickyBar();
     updateForm();
     renderHist();
     paintWindow();
@@ -428,6 +430,38 @@
     else if (focus) { var h = $("mg-h"); if (h) h.focus(); }
     announce();
   }
+  // Mobile: the single primary action sticks to the bottom of the screen while its view is in view (CSS, under 600 px),
+  // and gets a top rule only while it is actually stuck. Views with two actions or an error note in place keep it inline.
+  var stuckIO = "IntersectionObserver" in window ? new IntersectionObserver(function (es) {
+    es.forEach(function (e) {
+      var bar = e.target.previousElementSibling;
+      if (bar) bar.classList.toggle("is-stuck", !e.isIntersecting && e.boundingClientRect.top > (window.innerHeight || 0) - 1);
+    });
+  }) : null;
+  function stickyBar() {
+    if (stuckIO) stuckIO.disconnect();
+    panel.querySelectorAll(".mg-actions").forEach(function (a) {
+      if (a.classList.contains("mg-actions-row") || !a.querySelector(":scope > .btn-primary.btn-lg")) return;
+      a.classList.add("mg-sticky");
+      var s = document.createElement("div"); s.className = "mg-sticky-end"; s.setAttribute("aria-hidden", "true");
+      a.after(s); if (stuckIO) stuckIO.observe(s);
+    });
+  }
+  // Amount field on a phone: keep it in view above the keyboard, and let the sticky bar step aside while typing.
+  var coarse = window.matchMedia && matchMedia("(pointer: coarse)").matches;
+  function keepFieldInView() {
+    var box = $("mg-box"); if (!box || document.activeElement !== $("mg-amt")) return;
+    var vv = window.visualViewport, r = box.getBoundingClientRect(), top = vv ? vv.offsetTop : 0, h = vv ? vv.height : window.innerHeight;
+    if (r.top < top + 72 || r.bottom > top + h - 16) window.scrollBy({ top: r.top - top - Math.max(72, (h - r.height) / 3), behavior: "smooth" });
+  }
+  panel.addEventListener("focusin", function (e) {
+    if (e.target.id !== "mg-amt") return;
+    panel.classList.add("is-typing");
+    if (coarse) setTimeout(keepFieldInView, 320);
+  });
+  panel.addEventListener("focusout", function (e) { if (e.target.id === "mg-amt") panel.classList.remove("is-typing"); });
+  if (window.visualViewport) visualViewport.addEventListener("resize", function () { if (coarse) keepFieldInView(); });
+
   function announce() {
     var h = $("mg-h"), n = panel.querySelector(".note-error .note-body > p, .note-warn .note-body > p, .note-error .mg-hh > span");
     var s = (h ? h.textContent : "") + (n ? ". " + n.textContent : "");
@@ -517,7 +551,7 @@
         setTimeout(function () { ui.loading = false; ui.error = null; ui.text = null; render(true); }, 1000); break;
       case "resume": ui.amount = led().allowance; ui.partialOff = true; ui.phase = "swap"; render(true); break;
       case "start-over": ui.partialOff = true; render(true); break;
-      case "switch-wallet": L.disconnect(); ui = Object.assign(freshUi(), { walletKey: ui.walletKey }); render(false); openChooser(b); break;
+      case "switch-wallet": L.disconnect(); ui = Object.assign(freshUi(), { walletKey: ui.walletKey }); render(false); openChooser(b, true); break;
       case "see-hist": $("mg-hist-h").focus(); break;
     }
   }
@@ -530,24 +564,17 @@
   });
   panel.addEventListener("change", function (e) { if (e.target.id === "mg-rv-check") $("mg-rv-go").disabled = !e.target.checked; });
 
-  // chooser and shortcut sheets
+  // Wallet chooser: CJ.wallet (assets/wallet.js) picks by environment. In a wallet's own browser it connects in one
+  // tap; in a mobile browser it offers "Open in Kaia Wallet", "Open in MetaMask" and WalletConnect; on desktop the
+  // detected extensions, install links and a WalletConnect code. force: show the sheet even in a wallet browser.
+  function openChooser(from, force) { closeMenu(); CJ.wallet.open({ from: from, force: force, onPick: doConnect }); }
+
+  // shortcut sheet
   var opener = null;
-  function paintChooser() {
-    $("mg-opts").innerHTML = WALLETS.map(function (w) {
-      return '<button type="button" class="mg-opt" data-wallet="' + w[0] + '"><span class="mg-opt-ic">' + I("wallet", 20) + '</span><span class="mg-opt-txt"><span class="mg-opt-name">' + t(w[1]) + '</span><span class="mg-opt-sub">' + t(w[2]) + "</span></span>" + I("chevron", 18) + "</button>";
-    }).join("");
-    document.querySelectorAll(".mg-sheet [data-close]").forEach(function (b) { b.innerHTML = I("x", 20); });
-  }
+  function paintSheets() { document.querySelectorAll(".mg-sheet [data-close]").forEach(function (b) { b.innerHTML = I("x", 20); }); }
   function openSheet(d, from) { opener = from || document.activeElement; if (!d.open) d.showModal(); }
-  function openChooser(from) { closeMenu(); paintChooser(); openSheet(chooser, from); }
-  [chooser, kbd].forEach(function (d) {
-    d.addEventListener("click", function (e) {
-      if (e.target === d || e.target.closest("[data-close]")) d.close();
-      var w = e.target.closest("[data-wallet]");
-      if (w) { d.close(); doConnect(w.getAttribute("data-wallet")); }
-    });
-    d.addEventListener("close", function () { if (opener && document.contains(opener) && ui.phase !== "wallet") opener.focus(); });
-  });
+  kbd.addEventListener("click", function (e) { if (e.target === kbd || e.target.closest("[data-close]")) kbd.close(); });
+  kbd.addEventListener("close", function () { if (opener && document.contains(opener)) opener.focus(); });
   $("mg-kbd-open").addEventListener("click", function (e) { openSheet(kbd, e.currentTarget); });
 
   // header wallet button: chooser when disconnected, small menu when connected
@@ -628,7 +655,7 @@
   });
 
   document.addEventListener("cj:ledger", function () { render(false); });
-  document.addEventListener("cj:lang", function () { paintChooser(); menu.setAttribute("aria-label", t("menu.label")); if (!menu.hidden) paintMenu(); lastLive = ""; render(false); });
+  document.addEventListener("cj:lang", function () { paintSheets(); menu.setAttribute("aria-label", t("menu.label")); if (!menu.hidden) paintMenu(); lastLive = ""; render(false); });
 
   // ---------- ?state= presets for captures and review ----------
   function setState(name) {
@@ -644,7 +671,8 @@
     }
     function credit() { Ld.newCT = Ld.lots.reduce(function (a, l) { return a + l.instant + (l.releasedAt ? l.locked : 0); }, 0); }
     ui = freshUi(); ui.frozen = true;
-    Ld.wallet.connected = name !== "disconnected"; Ld.wallet.app = Ld.wallet.kind = "kaia";
+    // With ?env=inapp-metamask the presets use that wallet; otherwise Kaia Wallet.
+    Ld.wallet.connected = name !== "disconnected"; Ld.wallet.app = Ld.wallet.kind = CJ.wallet.env().kind || "kaia";
     switch (name) {
       case "wrong-network": Ld.wallet.network = "ethereum"; break;
       case "empty": Ld.oldCT = 0; break;
@@ -672,7 +700,7 @@
     "rejected", "no-gas", "sponsor", "closed", "reserve", "rpc", "partial", "history"];
   window.CJMigrate = { states: STATES, setState: function (s) { setState(s); render(false); }, ui: function () { return ui; } };
 
-  paintChooser();
+  paintSheets();
   if (CJ.state && STATES.indexOf(CJ.state) > -1) setState(CJ.state);
   render(false);
 })();

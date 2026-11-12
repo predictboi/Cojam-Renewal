@@ -9,6 +9,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
 <link rel="stylesheet" href="../assets/base.css">
+<link rel="stylesheet" href="../assets/wallet.css">
 <link rel="stylesheet" href="../assets/pages/docs.css">
 </head>
 <body data-page="docs" data-root="../">
@@ -107,11 +108,11 @@
       <section class="dc-sec" id="special" aria-labelledby="special-h">
         <h2 class="dc-h2" id="special-h" data-i18n="docs.s.special">Special cases</h2>
         <dl class="dc-cases">
-          <div class="dc-case">
+          <div class="dc-case" id="exchange">
             <dt class="dc-h3" data-i18n="docs.sp.exchange.t">CT on an exchange</dt>
             <dd data-i18n="docs.sp.exchange.b">The exchange handles the swap for CT it holds for you. The list of exchanges is to be announced. Follow your exchange's own notice.</dd>
           </div>
-          <div class="dc-case">
+          <div class="dc-case" id="pool">
             <dt class="dc-h3" data-i18n="docs.sp.pool.t">CT in a Klayswap pool</dt>
             <dd data-i18n="docs.sp.pool.b">Remove your liquidity first so the CT is back in your wallet, then swap it.</dd>
           </div>
@@ -139,6 +140,15 @@
           <li><span data-i18n-html="docs.fees.down"></span></li>
           <li><span data-i18n-html="docs.fees.release"></span></li>
         </ul>
+        <div class="dc-sub" id="gas" aria-labelledby="gas-h">
+          <h3 class="dc-h3" id="gas-h" data-i18n="docs.gas.t">Get KAIA for MetaMask</h3>
+          <p data-i18n="docs.gas.b"></p>
+          <ul class="dc-list">
+            <li><span data-i18n-html="docs.gas.buy"></span></li>
+            <li><span data-i18n-html="docs.gas.net"></span></li>
+            <li><span data-i18n-html="docs.gas.much"></span></li>
+          </ul>
+        </div>
       </section>
       <section class="dc-sec" id="safety" aria-labelledby="safety-h">
         <h2 class="dc-h2" id="safety-h" data-i18n="docs.s.safety">Safety</h2>
@@ -173,6 +183,8 @@
 </main>
 <div id="cj-foot"></div>
 <script src="../assets/system.js"></script>
+<script src="../assets/motion.js"></script>
+<script src="../assets/wallet.js"></script>
 <script src="../assets/i18n/shell.js"></script>
 <script src="../assets/i18n/docs.js"></script>
 <script src="../assets/shell.js"></script>
