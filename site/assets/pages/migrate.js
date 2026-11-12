@@ -208,8 +208,8 @@
     if (!lot) { ui.phase = "form"; return V[computeView()](); }
     return head(t("ok.title"), { badge: "lock" }) +
       '<p class="mg-lead">' + t("ok.body", { instant: A(lot.instant), locked: A(lot.locked), date: F.date(lot.unlockAt) }) + "</p>" +
-      '<div class="mg-trackbox"><div data-track="' + lot.id + '" data-large></div>' +
-      '<p class="mg-count small" data-count="' + lot.unlockAt + '">' + I("clock", 16) + "<span></span></p></div>" +
+      // One countdown: the track's own "Unlocks in 7 days" (round 1 fix 4). No data-count here: motion.js counts those up.
+      '<div class="mg-trackbox"><div data-track="' + lot.id + '" data-large></div></div>' +
       '<p class="small">' + txLink(lot.txSwap, t("h.tx.swap")) + "</p>" +
       '<div class="mg-actions mg-actions-row">' + primary(t("ok.done"), "done") +
       '<button type="button" class="btn btn-ghost btn-lg" data-act="add">' + I("plus", 18) + "<span>" + t("ok.add") + "</span></button></div>";
@@ -375,6 +375,10 @@
         var lot = L.swap(amt); lot.txSwap = tx; L.save();
         ui.lotId = lot.id; ui.phase = "success"; ui.wait = null; ui.text = null; ui.reviewed = false; ui.mode = null;
         render(true); CJ.toast(t("toast.swapped", { amount: A(lot.instant) }));
+        // Success moment on the new lot's track, and the full result in the live region (the overlay is aria-hidden).
+        var said = t("ok.title") + ". " + t("ok.body", { instant: A(lot.instant), locked: A(lot.locked), date: F.date(lot.unlockAt) });
+        live.textContent = said; lastLive = said;
+        if (CJ.celebrate) requestAnimationFrame(function () { CJ.celebrate(panel.querySelector(".mg-view .track")); });
       });
     });
   }
@@ -499,9 +503,10 @@
         }
         all.forEach(function (lot) {
           var st = L.lotStatus(lot);
-          var tag = st === "locked" ? '<span class="tag">' + I("lock", 14) + t("tag.locked", { date: F.date(lot.unlockAt) }) + "</span>"
-            : st === "releasing" ? '<span class="tag tag-sky">' + I("unlock", 14) + t("tag.releasing") + "</span>"
-            : '<span class="tag">' + I("check", 14) + t(lot.releasedBy === "you" ? "tag.you" : "tag.keeper") + "</span>";
+          // Shared lot vocabulary (Locked, Being sent, Released); the date and who released it are on the track below.
+          var tag = st === "locked" ? '<span class="tag tag-locked">' + I("lock", 14) + t("tag.locked") + "</span>"
+            : st === "releasing" ? '<span class="tag tag-sending">' + I("unlock", 14) + t("tag.releasing") + "</span>"
+            : '<span class="tag tag-released">' + I("check", 14) + t("tag.released") + "</span>";
           h += '<li class="mg-lot" data-status="' + st + '"><div class="mg-lot-top">' + tag +
             (st === "released" && lot.txRelease ? txLink(lot.txRelease, t("h.tx.release")) : txLink(lot.txSwap, t("h.tx.swap"))) + "</div>" +
             '<div data-hist-track="' + lot.id + '"></div>' +
@@ -517,10 +522,6 @@
   }
   function tick() {
     panel.querySelectorAll("[data-elapsed]").forEach(function (el) { if (ui.wait && ui.wait.started) el.textContent = dur(Date.now() - ui.wait.started); });
-    panel.querySelectorAll("[data-count]").forEach(function (el) {
-      var u = +el.getAttribute("data-count");
-      el.lastChild.textContent = t("ok.left", { time: dur(u - CJ.now()) });
-    });
   }
   setInterval(tick, 1000);
   setInterval(function () { if (document.activeElement && document.activeElement.id === "mg-amt") return; if (ui.phase === "form") render(false); else renderHist(); }, 60000);

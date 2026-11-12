@@ -84,10 +84,8 @@
 .mg-wait p { margin: 0; font-weight: var(--fw-medium); }
 .mg-spin-sm { width: 12px; height: 12px; border-width: 2px; }
 
-/* track boxes and countdown */
+/* track boxes */
 .mg-trackbox { padding: var(--s-16) 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); display: grid; gap: var(--s-16); }
-.mg-count { display: flex; align-items: center; justify-content: center; gap: var(--s-8); color: var(--ink); font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; }
-.mg-count svg { flex: none; color: var(--ink-2); }
 
 /* tx links */
 .mg-tx { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: var(--fs-14); color: var(--ink); text-decoration: none; }
@@ -100,7 +98,8 @@
 /* checkbox */
 .mg-check { display: inline-flex; align-items: center; gap: var(--s-8); min-height: 44px; cursor: pointer; font-size: var(--fs-14); }
 .mg-check input { width: 20px; height: 20px; margin: 0; accent-color: var(--brand); flex: none; }
-.mg-check-lg { font-size: var(--fs-16); font-weight: var(--fw-medium); }
+/* the whole row is the hit area for the 20 px box: full width, 48 px tall */
+.mg-check-lg { display: flex; width: 100%; min-height: 48px; font-size: var(--fs-16); font-weight: var(--fw-medium); }
 
 /* empty state links */
 .mg-links { list-style: none; margin: var(--s-16) 0 0; padding: 0; border-top: 1px solid var(--line); }
@@ -141,7 +140,6 @@ kbd { display: inline-flex; align-items: center; justify-content: center; min-wi
 /* ---------- shortcut sheet (the wallet chooser is the shared sheet in assets/wallet.css) ---------- */
 .mg-sheet { border: 0; padding: var(--s-24); border-radius: var(--r-panel); background: var(--surface); color: var(--ink); width: min(420px, calc(100vw - 32px)); box-shadow: var(--shadow-pop); }
 .mg-sheet::backdrop { background: color-mix(in srgb, var(--ink) 45%, transparent); }
-.mg-sheet[open] { animation: mg-in 200ms var(--ease); }
 .mg-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); margin-bottom: var(--s-16); }
 .mg-sheet-head h2 { font-size: var(--fs-20); }
 .mg-icon-btn { width: 44px; padding: 0; margin-right: calc(var(--s-12) * -1); }
@@ -169,7 +167,7 @@ kbd { display: inline-flex; align-items: center; justify-content: center; min-wi
 .mg-proto-grid .btn { min-height: 44px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .mg-view.is-enter, .mg-sheet[open] { animation: none; }
+  .mg-view.is-enter { animation: none; }
 }
 
 /* ---------- mobile: sticky primary action ----------
@@ -185,7 +183,7 @@ kbd { display: inline-flex; align-items: center; justify-content: center; min-wi
   /* while typing, and while an error note holds the fix (no KAIA, reserve), the action stays in place under the note */
   .mg-panel.is-typing .mg-sticky, .mg-panel:has(.note-error) .mg-sticky { position: static; }
   html:has(.mg-sticky) { scroll-padding-bottom: 96px; }
-  body[data-page="swap"] .toasts { bottom: calc(88px + env(safe-area-inset-bottom)); }
+  body[data-page="swap"]:has(.mg-sticky.is-stuck) .toasts { bottom: calc(88px + env(safe-area-inset-bottom)); }
 }
 @media (max-width: 480px) {
   .mg-sticky { margin-left: calc(var(--s-16) * -1); margin-right: calc(var(--s-16) * -1); padding-left: var(--s-16); padding-right: var(--s-16); }

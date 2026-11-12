@@ -100,7 +100,6 @@
     dlg.addEventListener("click", onClick);
     dlg.addEventListener("keydown", trap);
     dlg.addEventListener("close", function () {
-      dlg.classList.remove("is-open");
       var o = opener; opener = null;
       if (!picked && o && document.contains(o)) o.focus();
     });
@@ -122,6 +121,7 @@
         '<ol class="cj-steps"><li>' + t("wl.kaia.s1") + "</li><li>" + t("wl.kaia.s2") + "</li><li>" + t("wl.kaia.s3") + "</li></ol>" +
         '<div class="cj-linkbox"><span class="cj-linkbox-url" id="cj-page-url">' + esc(url) + "</span></div>" +
         '<button type="button" class="btn btn-primary btn-lg btn-block" data-copy-page>' + I("copy", 18) + "<span>" + t("wl.kaia.copy") + "</span></button>" +
+        '<p class="sr-only" role="status" id="cj-copy-live"></p>' +
         '<div class="cj-stores">' + kaiaStore().map(function (s) {
           var android = s === STORE.kaiaAndroid;
           return '<a class="btn btn-block" href="' + s + '" target="_blank" rel="noopener">' + ic("down", 18) + "<span>" + t(android ? "wl.store.android" : "wl.store.ios") + "</span></a>";
@@ -173,6 +173,7 @@
       // The page toast sits under the modal backdrop, so the button itself confirms the copy.
       var url = pageUrl(), done = function () {
         c.lastChild.textContent = t("wl.kaia.copied"); c.innerHTML = I("check", 18) + c.lastChild.outerHTML;
+        var lv = dlg.querySelector("#cj-copy-live"); if (lv) lv.textContent = t("wl.kaia.copied");
         clearTimeout(c._t); c._t = setTimeout(function () { if (document.contains(c)) c.innerHTML = I("copy", 18) + "<span>" + t("wl.kaia.copy") + "</span>"; }, 2500);
       };
       if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done, done); else done();
@@ -224,7 +225,6 @@
     opener = opts.from || document.activeElement;
     paint();
     if (!dlg.open) dlg.showModal();
-    requestAnimationFrame(function () { dlg.classList.add("is-open"); });
     focusFirst();
   }
   document.addEventListener("cj:lang", function () { if (dlg && dlg.open) paint(); });

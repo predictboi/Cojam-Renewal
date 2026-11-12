@@ -51,7 +51,7 @@ html { scroll-padding-top: 72px; }
 .cj-sheet-back svg { transform: rotate(180deg); }
 .cj-sheet-note { padding-top: var(--s-4); }
 .cj-sheet-foot { margin-top: calc(var(--s-4) * -1); }
-.cj-sheet-alt { color: var(--ink-2); font-size: var(--fs-14); }
+.cj-sheet-alt { color: var(--ink-2); font-size: var(--fs-14); line-height: 1.35; padding-top: var(--s-8); padding-bottom: var(--s-8); text-wrap: balance; }
 
 .cj-opts { display: grid; gap: var(--s-8); }
 .cj-opt { display: flex; align-items: center; gap: var(--s-12); width: 100%; min-height: 64px; padding: var(--s-12) var(--s-16); border: 1px solid var(--line); border-radius: var(--r-control);
@@ -76,22 +76,23 @@ html { scroll-padding-top: 72px; }
   background: repeating-conic-gradient(var(--inset) 0 25%, var(--surface) 0 50%) 0 0 / 20px 20px; box-shadow: inset 0 0 0 1px var(--line); }
 .cj-qr-ph { display: grid; justify-items: center; gap: var(--s-8); padding: var(--s-12) var(--s-16); border-radius: var(--r-control); background: var(--surface); color: var(--ink-2); font-size: var(--fs-13); text-align: center; }
 
-.cj-sheet.is-open { animation: cj-sheet-pop 200ms var(--ease); }
-@keyframes cj-sheet-pop { from { opacity: 0; transform: translateY(8px) scale(0.98); } to { opacity: 1; transform: none; } }
+/* Desktop: the shared dialog open and close transition in base.css. Mobile: the sheet slides up from the bottom edge
+   and back down on close (the same translate property, so the shared close transition carries it). */
 
 @media (max-width: 599px) {
   .cj-sheet { margin: auto 0 0; width: 100%; max-height: calc(100dvh - 40px); border-radius: 16px 16px 0 0; padding-bottom: env(safe-area-inset-bottom); }
-  .cj-sheet.is-open { animation: cj-sheet-up 240ms var(--ease); }
+  .cj-sheet[open] { animation: cj-sheet-up 240ms var(--ease); }
+  .cj-sheet:not([open]) { translate: 0 100%; scale: none; opacity: 1; }
+  .cj-sheet { transition: transform 200ms var(--ease), translate 200ms var(--ease), overlay 200ms allow-discrete, display 200ms allow-discrete; }
   .cj-sheet.is-dragging { transition: none; }
-  .cj-sheet:not(.is-dragging) { transition: transform 200ms var(--ease); }
   .cj-sheet-grip { display: flex; justify-content: center; padding-top: var(--s-8); touch-action: none; cursor: grab; }
   .cj-sheet-grip span { width: 40px; height: 4px; border-radius: 2px; background: var(--line-strong); }
   .cj-sheet-head { padding: var(--s-4) var(--s-8) 0 var(--s-16); touch-action: none; }
   .cj-sheet-body { padding: var(--s-8) var(--s-16) var(--s-16); }
 }
-@keyframes cj-sheet-up { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes cj-sheet-up { from { translate: 0 100%; opacity: 1; scale: none; } }
 
 @media (prefers-reduced-motion: reduce) {
-  .cj-sheet.is-open { animation: none; }
-  .cj-sheet:not(.is-dragging) { transition: none; }
+  .cj-sheet[open] { animation: none; }
+  .cj-sheet { transition: none; }
 }

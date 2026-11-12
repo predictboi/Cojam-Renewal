@@ -34,4 +34,13 @@
   window.addEventListener("scroll", function () { if (!raf) raf = requestAnimationFrame(function () { raf = 0; spy(); }); }, { passive: true });
   window.addEventListener("hashchange", spy);
   spy();
+
+  // Fix links from the swap app open this page at an anchor (#gas, #exchange, #pool, #special, #contact). The browser
+  // jumps before fonts, the lock track and late layout settle, so land on the target again once they have.
+  var target = location.hash && document.getElementById(location.hash.slice(1));
+  if (target) {
+    var settle = function () { requestAnimationFrame(function () { target.scrollIntoView({ block: "start", behavior: "auto" }); spy(); }); };
+    (document.fonts && document.fonts.ready ? document.fonts.ready : Promise.resolve()).then(function () { setTimeout(settle, 120); });
+    window.addEventListener("load", function () { setTimeout(settle, 120); });
+  }
 })();
