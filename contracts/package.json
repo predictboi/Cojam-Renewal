@@ -1,18 +1,24 @@
 {
-  "name": "contracts",
+  "name": "cojam-contracts",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Cojam token migration contracts (Kaia)",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "test:unit": "SKIP_FORK=1 hardhat test",
+    "test:fork": "hardhat test test/fork.kaia.test.js",
+    "test:fuzz": "FUZZ_RUNS=24 FUZZ_STEPS=200 hardhat test test/fuzz.test.js",
+    "gas": "REPORT_GAS=true SKIP_FORK=1 hardhat test test/CojamMigration.test.js",
+    "deploy:kairos": "hardhat run scripts/deploy-kairos.js --network kairos",
+    "deploy:local": "TREASURY_ADDRESS=0x000000000000000000000000000000000000c0de hardhat run scripts/deploy-kairos.js"
   },
-  "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
-    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
-    "@openzeppelin/contracts": "^5.4.0",
-    "dotenv": "^18.0.10",
-    "hardhat": "^2.28.6"
-  }
+    "@nomicfoundation/hardhat-toolbox": "5.0.0",
+    "@openzeppelin/contracts": "5.4.0",
+    "dotenv": "18.0.10",
+    "hardhat": "2.28.6"
+  },
+  "private": true
 }

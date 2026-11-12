@@ -329,13 +329,13 @@
     var p = S.page, list = [];
     for (var i = 1; i <= pages; i++) if (i === 1 || i === pages || Math.abs(i - p) <= 1) list.push(i); else if (list[list.length - 1] !== "…") list.push("…");
     $("lots-pager").innerHTML =
-      '<button type="button" class="btn pg-btn" data-page="' + (p - 1) + '"' + (p <= 1 ? " disabled" : "") + ">" + '<span class="pg-flip">' + I("chevron", 16) + "</span><span>" + t("pg.prev") + "</span></button>" +
+      '<button type="button" class="btn pg-btn" data-pg="' + (p - 1) + '"' + (p <= 1 ? " disabled" : "") + ">" + '<span class="pg-flip">' + I("chevron", 16) + "</span><span>" + t("pg.prev") + "</span></button>" +
       '<span class="pg-nums">' + list.map(function (i) {
         return i === "…" ? '<span class="pg-gap" aria-hidden="true">…</span>' :
-          '<button type="button" class="pg-num" data-page="' + i + '"' + (i === p ? ' aria-current="page"' : "") + ' aria-label="' + esc(t("pg.page", { n: i })) + '">' + i + "</button>";
+          '<button type="button" class="pg-num" data-pg="' + i + '"' + (i === p ? ' aria-current="page"' : "") + ' aria-label="' + esc(t("pg.page", { n: i })) + '">' + i + "</button>";
       }).join("") + "</span>" +
       '<span class="pg-of small muted">' + t("pg.of", { n: p, total: pages }) + "</span>" +
-      '<button type="button" class="btn pg-btn" data-page="' + (p + 1) + '"' + (p >= pages ? " disabled" : "") + "><span>" + t("pg.next") + "</span>" + I("chevron", 16) + "</button>";
+      '<button type="button" class="btn pg-btn" data-pg="' + (p + 1) + '"' + (p >= pages ? " disabled" : "") + "><span>" + t("pg.next") + "</span>" + I("chevron", 16) + "</button>";
   }
   function csvCell(v) { v = String(v == null ? "" : v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; }
   function exportCsv() {
@@ -470,9 +470,9 @@
       var again = document.querySelector('[data-sort="' + k + '"]'); if (again) again.focus();
       return;
     }
-    var pg = e.target.closest("[data-page]");
+    var pg = e.target.closest("[data-pg]");
     if (pg && !pg.disabled) {
-      S.page = +pg.dataset.page; renderTable();
+      S.page = +pg.dataset.pg; renderTable();
       $("lots-h").scrollIntoView({ block: "start" });
       var cur = document.querySelector('#lots-pager [aria-current="page"]'); if (cur) cur.focus({ preventScroll: true });
       return;

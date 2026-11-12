@@ -62,27 +62,38 @@ describe("fork: real old CT on Kaia mainnet", function () {
   });
 
   describe("on a local fork", function () {
-    let old, migration, newToken, start, holder, treasury;
+    let old, migration, newToken, start, treasury, holder, other, owner, balanceSlot;
+
+    // Credit a test wallet with old CT by writing the balances mapping slot directly,
+    // instead of moving a real holder's tokens. This does not change totalSupply.
+    async function credit(addr, amount) {
+      const key = ethers.solidityPackedKeccak256(["uint256", "uint256"], [addr, balanceSlot]);
+      await network.provider.send("hardhat_setStorageAt", [OLD_CT, key, ethers.toBeHex(amount, 32)]);
+    }
 
     before(async function () {
       await reset(RPC, forkBlock);
-      [, treasury, holder] = await ethers.getSigners();
+      [, treasury, holder, other] = await ethers.getSigners();
       old = await ethers.getContractAt(OLD_ABI, OLD_CT);
       start = BigInt(await time.latest()) + DAY;
       migration = await (await ethers.getContractFactory("CojamMigration")).deploy(OLD_CT, treasury.address, start, GRACE);
       newToken = await ethers.getContractAt("CojamToken", await migration.NEW_TOKEN());
 
-      // Credit a test wallet with old CT by writing the balances mapping slot directly
-      // (found by probing slots 0..20), instead of moving a real holder's tokens.
-      const amount = 1_234_567n * E18 + 89n;
-      let found = false;
-      for (let slot = 0; slot <= 20 && !found; slot++) {
-        const key = ethers.solidityPackedKeccak256(["uint256", "uint256"], [holder.address, slot]);
-        await network.provider.send("hardhat_setStorageAt", [OLD_CT, key, ethers.toBeHex(amount, 32)]);
-        if ((await old.balanceOf(holder.address)) === amount) found = true;
-        else await network.provider.send("hardhat_setStorageAt", [OLD_CT, key, ethers.ZeroHash]);
+      for (let slot = 0; slot <= 20 && balanceSlot === undefined; slot++) {
+        balanceSlot = slot;
+        await credit(holder.address, 7n);
+        if ((await old.balanceOf(holder.address)) !== 7n) {
+          await credit(holder.address, 0n);
+          balanceSlot = undefined;
+        }
       }
-      if (!found) throw new Error("balances slot not found in slots 0..20");
+      if (balanceSlot === undefined) throw new Error("balances slot not found in slots 0..20");
+      console.log(`      old CT balances mapping is at storage slot ${balanceSlot}`);
+
+      await impersonateAccount(OLD_OWNER);
+      await setBalance(OLD_OWNER, 10n * E18);
+      owner = await ethers.getSigner(OLD_OWNER);
+      await time.increaseTo(start);
     });
 
     it("deploys against the real old CT (supply and decimals guards pass)", async function () {
@@ -90,34 +101,48 @@ describe("fork: real old CT on Kaia mainnet", function () {
       expect(await newToken.balanceOf(await migration.getAddress())).to.equal(SUPPLY);
     });
 
-    it("migrates real old CT 1:1 and claims after 7 days", async function () {
-      const bal = await old.balanceOf(holder.address);
-      await time.increaseTo(start);
+    it("migrates real old CT 1:1 (no transfer fee) and claims after 7 days", async function () {
+      const bal = 1_234_567n * E18 + 89n;
+      await credit(holder.address, bal);
       await old.connect(holder).approve(await migration.getAddress(), bal);
       await expect(migration.connect(holder).migrate(bal)).to.emit(migration, "Migrated");
       expect(await old.balanceOf(holder.address)).to.equal(0n);
       expect(await old.balanceOf(await migration.getAddress())).to.equal(bal);
-      expect((await migration.lotOf(holder.address, 0))[0]).to.equal(bal); // no transfer fee on real CT
+      expect((await migration.lotOf(holder.address, 0))[0]).to.equal(bal);
       await time.increase(LOCK);
       await migration.connect(holder).claim(10);
       expect(await newToken.balanceOf(holder.address)).to.equal(bal);
     });
 
-    it("the real owner pausing old CT makes migrate revert; claims of existing lots still work", async function () {
-      const [, , , other] = await ethers.getSigners();
-      // Give `other` some CT through the holder's new balance path: reuse the slot trick on a second lot.
-      await impersonateAccount(OLD_OWNER);
-      await setBalance(OLD_OWNER, 10n * E18);
-      const owner = await ethers.getSigner(OLD_OWNER);
+    it("real pause() by the old owner: migrate reverts, claims of existing lots still pay, unPause() restores", async function () {
+      await credit(other.address, 100n * E18);
+      await old.connect(other).approve(await migration.getAddress(), 100n * E18);
+      await migration.connect(other).migrate(40n * E18); // lot 0, before the pause
+      await time.increase(LOCK);
 
-      // holder has 0 old CT now; credit 5 CT by migrating from the treasury signer is not possible,
-      // so check the revert path with an approved but paused transfer of 0 balance user first:
       await old.connect(owner).pause();
       expect(await old.paused()).to.equal(true);
-      await old.connect(other).approve(await migration.getAddress(), 1n);
-      await expect(migration.connect(other).migrate(1n)).to.be.reverted;
+      await expect(migration.connect(other).migrate(10n * E18)).to.be.reverted;
+      expect(await migration.lotCount(other.address)).to.equal(1n);
+      await expect(migration.connect(other).claim(10)).to.changeTokenBalance(newToken, other, 40n * E18);
+
       await old.connect(owner).unPause();
-      expect(await old.paused()).to.equal(false);
+      await expect(migration.connect(other).migrate(10n * E18)).to.emit(migration, "Migrated");
+    });
+
+    it("real freeze(): a frozen holder cannot migrate; freezing the swap contract does not block migrate or claim", async function () {
+      await old.connect(owner).freeze(other.address);
+      expect(await old.isFrozen(other.address)).to.equal(true);
+      await expect(migration.connect(other).migrate(1n * E18)).to.be.reverted;
+      await old.connect(owner).unFreeze(other.address);
+
+      const m = await migration.getAddress();
+      await old.connect(owner).freeze(m);
+      expect(await old.isFrozen(m)).to.equal(true);
+      await expect(migration.connect(other).migrate(5n * E18)).to.emit(migration, "Migrated");
+      await time.increase(LOCK);
+      await expect(migration.connect(other).claim(10)).to.emit(migration, "Claimed");
+      await old.connect(owner).unFreeze(m);
     });
   });
 });
