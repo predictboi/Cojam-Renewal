@@ -18,8 +18,9 @@ The migration rules, all enforced by code:
 
 * **1:1.** One old base unit is credited as one new base unit. Same decimals, so there is no scaling.
 * **10% now, 90% after 7 days.** On each `migrate(amount)` the contract credits the old CT that actually arrived. 10% of the credit (rounded down) is sent in new CT in the same transaction. The rest (credit minus the instant part, so no dust is lost) becomes a **lot** locked for 7 days.
-* **Release without action from the holder.** After 7 days anyone may release a matured lot (`claimFor`, `claimForMany`); the tokens always go to the lot owner, never to the caller. The team runs a keeper bot that does this and pays the gas. Holders can also call `claim` themselves.
+* **Release without action from the holder.** After 7 days anyone may release a matured lot (`claimFor`, `claimForMany`); the tokens always go to the lot owner, never to the caller. The team's gas wallet does this as a keeper and pays the gas. Holders can also call `claim` themselves.
 * **Window.** The window opens in the deploy block (`WINDOW_START = block.timestamp` at deploy) and closes at `WINDOW_END = WINDOW_START + 365 days` (exclusive). Releasing lots works forever.
+* **Gasless for holders.** Through Kaia native fee delegation, the Cojam gas wallet co-signs and pays the gas for approve, migrate and claim. The holder still signs every transaction, so `msg.sender` is always the holder (section 3).
 * **Same rules for everyone.** No allowlist, no exclusions, no rewards, no bonus, no minimum.
 * **No admin key.** Nothing is pausable, upgradeable or configurable after deploy. Nobody can move locked user funds, change the ratio, the 10% share or the lock.
 * **Remainder.** After `WINDOW_END + grace`, anyone can call `sweep()`, which sends the new CT that no lot is owed to the treasury multisig fixed at deploy. Tokens owed to locked lots are never touched.
@@ -36,18 +37,45 @@ A note on the supply figure: the supply is usually quoted as 4,083,262,533.956 C
 | **Swap contract** (`CojamMigration`) | set at deploy | the new CT reserve (the whole supply at deploy) and every old CT received through `migrate` | none: it only follows its code. No function can move old CT out. New CT leaves only as the 10% instant part (to the migrating address), as released lots (to the lot owner) and through `sweep` (to the treasury, only the unowed part, only after `WINDOW_END + grace`) |
 | **Treasury multisig** | `TREASURY`, immutable, set at deploy | receives the unowed remainder after `WINDOW_END + grace` | none over the contracts. It is only a destination |
 | **Deployer EOA** | any fresh key | gas only (KAIA). Holds no new CT after deploy: the deploy script checks this | none after the deploy transaction |
-| **Keeper bot EOA** | any key run by the team | gas only (KAIA) | none. It calls `claimForMany` / `claimFor`, which can only pay lot owners. Anyone else may run the same calls |
+| **Gas wallet** (fee payer and keeper) | one hot EOA run by the team | KAIA only, low balance, topped up from the treasury | none over tokens. As **fee payer** it co-signs holders' fee delegated transactions and pays their gas. As **keeper** it calls `claimForMany` / `claimFor` after unlock, which can only pay lot owners. Anyone else may run the same keeper calls |
 
 * The treasury (issuance wallet) is a **brand new multisig created for the relaunch**, recommended as a Kaia Safe with a threshold such as 3 of 5 held by separate people and devices. It is not any wallet from the old Cojam project. The old owner `0xeb1622d0377da1f9815bfc6eff61afe3257a0518` is unrelated to the relaunch and must never be used as the treasury; the deploy script refuses it.
 * The deployer is a single use key. It is not the treasury and it is never given any role, because the contracts have no roles.
-* **No address can move locked user funds.** Not the deployer, not the treasury, not the keeper, not the team. A lot's new CT can only ever go to the address that created the lot.
-* The old CT owner keeps its powers over old CT (section 6). It has no power over the new token or the swap contract.
+* The gas wallet is a hot key by necessity (it signs automatically). Keep only a few days of gas in it and top it up from the treasury. If it is stolen, the thief can spend that KAIA and nothing else: it holds no tokens and has no role in either contract. Rotating it needs no contract change, only a new key in the fee payer and keeper services. It is never the deployer and never the treasury.
+* **No address can move locked user funds.** Not the deployer, not the treasury, not the gas wallet, not the team. A lot's new CT can only ever go to the address that created the lot.
+* The old CT owner keeps its powers over old CT (section 7). It has no power over the new token or the swap contract.
 
-## 3. Contracts and exact behaviour
+## 3. Fee delegation (gasless swaps)
+
+Holders swap without owning KAIA. Kaia supports fee delegation natively at the transaction level, so **no contract change is needed** and none was made.
+
+**Transaction types.** Kaia has its own fee delegated transaction types next to the Ethereum ones: `TxTypeFeeDelegatedSmartContractExecution` (type `0x31`, the fee payer pays all of the gas) and `TxTypeFeeDelegatedSmartContractExecutionWithRatio` (type `0x32`, the fee payer pays a set percentage). Approve, migrate and claim are all smart contract executions, so they use `0x31`. They are sent with `kaia_sendRawTransaction` (Kaia SDKs such as `@kaiachain/ethers-ext` build and sign them). Wallets that only know Ethereum transaction types cannot sign them; those users send a normal transaction and pay their own gas, which always works.
+
+**Signing order.**
+
+1. The front end builds the transaction (`from` = holder, `to`, `data`, gas, nonce) and the holder signs it in their wallet. The sender signature covers `to`, `data`, value, nonce and gas.
+2. The holder's signed transaction goes to the Cojam fee payer service. The gas wallet adds itself as fee payer and signs.
+3. The fully signed transaction is broadcast. The network charges the gas to the fee payer.
+
+**What it changes on chain: nothing that matters to the contracts.** `msg.sender` is the holder, not the fee payer, and so is `tx.origin`. Lots, the 10% payout and releases are keyed to the holder exactly as with a normal transaction. Neither contract reads `tx.origin` or the fee payer: a scan of the compiled bytecode of `CojamMigration` and `CojamToken`, and of the deployed old CT, finds no `ORIGIN` opcode, and the source never mentions it. The fork and unit tests therefore cover fee delegated calls as well.
+
+**What the fee payer can and cannot do.**
+
+* It only pays gas. It cannot change the holder's transaction (the sender signature covers every field), cannot move tokens, cannot redirect a payout, and has no role in either contract.
+* It can refuse to sign. That only removes the free gas; the holder can still send the same call as a normal transaction.
+* It can be drained of KAIA by abuse, so the fee payer service must only co-sign these calls: `approve(swap, amount)` on old CT, `migrate(amount)`, `claim(maxLots)` and `claimFor` on the swap. It should check the target address, the function selector and the approve spender, cap the gas limit, and rate limit per sender address (for example a few sponsored transactions per day, and no sponsorship for dust amounts that exist only to burn gas).
+
+**Approve needs its own transaction.** Old CT has no `permit` (EIP-2612), so there is no single signature approve plus migrate. A first time holder signs two fee delegated transactions: `approve` on old CT, then `migrate` on the swap. Holders who already approved enough skip the first one.
+
+**Release after 7 days.** The same gas wallet acts as keeper and calls `claimForMany` for matured lots with its own ordinary transactions. The holder signs nothing for the 90% to arrive. A holder who wants it sooner after unlock can still send `claim`, sponsored or not.
+
+**Contract wallets.** A Safe's transaction is submitted by one of its owner EOAs; that EOA's transaction may itself be fee delegated. The swap still sees the Safe as `msg.sender`.
+
+## 4. Contracts and exact behaviour
 
 Compiler: Solidity 0.8.28, optimizer on (200 runs), EVM target `paris` (no PUSH0, no transient storage, so the bytecode runs on every Kaia hardfork). Libraries: OpenZeppelin Contracts 5.4.0 (`ERC20`, `ERC20Permit`, `SafeERC20`, `SafeCast`, `ReentrancyGuard`).
 
-### 3.1 `CojamToken`
+### 4.1 `CojamToken`
 
 * `ERC20("Cojam Token", "CT")` plus `ERC20Permit("Cojam Token")` (EIP-2612, domain version `"1"`).
 * `TOTAL_SUPPLY = 4083262533956000100000000000` (constant).
@@ -56,7 +84,7 @@ Compiler: Solidity 0.8.28, optimizer on (200 runs), EVM target `paris` (no PUSH0
 
 **KIP-7 compatibility.** Kaia runs the EVM, and Kaia wallets, Kaiascan and Kaia DEXs handle ERC-20 tokens natively, so the token works on Kaia as is. KIP-7 is Kaia's token standard: it is ERC-20 plus `safeTransfer` / `safeTransferFrom` with an `onKIP7Received` receiver callback, plus KIP-13 `supportsInterface`. Recommendation: **do not add KIP-7 extras and do not answer `supportsInterface` for KIP-7.** Answering `supportsInterface(0x65787371)` without the `safeTransfer` functions would be a false claim; adding them brings receiver callbacks (a re-entry surface) to a token whose value is being plain and neutral; and KIP-13 detection is not needed for ERC-20 style listing on Kaia. Pre launch action: confirm with each target exchange that an ERC-20 style token on Kaia is accepted (checklist item).
 
-### 3.2 `CojamMigration`
+### 4.2 `CojamMigration`
 
 **Constructor** `(IERC20 oldToken, address treasury, uint256 gracePeriod)`, in order:
 
@@ -78,7 +106,7 @@ Compiler: Solidity 0.8.28, optimizer on (200 runs), EVM target `paris` (no PUSH0
 7. `totalMigrated += received; totalInstant += instant; totalOwed += locked`; emit `Migrated`.
 8. Last step: if `instant > 0`, transfer `instant` new CT to `msg.sender`.
 
-Rounding examples: 1 wei gives 0 now and 1 locked; 9 wei gives 0 and 9; 10 wei gives 1 and 9; 19 wei gives 1 and 18; 12,500 CT gives 1,250 CT and 11,250 CT. Old CT received stays in the swap contract forever (section 8.1).
+Rounding examples: 1 wei gives 0 now and 1 locked; 9 wei gives 0 and 9; 10 wei gives 1 and 9; 19 wei gives 1 and 18; 12,500 CT gives 1,250 CT and 11,250 CT. Old CT received stays in the swap contract forever (section 9.1).
 
 **Release of matured lots.** All three entry points share one internal routine and are `nonReentrant`:
 
@@ -111,7 +139,7 @@ It can be called again later (for example if someone sends new CT to the contrac
 * `OLD_TOKEN.balanceOf(swap) >= totalMigrated` (equal unless someone sent old CT directly)
 * every address holds exactly its instant parts plus its released lots; a keeper or any third party caller never receives anything
 
-## 4. Parameters
+## 5. Parameters
 
 | Parameter | Value | Where set | Changeable |
 | --- | --- | --- | --- |
@@ -126,7 +154,7 @@ It can be called again later (for example if someone sends new CT to the contrac
 | `TREASURY` | new relaunch Safe multisig | constructor | no |
 | Old token | `0x7f223b1607171b81ebd68d22f1ca79157fd4a44b` | constructor | no |
 
-## 5. Lot state diagram
+## 6. Lot state diagram
 
 ```mermaid
 stateDiagram-v2
@@ -143,13 +171,13 @@ stateDiagram-v2
 
 Contract phases: window `[WINDOW_START, WINDOW_END)` (migrate and release), after `WINDOW_END` (release only), from `SWEEP_OPENS_AT` (release and sweep).
 
-## 6. What the old token can do (read from chain)
+## 7. What the old token can do (read from chain)
 
 The old contract's source is not verified by us. A scan of its deployed bytecode on 2026-11-12 found these owner functions: `pause()`, `unPause()`, `freeze(address)`, `unFreeze(address)`, lock functions (`unlock(address,uint256)`, `unlockAll(address)`, `releaseLock(address)`, `lockInfo(address,uint256)`, `totalLocked(address)`, plus three selectors we could not name), `transferOwnership`, `renounceOwnership`. It has `burn` and `burnFrom`. It has **no** `mint`, no `permit`, no KIP-7 `safeTransfer`, no `supportsInterface`. On chain: owner `0xeb1622d0377da1f9815bfc6eff61afe3257a0518`, `paused() == false`, balances mapping at storage slot 1.
 
 Fork tests against the real bytecode confirmed: `pause()` blocks `transferFrom` (so `migrate` reverts) but releases of existing lots keep paying; `freeze(holder)` blocks that holder from migrating; `freeze(swapContract)` does **not** block migrate or release, because the swap never sends old CT.
 
-## 7. Events and errors
+## 8. Events and errors
 
 **Events**
 
@@ -181,16 +209,16 @@ Plus the standard ERC-20 `Transfer` and `Approval` on both tokens. A front end c
 
 Errors coming from old CT itself (allowance, balance, paused, frozen) bubble up unchanged through `SafeERC20`. The front end should map them to the states in HANDOFF 4.4 (approval needed, insufficient balance, old token paused).
 
-## 8. Design decisions and reasons
+## 9. Design decisions and reasons
 
-### 8.1 Received old CT stays in the swap contract (not `0x…dEaD`, not `burnFrom`)
+### 9.1 Received old CT stays in the swap contract (not `0x…dEaD`, not `burnFrom`)
 
 * **Freeze risk decides it.** The old owner can `freeze` any address, and a frozen address cannot send. A design that forwards old CT to `0x…dEaD` inside `migrate` would be bricked for everyone by one `freeze(swap)` call. Holding in place cannot be blocked that way (proved on the fork).
 * **`burnFrom` is unwise here.** Its behaviour inside unverified code (allowance handling, interaction with pause, freeze and locks, events) is not something we control, and it still needs the same approval. It would also make the received amount harder to measure and shrink the old `totalSupply`, which removes a clean cross check.
 * **It is as good as burned.** The swap has no function that can move old CT, and no admin or upgrade path. `OLD_TOKEN.balanceOf(swap)` is a public, exact ledger of everything migrated. Supply trackers can treat that address as locked forever.
 * **Cheaper.** One old CT transfer per migrate instead of two.
 
-### 8.2 No admin key
+### 9.2 No admin key
 
 The contracts have no owner, no pause, no upgrade, no parameter setters. The only privileged outcome (the remainder going to the treasury) is time gated, permissionless to trigger and limited to unowed tokens. This removes the most common migration failure modes (key theft, insider moves, ratio changes) and keeps the new token listing neutral.
 
@@ -198,11 +226,11 @@ The cost is that nothing can be stopped if a bug appears after launch. Mitigatio
 
 **Alternative (not built): multisig plus timelock.** If the founder or auditor wants an emergency brake, add a `pauseMigrate` role held by a Safe behind a timelock (for example 48 hours). It may pause **only** `migrate`, never releases or `sweep`, and may never move tokens, change the ratio, the 10% share, the lock, the window or the treasury. HANDOFF 4.2 lists more admin powers (top up, recover other tokens); none are needed here because the reserve is the full supply from block one.
 
-### 8.3 Token deployed by the swap, window opened by the deploy
+### 9.3 Token deployed by the swap, window opened by the deploy
 
 The swap's constructor creates `CojamToken(address(this))`. The supply exists only inside the swap from the first block, and the deployer never holds any. The supply and decimals cross checks run in the same transaction. The window opens in that same block, so the mainnet deploy **is** the launch: the swap address is unknown until then, and anyone who finds the contract can migrate at once under the same rules. Deploy only when the announcement, site and keeper are ready.
 
-### 8.4 Permissionless release for the keeper
+### 9.4 Permissionless release for the keeper
 
 The founder wants the 90% to arrive without the holder doing anything. `claimFor` and `claimForMany` make release a public service with one hard rule: the payee is always the lot owner. Consequences:
 
@@ -211,29 +239,29 @@ The founder wants the 90% to arrive without the holder doing anything. `claimFor
 * A third party cannot release early (the unlock check is the same), cannot redirect (no recipient parameter), and cannot skip or reorder lots (the cursor only moves over matured lots).
 * The only effect a stranger can have is to make matured tokens arrive in the owner's wallet, which is what the owner was promised.
 
-### 8.5 Measured credit
+### 9.5 Measured credit
 
 The credit is the swap's balance change, not the requested amount, and the 10/90 split is applied to that credit. Fee on transfer or other non standard behaviour can never over credit (tested with a 1% fee mock and in fuzz runs with a 0.37% fee). The real CT has no fee (fork test: credit equals amount).
 
-### 8.6 Checks, effects, interactions
+### 9.6 Checks, effects, interactions
 
 Releases and `sweep` follow checks, effects, interactions strictly (state first, transfer last). `migrate` must call old CT before writing state, because the credit is the measured balance change; after that it writes all state and emits, and the instant new CT transfer is the last step. This is the standard pattern for measured transfers; `nonReentrant` on every state changing function closes the gap, and the old token is a fixed, known contract, not user input. Tests show a malicious token that re-enters `migrate`, `claim`, `claimFor`, `claimForMany` or `sweep` from inside `transferFrom` is rejected, and a swallowed re-entry gains nothing.
 
-### 8.7 No permit based migrate
+### 9.7 No permit based migrate
 
 Old CT has no `permit` (EIP-2612), so a one signature migrate is impossible. Holders send two transactions: approve, then migrate. Contract wallets such as Safe can batch both atomically (MultiSend), which is tested. The front end should approve the exact amount, not an unlimited allowance. The new token does support `permit`, for later DEX and app use.
 
-### 8.8 Lots and cursor releases
+### 9.8 Lots and cursor releases
 
 Each `migrate` call is its own lot with its own 7 day timer. A cursor per user plus a `maxLots` bound gives constant cost per lot, no unbounded loops, and no per lot flag to store. Only the caller can create lots for itself, so lot spam only affects the spammer, and even then it is just more release transactions (which the keeper or the spammer pays for).
 
-### 8.9 Kaia specifics
+### 9.9 Kaia specifics
 
-* Kaia fee delegated transactions work: `msg.sender` is the sender, not the fee payer, so a sponsored gas flow does not change who owns a lot.
+* Kaia fee delegated transactions work: `msg.sender` is the sender, not the fee payer, so a sponsored gas flow does not change who owns a lot (section 3).
 * Kaia account key changes (role based keys) do not affect ownership: lots are keyed by address.
 * Hardhat needs a hardfork history entry to fork chain 8217 (`hardhat.config.js`).
 
-## 9. Edge case policies
+## 10. Edge case policies
 
 | Case | Policy |
 | --- | --- |
@@ -253,9 +281,9 @@ Each `migrate` call is its own lot with its own 7 day timer. A cursor per user p
 | **Keeper down or late** | Nothing is lost. Holders see a "Release now" button that calls `claim`; anyone can call `claimFor`. |
 | **Unidentified large wallets** (top 10 hold about 65.6%) | Treated like everyone else. The contract has no exclusion list. The 7 day lock on 90% limits how fast a large migrated balance can reach the market. |
 
-## 10. Security considerations
+## 11. Security considerations
 
-* **Trust model.** No key controls the new token or the swap. The remaining trust points are: the deployed bytecode (audit and verify on Kaiascan), the treasury multisig (only receives the remainder), the keeper (no power; liveness only) and the old CT owner (can pause, freeze or lock old CT; cannot touch new CT or lots).
+* **Trust model.** No key controls the new token or the swap. The remaining trust points are: the deployed bytecode (audit and verify on Kaiascan), the treasury multisig (only receives the remainder), the gas wallet (no power over tokens; it only pays gas and keeps releases on time) and the old CT owner (can pause, freeze or lock old CT; cannot touch new CT or lots).
 * **Supply and backing.** New supply equals old supply at deploy and old CT has no mint, so the reserve can always back every migrate. Locked lots are always fully backed (first invariant). `sweep` is mathematically limited to `balance - totalOwed`.
 * **No redirection.** No function takes a recipient. The 10% goes to `msg.sender` of `migrate`; released lots go to the lot owner; the remainder goes to the immutable treasury.
 * **Re-entrancy.** `nonReentrant` on `migrate`, `claim`, `claimFor`, `claimForMany`, `sweep`. The new token has no hooks. The old token is fixed.
@@ -266,7 +294,7 @@ Each `migrate` call is its own lot with its own 7 day timer. A cursor per user p
 * **Approvals.** Encourage exact approvals. A leftover allowance to the swap is harmless (the swap only pulls on the owner's own `migrate` call), but exact is better hygiene.
 * **Not audited.** Never describe these contracts as audited until an external report is published and linked.
 
-## 11. Gas notes
+## 12. Gas notes
 
 Measured on the Hardhat network (`npm run gas`, solc 0.8.28, optimizer 200 runs):
 
@@ -283,7 +311,7 @@ Measured on the Hardhat network (`npm run gas`, solc 0.8.28, optimizer 200 runs)
 
 Each extra lot in one release costs about 6,500 gas (one cold storage read plus one event). The keeper should batch users with `claimForMany` and keep each transaction to a few hundred lots; the front end can read `claimable(user, 100)` first. Costs in KAIA depend on the base fee at the time.
 
-## 12. Test plan and results
+## 13. Test plan and results
 
 Command: `cd contracts && npm install && npm test`. Run on 2026-11-12, Node 22, Hardhat 2.28.6, OpenZeppelin 5.4.0. Result: **44 passing, 0 failing** (33 unit, 5 fork against Kaia mainnet, 6 fuzz). Long fuzz campaign `npm run test:fuzz` (24 seeds by 200 steps): **24 passing, 0 failing**. With `SKIP_FORK=1`: 39 passing, 5 pending (the fork tests skip cleanly).
 
@@ -323,18 +351,18 @@ Command: `cd contracts && npm install && npm test`. Run on 2026-11-12, Node 22, 
 | 36 | Fork: real old CT migrates 1:1 with no fee; 10% at once; keeper releases 90% after 7 days | Pass |
 | 37 | Fork: real `pause()` blocks migrate, existing lots still release, `unPause()` restores | Pass |
 | 38 | Fork: real `freeze()` blocks a holder; freezing the swap blocks nothing | Pass |
-| 39 to 44 | Fuzz: 6 seeds by 160 steps (2 with a fee token). Random amounts (0, 1 wei, 9 wei, full, over balance, random) and timing (exact unlock and unlock minus 1 included); releases by the owner, by a keeper, by other users and in batches with duplicates; checked against a model; every invariant of section 3.2 after every step; final keeper drain leaves the swap at zero, the keeper with nothing, the treasury with exactly `supply - migrated`, and users holding exactly what they migrated | Pass |
+| 39 to 44 | Fuzz: 6 seeds by 160 steps (2 with a fee token). Random amounts (0, 1 wei, 9 wei, full, over balance, random) and timing (exact unlock and unlock minus 1 included); releases by the owner, by a keeper, by other users and in batches with duplicates; checked against a model; every invariant of section 4.2 after every step; final keeper drain leaves the swap at zero, the keeper with nothing, the treasury with exactly `supply - migrated`, and users holding exactly what they migrated | Pass |
 
 Still to do before mainnet: external audit; Kairos end to end with the real front end, the keeper bot and a real Safe; a small mainnet dry run with team wallets right after the launch deploy.
 
-## 13. Launch checklist (HANDOFF 4.7 adapted)
+## 14. Launch checklist (HANDOFF 4.7 adapted)
 
 1. External audit report published and linked on the site. Audit status stated honestly until then.
 2. Treasury: new Kaia Safe created for the relaunch, signers and threshold documented, address published. Not any old Cojam wallet.
 3. Old token: try to reach the old owner `0xeb16…0518`; ask for `renounceOwnership()`. If not possible, publish the pause and freeze risk and the fallback policy.
 4. Re-read the old `totalSupply()` right before deploy; it must equal `CojamToken.TOTAL_SUPPLY` (the deploy reverts otherwise).
-5. Kairos rehearsal: deploy with the script, migrate from an EOA and a Safe, run the keeper against it, run through every front end state in HANDOFF 4.4.
-6. Keeper bot ready before mainnet deploy: watches `Migrated`, calls `claimForMany` after each `unlockAt`, alerts when its gas balance is low.
+5. Kairos rehearsal: deploy with the script, migrate from an EOA (with and without fee delegation) and a Safe, run the keeper against it, run through every front end state in HANDOFF 4.4.
+6. Gas wallet ready before mainnet deploy: fee payer service live with its allowlist of targets, selectors and spender, gas cap and per address rate limit; keeper watches `Migrated` and calls `claimForMany` after each `unlockAt`; alerts when its KAIA balance is low; top up procedure from the treasury written down.
 7. Everything ready at once, because the deploy opens the window: site, announcement, keeper, dashboard, FAQ.
 8. Mainnet deploy from a fresh EOA; record `WINDOW_START`, `WINDOW_END`, `SWEEP_OPENS_AT` and show them as human dates; verify `CojamMigration` and `CojamToken` source on Kaiascan; confirm on chain that the swap holds the whole supply and the deployer holds none.
 9. Small mainnet dry run with team wallets inside the live window (migrate, check the 10%, keeper releases the 90% after 7 days).
@@ -345,10 +373,10 @@ Still to do before mainnet: external audit; Kairos end to end with the real fron
 14. Incident runbook: there is no pause to press. The runbook covers old CT being paused or frozen (snapshot block, announcement, fallback timeline), a keeper outage (announce "Release now", restart), phishing sites, and a found bug (announce, stop promoting the page, plan a replacement funded by the treasury after `SWEEP_OPENS_AT`).
 15. Support FAQ live: exchanges, Klayswap LP, vesting and contract wallets, lost keys, why 10% now and 90% after 7 days, never send CT directly to the contract.
 
-## 14. Open decisions
+## 15. Open decisions
 
 * **Launch date**, which is the mainnet deploy date (the window opens in the deploy block).
 * **Grace period** length (recommended 30 days; any value up to 365).
 * **Late migration policy** after `WINDOW_END`, and how a pause or freeze fallback is paid from the swept remainder.
-* **Emergency brake**: ship with no admin (current code) or add the narrow migrate only pause behind a Safe and timelock (section 8.2). Recommendation: no admin, plus audit and dry runs.
+* **Emergency brake**: ship with no admin (current code) or add the narrow migrate only pause behind a Safe and timelock (section 9.2). Recommendation: no admin, plus audit and dry runs.
 * **Exchange support** list and dates.

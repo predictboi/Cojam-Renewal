@@ -422,9 +422,9 @@
       hist.innerHTML = h + '<p class="small muted mg-hist-lead">' + t("h.dc") + "</p>" + example();
     } else {
       if (all.length) {
-        var tot = L.totals();
+        var tot = L.totals(), cells = [["h.wallet", Ld.newCT], ["h.locked", tot.locked], ["h.releasing", tot.releasing], ["h.released", tot.released]];
         h += '<dl class="mg-totals">' +
-          ["locked", "ready", "claimed"].map(function (k) { return '<div><dt>' + t("h." + k) + "</dt><dd>" + num(t("h.v", { amount: A(tot[k === "ready" ? "claimable" : k]) })) + "</dd></div>"; }).join("") + "</dl>";
+          cells.map(function (c) { return '<div><dt>' + t(c[0]) + "</dt><dd>" + num(t("h.v", { amount: A(c[1]) })) + "</dd></div>"; }).join("") + "</dl>";
       }
       if (!all.length && !pendingSwap) {
         h += '<p class="small muted mg-hist-lead">' + t("h.empty") + "</p>" + example();
@@ -437,12 +437,12 @@
         all.forEach(function (lot) {
           var st = L.lotStatus(lot);
           var tag = st === "locked" ? '<span class="tag">' + I("lock", 14) + t("tag.locked", { date: F.date(lot.unlockAt) }) + "</span>"
-            : st === "claimable" ? '<span class="tag tag-sky">' + I("unlock", 14) + t("tag.ready") + "</span>"
-            : '<span class="tag">' + I("check", 14) + t("tag.claimed") + "</span>";
+            : st === "releasing" ? '<span class="tag tag-sky">' + I("unlock", 14) + t("tag.releasing") + "</span>"
+            : '<span class="tag">' + I("check", 14) + t(lot.releasedBy === "you" ? "tag.you" : "tag.keeper") + "</span>";
           h += '<li class="mg-lot" data-status="' + st + '"><div class="mg-lot-top">' + tag +
-            (st === "claimed" && lot.txClaim ? txLink(lot.txClaim, t("h.tx.claim")) : txLink(lot.txSwap, t("h.tx.swap"))) + "</div>" +
+            (st === "released" && lot.txRelease ? txLink(lot.txRelease, t("h.tx.release")) : txLink(lot.txSwap, t("h.tx.swap"))) + "</div>" +
             '<div data-hist-track="' + lot.id + '"></div>' +
-            (st === "claimable" && !busy ? '<div class="mg-lot-act"><button type="button" class="btn" data-act="claim" data-ids="' + lot.id + '">' + t("h.claim", { amount: A(lot.amount) }) + "</button></div>" : "") +
+            (st === "releasing" && !busy ? '<div class="mg-lot-act"><button type="button" class="btn" data-act="claim" data-ids="' + lot.id + '">' + t("h.claim", { amount: A(lot.locked) }) + "</button></div>" : "") +
             "</li>";
         });
         h += "</ul>";
@@ -450,7 +450,7 @@
       hist.innerHTML = h;
     }
     hist.querySelectorAll("[data-hist-track]").forEach(function (el) { CJ.track(el, byId(el.getAttribute("data-hist-track"))); });
-    var ex = $("mg-ex-track"); if (ex) CJ.track(ex, null, { amountText: A(10000), demoDays: 3.4 });
+    var ex = $("mg-ex-track"); if (ex) CJ.track(ex, null, { amount: 10000, demoDays: 3.4 });
   }
   function tick() {
     panel.querySelectorAll("[data-elapsed]").forEach(function (el) { if (ui.wait && ui.wait.started) el.textContent = dur(Date.now() - ui.wait.started); });
@@ -600,15 +600,19 @@
 
   // ---------- ?state= presets for captures and review ----------
   function setState(name) {
+    if (name === "claimable") name = "releasing"; // older capture names
+    if (name === "claimed") name = "released";
     L.reset();
     var Ld = L.get(), n = CJ.now(), seq = 0;
-    function mk(amount, daysAgo, claimedDaysAgo) {
-      var s = n - daysAgo * DAY;
-      return { id: "S" + (seq++) + Math.round(s).toString(36), amount: amount, swappedAt: s, unlockAt: s + C.lockDays * DAY,
-        claimedAt: claimedDaysAgo != null ? n - claimedDaysAgo * DAY : null, txSwap: CJ.fakeTx(), txClaim: claimedDaysAgo != null ? CJ.fakeTx() : null };
+    // rel: {by: "you" | "keeper", daysAgo}. Without it, the mock keeper releases the lot lazily once it is due.
+    function mk(amount, daysAgo, rel) {
+      var s = n - daysAgo * DAY, p = CJ.split(amount);
+      return { id: "S" + (seq++) + Math.round(s).toString(36), amount: amount, instant: p.instant, locked: p.locked, swappedAt: s, unlockAt: s + C.lockDays * DAY,
+        releasedAt: rel ? n - rel.daysAgo * DAY : null, releasedBy: rel ? rel.by : null, txSwap: CJ.fakeTx(), txRelease: rel ? CJ.fakeTx() : null };
     }
+    function credit() { Ld.newCT = Ld.lots.reduce(function (a, l) { return a + l.instant + (l.releasedAt ? l.locked : 0); }, 0); }
     ui = freshUi(); ui.frozen = true;
-    Ld.wallet.connected = name !== "disconnected"; Ld.wallet.app = "kaia";
+    Ld.wallet.connected = name !== "disconnected"; Ld.wallet.app = Ld.wallet.kind = "kaia";
     switch (name) {
       case "wrong-network": Ld.wallet.network = "ethereum"; break;
       case "empty": Ld.oldCT = 0; break;
@@ -616,21 +620,24 @@
       case "approve": ui.amount = 125000; ui.phase = "approve"; break;
       case "wallet": ui.amount = 125000; ui.phase = "wallet"; ui.wait = { kind: "approve", amount: 125000, prev: "approve" }; break;
       case "pending": ui.amount = 125000; Ld.allowance = 125000; ui.phase = "pending"; ui.wait = { kind: "swap", amount: 125000, prev: "swap", tx: CJ.fakeTx(), started: Date.now() - 12000 }; break;
-      case "locked": Ld.oldCT = 0; Ld.wallet.kaia = 2.464; var lk = mk(125000, 0); Ld.lots = [lk]; ui.lotId = lk.id; ui.phase = "success"; break;
-      case "claimable": Ld.oldCT = 0; Ld.lots = [mk(25000, 2), mk(20000, 8.5), mk(80000, 10)]; break;
-      case "claimed": Ld.oldCT = 0; var cd = mk(125000, 9, 0); Ld.newCT = 125000; Ld.lots = [cd]; ui.claimIds = [cd.id]; ui.phase = "claimed"; break;
+      case "locked": Ld.oldCT = 0; var lk = mk(125000, 0); Ld.lots = [lk]; ui.lotId = lk.id; ui.phase = "success"; break;
+      // unlocked a few minutes ago, the keeper has not sent them yet
+      case "releasing": Ld.oldCT = 0; Ld.lots = [mk(25000, 2), mk(20000, 7.006), mk(80000, 7.012)]; break;
+      case "released": Ld.oldCT = 0; var cd = mk(125000, 9, { by: "keeper", daysAgo: 1.98 }); Ld.lots = [cd]; ui.claimIds = [cd.id]; ui.phase = "claimed"; break;
       case "rejected": ui.amount = 125000; ui.phase = "approve"; ui.error = "rejected"; ui.errKind = "approve"; break;
-      case "no-gas": Ld.wallet.kaia = 0.001; break;
-      case "closed": ui.closed = true; Ld.oldCT = 25000; Ld.lots = [mk(100000, 9)]; break;
+      case "no-gas": Ld.wallet.app = Ld.wallet.kind = "mm"; Ld.wallet.kaia = 0.001; break;
+      case "sponsor": ui.amount = 125000; ui.phase = "approve"; ui.error = "sponsor"; Ld.contract.sponsorDown = true; break;
+      case "closed": ui.closed = true; Ld.oldCT = 25000; Ld.lots = [mk(100000, 7.01)]; break;
       case "reserve": Ld.contract.reserveEmpty = true; break;
       case "rpc": ui.error = "rpc"; break;
       case "partial": Ld.allowance = 125000; break;
-      case "history": Ld.oldCT = 40000; Ld.lots = [mk(15000, 1), mk(30000, 4), mk(20000, 8), mk(20000, 15, 6)]; ui.mode = "swap"; break;
+      case "history": Ld.oldCT = 40000; Ld.lots = [mk(15000, 1), mk(30000, 4), mk(20000, 7.008), mk(10000, 10, { by: "you", daysAgo: 2.9 }), mk(20000, 15)]; ui.mode = "swap"; break;
     }
+    credit();
     L.save();
   }
-  var STATES = ["disconnected", "wrong-network", "empty", "ready", "review", "approve", "wallet", "pending", "locked", "claimable", "claimed",
-    "rejected", "no-gas", "closed", "reserve", "rpc", "partial", "history"];
+  var STATES = ["disconnected", "wrong-network", "empty", "ready", "review", "approve", "wallet", "pending", "locked", "releasing", "released", "claimable", "claimed",
+    "rejected", "no-gas", "sponsor", "closed", "reserve", "rpc", "partial", "history"];
   window.CJMigrate = { states: STATES, setState: function (s) { setState(s); render(false); }, ui: function () { return ui; } };
 
   paintChooser();
