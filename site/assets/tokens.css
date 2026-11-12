@@ -31,6 +31,7 @@
   --night-ink-2: #A9B4D0;    /* 8.7:1 on --night-bg */
   --night-up: #5FD49A;
   --night-down: #FF8A7A;
+  --night-warn: #F5B556;     /* amber on the night ground: warnings only */
 
   /* type */
   --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;

@@ -7,7 +7,9 @@
   var t = function (k, v) { return CJ.t(k, v); };
   var $ = function (id) { return document.getElementById(id); };
   var SUPPLY = C.newToken.supply, HOLDERS = C.oldHolders;
-  var PER_PAGE = 25, BIG_KEY = "cj.admin.bigThreshold";
+  // 25 rows per page on a table, 10 cards per page under 760 px (the stacked layout in admin.css), so a phone page stays short.
+  var mqCards = window.matchMedia ? matchMedia("(max-width: 759px)") : { matches: false };
+  var PER_PAGE = mqCards.matches ? 10 : 25, BIG_KEY = "cj.admin.bigThreshold";
   var SEARCH_ICO = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/></svg>';
   var DL_ICO = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M12 4v11"/><path d="M7 10.5l5 5 5-5"/><path d="M5 20h14"/></svg>';
   var SORT_ICO = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path class="up" d="M8 10l4-4 4 4"/><path class="dn" d="M8 14l4 4 4-4"/></svg>';
@@ -338,7 +340,9 @@
       '</th><th scope="col" class="c-share">' + t("top.col.share") + '</th><th scope="col" class="r c-lots">' + t("top.col.lots") + "</th></tr></thead><tbody>" +
       list.map(function (w, i) {
         var share = w.total / sw;
-        return '<tr><td class="r num muted c-rank">' + (i + 1) + "</td><td>" + walletBtn(w.addr) + '</td><td class="r num">' + amt0(w.total) + "</td>" +
+        // .top-u shows the unit beside the figure only in the stacked phone layout, where the column header is hidden.
+        return '<tr><td class="r num muted c-rank">' + (i + 1) + '</td><td class="c-wallet">' + walletBtn(w.addr) + '</td><td class="r num c-amt">' + amt0(w.total) +
+          ' <span class="top-u">' + t("unit.ct_plain") + "</span></td>" +
           '<td class="c-share"><span class="share"><span class="share-bar" aria-hidden="true"><span style="width:' + (share / maxShare * 100).toFixed(1) + '%"></span></span><span class="num">' + F.pct(share, 1) + "</span></span></td>" +
           '<td class="r num c-lots">' + w.lots.length + "</td></tr>";
       }).join("") + "</tbody>";
@@ -488,6 +492,12 @@
     $("adm-status").textContent = t("head.refreshed", { time: dt(D.now) });
   });
   document.addEventListener("cj:lang", renderAll);
+  // Crossing the card breakpoint changes the page size; keep the first visible request on screen.
+  function onCards() {
+    var first = (S.page - 1) * PER_PAGE;
+    PER_PAGE = mqCards.matches ? 10 : 25; S.page = Math.floor(first / PER_PAGE) + 1; renderTable();
+  }
+  if (mqCards.addEventListener) mqCards.addEventListener("change", onCards); else if (mqCards.addListener) mqCards.addListener(onCards);
 
   var rTimer, lastW = { unl: 0, day: 0 };
   if (window.ResizeObserver) {

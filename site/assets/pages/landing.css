@@ -19,7 +19,10 @@
 .how-step { position: relative; display: grid; gap: var(--s-8); align-content: start; padding-top: var(--s-16); border-top: 1px solid var(--line); }
 .how-ico { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--r-control); background: var(--inset); color: var(--ink); margin-bottom: var(--s-4); }
 .how-body { font-size: var(--fs-16); }
-.how-body > span { margin-right: var(--s-4); }
+/* The last word and the help toggle never part (landing.js builds .how-tail); the popover inside wraps normally. */
+.how-tail { white-space: nowrap; }
+.how-tail .help { margin-left: var(--s-4); }
+.how-tail .help-pop { white-space: normal; }
 /* Popovers open under the step text, full width of the step, so they never run off a small screen. */
 .how-step .help { position: static; }
 .how-step .help-pop { left: 0; right: 0; top: auto; transform: none; width: auto; max-width: 340px; margin-top: var(--s-8); }
@@ -82,6 +85,8 @@
 .mock-big { font-size: var(--fs-20); font-weight: var(--fw-semi); color: var(--night-ink); }
 .mock-up, .mock-chg { color: var(--night-up); }
 .mock-down { color: var(--night-down); }
+/* A liquidation price is a warning, not a loss: amber, never red. */
+.mock-warn { color: var(--night-warn); }
 .mock-chart { width: 100%; height: auto; }
 .mock-grid { stroke: var(--night-line); stroke-width: 1; }
 .mock-entry { stroke: var(--night-ink-2); stroke-width: 1; stroke-dasharray: 4 4; }

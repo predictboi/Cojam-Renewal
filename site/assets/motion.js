@@ -13,7 +13,8 @@
 //              already be the exact, formatted final value; that text is restored at the end. Optional data-dp
 //              (decimals while counting) and data-count-key (a stable key so re-renders do not replay).
 //   Reveal     [data-reveal] on a section container: one fade and 8 px rise when it scrolls in. data-reveal=".a, .b"
-//              staggers those children by 50 ms. Only sections below the fold at load are armed, so nothing flashes.
+//              staggers those children by 50 ms. Arms on the first scroll, and only sections below the fold then,
+//              so nothing flashes and a page that is never scrolled (captures, audits) shows everything.
 //
 // API:
 //   CJ.motion.reduced()              -> true when the visitor asks for reduced motion.
@@ -24,7 +25,7 @@
 //                                       the success in your own live region. opts: {size: 56} (px of the check).
 //                                       Reduced motion: a still check for 0.9 s.
 //                                       Swap app: CJ.celebrate(document.querySelector(".mg-view .track")) on confirm.
-//   CJ.motion.revealAll()            -> show every armed reveal now (print, captures, audits).
+//   CJ.motion.revealAll()            -> show every armed reveal and track fill now (print, captures, audits).
 //   CJ.motion.playTrack(el)          -> replay the fill on a track (demo and QA).
 //   ?motion=off                      -> skip the JS layer (reveal, count up, track fill, tilt, ripple) for audits.
 (function () {
@@ -177,8 +178,14 @@
   var revealIO = hasIO ? new IntersectionObserver(function (entries) {
     entries.forEach(function (en) { if (en.isIntersecting) { revealIO.unobserve(en.target); reveal(en.target); } });
   }, { threshold: 0.12, rootMargin: "0px 0px -6% 0px" }) : null;
+  // Arms on the first scroll (or at once when the page loads already scrolled), and only sections still below the fold
+  // then. A page that never scrolls (print, captures, audits, a reader who stays on the first screen) never hides anything.
   function initReveal() {
     if (!revealIO || reduced()) return;
+    if ((window.scrollY || root.scrollTop) > 0) { armReveal(); return; }
+    window.addEventListener("scroll", function once() { window.removeEventListener("scroll", once); armReveal(); }, { passive: true });
+  }
+  function armReveal() {
     document.querySelectorAll("[data-reveal]").forEach(function (sec) {
       if (sec.__cjRv) return;
       var sel = sec.getAttribute("data-reveal"), items = sel ? [].slice.call(sec.querySelectorAll(sel)) : [];
@@ -203,8 +210,10 @@
     });
   }
   function revealAll() {
-    document.querySelectorAll("[data-reveal]").forEach(function (sec) { if (sec.__cjRv) { revealIO.unobserve(sec); reveal(sec); } });
+    document.querySelectorAll("[data-reveal]").forEach(function (sec) { if (sec.__cjRv) { if (revealIO) revealIO.unobserve(sec); reveal(sec); } });
     document.querySelectorAll(".rv-wait").forEach(function (el) { el.classList.remove("rv-wait"); });
+    // Tracks waiting below the fold show their fill at once (no replay later).
+    document.querySelectorAll(".track.is-armed").forEach(function (el) { if (trackIO) trackIO.unobserve(el); markPlayed(el); el.classList.remove("is-armed"); });
   }
   window.addEventListener("beforeprint", revealAll);
 

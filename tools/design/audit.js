@@ -9,6 +9,7 @@ const path=require('path'), fs=require('fs');
   const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:+w,height:+h},deviceScaleFactor:1,isMobile:mobile,hasTouch:mobile});
   const pg=await ctx.newPage(); const errs=[]; pg.on('pageerror',e=>errs.push(e.message));
   const [f,q]=file.split('?'); await pg.goto(/^https?:/.test(f)?file:'file://'+path.resolve(f)+(q?'?'+q:'')); await pg.waitForTimeout(700);
+  await pg.evaluate(()=>{ if(window.CJ&&CJ.motion&&CJ.motion.revealAll) CJ.motion.revealAll(); }); // scroll reveal never hides content in a capture
   for(const c of multi('--css')) await pg.addStyleTag({content:fs.readFileSync(c,'utf8')});
   for(const c of (process.env.CJ_EXTRA_CSS||'').split(':').filter(Boolean)) await pg.addStyleTag({content:fs.readFileSync(c,'utf8')}); // appended last, used for the shared shell
   for(const j of multi('--jsfile')){ await pg.addScriptTag({content:fs.readFileSync(j,'utf8')}); await pg.waitForTimeout(150); }

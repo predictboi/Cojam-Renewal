@@ -207,8 +207,9 @@ a:hover { color: var(--brand-hover); }
 .track-agg .track-now { align-self: stretch; height: auto; }
 .track-agg .track-day { height: 100%; }
 .track-agg .track-day::before { transform: scaleY(var(--lv, 0)); transform-origin: center bottom; border-radius: 2px; }
-.track-axis { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(18px, 0.78fr) repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: -8px; font-size: var(--fs-12); color: var(--ink-2); text-align: center; line-height: 1.3; }
+.track-axis { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(18px, 0.78fr) repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: -8px; font-size: var(--fs-13); color: var(--ink-2); text-align: center; line-height: 1.3; white-space: nowrap; }
 .track-axis > :first-child { text-align: left; }
+.track-axis > :last-child { text-align: right; }
 
 /* ---------- section rhythm ---------- */
 .section { padding: var(--s-64) 0; }
@@ -371,6 +372,11 @@ details.smooth[open] > :not(summary) { animation: cj-reveal var(--dur-base) var(
 }
 
 /* ---------- shell: banner, header, footer ---------- */
+/* Anything scrolled into view (anchors, focused headings, scrollIntoView) clears the sticky header (56 px mobile, 64 px desktop). */
+html { scroll-padding-top: 72px; }
+/* Skip link: first Tab stop on every page. */
+.cj-skip { position: absolute; z-index: 100; left: var(--s-16); top: var(--s-8); display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--s-16); border-radius: var(--r-control); background: var(--surface); color: var(--brand); font-weight: var(--fw-medium); box-shadow: var(--shadow-pop); text-decoration: none; }
+.cj-skip:not(:focus) { width: 1px; height: 1px; min-height: 0; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; box-shadow: none; }
 .cj-banner { background: var(--ink); color: var(--surface); font-size: var(--fs-13); line-height: 1.45; }
 .cj-banner .container { display: flex; gap: var(--s-8); align-items: flex-start; padding-top: var(--s-8); padding-bottom: var(--s-8); }
 .cj-banner svg { flex: none; margin-top: 1px; color: var(--sky); }
@@ -384,9 +390,11 @@ details.smooth[open] > :not(summary) { animation: cj-reveal var(--dur-base) var(
 .cj-nav a[aria-current="page"], .cj-nav-mobile a[aria-current="page"] { color: var(--brand); box-shadow: inset 0 -2px 0 var(--brand); border-radius: 0; }
 .cj-nav-mobile { display: flex; gap: var(--s-4); border-top: 1px solid var(--line); }
 .cj-nav-mobile a { flex: 1; justify-content: center; }
-.cj-wallet { min-height: 44px; white-space: nowrap; }
-/* Pretendard's contextual alternates draw "0x" as a times sign: addresses in UI type switch them off. */
-.cj-wallet .num { font-variant-ligatures: none; font-feature-settings: "calt" 0; white-space: nowrap; }
+/* Header wallet button: one line, data font for the address, short label under 400 px.
+   Pretendard's contextual alternates draw "0x" as a times sign, so the address switches them off. */
+.cj-wallet { min-height: 44px; white-space: nowrap; flex: none; }
+.cj-addr { font-family: var(--font-data); font-size: var(--fs-13); font-variant-ligatures: none; font-feature-settings: "calt" 0, "liga" 0; }
+.cj-wl-short { display: none; }
 .cj-tools { margin-left: auto; display: flex; align-items: center; gap: var(--s-8); }
 .cj-lang { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 var(--s-8) 0 var(--s-12); border-radius: var(--r-control); color: var(--ink-2); cursor: pointer; }
 .cj-lang:hover, .cj-lang:focus-within { background: var(--inset); color: var(--ink); }
@@ -397,6 +405,22 @@ details.smooth[open] > :not(summary) { animation: cj-reveal var(--dur-base) var(
   .cj-nav { display: flex; }
   .cj-nav-mobile { display: none; }
 }
+/* Mobile header: one 56 px sticky row; the nav row (.cj-subnav) sits below it and scrolls away. */
+.cj-subnav { background: var(--bg); border-bottom: 1px solid var(--line); }
+.cj-subnav .cj-nav-mobile { border-top: 0; }
+@media (min-width: 768px) { .cj-subnav { display: none; } }
+@media (max-width: 767px) {
+  .cj-header-row { min-height: 56px; gap: var(--s-12); }
+  .cj-tools { gap: var(--s-4); }
+}
+@media (max-width: 399px) {
+  .cj-wl-long { display: none; }
+  .cj-wl-short { display: inline; }
+  .cj-wallet { padding: 0 var(--s-12); }
+  .cj-lang { padding: 0 var(--s-4) 0 var(--s-8); }
+}
+/* iOS zooms into any focused field under 16 px: the language select included. */
+@media (hover: none) and (pointer: coarse) { .cj-lang select { font-size: var(--fs-16); } }
 .cj-footer { margin-top: var(--s-64); border-top: 1px solid var(--line); background: var(--surface); padding: var(--s-48) 0 var(--s-32); }
 .cj-foot-grid { display: grid; gap: var(--s-32); grid-template-columns: minmax(0, 1fr); }
 .cj-foot-brand p { margin-top: var(--s-8); max-width: 26em; }
@@ -409,4 +433,8 @@ details.smooth[open] > :not(summary) { animation: cj-reveal var(--dur-base) var(
 .cj-foot-legal { position: relative; margin-top: var(--s-32); padding-top: var(--s-24); display: grid; gap: var(--s-8); }
 /* The rule sits inside the container padding, so it is exactly as wide as the text above it. */
 .cj-foot-legal::before { content: ""; position: absolute; top: 0; left: var(--gutter); right: var(--gutter); height: 1px; background: var(--line); }
-@media (min-width: 900px) { .cj-foot-grid { grid-template-columns: 1fr 0.5fr 2.4fr; } }
+@media (min-width: 900px) {
+  .cj-foot-grid { grid-template-columns: 1fr 0.5fr 2.4fr; }
+  /* Compact footer (body[data-foot="compact"]): brand and site links only; the contracts link sits in the site list. */
+  [data-foot="compact"] .cj-foot-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+}

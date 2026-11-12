@@ -455,6 +455,24 @@
     document.querySelectorAll("details.help[open]").forEach(function (d) { if (!d.contains(e.target)) d.removeAttribute("open"); });
   });
 
+  // An opened help popover scrolls fully into view, above a stuck bottom bar and below the sticky header,
+  // so a toggle near the screen edge never opens off screen.
+  document.addEventListener("toggle", function (e) {
+    var d = e.target;
+    if (!d.matches || !d.matches("details.help") || !d.open) return;
+    requestAnimationFrame(function () {
+      var pop = d.querySelector(".help-pop"); if (!pop) return;
+      // layout height, not the rect: the open animation scales the popover in from its top edge
+      var r0 = pop.getBoundingClientRect(), r = { top: r0.top, bottom: r0.top + pop.offsetHeight };
+      var vv = window.visualViewport, top = vv ? vv.offsetTop : 0, h = vv ? vv.height : window.innerHeight;
+      var bar = document.querySelector(".mg-sticky.is-stuck"), floor = top + h - (bar ? bar.offsetHeight : 0) - 12;
+      var head = document.querySelector(".cj-header"), ceil = top + (head ? head.getBoundingClientRect().bottom : 0) + 12;
+      var dy = r.bottom > floor ? r.bottom - floor : 0;
+      if (r.top - dy < ceil) dy = r.top - ceil; // a tall popover: show its top
+      if (Math.abs(dy) > 1) window.scrollBy({ top: dy, behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    });
+  }, true);
+
   window.CJ = {
     config: config, params: params, DAY: DAY, now: now,
     dict: dict, t: t, lang: function () { return lang; }, setLang: setLang, applyI18n: applyI18n,

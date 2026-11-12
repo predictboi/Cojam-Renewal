@@ -1,39 +1,4 @@
-/* Cojam wallet sheet and mobile shell fixes. Linked on every page right after base.css. */
-
-/* ==========================================================================
-   SHARED: merge into base.css (shell), then delete from here.
-   The mobile help popover rule is already in base.css (max-width: 599px block).
-   ========================================================================== */
-
-/* Skip link: first Tab stop on every page. */
-.cj-skip { position: absolute; z-index: 100; left: var(--s-16); top: var(--s-8); display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--s-16); border-radius: var(--r-control); background: var(--surface); color: var(--brand); font-weight: var(--fw-medium); box-shadow: var(--shadow-pop); text-decoration: none; }
-.cj-skip:not(:focus) { width: 1px; height: 1px; min-height: 0; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; box-shadow: none; }
-
-/* Anything scrolled into view (anchors, focused headings, scrollIntoView) clears the sticky header (56 px mobile, 64 px desktop). */
-html { scroll-padding-top: 72px; }
-
-/* Mobile header: one 56 px sticky row; the nav row sits below it and scrolls away. */
-.cj-subnav { background: var(--bg); border-bottom: 1px solid var(--line); }
-.cj-subnav .cj-nav-mobile { border-top: 0; }
-@media (min-width: 768px) { .cj-subnav { display: none; } }
-@media (max-width: 767px) {
-  .cj-header-row { min-height: 56px; gap: var(--s-12); }
-  .cj-tools { gap: var(--s-4); }
-}
-
-/* Header wallet button: one line, data font for the address, short label under 400 px. */
-.cj-wallet { white-space: nowrap; flex: none; }
-.cj-addr { font-family: var(--font-data); font-size: var(--fs-13); font-variant-ligatures: none; font-feature-settings: "calt" 0, "liga" 0; }
-.cj-wl-short { display: none; }
-@media (max-width: 399px) {
-  .cj-wl-long { display: none; }
-  .cj-wl-short { display: inline; }
-  .cj-wallet { padding: 0 var(--s-12); }
-  .cj-lang { padding: 0 var(--s-4) 0 var(--s-8); }
-}
-
-/* iOS zooms into any focused field under 16 px: the language select included. */
-@media (hover: none) and (pointer: coarse) { .cj-lang select { font-size: var(--fs-16); } }
+/* Cojam wallet connect sheet. Linked on every page right after base.css; the shell (header, skip link, wallet button) lives in base.css. */
 
 /* ==========================================================================
    Connect sheet: bottom sheet under 600 px, centred dialog above.

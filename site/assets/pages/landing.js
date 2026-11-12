@@ -16,6 +16,22 @@
     });
     var fee = document.getElementById("how-fee-ico"); if (fee) fee.innerHTML = CJ.icon("wallet", 18);
     document.querySelectorAll(".how .help > summary").forEach(function (s) { if (!s.firstChild) s.innerHTML = CJ.icon("help", 18); });
+    // Keep each help toggle on the line of the last word before it, so it never drops onto a line of its own.
+    // The sentence span keeps its data-i18n key (a language switch rewrites it in full); the last word moves into a nowrap tail.
+    document.querySelectorAll(".how-body").forEach(function (body) {
+      var span = body.querySelector("[data-i18n]"), help = body.querySelector(".help"); if (!span || !help) return;
+      var text = CJ.t(span.getAttribute("data-i18n")), m = /\s(\S+)\s*$/.exec(text);
+      var cut = m && CJ.lang() !== "ja" ? m.index + 1 : Math.max(0, text.length - 3); // Japanese has no spaces: keep the last 3 characters
+      var tail = body.querySelector(".how-tail");
+      if (!tail) {
+        // drop the markup whitespace around the toggle: in Japanese it would show as a space inside the sentence
+        [].slice.call(body.childNodes).forEach(function (n) { if (n.nodeType === 3 && !n.textContent.trim()) body.removeChild(n); });
+        tail = document.createElement("span"); tail.className = "how-tail"; body.appendChild(tail);
+      }
+      span.textContent = text.slice(0, cut);
+      tail.textContent = text.slice(cut);
+      tail.appendChild(help);
+    });
 
     document.querySelectorAll(".faq-item > summary").forEach(function (s) { if (!s.querySelector("svg")) s.insertAdjacentHTML("beforeend", CJ.icon("chevron", 18)); });
 

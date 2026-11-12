@@ -95,7 +95,8 @@
 .lots-search-box input { flex: 1; min-width: 0; min-height: 46px; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: var(--fs-16); outline: none; }
 .lots-search-box input::placeholder { color: var(--ink-2); }
 .lots-kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border: 1px solid var(--line-strong); border-radius: 6px; background: var(--surface); color: var(--ink-2); font: inherit; font-size: var(--fs-13); }
-@media (hover: none) { .lots-kbd { display: none; } }
+/* The "/" shortcut needs a keyboard: hidden on touch screens and at phone widths. */
+@media (hover: none), (pointer: coarse), (max-width: 759px) { .lots-kbd { display: none; } }
 .lots-filter { display: grid; gap: var(--s-4); min-width: 0; }
 .lots-count { margin-top: var(--s-16); color: var(--ink); }
 .lots-sort-m { display: none; }
@@ -176,25 +177,26 @@ th.r .sort-btn { flex-direction: row-reverse; }
   .lots-table tbody { display: block; }
   .lots-table tbody tr {
     display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-8) var(--s-16); padding: var(--s-8) 0 var(--s-16); border-bottom: 1px solid var(--line);
-    grid-template-areas: "wallet wallet" "amount status" "instant locked" "req unl" "left tx";
+    grid-template-areas: "wallet wallet" "amount status" "req unl" "left tx";
   }
+  /* Compact card: the 10% and 90% parts are fixed shares of the amount (and in the wallet sheet), dates sit on one line. */
+  .lots-table td.c-instant, .lots-table td.c-locked { display: none; }
+  .lots-table .dt { display: flex; flex-wrap: wrap; gap: 0 var(--s-8); }
+  .lots-table .dt .muted { font-size: var(--fs-14); }
   .lots-table tbody tr:hover td, .lots-table tbody tr.row-open:active td { background: transparent; }
   .lots-table tbody tr.row-open { transition: transform var(--dur-release) var(--ease-spring); }
   .lots-table tbody tr.row-open:active { transform: scale(var(--press-scale-card)); transition-duration: var(--dur-press); transition-timing-function: var(--ease-out); }
   .lots-table td { display: block; height: auto; padding: 0; border: 0; width: auto; min-width: 0; }
   .lots-table td.r { text-align: left; }
-  .lots-table td::before { content: attr(data-label); display: block; font-size: var(--fs-12); color: var(--ink-2); margin-bottom: 2px; }
+  .lots-table td::before { content: attr(data-label); display: block; font-size: var(--fs-13); color: var(--ink-2); margin-bottom: 2px; }
   .lots-table td.c-wallet { grid-area: wallet; }
   .lots-table td.c-amount { grid-area: amount; }
-  .lots-table td.c-instant { grid-area: instant; }
-  .lots-table td.c-locked { grid-area: locked; }
   .lots-table td.c-requested { grid-area: req; }
   .lots-table td.c-unlocks { grid-area: unl; }
   .lots-table td.c-left { grid-area: left; }
   .lots-table td.c-status { grid-area: status; align-self: end; justify-self: start; }
   .lots-table td.c-tx { grid-area: tx; align-self: end; justify-self: start; width: auto; text-align: left; }
-  .lots-table td.c-tx::before { display: none; }
-  .lots-table td.c-tx .icon-btn { margin-left: -12px; }
+  .lots-table td.c-tx .icon-btn { margin: -10px 0 -12px -12px; }
   .lots-table td.c-wallet::before { display: none; }
   .lots-table td.c-amount .amt { font-size: var(--fs-16); font-weight: var(--fw-semi); }
   .lots-table tr.empty { display: block; }
@@ -214,9 +216,23 @@ th.r .sort-btn { flex-direction: row-reverse; }
 .share { display: inline-flex; align-items: center; gap: var(--s-8); }
 .share-bar { display: block; width: 88px; height: 8px; border-radius: 4px; background: var(--inset); overflow: hidden; }
 .share-bar > span { display: block; height: 100%; border-radius: 4px; background: var(--sky); min-width: 2px; }
+.top-u { display: none; }
 @media (max-width: 599px) {
   .top-table .share-bar, .top-table .c-lots { display: none; }
   .top-table th, .top-table td { padding-left: var(--s-8); padding-right: var(--s-8); }
+}
+/* Phones: each wallet is one stacked row (rank, wallet, then amount over share), so no column is cut. The header stays for screen readers. */
+@media (max-width: 519px) {
+  .top-table, .top-table tbody { display: block; }
+  .top-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .top-table tr { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; grid-template-areas: "rank wallet amt" "rank wallet share"; align-items: center; gap: 0 var(--s-8); padding: var(--s-8) 0; border-bottom: 1px solid var(--line); }
+  .top-table tr:last-child { border-bottom: 0; }
+  .top-table td { display: block; height: auto; padding: 0; border: 0; }
+  .top-table .c-rank { grid-area: rank; width: auto; text-align: left; }
+  .top-table .c-wallet { grid-area: wallet; min-width: 0; }
+  .top-table .c-amt { grid-area: amt; font-weight: var(--fw-medium); }
+  .top-table .c-share { grid-area: share; justify-self: end; font-size: var(--fs-13); color: var(--ink-2); }
+  .top-u { display: inline; font-size: var(--fs-13); font-weight: var(--fw-medium); color: var(--ink-2); }
 }
 
 .big-th { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-8) var(--s-12); margin-top: var(--s-16); }
