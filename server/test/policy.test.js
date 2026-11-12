@@ -149,6 +149,13 @@ test('rejects non canonical or out of range calldata', async () => {
   await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.SWAP, data: h.calls.claimFor(holder.address, 0), nonce: 3 })), 'CALLDATA_INVALID');
 });
 
+test('dust is not sponsored: migrate under MIN_SPONSORED_OLD_CT and approve from a dust wallet', async () => {
+  const { svc, holder, chain } = setup({ chain: { oldCtBalance: parseUnits('0.5', 18) } });
+  await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.SWAP, data: h.calls.migrate(parseUnits('0.5', 18)) })), 'AMOUNT_TOO_SMALL');
+  await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.OLD_CT, data: h.calls.approve(h.SWAP), nonce: 1 })), 'NO_OLD_CT_BALANCE');
+  assert.equal(chain.state.sent.length, 0);
+});
+
 test('rejects a transaction signed for another chain id', async () => {
   const { svc, holder } = setup();
   const raw = await h.senderSign(holder, { to: h.SWAP, data: h.calls.migrate(), chainId: 1001 });

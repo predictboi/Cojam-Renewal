@@ -38,8 +38,7 @@ function createFeePayerService({ cfg, chain, store, wallet, logger, now = () => 
   async function rpc(fn, what) {
     try {
       return await fn();
-    } catch (e) {
-      if (e && e.isNodeReply) throw e;
+    } catch {
       throw new PolicyError('RPC_UNAVAILABLE', `Kaia RPC is unavailable (${what}), try again shortly`, 503);
     }
   }
@@ -99,7 +98,9 @@ function createFeePayerService({ cfg, chain, store, wallet, logger, now = () => 
       const data = oldCtAbi.encodeFunctionData('balanceOf', [tx.from]);
       const out = await rpc(() => chain.call({ to: cfg.oldCtAddress, data }), 'balanceOf');
       const [bal] = oldCtAbi.decodeFunctionResult('balanceOf', out);
-      if (bal === 0n) throw new PolicyError('NO_OLD_CT_BALANCE', 'This wallet holds no old CT, so approval is not sponsored');
+      if (bal === 0n || bal < pol.minSponsoredOldCtWei) {
+        throw new PolicyError('NO_OLD_CT_BALANCE', 'This wallet holds no old CT (or less than the sponsored minimum), so approval is not sponsored');
+      }
     }
 
     if (pol.simulate) {

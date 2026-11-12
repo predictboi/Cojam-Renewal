@@ -122,6 +122,9 @@ function loadConfig(env = process.env) {
       ipDailyLimit: int('IP_DAILY_TX_LIMIT', 40, { min: 1 }),
       dailyBudgetWei: kaia('DAILY_BUDGET_KAIA', '50'),
       minBalanceWei: kaia('MIN_FEE_PAYER_BALANCE_KAIA', '5'),
+      // Old CT has 18 decimals like KAIA, so the same parser applies. Dust wallets below
+      // this amount can still swap, they just pay their own gas.
+      minSponsoredOldCtWei: kaia('MIN_SPONSORED_OLD_CT', '1'),
       simulate: str('SIMULATE_BEFORE_SIGN', { def: 'true' }) === 'true',
     },
 

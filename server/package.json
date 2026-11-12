@@ -9,6 +9,7 @@
   },
   "scripts": {
     "start": "node src/index.js",
+    "dev": "node --env-file=.env src/index.js",
     "start:api": "node src/index.js api",
     "start:keeper": "node src/index.js keeper",
     "test": "node --test test/*.test.js"

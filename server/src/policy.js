@@ -180,6 +180,9 @@ function checkStatic(tx, cfg) {
     if (selector === SELECTORS.migrate) {
       const [amount] = decodeCall(swapAbi, 'migrate', data);
       if (amount === 0n) reject('CALLDATA_INVALID', 'migrate amount must be above zero');
+      if (amount < pol.minSponsoredOldCtWei) {
+        reject('AMOUNT_TOO_SMALL', 'Swaps below the sponsored minimum are not sponsored; you can still pay the gas yourself');
+      }
       action = 'migrate';
       args = { amount: amount.toString() };
     } else if (selector === SELECTORS.claim) {

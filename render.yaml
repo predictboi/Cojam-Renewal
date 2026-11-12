@@ -41,3 +41,97 @@ services:
       - type: rewrite
         source: /ja
         destination: /index.html
+
+  # Gas sponsor API (Kaia fee delegation) and the claim keeper, one Node process.
+  # Why one service and not a separate worker: both use the same gas wallet, the admin page
+  # reads one set of counters (spend today, runway), and the keeper is light (one round a
+  # minute). The keeper is idempotent, so a restart or a deploy loses nothing. Keep exactly
+  # one instance and no preview environments: a second copy would run a second keeper with
+  # the same key. To split later, set RUN_MODE=api here and enable the worker below.
+  # The default paid instance type is required: a free web service sleeps when idle, which
+  # would stop the keeper.
+  - type: web
+    name: cojam-gas-api
+    runtime: node
+    rootDir: server
+    region: singapore
+    numInstances: 1
+    buildCommand: npm ci --omit=dev
+    startCommand: node src/index.js
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: RUN_MODE
+        value: all
+      # 1001 Kairos for the rehearsal, 8217 Kaia mainnet at launch.
+      - key: CHAIN_ID
+        value: "1001"
+      - key: KAIA_RPC_URL
+        sync: false
+      - key: SWAP_CONTRACT_ADDRESS
+        sync: false
+      - key: SWAP_DEPLOY_BLOCK
+        sync: false
+      # Only needed on Kairos (mainnet defaults to 0x7f223b1607171b81ebd68d22f1ca79157fd4a44b).
+      - key: OLD_CT_ADDRESS
+        sync: false
+      # Secret: the gas wallet key. Entered in the Render dashboard, never in the repo.
+      - key: FEE_PAYER_PRIVATE_KEY
+        sync: false
+      # The site origin(s), for example https://<new domain>. Comma separated.
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: MAX_GAS_PRICE_GKEI
+        value: "50"
+      - key: MAX_GAS_LIMIT_APPROVE
+        value: "120000"
+      - key: MAX_GAS_LIMIT_SWAP
+        value: "600000"
+      - key: MAX_CLAIM_LOTS
+        value: "50"
+      - key: SENDER_DAILY_TX_LIMIT
+        value: "10"
+      - key: IP_DAILY_TX_LIMIT
+        value: "40"
+      - key: DAILY_BUDGET_KAIA
+        value: "50"
+      - key: MIN_FEE_PAYER_BALANCE_KAIA
+        value: "5"
+      - key: MIN_SPONSORED_OLD_CT
+        value: "1"
+      - key: KEEPER_MIN_BALANCE_KAIA
+        value: "1"
+      - key: KEEPER_INTERVAL_SECONDS
+        value: "60"
+      - key: KEEPER_UNLOCK_DELAY_SECONDS
+        value: "120"
+
+  # Optional split, off for now: uncomment and set RUN_MODE=api on cojam-gas-api above.
+  # Counters are per process until the usage store moves to Redis (Render Key Value).
+  # - type: worker
+  #   name: cojam-keeper
+  #   runtime: node
+  #   rootDir: server
+  #   region: singapore
+  #   numInstances: 1
+  #   buildCommand: npm ci --omit=dev
+  #   startCommand: node src/index.js keeper
+  #   envVars:
+  #     - key: NODE_VERSION
+  #       value: "20"
+  #     - key: RUN_MODE
+  #       value: keeper
+  #     - key: CHAIN_ID
+  #       value: "1001"
+  #     - key: KAIA_RPC_URL
+  #       sync: false
+  #     - key: SWAP_CONTRACT_ADDRESS
+  #       sync: false
+  #     - key: SWAP_DEPLOY_BLOCK
+  #       sync: false
+  #     - key: OLD_CT_ADDRESS
+  #       sync: false
+  #     - key: FEE_PAYER_PRIVATE_KEY
+  #       sync: false
