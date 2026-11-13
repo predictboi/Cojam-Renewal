@@ -40,4 +40,9 @@ open(js, "w").write(s)
 mg = f"{OUT}/assets/pages/migrate.js"; s = open(mg).read()
 s = s.replace('+ "docs/";', '+ "docs/index.html";'); open(mg, "w").write(s)
 os.rename(f"{OUT}/index.html", f"{OUT}/home.html")
+# design direction mockups (B, C): self contained pages, local fonts instead of the CDN
+MOCK = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "design", "mockups")
+for f in sorted(os.listdir(MOCK)):
+    if f.endswith(".html"):
+        open(f"{OUT}/{f}", "w").write(fix(f, open(os.path.join(MOCK, f)).read()))
 print("built", OUT)

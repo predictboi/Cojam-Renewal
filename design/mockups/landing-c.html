@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cojam Direction C</title>
+<meta name="robots" content="noindex">
+<!-- Direction C "Open sky": a blue to sky gradient as the loud ground, snow white and ink as the quiet pair, plus one new key colour (coral) used only for the main action and live highlights. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root {
+  --blue: #124CC4;
+  --mid: #2F7BE8;
+  --sky: #97DBFF;
+  --sky-tint: #E3F5FF;
+  --snow: #FDFDFE;
+  --ink: #0B1530;
+  --ink-2: #4A5672;
+  --coral: #D9360F;     /* new key colour, text bearing: white on it 4.7:1 */
+  --coral-hot: #FF5A36; /* decorative fills only, ink text on it 5.8:1 */
+  --display: "Anton", "Pretendard Variable", Impact, system-ui, sans-serif;
+  --body: "Pretendard Variable", Pretendard, -apple-system, system-ui, "Apple SD Gothic Neo", sans-serif;
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --g: 16px;
+  color-scheme: light;
+}
+@media (min-width: 768px) { :root { --g: 32px; } }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--snow); color: var(--ink); font-family: var(--body); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+a { color: inherit; }
+button { font: inherit; }
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: max(var(--g), env(safe-area-inset-left)) max(var(--g), env(safe-area-inset-right)); }
+.display { font-family: var(--display); font-weight: 400; text-transform: uppercase; letter-spacing: -0.005em; line-height: 0.92; }
+:lang(ko) .display { font-family: var(--body); font-weight: 900; letter-spacing: -0.045em; line-height: 1.08; }
+:focus-visible { outline: 3px solid var(--coral-hot); outline-offset: 3px; }
+
+/* ---------- hero: sky gradient ---------- */
+.hero { position: relative; overflow: hidden; color: var(--snow); background: linear-gradient(180deg, var(--blue) 0%, var(--mid) 42%, var(--sky) 100%); padding-bottom: 40px; }
+.hero::before { content: ""; position: absolute; inset: -30% -10% auto; height: 80%; background: radial-gradient(closest-side, rgba(255,255,255,0.22), transparent 70%); animation: drift 14s ease-in-out infinite alternate; pointer-events: none; }
+@keyframes drift { to { transform: translate(8%, 6%); } }
+.nav { position: relative; z-index: 2; display: flex; align-items: center; gap: 12px; min-height: 64px; }
+.logo { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; font-family: var(--display); font-size: 24px; letter-spacing: 0.01em; text-transform: uppercase; }
+.logo .mk { width: 34px; height: 34px; border-radius: 50%; background: var(--snow); display: grid; place-items: center; }
+.logo .mk svg { width: 26px; height: 26px; }
+.links { display: none; gap: 22px; margin-left: 28px; font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.links a { text-decoration: none; opacity: .9; }
+.links a::before { content: "("; opacity: .6; } .links a::after { content: ")"; opacity: .6; }
+.links a:hover { opacity: 1; text-decoration: underline; text-underline-offset: 4px; }
+@media (min-width: 900px) { .links { display: flex; } }
+.nav .end { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.lang { border: 0; background: rgba(255,255,255,0.18); color: var(--snow); border-radius: 10px; min-height: 40px; min-width: 52px; padding: 0 12px; font-size: 13px; font-weight: 700; cursor: pointer; }
+.btn { position: relative; overflow: hidden; display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 26px; border: 0; border-radius: 12px; background: var(--coral); color: #fff; font-weight: 800; font-size: 15px; letter-spacing: .06em; text-transform: uppercase; text-decoration: none; cursor: pointer; transition: transform .18s var(--spring), box-shadow .2s var(--ease), background .2s; box-shadow: 0 10px 24px -8px rgba(217, 54, 15, 0.6); }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 16px 30px -10px rgba(217, 54, 15, 0.7); }
+.btn:active { transform: scale(0.97); transition-duration: .08s; }
+.btn::after { content: ""; position: absolute; inset: 0; background: linear-gradient(110deg, transparent 30%, rgba(255,255,255,.35) 50%, transparent 70%); transform: translateX(-120%); transition: transform .7s var(--ease); }
+.btn:hover::after { transform: translateX(120%); }
+:lang(ko) .btn { letter-spacing: 0; }
+.btn.sm { min-height: 40px; padding: 0 16px; font-size: 13px; border-radius: 10px; }
+.btn.white { background: var(--snow); color: var(--blue); box-shadow: 0 10px 24px -10px rgba(11,21,48,.35); }
+
+.hero-copy { position: relative; z-index: 1; text-align: center; padding-top: 36px; }
+.live { display: inline-flex; align-items: center; gap: 8px; border-radius: 999px; padding: 6px 14px 6px 10px; font-size: 13px; font-weight: 700; background: rgba(11,21,48,0.25); }
+.live i { width: 8px; height: 8px; border-radius: 50%; background: var(--coral-hot); animation: blink 1.6s infinite; }
+@keyframes blink { 50% { opacity: .35; } }
+.h1 { margin: 18px auto 0; font-size: clamp(54px, 15vw, 150px); max-width: 11ch; text-wrap: balance; }
+.h1 .c { color: var(--sky); }
+:lang(ko) .h1 { font-size: clamp(42px, 11vw, 112px); max-width: 9em; }
+.lede { max-width: 30em; margin: 16px auto 0; font-size: 17px; color: rgba(253,253,254,.92); }
+.actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 24px; }
+
+/* the photo row of the reference, rebuilt as prediction tiles in mixed shapes */
+.tiles { position: relative; z-index: 1; display: grid; grid-auto-flow: column; grid-auto-columns: 62%; gap: 12px; margin-top: 40px; overflow-x: auto; scroll-snap-type: x mandatory; padding: 4px var(--g) 12px; scrollbar-width: none; }
+.tiles::-webkit-scrollbar { display: none; }
+@media (min-width: 900px) { .tiles { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); overflow: visible; max-width: 1200px; margin-inline: auto; padding-inline: var(--g); } }
+.tile { scroll-snap-align: center; position: relative; aspect-ratio: 3 / 4; overflow: hidden; color: var(--snow); display: flex; flex-direction: column; justify-content: flex-end; padding: 18px; box-shadow: 0 24px 40px -20px rgba(11,21,48,.5); transition: transform .4s var(--spring); }
+.tile:hover { transform: translateY(-8px) rotate(-1deg); }
+.tile:active { transform: scale(.98); }
+.tile.r { border-radius: 26px; }
+.tile.arch { border-radius: 999px 999px 26px 26px; }
+.tile.circ { border-radius: 50%; aspect-ratio: 1; align-self: center; justify-content: center; align-items: center; text-align: center; }
+.tile .k { font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; opacity: .9; }
+.tile .q { font-weight: 800; font-size: 18px; line-height: 1.2; margin-top: 6px; }
+.tile .big { font-family: var(--display); font-size: 64px; line-height: .9; }
+.tile .bar { height: 8px; border-radius: 99px; background: rgba(255,255,255,.3); margin-top: 12px; overflow: hidden; }
+.tile .bar i { display: block; height: 100%; border-radius: inherit; background: var(--snow); }
+.t1 { background: radial-gradient(120% 90% at 20% 10%, #3E8BFF, #124CC4 70%); }
+.t2 { background: linear-gradient(180deg, #FF8A5C, var(--coral) 80%); }
+.t3 { background: linear-gradient(160deg, #0B1530, #1B2F6B); }
+.t4 { background: radial-gradient(circle at 30% 30%, #DFF4FF, var(--sky) 70%); color: var(--ink); }
+.t1 .deco, .t3 .deco { position: absolute; inset: 14px 14px auto auto; width: 72px; height: 72px; opacity: .9; }
+.t4 svg { width: 46%; height: auto; }
+.t4 .k { margin-top: 10px; }
+.t2 .blocks { display: grid; grid-template-columns: repeat(10, 1fr); gap: 3px; margin-top: 12px; }
+.t2 .blocks i { height: 26px; border-radius: 4px; background: rgba(255,255,255,.28); }
+.t2 .blocks i:first-child { background: var(--snow); }
+.t3 .chart { position: absolute; inset: 24% 0 auto 0; width: 100%; height: 40%; }
+.t3 .chart path { fill: none; stroke: var(--sky); stroke-width: 3; stroke-dasharray: 500; stroke-dashoffset: 500; animation: line 2.4s .3s var(--ease) forwards; }
+@keyframes line { to { stroke-dashoffset: 0; } }
+.cloud { position: absolute; z-index: 0; bottom: -40px; left: -10%; right: -10%; height: 160px; background: radial-gradient(60px 50px at 10% 70%, #fff 98%, transparent), radial-gradient(90px 70px at 28% 80%, #fff 98%, transparent), radial-gradient(70px 55px at 48% 78%, #fff 98%, transparent), radial-gradient(110px 80px at 70% 84%, #fff 98%, transparent), radial-gradient(70px 60px at 92% 74%, #fff 98%, transparent); opacity: .9; filter: blur(2px); }
+
+/* ---------- strip of figures ---------- */
+.figs { padding-block: 48px 8px; }
+.figs .wrap { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px 12px; }
+@media (min-width: 900px) { .figs .wrap { grid-template-columns: repeat(4, 1fr); } }
+.fig b { display: block; font-family: var(--display); font-weight: 400; font-size: clamp(44px, 11vw, 88px); line-height: .9; color: var(--blue); }
+.fig b em { font-style: normal; color: var(--coral); }
+.fig span { display: block; margin-top: 6px; color: var(--ink-2); font-size: 14px; font-weight: 600; }
+
+/* ---------- how ---------- */
+.sec { padding-block: 56px; }
+.head { text-align: center; }
+.kick { display: inline-block; font-size: 13px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--coral); }
+.h2 { margin: 10px auto 0; font-size: clamp(42px, 10vw, 104px); max-width: 14ch; }
+.h2 .c { color: var(--blue); }
+:lang(ko) .h2 { font-size: clamp(34px, 8vw, 72px); }
+.sub { margin: 12px auto 0; max-width: 32em; color: var(--ink-2); font-size: 17px; }
+.flow { display: grid; gap: 14px; margin-top: 32px; }
+@media (min-width: 900px) { .flow { grid-template-columns: repeat(3, 1fr); gap: 20px; } }
+.f { position: relative; overflow: hidden; border-radius: 28px; padding: 22px; background: var(--sky-tint); transition: transform .35s var(--spring); }
+.f:hover { transform: translateY(-6px); }
+.f:active { transform: scale(.985); }
+.f .n { display: inline-grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: var(--blue); color: #fff; font-family: var(--display); font-size: 20px; }
+.f h3 { margin: 14px 0 4px; font-size: 22px; font-weight: 800; letter-spacing: -0.015em; }
+.f p { margin: 0; color: var(--ink-2); }
+.f.mid { background: var(--blue); color: #fff; }
+.f.mid .n { background: var(--coral-hot); color: var(--ink); }
+.f.mid p { color: rgba(255,255,255,.88); }
+.f .ghost { position: absolute; right: -6px; bottom: -22px; font-family: var(--display); font-size: 120px; line-height: 1; color: rgba(18,76,196,.08); }
+.f.mid .ghost { color: rgba(255,255,255,.1); }
+@media (max-width: 899px) { .f { display: grid; grid-template-columns: 44px 1fr; column-gap: 14px; padding: 18px; border-radius: 22px; } .f .n { grid-row: span 2; } .f h3 { margin: 0 0 2px; font-size: 19px; } .f .ghost { font-size: 90px; } }
+
+/* slider demo: drag an amount, see 10% now and 90% later */
+.demo { margin-top: 20px; border-radius: 28px; background: var(--ink); color: #fff; padding: 22px; display: grid; gap: 16px; }
+@media (min-width: 900px) { .demo { grid-template-columns: 1fr 1fr; align-items: center; padding: 32px; } }
+.demo label { font-size: 14px; color: #A9B4D0; font-weight: 600; }
+.demo .amt { font-family: var(--display); font-size: 56px; line-height: 1; margin-top: 4px; }
+.demo input[type=range] { width: 100%; margin-top: 14px; accent-color: var(--coral-hot); height: 32px; }
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.split > div { border-radius: 18px; padding: 14px; }
+.split .now { background: var(--coral-hot); color: var(--ink); }
+.split .later { background: #1B2A55; }
+.split small { display: block; font-size: 12px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; opacity: .85; }
+.split b { display: block; font-family: var(--display); font-weight: 400; font-size: 30px; margin-top: 4px; }
+.split .later .meter { height: 6px; border-radius: 99px; background: rgba(255,255,255,.15); margin-top: 8px; overflow: hidden; }
+.split .later .meter i { display: block; height: 100%; width: 0; background: var(--sky); animation: fill 7s linear infinite; }
+@keyframes fill { to { width: 100%; } }
+.note { display: block; margin-top: 16px; text-align: center; color: var(--ink-2); font-weight: 600; font-size: 14px; }
+.note b { color: var(--blue); }
+
+/* ---------- future ---------- */
+.future { background: linear-gradient(180deg, var(--snow), var(--sky-tint)); }
+.concept { display: inline-block; margin-top: 14px; border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; background: #fff; border: 1.5px dashed var(--blue); color: var(--blue); }
+.grid4 { display: grid; grid-auto-flow: column; grid-auto-columns: 80%; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; margin-top: 28px; padding-bottom: 12px; scrollbar-width: none; }
+.grid4::-webkit-scrollbar { display: none; }
+@media (min-width: 900px) { .grid4 { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); overflow: visible; } }
+.pc { scroll-snap-align: start; border-radius: 28px; background: #fff; overflow: hidden; box-shadow: 0 20px 40px -24px rgba(11,21,48,.35); transition: transform .35s var(--spring), box-shadow .35s var(--ease); display: flex; flex-direction: column; }
+.pc:hover { transform: translateY(-8px); box-shadow: 0 30px 50px -24px rgba(11,21,48,.45); }
+.pc .top { height: 120px; position: relative; display: grid; place-items: center; color: #fff; font-family: var(--display); font-size: 46px; }
+.pc:nth-child(1) .top { background: linear-gradient(135deg, var(--blue), var(--mid)); }
+.pc:nth-child(2) .top { background: linear-gradient(135deg, var(--mid), var(--sky)); color: var(--ink); }
+.pc:nth-child(3) .top { background: linear-gradient(135deg, var(--ink), #1B2F6B); }
+.pc:nth-child(4) .top { background: linear-gradient(135deg, #FF8A5C, var(--coral)); }
+.pc .body { padding: 18px; display: grid; gap: 6px; }
+.pc h3 { margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.015em; }
+.pc p { margin: 0; color: var(--ink-2); font-size: 15px; }
+
+/* ---------- closing ---------- */
+.end-band { position: relative; overflow: hidden; text-align: center; color: #fff; background: linear-gradient(0deg, var(--sky) 0%, var(--mid) 55%, var(--blue) 100%); padding-block: 64px 72px; }
+.end-band .h2 .c { color: var(--sky); }
+.end-band .sub { color: rgba(255,255,255,.92); }
+.end-band .btn { margin-top: 24px; }
+.end-band .orb { position: absolute; width: 380px; height: 380px; border-radius: 50%; left: 50%; top: 50%; translate: -50% -50%; border: 1.5px solid rgba(255,255,255,.25); animation: pulse 5s ease-in-out infinite; pointer-events: none; }
+.end-band .orb + .orb { width: 600px; height: 600px; animation-delay: -2.5s; }
+@keyframes pulse { 50% { transform: scale(1.06); opacity: .5; } }
+footer { padding-block: 28px; font-size: 13px; color: var(--ink-2); }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 10px 24px; justify-content: space-between; }
+footer code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; word-break: break-all; }
+
+.switch { position: fixed; z-index: 50; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 4px; background: var(--ink); border-radius: 999px; padding: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+.switch a { min-height: 40px; min-width: 44px; padding: 0 14px; display: grid; place-items: center; border-radius: 999px; color: #fff; text-decoration: none; font-size: 13px; font-weight: 700; }
+.switch a[aria-current] { background: var(--coral); }
+
+.rv { opacity: 0; transform: translateY(18px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+.rv.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .t3 .chart path { stroke-dashoffset: 0; }
+  .split .later .meter i { width: 40%; }
+  .rv { opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="mark" viewBox="0 0 2048 2048">
+      <mask id="m-notch" maskUnits="userSpaceOnUse" x="0" y="0" width="2048" height="2048"><rect width="2048" height="2048" fill="#fff"/><rect x="1633.6" y="892.02" width="609.6" height="263.96" fill="#000"/><circle cx="1502.54" cy="1024" r="365.76" fill="#fff"/></mask>
+      <mask id="m-slot" maskUnits="userSpaceOnUse" x="0" y="0" width="2048" height="2048"><rect width="2048" height="2048" fill="#fff"/><rect x="1031.62" y="927.63" width="711.2" height="192.74" fill="#000"/></mask>
+      <circle cx="1024" cy="1024" r="1016" fill="#124CC4" mask="url(#m-notch)"/>
+      <path fill="#fff" fill-rule="evenodd" mask="url(#m-slot)" d="M 462.25 1024 a 569.37 569.37 0 1 0 1138.73 0 a 569.37 569.37 0 1 0 -1138.73 0 Z M 779.96 1024 a 251.66 251.66 0 1 0 503.33 0 a 251.66 251.66 0 1 0 -503.33 0 Z"/>
+    </symbol>
+  </defs>
+</svg>
+
+<main>
+  <section class="hero">
+    <div class="wrap">
+      <header class="nav">
+        <a class="logo" href="#top" aria-label="Cojam home"><span class="mk"><svg aria-hidden="true"><use href="#mark"/></svg></span>Cojam</a>
+        <nav class="links" aria-label="Sections"><a href="#how" data-ko="교환 방법">How</a><a href="#figs" data-ko="숫자">Numbers</a><a href="#future" data-ko="미래">Future</a></nav>
+        <div class="end">
+          <button class="lang" type="button" id="lang" aria-label="Change language">한국어</button>
+          <a class="btn sm white" href="#swap" data-ko="지갑 연결">Connect</a>
+        </div>
+      </header>
+      <div class="hero-copy" id="top">
+        <span class="live"><i></i><span data-ko="교환 진행 중, 352일 남음">Swap open, 352 days left</span></span>
+        <h1 class="h1 display" data-ko="2019년부터 이어 온<br><span class=&quot;c&quot;>원조 예측 마켓</span>">We called it<br><span class="c">since 2019</span></h1>
+        <p class="lede" data-ko="Cojam이 Kaia에서 돌아왔어요. 기존 CT를 새 CT로 1:1 교환하면 10%는 바로, 나머지는 7일 뒤에 들어와요.">The OG prediction market is back on Kaia. Swap old CT for new CT one for one: 10% lands at once, the rest 7 days later.</p>
+        <div class="actions">
+          <a class="btn" href="#swap" id="swap" data-ko="CT 교환하기">Swap CT</a>
+          <a class="btn white" href="#how" data-ko="교환 방법">How it works</a>
+        </div>
+      </div>
+    </div>
+    <div class="tiles">
+      <article class="tile r t1">
+        <svg class="deco" viewBox="0 0 72 72" aria-hidden="true"><circle cx="36" cy="36" r="30" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-dasharray="4 6"/><circle cx="36" cy="36" r="10" fill="#fff"/></svg>
+        <span class="k" data-ko="예시 마켓">Example market</span>
+        <span class="q" data-ko="3월에 Kaia 일일 트랜잭션 신기록이 나올까?">Will Kaia set a daily tx record in March?</span>
+        <div class="bar"><i style="width:62%"></i></div>
+        <span class="k" style="margin-top:8px">Yes 62%</span>
+      </article>
+      <article class="tile arch t2">
+        <span class="k" data-ko="교환 즉시">On every swap</span>
+        <span class="big">10%</span>
+        <span class="q" data-ko="바로 들어오고, 90%는 7일 뒤">now, 90% after 7 days</span>
+        <div class="blocks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+      </article>
+      <article class="tile r t3">
+        <svg class="chart" viewBox="0 0 300 120" preserveAspectRatio="none" aria-hidden="true"><path d="M0 100 L30 92 L60 96 L90 70 L120 78 L150 50 L180 58 L210 34 L240 40 L270 18 L300 22"/></svg>
+        <span class="k" data-ko="2019년부터">Since 2019</span>
+        <span class="q" data-ko="원조 예측 커뮤니티가 다시 모여요">The OG prediction crowd, back together</span>
+      </article>
+      <article class="tile circ t4">
+        <svg aria-hidden="true" viewBox="0 0 2048 2048"><use href="#mark"/></svg>
+        <span class="k">1 old CT = 1 new CT</span>
+      </article>
+    </div>
+    <div class="cloud" aria-hidden="true"></div>
+  </section>
+
+  <section class="figs" id="figs">
+    <div class="wrap">
+      <div class="fig rv"><b>4.08<em>B</em></b><span data-ko="새 CT 공급량, 고정">New CT supply, fixed</span></div>
+      <div class="fig rv"><b>1<em>:</em>1</b><span data-ko="보너스도 수수료도 없음">No bonus, no fee</span></div>
+      <div class="fig rv"><b>7<em>D</em></b><span data-ko="90% 락업 기간">Lock on the 90%</span></div>
+      <div class="fig rv"><b>0</b><span data-ko="관리자 키">Admin keys</span></div>
+    </div>
+  </section>
+
+  <section class="sec" id="how">
+    <div class="wrap">
+      <div class="head">
+        <span class="kick rv" data-ko="교환 방법">How it works</span>
+        <h2 class="h2 display rv" data-ko="서명 두 번이면<br><span class=&quot;c&quot;>끝이에요</span>">Two signatures.<br><span class="c">Then relax.</span></h2>
+        <p class="sub rv" data-ko="내 지갑에서 승인과 교환만 하면 나머지는 자동으로 진행돼요.">Approve and swap in your own wallet. Everything after that happens on its own.</p>
+      </div>
+      <div class="flow">
+        <article class="f rv"><span class="n">1</span><h3 data-ko="기존 CT 교환">Swap old CT</h3><p data-ko="원하는 만큼 1:1로 교환해요.">Any amount, one for one.</p><span class="ghost" aria-hidden="true">1</span></article>
+        <article class="f mid rv"><span class="n">2</span><h3 data-ko="10%는 바로">10% lands now</h3><p data-ko="같은 트랜잭션에서 바로 들어와요.">In the same transaction.</p><span class="ghost" aria-hidden="true">2</span></article>
+        <article class="f rv"><span class="n">3</span><h3 data-ko="90%는 7일 뒤 자동">90% in 7 days</h3><p data-ko="7일 뒤 Cojam이 지갑으로 보내 드려요.">Sent to you automatically after the lock.</p><span class="ghost" aria-hidden="true">3</span></article>
+      </div>
+      <div class="demo rv">
+        <div>
+          <label for="amt" data-ko="교환할 기존 CT">Old CT to swap</label>
+          <div class="amt" id="amt-out">10,000</div>
+          <input id="amt" type="range" min="100" max="100000" step="100" value="10000" aria-label="Old CT amount">
+        </div>
+        <div class="split">
+          <div class="now"><small data-ko="지금 받기">You get now</small><b id="now">1,000</b></div>
+          <div class="later"><small data-ko="7일 뒤 받기">In 7 days</small><b id="later">9,000</b><div class="meter"><i></i></div></div>
+        </div>
+      </div>
+      <span class="note rv" data-ko="⚡ Kaia Wallet이라면 <b>KAIA 없이</b> 교환돼요">⚡ <b>No KAIA needed</b> with Kaia Wallet</span>
+    </div>
+  </section>
+
+  <section class="sec future" id="future">
+    <div class="wrap">
+      <div class="head">
+        <span class="kick rv" data-ko="다음 이야기">What's next</span>
+        <h2 class="h2 display rv" data-ko="새 CT로 만드는<br><span class=&quot;c&quot;>예측의 미래</span>">The future of<br><span class="c">calling it</span></h2>
+        <span class="concept rv" data-ko="콘셉트 미리보기, 아직 출시 전">Concept preview, not live</span>
+      </div>
+      <div class="grid4" role="list">
+        <article class="pc" role="listitem"><div class="top" aria-hidden="true">62%</div><div class="body"><h3 data-ko="CT로 예측">Predict with CT</h3><p data-ko="예상하는 결과에 CT를 걸어요.">Stake CT on the outcome you expect.</p></div></article>
+        <article class="pc" role="listitem"><div class="top" aria-hidden="true">+12%</div><div class="body"><h3 data-ko="결과 파생상품">Outcome derivatives</h3><p data-ko="결과가 나오기 전에 가격을 거래해요.">Trade an outcome's price before the result.</p></div></article>
+        <article class="pc" role="listitem"><div class="top" aria-hidden="true">40%</div><div class="body"><h3 data-ko="포지션 담보 대출">Loans on positions</h3><p data-ko="예측을 유지한 채 CT를 빌려요.">Borrow CT without closing your prediction.</p></div></article>
+        <article class="pc" role="listitem"><div class="top" aria-hidden="true">3×</div><div class="body"><h3 data-ko="예측 마진 거래">Margin on predictions</h3><p data-ko="청산 가격을 먼저 보여 드려요.">More size for less CT, liquidation price first.</p></div></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="end-band">
+    <span class="orb" aria-hidden="true"></span><span class="orb" aria-hidden="true"></span>
+    <div class="wrap" style="position:relative">
+      <h2 class="h2 display rv" data-ko="지금<br><span class=&quot;c&quot;>교환하세요</span>">Swap now,<br><span class="c">call it later</span></h2>
+      <p class="sub rv" data-ko="10%는 바로, 나머지는 7일 뒤 자동으로 들어와요.">10% at once, the rest 7 days later, automatically.</p>
+      <a class="btn rv" href="#swap" data-ko="CT 교환하기">Swap CT</a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2019–2026 Cojam</span>
+    <span><span data-ko="기존 CT">Old CT</span> <code>0x7f223b1607171b81ebd68d22f1ca79157fd4a44b</code></span>
+  </div>
+  <div style="height:64px"></div>
+</footer>
+
+<nav class="switch" aria-label="Design versions"><a href="home.html">A</a><a href="landing-b.html">B</a><a href="landing-c.html" aria-current="page">C</a></nav>
+
+<script>
+(() => {
+  const els = [...document.querySelectorAll("[data-ko]")];
+  els.forEach(e => e.dataset.en = e.innerHTML);
+  const btn = document.getElementById("lang");
+  const set = (ko) => {
+    document.documentElement.lang = ko ? "ko" : "en";
+    els.forEach(e => e.innerHTML = ko ? e.dataset.ko : e.dataset.en);
+    btn.textContent = ko ? "EN" : "한국어";
+  };
+  btn.addEventListener("click", () => set(document.documentElement.lang !== "ko"));
+  if (new URLSearchParams(location.search).get("lang") === "ko") set(true);
+
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -8% 0px" });
+  document.querySelectorAll(".rv").forEach(e => io.observe(e));
+
+  // amount slider: 10% now (rounded down), the rest after 7 days
+  const r = document.getElementById("amt"), out = document.getElementById("amt-out"), now = document.getElementById("now"), later = document.getElementById("later");
+  const fmt = n => n.toLocaleString("en-US");
+  const upd = () => { const a = +r.value, n = Math.floor(a / 10); out.textContent = fmt(a); now.textContent = fmt(n); later.textContent = fmt(a - n); };
+  r.addEventListener("input", upd); upd();
+})();
+</script>
+</body>
+</html>
