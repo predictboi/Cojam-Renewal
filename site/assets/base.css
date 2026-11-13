@@ -384,6 +384,10 @@ details.smooth[open] > :not(summary) { animation: cj-reveal var(--dur-base) var(
 @keyframes cj-cele-ring { from { opacity: 0.9; transform: scale(0.9); } to { opacity: 0; transform: scale(1.9); } }
 @keyframes cj-cele-spark { from { opacity: 1; transform: rotate(var(--a)) translateY(-30px) scale(1); } to { opacity: 0; transform: rotate(var(--a)) translateY(-58px) scale(0.4); } }
 
+/* Ambient loops stop while their section is off screen (motion.js sets .fx-off on .fx-host and .live-dot). Removed, not paused:
+   Chrome still restyles paused animations on every scrolled frame. They restart from their first frame out of sight. */
+.fx-off .fx-loop, .fx-off .fx-loop::before, .fx-off .fx-loop::after, .fx-off.fx-host::before, .fx-off.fx-host::after, .live-dot.fx-off::before { animation: none; }
+
 /* ---------- reduced motion: no movement, instant states ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; transition-delay: 0ms !important; scroll-behavior: auto !important; }

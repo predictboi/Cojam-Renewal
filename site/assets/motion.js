@@ -245,8 +245,20 @@
     });
   }
 
+  // ---------- ambient loops ----------
+  // .fx-host sections hold slow decorative loops (landing hero lights, night sweep), and a live dot breathes while live.
+  // Each pauses while off screen (.fx-off): a running loop anywhere costs a style pass on every scrolled frame.
+  function bindFx() {
+    if (!hasIO) return;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) { en.target.classList.toggle("fx-off", !en.isIntersecting); });
+    }, { rootMargin: "64px 0px" });
+    document.querySelectorAll(".fx-host, .live-dot").forEach(function (el) { io.observe(el); });
+  }
+
   // ---------- start ----------
   function start() {
+    bindFx();
     if (!off) {
       document.querySelectorAll("[data-tilt]").forEach(bindTilt);
       scanCounts(document.body);

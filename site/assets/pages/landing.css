@@ -28,7 +28,7 @@
   -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent); mask-image: linear-gradient(180deg, #000 70%, transparent); }
 .hero-glow { position: absolute; border-radius: 50%; }
 .hero-glow-a { width: 520px; height: 520px; left: -200px; top: -180px; background: radial-gradient(closest-side, rgba(151, 219, 255, 0.34), rgba(231, 238, 251, 0.6) 55%, rgba(231, 238, 251, 0)); animation: hero-drift-a 18s var(--ease-in-out) infinite alternate; }
-.hero-glow-b { width: 520px; height: 520px; right: -220px; top: 34%; background: radial-gradient(closest-side, var(--glow-sky), rgba(151, 219, 255, 0)); animation: hero-drift-b 14s var(--ease-in-out) infinite alternate; }
+.hero-glow-b { width: 520px; height: 520px; right: -220px; top: 300px; background: radial-gradient(closest-side, var(--glow-sky), rgba(151, 219, 255, 0)); animation: hero-drift-b 14s var(--ease-in-out) infinite alternate; }
 .hero-ring { position: absolute; width: var(--ring); height: var(--ring); right: calc(var(--ring) * -0.5); top: calc(var(--ring) * -0.22); color: var(--glow); animation: hero-turn 20s var(--ease-in-out) infinite alternate; }
 .hero-ring * { fill: none; stroke: currentColor; stroke-width: 1.25; vector-effect: non-scaling-stroke; }
 .hero-ring .orbit { stroke-dasharray: 2 9; stroke-linecap: round; }
@@ -47,6 +47,7 @@
 .hero-card .track-now { position: relative; isolation: isolate; box-shadow: 0 0 0 3px var(--sky-tint), 0 4px 12px -3px var(--glow-sky); }
 .hero-card .track-now::after { content: ""; position: absolute; inset: -6px; border-radius: 8px; background: radial-gradient(closest-side, var(--glow-sky), rgba(151, 219, 255, 0)); opacity: 0.4; animation: hero-breathe 3.6s var(--ease-in-out) 1.2s infinite alternate; pointer-events: none; z-index: -1; }
 @keyframes hero-breathe { to { opacity: 1; } }
+.fx-off .hero-card .track-now::after { animation: none; }
 
 /* ---------- how the swap works ---------- */
 .how.section { padding-top: var(--s-16); scroll-margin-top: calc(var(--s-96) + var(--s-32)); }
