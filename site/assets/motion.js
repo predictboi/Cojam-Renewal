@@ -67,7 +67,10 @@
     var s = document.createElement("span");
     s.className = "ripple"; s.setAttribute("aria-hidden", "true");
     s.style.left = x + "px"; s.style.top = y + "px"; s.style.width = d + "px"; s.style.height = d + "px";
-    el.appendChild(s);
+    // The primary button does not clip (its glow sits outside it), so the ripple gets its own clipped layer.
+    var host = el.querySelector(":scope > .ripple-clip");
+    if (!host) { host = document.createElement("span"); host.className = "ripple-clip"; host.setAttribute("aria-hidden", "true"); el.appendChild(host); }
+    host.appendChild(s);
     var done = function () { if (s.parentNode) s.parentNode.removeChild(s); };
     s.addEventListener("animationend", done);
     setTimeout(done, 900);

@@ -1,10 +1,11 @@
 /* Landing page layout. Components come from base.css. */
-.hero { padding: var(--s-48) 0 var(--s-64); }
-.hero-grid { display: grid; gap: var(--s-32); grid-template-columns: minmax(0, 1fr); align-items: center; }
+.hero { position: relative; isolation: isolate; overflow: clip; padding: calc(var(--sp-section) * 0.75) 0 var(--sp-section); }
+.hero-grid { display: grid; gap: var(--sp-group); grid-template-columns: minmax(0, 1fr); align-items: center; }
 .hero-copy h1 { max-width: 11em; }
 .hero-lede { margin-top: var(--s-16); font-size: var(--fs-20); line-height: 1.5; color: var(--ink-2); max-width: 26em; }
-.hero-actions { display: flex; flex-wrap: wrap; gap: var(--s-8); margin-top: var(--s-32); }
-.hero-card { margin: 0; display: grid; gap: var(--s-24); padding: var(--s-24); }
+.hero-actions { display: flex; flex-wrap: wrap; gap: var(--s-8); margin-top: var(--sp-head); }
+.hero-card { margin: 0; display: grid; gap: var(--sp-card); padding: var(--sp-card); }
+@media (max-width: 599px) { .hero-lede { margin-top: var(--s-12); font-size: 18px; } .hero-status { padding-bottom: var(--s-12); } }
 .hero-card-head { display: flex; align-items: center; gap: var(--s-8); flex-wrap: wrap; }
 /* Live window state first: "Open now, N days left", the dates under it. */
 .hero-status { display: grid; gap: var(--s-4); padding-bottom: var(--s-16); border-bottom: 1px solid var(--line); }
@@ -14,16 +15,54 @@
 .hero-date { white-space: nowrap; }
 @media (min-width: 960px) {
   .hero { padding: var(--s-96) 0; }
+  .hero-fx { --ring: 820px; }
   .hero-grid { grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: var(--s-64); }
   .hero-card { padding: var(--s-32); }
 }
 
+/* ---------- hero atmosphere ----------
+   Two soft lights drift behind the hero (brand wash and sky), and the mark's geometry sits under the card as a faint
+   outline: the badge ring, the C with its slot, and a dotted orbit. All of it is decoration (aria-hidden), moves on
+   transform only, fades out before the hero ends so no edge shows, and stands still under reduced motion. */
+.hero-fx { --ring: 640px; position: absolute; inset: 0; z-index: -1; pointer-events: none;
+  -webkit-mask-image: linear-gradient(180deg, #000 70%, transparent); mask-image: linear-gradient(180deg, #000 70%, transparent); }
+.hero-glow { position: absolute; border-radius: 50%; }
+.hero-glow-a { width: 520px; height: 520px; left: -200px; top: -180px; background: radial-gradient(closest-side, rgba(151, 219, 255, 0.34), rgba(231, 238, 251, 0.6) 55%, rgba(231, 238, 251, 0)); animation: hero-drift-a 18s var(--ease-in-out) infinite alternate; }
+.hero-glow-b { width: 520px; height: 520px; right: -220px; top: 34%; background: radial-gradient(closest-side, var(--glow-sky), rgba(151, 219, 255, 0)); animation: hero-drift-b 14s var(--ease-in-out) infinite alternate; }
+.hero-ring { position: absolute; width: var(--ring); height: var(--ring); right: calc(var(--ring) * -0.5); top: calc(var(--ring) * -0.22); color: var(--glow); animation: hero-turn 20s var(--ease-in-out) infinite alternate; }
+.hero-ring * { fill: none; stroke: currentColor; stroke-width: 1.25; vector-effect: non-scaling-stroke; }
+.hero-ring .orbit { stroke-dasharray: 2 9; stroke-linecap: round; }
+@keyframes hero-drift-a { from { transform: translate3d(0, 0, 0) scale(1); } to { transform: translate3d(64px, 40px, 0) scale(1.12); } }
+@keyframes hero-drift-b { from { transform: translate3d(0, 0, 0) scale(1.05); } to { transform: translate3d(-56px, -36px, 0) scale(0.94); } }
+@keyframes hero-turn { from { transform: rotate(-7deg); } to { transform: rotate(7deg); } }
+@media (min-width: 960px) {
+  .hero-glow-a { width: 760px; height: 760px; left: -260px; top: -300px; }
+  .hero-glow-b { width: 720px; height: 720px; right: -140px; top: -60px; }
+  .hero-ring { right: calc(var(--ring) * -0.12); top: calc(50% - var(--ring) * 0.5); }
+}
+/* The card: a gradient hairline (brand light at the top left, sky at the bottom right) and a soft lift. */
+.hero-card { position: relative; border-color: transparent; background: linear-gradient(var(--surface), var(--surface)) padding-box, var(--edge) border-box;
+  box-shadow: 0 1px 2px rgba(11, 21, 48, 0.05), 0 24px 48px -28px rgba(18, 76, 196, 0.28); }
+/* The 10% block glows: the part that is yours at once. The halo breathes slowly on opacity. */
+.hero-card .track-now { position: relative; isolation: isolate; box-shadow: 0 0 0 3px var(--sky-tint), 0 4px 12px -3px var(--glow-sky); }
+.hero-card .track-now::after { content: ""; position: absolute; inset: -6px; border-radius: 8px; background: radial-gradient(closest-side, var(--glow-sky), rgba(151, 219, 255, 0)); opacity: 0.4; animation: hero-breathe 3.6s var(--ease-in-out) 1.2s infinite alternate; pointer-events: none; z-index: -1; }
+@keyframes hero-breathe { to { opacity: 1; } }
+
 /* ---------- how the swap works ---------- */
 .how.section { padding-top: var(--s-16); scroll-margin-top: calc(var(--s-96) + var(--s-32)); }
 @media (min-width: 768px) { .how.section { scroll-margin-top: var(--s-64); } }
-.how-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-24); grid-template-columns: minmax(0, 1fr); }
+.how-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--sp-stack); grid-template-columns: minmax(0, 1fr); }
 .how-step { position: relative; display: grid; gap: var(--s-8); align-content: start; padding-top: var(--s-16); border-top: 1px solid var(--line); }
-.how-ico { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--r-control); background: var(--inset); color: var(--ink); margin-bottom: var(--s-4); }
+/* Step icons sit on a soft brand to sky tile with a light top edge. */
+.how-ico { display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: var(--r-control); background: var(--tile); color: var(--ink); margin-bottom: var(--s-4);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(18, 76, 196, 0.08), 0 4px 10px -6px var(--glow); }
+/* Phones: the tile sits beside the title and text, so each step is one compact row. */
+@media (max-width: 599px) {
+  .how-step { grid-template-columns: 40px minmax(0, 1fr); column-gap: var(--s-12); row-gap: var(--s-4); padding-top: var(--s-12); }
+  .how-ico { grid-row: 1 / span 2; margin-bottom: 0; }
+  .how-step h3 { align-self: center; min-height: 40px; display: flex; align-items: center; font-size: 18px; }
+  .how-body { grid-column: 2; }
+}
 .how-body { font-size: var(--fs-16); }
 /* The last word and the help toggle never part (landing.js builds .how-tail); the popover inside wraps normally. */
 .how-tail { white-space: nowrap; }
@@ -36,8 +75,8 @@
 @media (min-width: 1024px) { .how-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-24); } }
 
 /* ---------- timeline ---------- */
-.timeline { background: var(--surface); border-block: 1px solid var(--line); }
-.tl { list-style: none; margin: 0; padding: 0; position: relative; display: grid; gap: var(--s-32); grid-template-columns: minmax(0, 1fr); }
+.timeline { background: radial-gradient(ellipse 60% 70% at 0% 0%, var(--sky-tint), rgba(227, 245, 255, 0) 70%), radial-gradient(ellipse 50% 60% at 100% 100%, var(--brand-tint), rgba(231, 238, 251, 0) 70%), var(--surface); border-block: 1px solid var(--line); }
+.tl { list-style: none; margin: 0; padding: 0; position: relative; display: grid; gap: var(--sp-group); grid-template-columns: minmax(0, 1fr); }
 .tl::before { content: ""; position: absolute; left: 6px; top: 10px; bottom: 10px; width: 2px; background: var(--line); }
 .tl-item { position: relative; padding-left: var(--s-32); display: grid; gap: var(--s-4); align-content: start; }
 /* One rule for the dots, stated in the key above the list: done is filled ink, now is sky with a ring, later is hollow.
@@ -46,11 +85,11 @@
 .tl-dot.is-done, .tl-item.is-done .tl-dot { background: var(--ink); box-shadow: none; }
 .tl-dot.is-now, .tl-item.is-now .tl-dot { background: var(--sky); box-shadow: 0 0 0 4px var(--sky-tint), inset 0 0 0 1px var(--ink); }
 .tl-dot.is-later, .tl-item.is-later .tl-dot { background: var(--surface); box-shadow: inset 0 0 0 2px var(--ink-2); }
-.tl-key { list-style: none; margin: 0 0 var(--s-32); padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-8) var(--s-24); font-size: var(--fs-14); color: var(--ink-2); }
+.tl-key { list-style: none; margin: 0 0 var(--sp-head); padding: 0; display: flex; flex-wrap: wrap; gap: var(--s-8) var(--s-24); font-size: var(--fs-14); color: var(--ink-2); }
 .tl-key li { display: inline-flex; align-items: center; gap: var(--s-8); }
 .tl-key .tl-dot { position: static; flex: none; }
 /* The stretch of line already travelled is drawn in ink, from each done event to the next one. */
-.tl-item.is-done::before { content: ""; position: absolute; left: 6px; top: 10px; bottom: calc(var(--s-32) * -1 - 10px); width: 2px; background: var(--ink); }
+.tl-item.is-done::before { content: ""; position: absolute; left: 6px; top: 10px; bottom: calc(var(--sp-group) * -1 - 10px); width: 2px; background: var(--ink); }
 @media (min-width: 768px) { .tl-item.is-done::before { left: 0; right: calc(var(--s-24) * -1); top: 6px; bottom: auto; width: auto; height: 2px; } }
 /* The "Now" marker on the current item; the other states are read out, not shown twice. */
 .tl-state:empty { display: none; }
@@ -69,14 +108,16 @@
 }
 
 /* ---------- contracts ---------- */
+.contracts { background: linear-gradient(180deg, var(--bg), var(--brand-tint)); }
 .contracts-grid { display: grid; gap: var(--s-8); grid-template-columns: minmax(0, 1fr); }
-.contracts-body { display: grid; gap: var(--s-24); min-width: 0; }
-.addr-list { display: grid; padding: var(--s-8) var(--s-24); }
+.contracts-body { display: grid; gap: var(--sp-stack); min-width: 0; }
+.addr-list { display: grid; padding: var(--s-8) var(--sp-panel); }
 .addr-list .addr { min-height: 56px; padding: var(--s-8) 0; }
 .addr-list .addr + .addr { border-top: 1px solid var(--line); }
 .addr-list .addr-actions .btn { min-width: 44px; min-height: 44px; padding: 0; }
 @media (max-width: 599px) {
-  .addr-list .addr { padding: var(--s-12) 0; }
+  .addr-list .addr { padding: var(--s-8) 0; min-height: 0; }
+  .facts { gap: var(--s-12); }
   .addr-list .addr-label { flex-basis: 100%; }
 }
 .facts { margin: 0; display: grid; gap: var(--s-16); grid-template-columns: minmax(0, 1fr); }
@@ -89,8 +130,38 @@
 }
 
 /* ---------- future platform: concept previews on the night ground ---------- */
+/* Light on the night ground: a faint grid that glows from the top centre, a scatter of stars, a sky hairline along the top
+   edge, and one slow band of light that crosses every 16 s. All behind the cards, all static under reduced motion. */
+.future { position: relative; isolation: isolate; overflow: clip; }
+.future::before {
+  content: ""; position: absolute; inset: 0; z-index: -2; pointer-events: none;
+  background:
+    linear-gradient(90deg, transparent, rgba(151, 219, 255, 0.5), transparent) top center / 100% 1px no-repeat,
+    radial-gradient(1px 1px at 8% 14%, rgba(255, 255, 255, 0.7), transparent 100%),
+    radial-gradient(1px 1px at 22% 62%, rgba(255, 255, 255, 0.45), transparent 100%),
+    radial-gradient(1.5px 1.5px at 37% 28%, rgba(151, 219, 255, 0.8), transparent 100%),
+    radial-gradient(1px 1px at 51% 84%, rgba(255, 255, 255, 0.5), transparent 100%),
+    radial-gradient(1px 1px at 64% 12%, rgba(255, 255, 255, 0.6), transparent 100%),
+    radial-gradient(1.5px 1.5px at 78% 46%, rgba(255, 255, 255, 0.55), transparent 100%),
+    radial-gradient(1px 1px at 91% 74%, rgba(151, 219, 255, 0.7), transparent 100%),
+    radial-gradient(1px 1px at 86% 8%, rgba(255, 255, 255, 0.5), transparent 100%),
+    radial-gradient(ellipse 70% 55% at 50% 0%, rgba(62, 88, 227, 0.22), transparent 70%),
+    linear-gradient(rgba(151, 219, 255, 0.05) 1px, transparent 1px) 0 0 / 48px 48px,
+    linear-gradient(90deg, rgba(151, 219, 255, 0.05) 1px, transparent 1px) 0 0 / 48px 48px;
+  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 0%, #000 30%, transparent 85%);
+          mask-image: radial-gradient(ellipse 90% 80% at 50% 0%, #000 30%, transparent 85%);
+}
+.future::after {
+  content: ""; position: absolute; top: -10%; bottom: -10%; left: 0; width: 45%; z-index: -1; pointer-events: none;
+  background: linear-gradient(100deg, transparent 20%, rgba(151, 219, 255, 0.07) 50%, transparent 80%);
+  transform: translate3d(-110%, 0, 0); animation: night-sweep 16s linear 2s infinite;
+}
+@keyframes night-sweep { 0% { transform: translate3d(-110%, 0, 0); } 55%, 100% { transform: translate3d(330%, 0, 0); } }
+/* The cards carry a faint sky edge at the top, as if lit from above. Pictures, not controls: no hover change. */
+.future .mock { background: linear-gradient(180deg, rgba(151, 219, 255, 0.05), transparent 120px), var(--night-surface); box-shadow: inset 0 1px 0 rgba(151, 219, 255, 0.14); }
 .mocks { display: grid; gap: var(--s-16); grid-template-columns: minmax(0, 1fr); }
 .mock { margin: 0; display: grid; gap: var(--s-16); align-content: start; min-width: 0; }
+@media (max-width: 599px) { .mock { gap: var(--s-12); } .mock-ui { gap: var(--s-8); } }
 .mock-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-8) var(--s-12); }
 .mock-tag { display: inline-flex; align-items: center; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--night-line); color: var(--sky); font-size: var(--fs-13); font-weight: var(--fw-medium); white-space: nowrap; }
 .mock-ui { display: grid; gap: var(--s-12); min-width: 0; }
@@ -140,7 +211,7 @@
   .mocks::-webkit-scrollbar { display: none; }
   .mock { scroll-snap-align: start; padding: var(--s-16); }
   .mocks:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; }
-  .mocks-dots { display: flex; justify-content: center; gap: var(--s-8); margin-top: var(--s-16); }
+  .mocks-dots { display: flex; justify-content: center; gap: var(--s-8); margin-top: var(--s-12); }
   .mocks-dots span { width: 8px; height: 8px; border-radius: 50%; background: var(--night-line); transition: background-color var(--dur) var(--ease); }
   .mocks-dots span.is-on { background: var(--sky); }
 }
@@ -151,6 +222,7 @@
 .faq-grid { display: grid; gap: var(--s-8); grid-template-columns: minmax(0, 1fr); }
 .faq-list { border-top: 1px solid var(--line); min-width: 0; }
 .faq-docs { margin-top: var(--s-16); }
+@media (max-width: 599px) { .faq-docs { margin-top: var(--s-12); } .faq-item > summary { min-height: 48px; padding: var(--s-8) 0; } .faq-list { margin-top: var(--s-4); } }
 .faq-item { border-bottom: 1px solid var(--line); }
 .faq-item > summary { list-style: none; display: flex; align-items: center; justify-content: space-between; gap: var(--s-16); min-height: 56px; padding: var(--s-12) 0; cursor: pointer; font-weight: var(--fw-medium); }
 .faq-item > summary::-webkit-details-marker { display: none; }
@@ -164,12 +236,20 @@
 
 /* ---------- closing call to action ---------- */
 .cta { padding: 0; }
-.cta-band { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-24); padding: var(--s-32) var(--s-24); background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); }
+.cta-band { position: relative; isolation: isolate; overflow: clip; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-stack) var(--s-24); padding: var(--sp-group) var(--sp-card);
+  border: 1px solid transparent; border-radius: var(--r-panel);
+  background: radial-gradient(ellipse 55% 90% at 100% 0%, var(--sky-tint), rgba(227, 245, 255, 0) 70%) padding-box, radial-gradient(ellipse 50% 80% at 0% 100%, var(--brand-tint), rgba(231, 238, 251, 0) 70%) padding-box, linear-gradient(var(--surface), var(--surface)) padding-box, var(--edge) border-box;
+  box-shadow: 0 24px 48px -32px rgba(18, 76, 196, 0.3); }
+/* The mark's outline again, small, in the corner of the closing band. */
+.cta-ring { position: absolute; z-index: -1; width: 420px; height: 420px; right: -150px; top: -150px; color: var(--glow); pointer-events: none; }
+.cta-ring * { fill: none; stroke: currentColor; stroke-width: 1.25; vector-effect: non-scaling-stroke; }
+.cta-ring .orbit { stroke-dasharray: 2 9; stroke-linecap: round; }
+@media (max-width: 599px) { .cta-ring { width: 300px; height: 300px; right: -120px; top: -120px; } }
 .cta-copy { display: grid; gap: var(--s-8); min-width: 0; max-width: 34em; }
 .cta-band .btn { flex: none; }
 @media (max-width: 479px) { .cta-band .btn { width: 100%; } }
 @media (min-width: 960px) { .cta-band { padding: var(--s-48); } }
-.how-fee { display: flex; align-items: center; gap: var(--s-8); margin-top: var(--s-32); padding-top: var(--s-16); border-top: 1px solid var(--line); color: var(--ink); font-weight: var(--fw-medium); }
+.how-fee { display: flex; align-items: center; gap: var(--s-8); margin-top: var(--sp-group); padding-top: var(--s-16); border-top: 1px solid var(--line); color: var(--ink); font-weight: var(--fw-medium); }
 .how-fee > span:first-child { flex: none; display: inline-flex; width: 18px; height: 18px; color: var(--ink-2); }
 
 /* Japanese hero title: one unbreakable span per phrase (landing.js), and a size at which the longest phrase,
@@ -183,3 +263,9 @@
 html:not(.cj-ready) #hero-track { min-height: 123px; }
 @media (max-width: 374px) { html:not(.cj-ready) #hero-track { min-height: 147px; } }
 @media (min-width: 600px) { html:not(.cj-ready) #hero-track { min-height: 132px; } }
+
+/* Reduced motion: the lights and the outline stay where they are (still visible), the sweep and the halo breathing stop. */
+@media (prefers-reduced-motion: reduce) {
+  .future::after { display: none; }
+  .hero-card .track-now::after { animation: none; opacity: 0.7; }
+}

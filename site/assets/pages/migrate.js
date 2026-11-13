@@ -429,7 +429,7 @@
   function land(part) {
     var tr = panel.querySelector(".mg-view .track"); if (!tr) return;
     var spot = (part === "end" ? tr.querySelector(".track-day:last-child") : tr.querySelector(".track-now")) || tr;
-    var go = function () { if (CJ.celebrate) CJ.celebrate(spot); };
+    var go = function () { burst(tr, spot); if (CJ.celebrate) CJ.celebrate(spot); };
     var r = tr.getBoundingClientRect(), vv = window.visualViewport, top = vv ? vv.offsetTop : 0, h = vv ? vv.height : window.innerHeight;
     var hd = document.querySelector(".cj-header"), ceil = top + (hd ? hd.getBoundingClientRect().bottom : 0) + 8;
     var bar = panel.querySelector(".mg-sticky"), floor = top + h - (bar && phone.matches ? bar.offsetHeight : 0) - 8;
@@ -441,6 +441,17 @@
     if (!smooth) { requestAnimationFrame(go); return; }
     var fired = false, fire = function () { if (fired) return; fired = true; window.removeEventListener("scrollend", fire); go(); };
     window.addEventListener("scrollend", fire); setTimeout(fire, 700);
+  }
+  // A soft sky light opens behind the track, centred on the part that just arrived. It lives in a clipped layer at the
+  // back of the panel, under every word. Decoration only (aria-hidden); off under reduced motion.
+  function burst(tr, spot) {
+    if (CJ.motion && CJ.motion.reduced()) return;
+    var clip = panel.querySelector(":scope > .mg-burst-clip");
+    if (!clip) { clip = document.createElement("span"); clip.className = "mg-burst-clip"; clip.setAttribute("aria-hidden", "true"); clip.innerHTML = '<span class="mg-burst"></span>'; panel.appendChild(clip); }
+    var b = clip.firstChild, pr = panel.getBoundingClientRect(), sr = spot.getBoundingClientRect();
+    b.style.left = Math.round(sr.left + sr.width / 2 - pr.left) + "px";
+    b.style.top = Math.round(sr.top + sr.height / 2 - pr.top) + "px";
+    b.classList.remove("is-on"); void b.offsetWidth; b.classList.add("is-on");
   }
   function done() { ui.phase = "form"; ui.text = null; ui.mode = null; ui.error = null; ui.reviewed = false; ui.frozen = false; ui.payOwn = false; render(true); }
   function back() {

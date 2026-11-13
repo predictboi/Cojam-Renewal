@@ -1,6 +1,8 @@
 /* Docs page layout (Read mode). Components come from base.css. */
-.dc { padding: var(--s-32) 0 0; }
-.dc-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-24); }
+.dc { position: relative; isolation: isolate; padding: var(--sp-page) 0 0; }
+.dc::before { content: ""; position: absolute; inset: 0 0 auto; height: 320px; z-index: -1; pointer-events: none; background: var(--band); }
+.dc-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-stack); }
+@media (max-width: 599px) { .dc-lede { margin-top: var(--s-8); font-size: 18px; } }
 .dc-head h1 { font-size: clamp(32px, 4.4vw, 44px); }
 .dc-lede { margin-top: var(--s-12); font-size: var(--fs-20); line-height: 1.5; color: var(--ink-2); max-width: 32em; }
 
@@ -26,9 +28,10 @@
 .dc-body { min-width: 0; max-width: 680px; }
 /* Anchors land below the sticky header: html scroll-padding-top (72 px, in the shell CSS) plus this margin. */
 .dc-sec, .dc-body [id] { scroll-margin-top: var(--s-16); }
-.dc-sec { padding: var(--s-32) 0; border-top: 1px solid var(--line); }
+.dc-sec { padding: var(--sp-group) 0; border-top: 1px solid var(--line); }
 .dc-sec:first-child { border-top: 0; padding-top: var(--s-8); }
 .dc-h2 { font-size: var(--fs-24); letter-spacing: -0.015em; margin-bottom: var(--s-16); }
+@media (max-width: 599px) { .dc-h2 { font-size: 22px; margin-bottom: var(--s-12); } .dc-step { padding-bottom: var(--s-16); } }
 .dc-h3 { font-size: var(--fs-16); font-weight: var(--fw-semi); line-height: 1.4; letter-spacing: 0; }
 .dc-body p, .dc-body li, .dc-body dd { max-width: 65ch; }
 .dc-body strong { font-weight: var(--fw-semi); }
@@ -39,24 +42,24 @@
 
 .dc-steps { margin: 0; padding: 0; list-style: none; counter-reset: dcstep; display: grid; }
 .dc-step { position: relative; padding: 0 0 var(--s-24) 48px; counter-increment: dcstep; }
-.dc-step::before { content: counter(dcstep); position: absolute; left: 0; top: 0; width: 32px; height: 32px; border-radius: 50%; background: var(--inset); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink); font-size: var(--fs-14); font-weight: var(--fw-semi); display: flex; align-items: center; justify-content: center; }
+.dc-step::before { content: counter(dcstep); position: absolute; left: 0; top: 0; width: 32px; height: 32px; border-radius: 50%; background: var(--tile); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(18, 76, 196, 0.1); color: var(--ink); font-size: var(--fs-14); font-weight: var(--fw-semi); display: flex; align-items: center; justify-content: center; }
 .dc-step::after { content: ""; position: absolute; left: 15.5px; top: 36px; bottom: 4px; width: 1px; background: var(--line); }
 .dc-step:last-child { padding-bottom: 0; }
 .dc-step:last-child::after { display: none; }
 .dc-step .dc-h3 { padding-top: 4px; }
 .dc-step p { margin-top: var(--s-4); color: var(--ink-2); }
-.dc-cta { margin-top: var(--s-24); }
+.dc-cta { margin-top: var(--sp-stack); }
 
-.dc-trackbox { margin: 0 0 var(--s-24); padding: var(--s-24); }
+.dc-trackbox { margin: 0 0 var(--sp-stack); padding: var(--sp-panel); }
 
 .dc-fees { margin-top: var(--s-16); }
-.dc-sub { margin-top: var(--s-24); padding: var(--s-16) var(--s-24); border-radius: var(--r-panel); background: var(--surface); border: 1px solid var(--line); }
+.dc-sub { margin-top: var(--sp-stack); padding: var(--s-16) var(--s-24); border-radius: var(--r-panel); background: var(--surface); border: 1px solid var(--line); }
 .dc-sub > * + * { margin-top: var(--s-12); }
 /* the answer a fix link from the swap app points at */
 .dc-sub:target { border-color: var(--line-strong); }
 @media (max-width: 599px) { .dc-sub { padding: var(--s-16); } }
 
-.dc-addrs { display: grid; gap: var(--s-8); padding: var(--s-16) var(--s-24); margin-bottom: var(--s-24); }
+.dc-addrs { display: grid; gap: var(--s-8); padding: var(--s-16) var(--s-24); margin-bottom: var(--sp-stack); }
 .dc-addrs .addr { min-height: 44px; }
 .dc-audit .tag { vertical-align: 1px; }
 

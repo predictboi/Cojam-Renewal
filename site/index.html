@@ -20,6 +20,19 @@
 <main id="main">
 
   <section class="hero">
+    <div class="hero-fx" aria-hidden="true">
+      <span class="hero-glow hero-glow-a fx-loop"></span>
+      <span class="hero-glow hero-glow-b fx-loop"></span>
+      <!-- The mark as an outline: badge ring with its notch, the C with its slot, and a dotted orbit. Reused in the closing band. -->
+      <svg class="hero-ring fx-loop" viewBox="-640 -640 1280 1280" focusable="false">
+        <symbol id="cj-ring" viewBox="-640 -640 1280 1280">
+          <circle class="orbit" r="620"/>
+          <path d="M 476 61.8 A 480 480 0 1 1 476 -61.8"/>
+          <path d="M 265.1 45.5 A 269 269 0 1 1 265.1 -45.5 L 110 -45.5 A 119 119 0 1 0 110 45.5 Z"/>
+        </symbol>
+        <use href="#cj-ring" x="-640" y="-640" width="1280" height="1280"/>
+      </svg>
+    </div>
     <div class="container hero-grid">
       <div class="hero-copy">
         <h1 data-i18n="hero.title">The OG prediction market, since 2019.</h1>
@@ -281,6 +294,7 @@
   <section class="cta" aria-labelledby="cta-h">
     <div class="container" data-reveal>
       <div class="cta-band">
+        <svg class="cta-ring" viewBox="-640 -640 1280 1280" aria-hidden="true" focusable="false"><use href="#cj-ring" x="-640" y="-640" width="1280" height="1280"/></svg>
         <div class="cta-copy">
           <h2 id="cta-h" data-i18n="cta.title">Ready to swap?</h2>
           <p class="muted" data-i18n="cta.body">Swap any amount now. 10% arrives at once and the rest follows 7 days later, automatically.</p>

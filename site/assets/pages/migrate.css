@@ -1,7 +1,7 @@
 /* Swap app (/migrate/). Layout and page parts only; shared components live in base.css. */
 
-.mg { padding-top: var(--s-32); }
-.mg-head { max-width: 640px; margin-bottom: var(--s-24); }
+.mg { padding-top: var(--sp-page); }
+.mg-head { max-width: 640px; margin-bottom: var(--sp-stack); }
 .mg-head h1 { font-size: var(--fs-32); letter-spacing: -0.02em; line-height: 1.15; }
 .mg-lede { margin-top: var(--s-8); color: var(--ink-2); }
 .mg-window { display: inline-flex; align-items: center; gap: var(--s-8); margin-top: var(--s-12); color: var(--ink-2); }
@@ -24,17 +24,19 @@
 }
 
 /* two columns from 1024px: the swap panel, the history beside it */
-.mg-grid { display: grid; gap: var(--s-24); grid-template-columns: minmax(0, 1fr); align-items: start; }
+.mg-grid { display: grid; gap: var(--sp-stack); grid-template-columns: minmax(0, 1fr); align-items: start; }
 .mg-col { min-width: 0; max-width: 520px; width: 100%; }
 @media (min-width: 1024px) {
   .mg { padding-top: var(--s-48); }
   .mg-grid { grid-template-columns: minmax(0, 520px) minmax(0, 1fr); gap: var(--s-32); }
 }
 @media (max-width: 1023px) { .mg-col { margin: 0 auto; } .mg-hist { max-width: 520px; width: 100%; margin: 0 auto; } }
-@media (max-width: 480px) { .mg-panel, .mg-hist { padding: var(--s-16); } .mg-head h1 { font-size: var(--fs-24); } .mg-totals { gap: var(--s-8); } .mg-totals dd { font-size: var(--fs-13); } }
+@media (max-width: 480px) { .mg-head h1 { font-size: var(--fs-24); } .mg-totals { gap: var(--s-8); } .mg-totals dd { font-size: var(--fs-13); } }
 
 /* ---------- panel views ---------- */
-.mg-panel { min-width: 0; }
+.mg-panel { min-width: 0; position: relative; isolation: isolate; }
+/* A faint sky band across the top of the swap panel, under the view head. */
+.mg-panel::before { content: ""; position: absolute; inset: 0 0 auto; height: 112px; z-index: -1; pointer-events: none; border-radius: calc(var(--r-panel) - 1px) calc(var(--r-panel) - 1px) 0 0; background: var(--band); }
 .mg-view > * + * { margin-top: var(--s-16); }
 .mg-view.is-enter { animation: mg-in 220ms var(--ease); }
 @keyframes mg-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
@@ -105,6 +107,12 @@
 
 /* track boxes */
 .mg-trackbox { padding: var(--s-16) 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); display: grid; gap: var(--s-16); }
+/* Success: a soft sky light opens behind the track from the part that just arrived (burst() in migrate.js places it). */
+.mg-burst-clip { position: absolute; inset: 0; z-index: -1; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.mg-burst { position: absolute; left: 10%; top: 50%; width: 360px; height: 360px; margin: -180px 0 0 -180px; border-radius: 50%;
+  background: radial-gradient(closest-side, var(--glow-sky), rgba(151, 219, 255, 0.18) 55%, rgba(151, 219, 255, 0)); opacity: 0; transform: scale(0.3); }
+.mg-burst.is-on { animation: mg-burst 1400ms var(--ease-out) both; }
+@keyframes mg-burst { 0% { opacity: 0; transform: scale(0.3); } 25% { opacity: 1; } 100% { opacity: 0; transform: scale(1.25); } }
 
 /* tx links */
 .mg-tx { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: var(--fs-14); color: var(--ink); text-decoration: none; }
@@ -179,7 +187,7 @@ kbd { display: inline-flex; align-items: center; justify-content: center; min-wi
 .cj-wallet[aria-expanded="true"] { border-color: var(--ink-2); }
 
 /* ---------- prototype controls ---------- */
-.mg-proto { margin-top: var(--s-48); border-top: 1px solid var(--line); padding-top: var(--s-16); max-width: 720px; }
+.mg-proto { margin-top: var(--sp-section); border-top: 1px solid var(--line); padding-top: var(--s-16); max-width: 720px; }
 .mg-proto > summary { display: inline-flex; align-items: center; min-height: 44px; cursor: pointer; color: var(--ink-2); font-size: var(--fs-14); font-weight: var(--fw-medium); }
 .mg-proto-body { display: grid; gap: var(--s-12); padding-top: var(--s-8); }
 .mg-proto-grid { display: flex; flex-wrap: wrap; gap: var(--s-8); align-items: center; }
@@ -195,17 +203,14 @@ kbd { display: inline-flex; align-items: center; justify-content: center; min-wi
 .mg-hint { margin-top: var(--s-8); }
 .mg-sticky-end { height: 0; }
 @media (max-width: 599px) {
-  .mg-sticky { position: sticky; bottom: 0; z-index: 6; margin-left: calc(var(--s-24) * -1); margin-right: calc(var(--s-24) * -1);
-    padding: var(--s-12) var(--s-24) calc(var(--s-12) + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid transparent;
+  .mg-sticky { position: sticky; bottom: 0; z-index: 6; margin-left: calc(var(--sp-panel) * -1); margin-right: calc(var(--sp-panel) * -1);
+    padding: var(--s-12) var(--sp-panel) calc(var(--s-12) + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid transparent;
     transition: border-color var(--dur) var(--ease); }
   .mg-sticky.is-stuck { border-top-color: var(--line); }
   /* while typing, and while an error note holds the fix (no KAIA, reserve), the action stays in place under the note */
   .mg-panel.is-typing .mg-sticky, .mg-panel:has(.note-error) .mg-sticky { position: static; }
   html:has(.mg-sticky) { scroll-padding-bottom: 96px; }
   body[data-page="swap"]:has(.mg-sticky.is-stuck) .toasts { bottom: calc(88px + env(safe-area-inset-bottom)); }
-}
-@media (max-width: 480px) {
-  .mg-sticky { margin-left: calc(var(--s-16) * -1); margin-right: calc(var(--s-16) * -1); padding-left: var(--s-16); padding-right: var(--s-16); }
 }
 
 /* Returning holder: the keeper sent a lot's 90% while they were away. One note per lot until dismissed. */
@@ -245,3 +250,4 @@ html[data-wallet="on"]:not(.cj-ready) #mg-panel { min-height: 482px; }
   .mg-vhead:has(> .mg-badge) { grid-template-columns: auto minmax(0, 1fr); align-items: center; column-gap: var(--s-12); }
   .mg-vhead:has(> .mg-badge) > .mg-back { grid-column: 1 / -1; }
 }
+@media (prefers-reduced-motion: reduce) { .mg-burst-clip { display: none; } }

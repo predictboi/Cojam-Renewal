@@ -1,6 +1,8 @@
 /* Status page layout (Operate mode: dense and calm). Components come from base.css. */
-.st { padding: var(--s-32) 0 0; }
-.st > .container { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--s-24); }
+.st { position: relative; isolation: isolate; padding: var(--sp-page) 0 0; }
+.st > .container { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-stack); }
+/* A soft sky band behind the page head, fading into the ground before the first panel ends. */
+.st::before { content: ""; position: absolute; inset: 0 0 auto; height: 360px; z-index: -1; pointer-events: none; background: var(--band); }
 .st-recent, .st-recent > * { min-width: 0; }
 
 /* ---------- head ---------- */
@@ -17,7 +19,9 @@
 /* ---------- headline figures ---------- */
 .st-label { font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--ink-2); letter-spacing: 0; line-height: 1.4; }
 .st-unit { font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--ink-2); white-space: nowrap; }
-.st-top { display: grid; gap: var(--s-24); padding: var(--s-24); }
+.st-top { display: grid; gap: var(--sp-stack); padding: var(--sp-panel); }
+/* Headline panel: a faint sky light at the top edge. */
+.st-top { background: linear-gradient(180deg, var(--sky-tint), rgba(227, 245, 255, 0) 140px), var(--surface); }
 .st-hero { display: grid; gap: var(--s-8); align-content: start; min-width: 0; }
 .st-hero-value { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 var(--s-8); margin-top: var(--s-4); }
 .st-hero-num { font-size: clamp(30px, 8vw, 48px); font-weight: var(--fw-semi); line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: proportional-nums; white-space: nowrap; }
@@ -61,7 +65,7 @@
 
 /* ---------- panels in the grid ---------- */
 /* One column: the daily chart, then the aggregate track panel at full width, so no column ends early and leaves a gap. */
-.st-grid { display: grid; gap: var(--s-24); grid-template-columns: minmax(0, 1fr); align-items: start; }
+.st-grid { display: grid; gap: var(--sp-stack); grid-template-columns: minmax(0, 1fr); align-items: start; }
 .st-panel-head { display: grid; gap: var(--s-4); margin-bottom: var(--s-16); }
 .st-h2 { font-size: var(--fs-20); letter-spacing: -0.01em; }
 
@@ -200,10 +204,10 @@ html:not(.cj-ready) #st-recent-body { min-height: 600px; }
 @media (max-width: 599px) {
   html:not(.cj-ready) .st-head { min-height: 154px; }
   html:not(.cj-ready) .st-hero { min-height: 358px; }
-  html:not(.cj-ready) #st-figs { min-height: 575px; }
-  html:not(.cj-ready) .st-daily { min-height: 400px; }
-  html:not(.cj-ready) .st-unlock { min-height: 810px; }
+  html:not(.cj-ready) #st-figs { min-height: 536px; }
+  html:not(.cj-ready) .st-daily { min-height: 384px; }
+  html:not(.cj-ready) .st-unlock { min-height: 771px; }
 }
-@media (max-width: 374px) { html:not(.cj-ready) .st-hero { min-height: 390px; } html:not(.cj-ready) #st-figs { min-height: 594px; } }
+@media (max-width: 374px) { html:not(.cj-ready) .st-hero { min-height: 373px; } html:not(.cj-ready) #st-figs { min-height: 575px; } html:not(.cj-ready) .st-unlock { min-height: 794px; } }
 #st-error-icon, #st-sample-icon { display: inline-block; flex: none; width: 18px; height: 18px; margin-top: 3px; }
 #st-retry-icon { display: inline-block; flex: none; width: 16px; height: 16px; }

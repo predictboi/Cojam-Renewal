@@ -43,8 +43,19 @@ a:hover { color: var(--brand-hover); }
 }
 .btn:hover { border-color: var(--ink-2); color: var(--ink); }
 .btn[disabled], .btn[aria-disabled="true"] { cursor: not-allowed; background: var(--inset); border-color: var(--line); color: var(--ink-2); transform: none; }
-.btn-primary { background: var(--brand); border-color: var(--brand); color: var(--on-brand); }
-.btn-primary:hover { background: var(--brand-hover); border-color: var(--brand-hover); color: var(--on-brand); }
+.btn-primary { background: var(--brand) linear-gradient(180deg, var(--brand-top), var(--brand-bottom)); border-color: var(--brand-bottom); color: var(--on-brand);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 1px 2px rgba(11, 21, 48, 0.14); overflow: visible; }
+.btn-primary:hover { background: var(--brand-hover) linear-gradient(180deg, var(--brand), var(--brand-hover)); border-color: var(--brand-hover); color: var(--on-brand); }
+/* The glow is a pseudo element under the button that fades in: nothing animates box-shadow. The ripple keeps its own clip (.ripple-clip). */
+.btn-primary::before {
+  content: ""; position: absolute; inset: 0; z-index: -2; border-radius: inherit; pointer-events: none;
+  box-shadow: 0 6px 18px -4px var(--glow), 0 2px 6px -1px var(--glow); opacity: 0; transition: opacity var(--dur-base) var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) { .btn-primary:hover::before { opacity: 1; } }
+.btn-primary:is(:active, .is-pressed)::before { opacity: 0.7; transition-duration: var(--dur-press); }
+.btn-primary:is([disabled], [aria-disabled="true"]) { box-shadow: none; }
+.btn-primary:is([disabled], [aria-disabled="true"])::before { display: none; }
+.ripple-clip { position: absolute; inset: 0; z-index: -1; border-radius: inherit; overflow: hidden; pointer-events: none; }
 .btn-ghost { background: transparent; border-color: transparent; color: var(--ink); }
 .btn-ghost:hover { background: var(--inset); border-color: transparent; }
 .btn-lg { min-height: 52px; padding: 0 var(--s-24); font-size: var(--fs-16); }
@@ -54,7 +65,7 @@ a:hover { color: var(--brand-hover); }
 .night .btn:hover { border-color: var(--night-ink-2); }
 
 /* ---------- panels ---------- */
-.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); padding: var(--s-24); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); padding: var(--sp-panel); }
 .panel-flush { padding: 0; overflow: hidden; }
 .divider { height: 1px; background: var(--line); border: 0; margin: var(--s-16) 0; }
 
@@ -214,9 +225,10 @@ a:hover { color: var(--brand-hover); }
 .track-axis > :last-child { text-align: right; }
 
 /* ---------- section rhythm ---------- */
-.section { padding: var(--s-64) 0; }
-.section-head { max-width: 640px; margin-bottom: var(--s-32); }
+.section { padding: var(--sp-section) 0; }
+.section-head { max-width: 640px; margin-bottom: var(--sp-head); }
 .section-head p { margin-top: var(--s-12); color: var(--ink-2); font-size: var(--fs-16); }
+@media (max-width: 599px) { .section-head p { margin-top: var(--s-8); } }
 .night { background: var(--night-bg); color: var(--night-ink); }
 .night .muted, .night .section-head p { color: var(--night-ink-2); }
 .night .panel { background: var(--night-surface); border-color: var(--night-line); }
@@ -267,6 +279,11 @@ a:hover { color: var(--brand-hover); }
   background: var(--surface); box-shadow: var(--shadow-lift); opacity: 0; pointer-events: none; transition: opacity var(--dur-fast) var(--ease-out);
 }
 .panel .lift-row::before, .panel .mg-lot::before { background: var(--bg); box-shadow: none; }
+/* The plate carries a gradient hairline (--edge), so the edge lights up as the plate fades in. */
+@media (hover: hover) and (pointer: fine) {
+  .lift-row::before, .mg-lot::before { border: 1px solid transparent; background: linear-gradient(var(--surface), var(--surface)) padding-box, var(--edge) border-box; }
+  .panel .lift-row::before, .panel .mg-lot::before { background: linear-gradient(var(--bg), var(--bg)) padding-box, var(--edge) border-box; }
+}
 @media (hover: hover) and (pointer: fine) {
   .lift:hover, .lift-row:hover, .mg-lot:hover { transform: translateY(var(--lift)); }
   .lift:hover::after, .lift-row:hover::before, .mg-lot:hover::before { opacity: 1; }
@@ -340,6 +357,10 @@ details.smooth[open] > :not(summary) { animation: cj-reveal var(--dur-base) var(
 .live-dot { position: relative; }
 .live-dot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--sky); opacity: 0; pointer-events: none; }
 .live-dot.is-tick::after { animation: cj-ping var(--dur-reveal) var(--ease-out); }
+/* While live (not stale), a soft ring breathes out every few seconds so the stamp reads as current. */
+.live-dot::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--sky); opacity: 0; pointer-events: none; }
+.live-dot:not(.is-stale)::before { animation: cj-live 2800ms var(--ease-out) 600ms infinite; }
+@keyframes cj-live { 0% { opacity: 0.6; transform: scale(1); } 60%, 100% { opacity: 0; transform: scale(2.8); } }
 @keyframes cj-ping { from { opacity: 0.7; transform: scale(1); } to { opacity: 0; transform: scale(2.6); } }
 
 /* 8. CJ.celebrate: a check that pops and a ring of sparks, once. Placed over the element, outside the layout. */
@@ -368,7 +389,8 @@ details.smooth[open] > :not(summary) { animation: cj-reveal var(--dur-base) var(
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; transition-delay: 0ms !important; scroll-behavior: auto !important; }
   :is(.btn, .chip, .seg-btn, .pg-num, .icon-btn, .w-open, .sort-btn, .cj-nav a, .cj-nav-mobile a, .cj-brand, .cj-foot-nav a, .help > summary, .press):is(:active, .is-pressed),
   .lift:hover, .lift-row:hover, .mg-lot:hover, .lift:active, .lift-row:active, details.lift-row:has(> summary:active), .tilt { transform: none !important; }
-  .track.is-ready .track-day::after, .ripple, .sheen-clip, .cj-cele-ring, .cj-cele-spark, .live-dot::after { display: none; }
+  .track.is-ready .track-day::after, .ripple, .sheen-clip, .cj-cele-ring, .cj-cele-spark, .live-dot::after, .live-dot::before { display: none; }
+  .fx-loop, .fx-loop::before, .fx-loop::after { animation: none !important; }
   .cj-cele-check { animation: none !important; }
   .rv-wait { opacity: 1; }
 }
@@ -423,8 +445,8 @@ html { scroll-padding-top: 72px; }
 }
 /* iOS zooms into any focused field under 16 px: the language select included. */
 @media (hover: none) and (pointer: coarse) { .cj-lang select { font-size: var(--fs-16); } }
-.cj-footer { margin-top: var(--s-64); border-top: 1px solid var(--line); background: var(--surface); padding: var(--s-48) 0 var(--s-32); }
-.cj-foot-grid { display: grid; gap: var(--s-32); grid-template-columns: minmax(0, 1fr); }
+.cj-footer { margin-top: var(--sp-section); border-top: 1px solid var(--line); background: var(--surface); padding: var(--sp-foot) 0 var(--sp-head); }
+.cj-foot-grid { display: grid; gap: var(--sp-group); grid-template-columns: minmax(0, 1fr); }
 .cj-foot-brand p { margin-top: var(--s-8); max-width: 26em; }
 .cj-foot-h { font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--ink-2); margin-bottom: var(--s-8); letter-spacing: 0; }
 .cj-foot-nav { display: grid; }
@@ -432,7 +454,9 @@ html { scroll-padding-top: 72px; }
 .cj-foot-nav a:hover { color: var(--brand); }
 .cj-foot-addrs { display: grid; gap: var(--s-8); min-width: 0; }
 .cj-foot-addrs .addr-label { min-width: 7.5em; }
-.cj-foot-legal { position: relative; margin-top: var(--s-32); padding-top: var(--s-24); display: grid; gap: var(--s-8); }
+.cj-foot-legal { position: relative; margin-top: var(--sp-group); padding-top: var(--sp-panel); display: grid; gap: var(--s-8); }
+/* Phones: the site links sit two to a row (each still a 44 px target), so the footer is half as tall. */
+@media (max-width: 599px) { .cj-foot-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s-16); } .cj-foot-h { margin-bottom: 0; } }
 /* The rule sits inside the container padding, so it is exactly as wide as the text above it. */
 .cj-foot-legal::before { content: ""; position: absolute; top: 0; left: var(--gutter); right: var(--gutter); height: 1px; background: var(--line); }
 @media (min-width: 900px) {

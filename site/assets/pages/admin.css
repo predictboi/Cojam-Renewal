@@ -1,10 +1,11 @@
 /* Admin swap monitor layout. Components come from base.css; colours, sizes and radii from tokens.css. */
 /* Same --container as the header, footer and every other page, so the left edges line up. */
-.adm { padding: var(--s-32) 0 0; }
-.adm > .container > * + * { margin-top: var(--s-24); }
+.adm { position: relative; isolation: isolate; padding: var(--sp-page) 0 0; }
+.adm > .container > * + * { margin-top: var(--sp-stack); }
+/* A soft sky band behind the page head. */
+.adm::before { content: ""; position: absolute; inset: 0 0 auto; height: 320px; z-index: -1; pointer-events: none; background: var(--band); }
 .adm h2 { font-size: var(--fs-20); letter-spacing: -0.01em; }
-.adm .panel { padding: var(--s-24); min-width: 0; }
-@media (max-width: 599px) { .adm .panel { padding: var(--s-16); } }
+.adm .panel { padding: var(--sp-panel); min-width: 0; }
 
 /* ---------- head ---------- */
 .adm-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-16); }
@@ -16,7 +17,7 @@
 /* ---------- KPI row: one panel, tiles split by hairlines ---------- */
 .adm .adm-kpis { padding: 0; overflow: hidden; }
 .kpi-grid { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); }
-.kpi { background: var(--surface); padding: var(--s-16); display: grid; gap: var(--s-4); align-content: start; min-width: 0; }
+.kpi { background: linear-gradient(180deg, var(--sky-tint), rgba(227, 245, 255, 0) 64px), var(--surface); padding: var(--s-16); display: grid; gap: var(--s-4); align-content: start; min-width: 0; }
 .kpi dt { font-size: var(--fs-14); color: var(--ink-2); }
 .kpi dd { margin: 0; display: grid; gap: var(--s-4); min-width: 0; }
 .kpi-v { font-size: var(--fs-20); font-weight: var(--fw-semi); line-height: 1.2; overflow-wrap: anywhere; }
@@ -322,6 +323,9 @@ html:has(.sheet[open]) { overflow: hidden; }
 .adm-limits-list > div { min-width: 0; }
 .adm-limits-list dt { font-size: var(--fs-13); color: var(--ink-2); }
 .adm-limits-list dd { margin: 0; font-size: var(--fs-14); font-weight: var(--fw-medium); }
+/* A value may wrap inside its own column; it never runs into the next one. */
+@media (max-width: 599px) { .adm-limits-list { min-height: 117px; } }
+.adm-limits-list dd, .adm-limits-list dd * { white-space: normal; overflow-wrap: anywhere; }
 @media (min-width: 900px) {
   .adm-limits { padding: var(--s-16) var(--s-24); }
   .adm-limits-list { grid-template-columns: repeat(4, minmax(0, 1fr)); min-height: 42px; }
