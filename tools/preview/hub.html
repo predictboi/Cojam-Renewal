@@ -1,0 +1,115 @@
+<title>Cojam Relaunch Preview</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="assets/fonts.css">
+<style>
+/* Layout: one narrow column of link groups, each group a list of rows that open a page or a state. Single light look, matching the Cojam site. */
+:root {
+  --brand: #124CC4; --brand-tint: #E7EEFB; --sky: #97DBFF;
+  --bg: #F5F7FB; --surface: #FFFFFF; --line: #DCE3EF; --ink: #0B1530; --ink-2: #4A5672;
+  --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", sans-serif;
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 16px; line-height: 1.55;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 32px 64px; }
+.wrap { max-width: 720px; margin: 0 auto; display: grid; gap: 32px; }
+header { display: grid; gap: 12px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 20px; }
+h1 { margin: 0; font-size: clamp(28px, 6vw, 36px); line-height: 1.15; letter-spacing: -0.02em; font-weight: 600; text-wrap: balance; }
+.lede { margin: 0; color: var(--ink-2); max-width: 36em; }
+.note { margin: 0; padding: 12px 16px; border-radius: 8px; background: var(--brand-tint); color: var(--ink); font-size: 14px; }
+.primary { display: inline-flex; align-items: center; justify-content: center; min-height: 52px; padding: 0 24px; border-radius: 8px;
+  background: var(--brand); color: #fff; font-weight: 500; text-decoration: none; width: fit-content; }
+.primary:hover { background: #0F3FA6; }
+section { display: grid; gap: 12px; }
+h2 { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: -0.01em; }
+.sub { margin: 0; color: var(--ink-2); font-size: 14px; }
+.list { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.list li + li { border-top: 1px solid var(--line); }
+.list a { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px 12px; min-height: 60px; padding: 12px 16px;
+  color: var(--ink); text-decoration: none; }
+.list a:hover { background: var(--bg); }
+.list a:active { transform: scale(0.99); }
+.list strong { font-weight: 500; }
+.list span.d { grid-column: 1; color: var(--ink-2); font-size: 14px; }
+.list .go { grid-row: 1 / span 2; grid-column: 2; color: var(--ink-2); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chips a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface);
+  color: var(--ink); text-decoration: none; font-size: 15px; }
+.chips a:hover { border-color: var(--ink-2); }
+a:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+footer { color: var(--ink-2); font-size: 13px; }
+@media (prefers-reduced-motion: reduce) { .list a:active { transform: none; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="brand"><img src="assets/cojam-mark.svg" alt="" width="28" height="28"><span>Cojam</span></div>
+    <h1>Relaunch prototype</h1>
+    <p class="lede">Every page and every swap state, one tap each. All figures and wallets are mock data; nothing here touches a chain.</p>
+    <a class="primary" href="home.html">Open the site</a>
+    <p class="note">Each page has a language menu (EN, 한국어, 日本語) in the header. Use your browser's back button to return here.</p>
+  </header>
+
+  <section aria-labelledby="h-pages">
+    <h2 id="h-pages">Pages</h2>
+    <ul class="list">
+      <li><a href="home.html"><strong>Landing</strong><span class="d">Hero, how it works, timeline, contracts, concept previews, FAQ</span><span class="go" aria-hidden="true">&rsaquo;</span></a></li>
+      <li><a href="migrate/index.html?reset=1"><strong>Swap app</strong><span class="d">Fresh start: connect, approve, swap, 10% now and 90% after 7 days</span><span class="go" aria-hidden="true">&rsaquo;</span></a></li>
+      <li><a href="status/index.html"><strong>Status</strong><span class="d">Public dashboard with sample data</span><span class="go" aria-hidden="true">&rsaquo;</span></a></li>
+      <li><a href="docs/index.html"><strong>Docs</strong><span class="d">Wallets, steps, lock rules, fees, safety, contracts</span><span class="go" aria-hidden="true">&rsaquo;</span></a></li>
+      <li><a href="admin/index.html"><strong>Admin monitor</strong><span class="d">Internal: requests, unlock schedule, gas wallet, CSV export</span><span class="go" aria-hidden="true">&rsaquo;</span></a></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="h-flow">
+    <h2 id="h-flow">Try the full swap on your phone</h2>
+    <p class="sub">Start inside Kaia Wallet (one tap connect, no fee), swap, then jump ahead in time to see the 90% released.</p>
+    <ul class="list">
+      <li><a href="migrate/index.html?env=inapp-kaia&amp;reset=1"><strong>1. Swap as a Kaia Wallet user</strong><span class="d">Connect, enter an amount, approve, swap</span><span class="go" aria-hidden="true">&rsaquo;</span></a></li>
+      <li><a href="migrate/index.html?env=inapp-kaia&amp;days=7.01"><strong>2. Come back after 7 days</strong><span class="d">The 90% is being sent; claim it yourself if you like</span><span class="go" aria-hidden="true">&rsaquo;</span></a></li>
+      <li><a href="migrate/index.html?env=inapp-kaia&amp;days=8"><strong>3. Come back after 8 days</strong><span class="d">Released automatically by the keeper</span><span class="go" aria-hidden="true">&rsaquo;</span></a></li>
+      <li><a href="migrate/index.html?env=mobile-browser&amp;reset=1"><strong>From a normal phone browser</strong><span class="d">Connect opens the wallet sheet: Kaia Wallet, MetaMask, WalletConnect</span><span class="go" aria-hidden="true">&rsaquo;</span></a></li>
+      <li><a href="migrate/index.html?env=inapp-metamask&amp;reset=1"><strong>As a MetaMask user</strong><span class="d">Pays a small KAIA fee</span><span class="go" aria-hidden="true">&rsaquo;</span></a></li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="h-states">
+    <h2 id="h-states">Swap app states</h2>
+    <p class="sub">Each opens the app frozen in one state.</p>
+    <div class="chips">
+      <a href="migrate/index.html?state=disconnected&amp;reset=1">Not connected</a>
+      <a href="migrate/index.html?state=ready&amp;reset=1">Ready</a>
+      <a href="migrate/index.html?state=review&amp;reset=1">Large amount review</a>
+      <a href="migrate/index.html?state=approve&amp;reset=1">Approve</a>
+      <a href="migrate/index.html?state=wallet&amp;reset=1">Waiting for wallet</a>
+      <a href="migrate/index.html?state=pending&amp;reset=1">Pending</a>
+      <a href="migrate/index.html?state=locked&amp;reset=1">Swap confirmed</a>
+      <a href="migrate/index.html?state=releasing&amp;reset=1">Being sent</a>
+      <a href="migrate/index.html?state=released&amp;reset=1">Released</a>
+      <a href="migrate/index.html?state=history&amp;reset=1">History</a>
+      <a href="migrate/index.html?state=empty&amp;reset=1">No old CT</a>
+      <a href="migrate/index.html?state=wrong-network&amp;reset=1">Wrong network</a>
+      <a href="migrate/index.html?state=rejected&amp;reset=1">Declined in wallet</a>
+      <a href="migrate/index.html?state=no-gas&amp;reset=1">No KAIA</a>
+      <a href="migrate/index.html?state=sponsor&amp;reset=1">Fee payer busy</a>
+      <a href="migrate/index.html?state=partial&amp;reset=1">Approved, not swapped</a>
+      <a href="migrate/index.html?state=rpc&amp;reset=1">Network error</a>
+      <a href="migrate/index.html?state=reserve&amp;reset=1">Reserve empty</a>
+      <a href="migrate/index.html?state=closed&amp;days=355&amp;reset=1">Window closed</a>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-more">
+    <h2 id="h-more">Other views</h2>
+    <div class="chips">
+      <a href="home.html?lang=ko">Landing in Korean</a>
+      <a href="home.html?lang=ja">Landing in Japanese</a>
+      <a href="status/index.html?state=loading">Status loading</a>
+      <a href="status/index.html?state=error">Status error</a>
+      <a href="admin/index.html?keeper=late&amp;gas=low">Admin with alerts</a>
+    </div>
+  </section>
+
+  <footer>Prototype build for review. Contract addresses for new CT and the swap are to be announced at launch.</footer>
+</div>
