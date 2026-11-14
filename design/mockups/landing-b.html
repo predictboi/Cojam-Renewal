@@ -35,7 +35,9 @@ a { color: inherit; }
 button { font: inherit; }
 .wrap { max-width: 1200px; margin: 0 auto; padding-inline: max(var(--g), env(safe-area-inset-left)) max(var(--g), env(safe-area-inset-right)); }
 .display { font-family: var(--display); font-weight: 900; font-stretch: 125%; text-transform: uppercase; letter-spacing: -0.035em; line-height: 0.86; }
-:lang(ko) .display { font-stretch: 100%; letter-spacing: -0.04em; line-height: 1.02; }
+:lang(ko) body { word-break: keep-all; }
+:lang(ko) .display { font-stretch: 100%; letter-spacing: -0.05em; line-height: 1.0; }
+:lang(ko) .marquee span { letter-spacing: -0.02em; }
 
 /* ---------- nav ---------- */
 .nav { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--blue) 88%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
@@ -72,7 +74,9 @@ button { font: inherit; }
 .h1 .row { display: block; }
 .h1 .hash { color: var(--volt); font-style: italic; transform: rotate(-4deg); display: inline-block; margin-right: 0.04em; }
 .h1 .out { color: transparent; -webkit-text-stroke: 2px var(--snow); }
-:lang(ko) .h1 { font-size: clamp(40px, 11vw, 120px); }
+:lang(ko) .h1 { font-size: clamp(56px, 17vw, 160px); margin-bottom: 0.14em; }
+/* Hangul outlines show overlapping contours, so in Korean the last line becomes a volt label instead of an outline */
+:lang(ko) .h1 .out { color: var(--ink); -webkit-text-stroke: 0; background: var(--volt); display: inline-block; padding: 0.02em 0.14em 0.06em; border-radius: 0.12em; transform: rotate(-3deg); margin-top: 0.08em; box-shadow: 0.06em 0.06em 0 var(--ink); }
 .lede { max-width: 30em; margin: 22px 0 0; font-size: 17px; color: rgba(253,253,255,0.9); }
 .lede b { color: var(--volt); font-weight: 700; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
@@ -237,7 +241,7 @@ footer code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; word
 <header class="nav">
   <div class="wrap">
     <a class="logo" href="#top" aria-label="Cojam home"><span class="chip"><svg aria-hidden="true"><use href="#mark"/></svg>Cojam</span><span class="tag">since 2019</span></a>
-    <nav class="pills" aria-label="Sections"><a href="#how" data-ko="교환 방법">How it works</a><a href="#numbers" data-ko="숫자로 보기">Numbers</a><a href="#future" data-ko="미래">Future</a></nav>
+    <nav class="pills" aria-label="Sections"><a href="#how" data-ko="교환 방법">How it works</a><a href="#numbers" data-ko="핵심 숫자">Numbers</a><a href="#future" data-ko="다음 단계">Future</a></nav>
     <div class="end">
       <button class="lang" type="button" id="lang" aria-label="Change language">한국어</button>
       <a class="btn sm" href="#swap" data-ko="지갑 연결">Connect</a>
@@ -248,66 +252,66 @@ footer code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; word
 <main id="top">
   <section class="hero">
     <div class="wrap">
-      <span class="live"><i></i><span data-ko="교환 진행 중, 352일 남음">Swap open, 352 days left</span></span>
+      <span class="live"><i></i><span data-ko="교환 오픈 D-352">Swap open, 352 days left</span></span>
       <h1 class="h1 display">
-        <span class="row"><span class="hash">#</span><span data-ko="2019년부터">The OG</span></span>
-        <span class="row" data-ko="원조">Prediction</span>
-        <span class="row out" data-ko="예측 마켓">Market</span>
+        <span class="row"><span class="hash">#</span><span data-ko="원조">The OG</span></span>
+        <span class="row" data-ko="예측마켓">Prediction</span>
+        <span class="row out" data-ko="컴백">Market</span>
       </h1>
       <div class="stage" aria-hidden="true">
         <svg class="squiggle q1" viewBox="0 0 160 160"><path d="M20 30 C 90 0, 150 40, 110 80 S 40 110, 70 140 l 18 -26 M70 140 l -30 -8"/></svg>
         <div class="sticker s1">
-          <div class="k" data-ko="예시 마켓">Example market</div>
+          <div class="k" data-ko="예측 예시">Example market</div>
           <div class="v">YES 62%</div>
           <div class="bar"><i></i></div>
         </div>
         <div class="sticker s2">
           <div class="mk"><svg><use href="#mark"/></svg></div>
-          <div class="k" data-ko="교환 즉시">On swap</div>
+          <div class="k" data-ko="교환하자마자">On swap</div>
           <div class="v">+10%</div>
         </div>
         <div class="badge">
-          <svg class="ring" viewBox="0 0 132 132"><defs><path id="circ" d="M66,66 m-50,0 a50,50 0 1,1 100,0 a50,50 0 1,1 -100,0"/></defs><text><textPath href="#circ">SWAP 1:1 ✦ OLD CT → NEW CT ✦ </textPath></text></svg>
+          <svg class="ring" viewBox="0 0 132 132"><defs><path id="circ" d="M66,66 m-50,0 a50,50 0 1,1 100,0 a50,50 0 1,1 -100,0"/></defs><text><textPath href="#circ" data-ko="1:1 교환 ✦ 기존 CT → 새 CT ✦ ">SWAP 1:1 ✦ OLD CT → NEW CT ✦ </textPath></text></svg>
           <svg class="core" viewBox="0 0 60 60" fill="none" stroke="#0B1530" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 40 C 18 14, 30 12, 30 30 S 44 44, 46 18 M46 18 l -9 6 M46 18 l 3 10"/></svg>
         </div>
         <svg class="squiggle q2" viewBox="0 0 160 160"><path d="M20 30 C 90 0, 150 40, 110 80 S 40 110, 70 140 l 18 -26 M70 140 l -30 -8"/></svg>
       </div>
-      <p class="lede" data-ko="Cojam이 Kaia에서 돌아왔어요. 기존 CT를 새 CT로 1:1 교환하면 <b>10%는 바로</b>, 나머지는 7일 뒤에 들어와요.">Cojam is back on Kaia. Swap old CT for new CT, one for one: <b>10% lands at once</b>, the rest 7 days later.</p>
+      <p class="lede" data-ko="2019년의 원조 Cojam이 Kaia에서 다시 시작해요. 기존 CT를 새 CT로 1:1 교환하면 <b>10%는 즉시</b>, 나머지 90%는 7일 뒤 자동으로 들어와요.">Cojam is back on Kaia. Swap old CT for new CT, one for one: <b>10% lands at once</b>, the rest 7 days later.</p>
       <div class="actions">
         <a class="btn" href="#swap" id="swap"><span data-ko="CT 교환하기">Swap CT</span><span class="arr" aria-hidden="true">→</span></a>
-        <a class="btn ghost" href="#how" data-ko="교환 방법 보기">How it works</a>
+        <a class="btn ghost" href="#how" data-ko="교환 방법">How it works</a>
       </div>
     </div>
   </section>
 
   <div class="mq-clip"><div class="marquee" aria-hidden="true"><div class="mq">
-    <span data-ko="기존 CT 1개 = 새 CT 1개">1 old CT = 1 new CT</span><span data-ko="10%는 바로">10% now</span><span data-ko="90%는 7일 뒤">90% in 7 days</span><span data-ko="KAIA 없이 교환">No KAIA needed</span><span data-ko="관리자 키 없음">No admin keys</span>
-    <span data-ko="기존 CT 1개 = 새 CT 1개">1 old CT = 1 new CT</span><span data-ko="10%는 바로">10% now</span><span data-ko="90%는 7일 뒤">90% in 7 days</span><span data-ko="KAIA 없이 교환">No KAIA needed</span><span data-ko="관리자 키 없음">No admin keys</span>
+    <span data-ko="1:1 교환">1 old CT = 1 new CT</span><span data-ko="10% 즉시 지급">10% now</span><span data-ko="90%는 D+7">90% in 7 days</span><span data-ko="KAIA 없어도 OK">No KAIA needed</span><span data-ko="관리자 키 0개">No admin keys</span>
+    <span data-ko="1:1 교환">1 old CT = 1 new CT</span><span data-ko="10% 즉시 지급">10% now</span><span data-ko="90%는 D+7">90% in 7 days</span><span data-ko="KAIA 없어도 OK">No KAIA needed</span><span data-ko="관리자 키 0개">No admin keys</span>
   </div></div></div>
 
   <section class="light" id="how">
     <div class="wrap">
-      <span class="eyebrow rv" data-ko="교환 방법">How it works</span>
-      <h2 class="h2 display rv" data-ko="서명 두 번,<br><em>나머지는 자동</em>">Sign twice.<br><em>That's it.</em></h2>
-      <p class="sub rv" data-ko="내 지갑에서 승인과 교환, 두 번만 서명하면 돼요. 나머지는 알아서 진행돼요.">Approve and swap in your own wallet. Everything after that happens on its own.</p>
+      <span class="eyebrow rv" data-ko="이렇게 바꿔요">How it works</span>
+      <h2 class="h2 display rv" data-ko="서명 두 번이면<br><em>끝!</em>">Sign twice.<br><em>That's it.</em></h2>
+      <p class="sub rv" data-ko="승인 한 번, 교환 한 번. 그다음은 Cojam이 알아서 해요.">Approve and swap in your own wallet. Everything after that happens on its own.</p>
       <div class="steps">
-        <article class="step rv"><span class="n">01</span><h3 data-ko="기존 CT 교환">Swap old CT</h3><p data-ko="원하는 만큼 1:1로 교환해요.">Any amount, one for one.</p></article>
-        <article class="step hot rv"><span class="n">02</span><h3 data-ko="10%는 바로">10% lands now</h3><p data-ko="같은 트랜잭션에서 바로 들어와요.">In the same transaction, straight to your wallet.</p></article>
-        <article class="step blue rv"><span class="n">03</span><h3 data-ko="90%는 7일 뒤 자동">90% in 7 days</h3><p data-ko="7일 락업 뒤 Cojam이 지갑으로 보내 드려요.">Locked for 7 days, then sent to you automatically.</p></article>
+        <article class="step rv"><span class="n">01</span><h3 data-ko="기존 CT 교환">Swap old CT</h3><p data-ko="원하는 만큼, 1:1 그대로.">Any amount, one for one.</p></article>
+        <article class="step hot rv"><span class="n">02</span><h3 data-ko="10% 즉시 도착">10% lands now</h3><p data-ko="교환한 그 순간 지갑에 들어와요.">In the same transaction, straight to your wallet.</p></article>
+        <article class="step blue rv"><span class="n">03</span><h3 data-ko="90%는 D+7 자동 지급">90% in 7 days</h3><p data-ko="7일 락업이 끝나면 알아서 지갑으로 보내 드려요.">Locked for 7 days, then sent to you automatically.</p></article>
       </div>
       <div class="track rv" id="track">
-        <div class="top"><span data-ko="예시: 기존 CT 10,000개">Example: 10,000 old CT</span><b><span id="tk-now">1,000</span> → <span id="tk-all">10,000</span> CT</b></div>
+        <div class="top"><span data-ko="예시: 기존 CT 10,000개 교환">Example: 10,000 old CT</span><b><span id="tk-now">1,000</span> → <span id="tk-all">10,000</span> CT</b></div>
         <div class="blocks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-        <div class="legend"><span data-ko="10% 바로">10% now</span><span data-ko="90% 7일 뒤">90% after 7 days</span></div>
-        <button class="btn sm" type="button" id="play" data-ko="7일 빨리 감기">Fast forward 7 days</button>
+        <div class="legend"><span data-ko="10% 즉시">10% now</span><span data-ko="90% D+7">90% after 7 days</span></div>
+        <button class="btn sm" type="button" id="play" data-ko="7일 뒤로 넘겨 보기">Fast forward 7 days</button>
       </div>
-      <span class="fee rv" data-ko="⚡ Kaia Wallet이라면 KAIA 없이 교환돼요">⚡ No KAIA needed with Kaia Wallet</span>
+      <span class="fee rv" data-ko="⚡ Kaia Wallet이면 수수료 0원, Cojam이 대신 내요">⚡ No KAIA needed with Kaia Wallet</span>
 
       <div class="nums" id="numbers">
-        <div class="num rv"><b>4.08B</b><span data-ko="새 CT 공급량, 고정">New CT supply, fixed</span></div>
-        <div class="num rv"><b>1:1</b><span data-ko="보너스도 수수료도 없음">No bonus, no fee</span></div>
-        <div class="num rv"><b>365</b><span data-ko="교환 기간 (일)">Days to swap</span></div>
-        <div class="num rv"><b>0</b><span data-ko="관리자 키">Admin keys</span></div>
+        <div class="num rv"><b data-ko="40.8억">4.08B</b><span data-ko="총발행량, 추가 발행 없음">New CT supply, fixed</span></div>
+        <div class="num rv"><b>1:1</b><span data-ko="보너스도 수수료도 없어요">No bonus, no fee</span></div>
+        <div class="num rv"><b data-ko="365일">365</b><span data-ko="교환 기간">Days to swap</span></div>
+        <div class="num rv"><b>0</b><span data-ko="관리자 키, 누구도 못 바꿔요">Admin keys</span></div>
       </div>
     </div>
   </section>
@@ -315,19 +319,19 @@ footer code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; word
   <section class="future" id="future">
     <svg class="big-mark" aria-hidden="true"><use href="#mark"/></svg>
     <div class="wrap">
-      <span class="eyebrow rv" style="background:var(--volt);color:var(--ink)" data-ko="다음 이야기">What's next</span>
-      <h2 class="h2 display rv" data-ko="새 CT로<br><em>예측하는 플랫폼</em>">Built for<br><em>new CT</em></h2>
-      <p class="sub rv" data-ko="새 CT로 쓰게 될 플랫폼의 아이디어예요.">Ideas for the platform new CT is made for.</p>
-      <span class="concept rv" data-ko="콘셉트 미리보기, 아직 출시 전">Concept preview, not live</span>
+      <span class="eyebrow rv" style="background:var(--volt);color:var(--ink)" data-ko="그다음은?">What's next</span>
+      <h2 class="h2 display rv" data-ko="예측을<br><em>레벨업</em>">Built for<br><em>new CT</em></h2>
+      <p class="sub rv" data-ko="새 CT로 즐기게 될 Cojam 플랫폼을 미리 살짝 보여 드려요.">Ideas for the platform new CT is made for.</p>
+      <span class="concept rv" data-ko="콘셉트 시안, 아직 출시 전이에요">Concept preview, not live</span>
       <div class="cards" role="list">
-        <article class="card" role="listitem"><span class="ic">01</span><h3 data-ko="CT로 예측">Predict with CT</h3><p data-ko="예상하는 결과에 CT를 걸어요.">Stake CT on the outcome you expect.</p>
-          <div class="mini"><div class="row"><span data-ko="3월 Kaia 일일 트랜잭션 신기록?">Kaia daily tx record in March?</span></div><div class="yn"><span class="y">Yes 62%</span><span class="n">No 38%</span></div></div></article>
-        <article class="card" role="listitem"><span class="ic">02</span><h3 data-ko="결과 파생상품">Outcome derivatives</h3><p data-ko="결과가 나오기 전에 가격을 거래해요.">Trade an outcome's price before the result.</p>
-          <div class="mini"><div class="row"><span data-ko="Yes 가격">Yes price</span><b>0.62 CT</b></div><div class="row"><span data-ko="진입 후">Since entry</span><b style="color:var(--volt)">+12.4%</b></div></div></article>
-        <article class="card" role="listitem"><span class="ic">03</span><h3 data-ko="포지션 담보 대출">Loans on positions</h3><p data-ko="예측을 유지한 채 CT를 빌려요.">Borrow CT without closing your prediction.</p>
-          <div class="mini"><div class="row"><span data-ko="담보 비율">Loan to value</span><b>40%</b></div><div class="meter"><i style="width:40%"></i></div></div></article>
-        <article class="card" role="listitem"><span class="ic">04</span><h3 data-ko="예측 마진 거래">Margin on predictions</h3><p data-ko="청산 가격을 먼저 보여 드려요.">More size for less CT, liquidation price first.</p>
-          <div class="mini"><div class="row"><span data-ko="레버리지">Leverage</span><b>3×</b></div><div class="row"><span data-ko="청산 가격">Liquidation</span><b>0.41</b></div></div></article>
+        <article class="card" role="listitem"><span class="ic">01</span><h3 data-ko="CT로 예측">Predict with CT</h3><p data-ko="맞힐 것 같은 쪽에 CT를 걸어요.">Stake CT on the outcome you expect.</p>
+          <div class="mini"><div class="row"><span data-ko="3월에 Kaia 일일 트랜잭션 신기록?">Kaia daily tx record in March?</span></div><div class="yn"><span class="y">Yes 62%</span><span class="n">No 38%</span></div></div></article>
+        <article class="card" role="listitem"><span class="ic">02</span><h3 data-ko="예측 트레이딩">Outcome derivatives</h3><p data-ko="결과가 나오기 전에 가격을 사고팔아요.">Trade an outcome's price before the result.</p>
+          <div class="mini"><div class="row"><span data-ko="YES 가격">Yes price</span><b>0.62 CT</b></div><div class="row"><span data-ko="진입 대비">Since entry</span><b style="color:var(--volt)">+12.4%</b></div></div></article>
+        <article class="card" role="listitem"><span class="ic">03</span><h3 data-ko="포지션 담보 대출">Loans on positions</h3><p data-ko="예측은 그대로 두고 CT를 빌려요.">Borrow CT without closing your prediction.</p>
+          <div class="mini"><div class="row"><span data-ko="대출 비율">Loan to value</span><b>40%</b></div><div class="meter"><i style="width:40%"></i></div></div></article>
+        <article class="card" role="listitem"><span class="ic">04</span><h3 data-ko="마진 예측">Margin on predictions</h3><p data-ko="적은 CT로 크게. 청산가는 먼저 보여 드려요.">More size for less CT, liquidation price first.</p>
+          <div class="mini"><div class="row"><span data-ko="레버리지">Leverage</span><b>3×</b></div><div class="row"><span data-ko="청산가">Liquidation</span><b>0.41</b></div></div></article>
       </div>
     </div>
   </section>
@@ -335,8 +339,8 @@ footer code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; word
   <section class="close">
     <svg class="squiggle" viewBox="0 0 160 160" aria-hidden="true"><path d="M20 30 C 90 0, 150 40, 110 80 S 40 110, 70 140 l 18 -26 M70 140 l -30 -8"/></svg>
     <div class="wrap">
-      <h2 class="h2 display rv" data-ko="교환할<br>준비 됐나요?">Ready<br>to swap?</h2>
-      <p class="sub rv" data-ko="10%는 바로, 나머지는 7일 뒤 자동으로 들어와요.">10% at once, the rest 7 days later, automatically.</p>
+      <h2 class="h2 display rv" data-ko="지금 바로<br>갈아타요">Ready<br>to swap?</h2>
+      <p class="sub rv" data-ko="10%는 즉시, 나머지 90%는 7일 뒤 자동으로 들어와요.">10% at once, the rest 7 days later, automatically.</p>
       <a class="btn rv" href="#swap"><span data-ko="CT 교환하기">Swap CT</span><span class="arr" aria-hidden="true">→</span></a>
     </div>
   </section>
