@@ -7,10 +7,13 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-/// @title Cojam migration: old CT to new CT, 1:1, 10% at once and 90% after 7 days
+/// @title Cojam migration: old CT to new CT at 0.4 (2 new per 5 old), 10% at once and 90% after 7 days
 /// @notice Holders call `migrate(amount)` after approving old CT. The contract
-/// pulls the old CT and credits exactly what arrived. 10% of the credit (rounded
-/// down) is sent in new CT at once; the rest becomes a lot that unlocks 7 days later.
+/// pulls the old CT and measures what arrived. The credit in new CT is
+/// `received * RATIO_NUM / RATIO_DEN` (2/5, rounded down to the base unit): the ratio
+/// is set against the pre burn old supply of 5,000,000,000 CT and the new fixed
+/// supply of 2,000,000,000 CT. 10% of the credit (rounded down) is sent in new CT at
+/// once; the rest becomes a lot that unlocks 7 days later.
 /// A matured lot is released to its owner by `claim` (the owner) or by
 /// `claimFor` / `claimForMany` (anyone, for example a keeper bot). Released tokens
 /// always go to the lot owner, never to the caller.
@@ -35,8 +38,11 @@ contract CojamMigration is ReentrancyGuard {
     uint256 public constant LOCK_PERIOD = 7 days;
     /// @notice Share of each credit paid at once, in percent (rounded down).
     uint256 public constant INSTANT_PERCENT = 10;
-    /// @notice Both tokens use 18 decimals, so 1 old base unit = 1 new base unit.
+    /// @notice Both tokens use 18 decimals, so the ratio applies to base units directly.
     uint8 public constant DECIMALS = 18;
+    /// @notice New CT per old CT is RATIO_NUM / RATIO_DEN = 2/5 = 0.4 (10 old CT give 4 new CT).
+    uint256 public constant RATIO_NUM = 2;
+    uint256 public constant RATIO_DEN = 5;
     /// @notice Owner of the old CT contract, unrelated to the relaunch. Refused as MASTER.
     address public constant OLD_CT_OWNER = 0xEB1622d0377da1F9815bFC6efF61afE3257a0518;
 
@@ -58,8 +64,10 @@ contract CojamMigration is ReentrancyGuard {
     /// is constant and block time never decreases, a user's lots unlock in id order.
     mapping(address user => uint256) public nextClaimIndex;
 
-    /// @notice Old CT credited through `migrate` (what actually arrived).
+    /// @notice Old CT received through `migrate` (what actually arrived).
     uint256 public totalMigrated;
+    /// @notice New CT credited by `migrate` (paid at once or owed to lots): sum of the credits.
+    uint256 public totalCredited;
     /// @notice New CT paid at once by `migrate` (the 10% part).
     uint256 public totalInstant;
     /// @notice New CT owed to lots that are not released yet (the 90% part, outstanding).
@@ -73,6 +81,7 @@ contract CojamMigration is ReentrancyGuard {
         address indexed user,
         uint256 indexed lotId,
         uint256 oldAmount,
+        uint256 newAmount,
         uint256 instantAmount,
         uint256 lockedAmount,
         uint256 unlockAt
@@ -86,6 +95,7 @@ contract CojamMigration is ReentrancyGuard {
     error DecimalsMismatch();
     error SupplyMismatch();
     error ZeroAmount();
+    error AmountTooSmall();
     error WindowClosed();
     error InsufficientReserve(uint256 available, uint256 needed);
     error NothingReceived();
@@ -104,9 +114,9 @@ contract CojamMigration is ReentrancyGuard {
         if (address(oldToken) == address(newToken)) revert SameToken();
         if (IERC20Metadata(address(oldToken)).decimals() != DECIMALS) revert DecimalsMismatch();
         if (IERC20Metadata(address(newToken)).decimals() != DECIMALS) revert DecimalsMismatch();
-        // The new supply must be able to cover every old token still in existence.
-        // (Old CT can only shrink: it has burn and no mint.)
-        if (newToken.totalSupply() < oldToken.totalSupply()) revert SupplyMismatch();
+        // The new supply must cover every old token still in existence at the ratio:
+        // newSupply >= oldSupply * 2/5. (Old CT can only shrink: it has burn and no mint.)
+        if (newToken.totalSupply() * RATIO_DEN < oldToken.totalSupply() * RATIO_NUM) revert SupplyMismatch();
 
         OLD_TOKEN = oldToken;
         NEW_TOKEN = newToken;
@@ -119,10 +129,11 @@ contract CojamMigration is ReentrancyGuard {
     // Holder actions
     // ------------------------------------------------------------------
 
-    /// @notice Swap `amount` old CT for the same amount of new CT: 10% now, 90% locked for 7 days.
+    /// @notice Swap `amount` old CT for `amount * 2 / 5` new CT: 10% now, 90% locked for 7 days.
     /// @dev Requires a prior `approve(this, amount)` on old CT (old CT has no permit).
-    /// The reserve is checked against `amount` before the pull; the credit is at most
-    /// `amount`, so a swap can never use new CT owed to earlier lots.
+    /// The reserve is checked against the largest possible credit, `amount * 2 / 5`, before
+    /// the pull; the real credit comes from what arrived and is never larger, so a swap can
+    /// never use new CT owed to earlier lots.
     /// The pull happens before the state writes on purpose: the credit is the measured
     /// balance change, which only exists after the transfer. `nonReentrant` closes the
     /// window this ordering would otherwise open. The instant payout is the last step.
@@ -130,8 +141,10 @@ contract CojamMigration is ReentrancyGuard {
     function migrate(uint256 amount) external nonReentrant returns (uint256 lotId) {
         if (amount == 0) revert ZeroAmount();
         if (block.timestamp >= WINDOW_END) revert WindowClosed();
+        uint256 maxCredit = (amount * RATIO_NUM) / RATIO_DEN;
+        if (maxCredit == 0) revert AmountTooSmall();
         uint256 available = availableReserve();
-        if (available < amount) revert InsufficientReserve(available, amount);
+        if (available < maxCredit) revert InsufficientReserve(available, maxCredit);
 
         uint256 balanceBefore = OLD_TOKEN.balanceOf(address(this));
         OLD_TOKEN.safeTransferFrom(msg.sender, address(this), amount);
@@ -141,9 +154,11 @@ contract CojamMigration is ReentrancyGuard {
         uint256 received = balanceAfter - balanceBefore;
         if (received > amount) revert ReceivedMoreThanSent();
 
-        // 1:1 with equal decimals: the credit in new CT equals `received` (<= amount <= available).
-        uint256 instant = (received * INSTANT_PERCENT) / 100; // rounded down
-        uint256 locked = received - instant; // always > 0, and instant + locked == received
+        // Credit in new CT at 2/5, rounded down (<= maxCredit <= available, since received <= amount).
+        uint256 credit = (received * RATIO_NUM) / RATIO_DEN;
+        if (credit == 0) revert AmountTooSmall();
+        uint256 instant = (credit * INSTANT_PERCENT) / 100; // rounded down
+        uint256 locked = credit - instant; // always > 0, and instant + locked == credit
 
         uint256 unlockAt = block.timestamp + LOCK_PERIOD;
         Lot[] storage lots = _lots[msg.sender];
@@ -151,10 +166,11 @@ contract CojamMigration is ReentrancyGuard {
         lots.push(Lot({amount: SafeCast.toUint128(locked), unlockAt: SafeCast.toUint64(unlockAt)}));
 
         totalMigrated += received;
+        totalCredited += credit;
         totalInstant += instant;
         totalOwed += locked;
 
-        emit Migrated(msg.sender, lotId, received, instant, locked, unlockAt);
+        emit Migrated(msg.sender, lotId, received, credit, instant, locked, unlockAt);
 
         if (instant > 0) NEW_TOKEN.safeTransfer(msg.sender, instant);
     }
@@ -254,10 +270,17 @@ contract CojamMigration is ReentrancyGuard {
         return block.timestamp < WINDOW_END;
     }
 
-    /// @notice Split of a credit of `received` old CT: (instant now, locked for 7 days).
-    function previewSplit(uint256 received) external pure returns (uint256 instant, uint256 locked) {
-        instant = (received * INSTANT_PERCENT) / 100;
-        locked = received - instant;
+    /// @notice Exact result of a swap in which `oldAmount` old CT arrives: the credit in new
+    /// CT (2/5, rounded down), the part paid at once (10% of the credit, rounded down) and
+    /// the part locked for 7 days. A credit of 0 means `migrate` would revert AmountTooSmall.
+    function previewSwap(uint256 oldAmount)
+        external
+        pure
+        returns (uint256 credit, uint256 instant, uint256 locked)
+    {
+        credit = (oldAmount * RATIO_NUM) / RATIO_DEN;
+        instant = (credit * INSTANT_PERCENT) / 100;
+        locked = credit - instant;
     }
 
     /// @notice Number of lots the user has ever opened (released or not).

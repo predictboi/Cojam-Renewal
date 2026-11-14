@@ -1,6 +1,6 @@
 # Cojam token migration: contract specification
 
-Status: draft for developer and auditor review. First written 2026-11-12; revised 2026-11-14 for the founder's issuance model: the whole supply is minted to a master wallet (an ordinary EOA, by the founder's choice), the master funds the swap by plain transfers and may withdraw the unowed reserve at any time, and nothing else is privileged. The contracts are **not audited**. Code: [`contracts/`](../contracts/). How to build, test and deploy: [`contracts/README.md`](../contracts/README.md).
+Status: draft for developer and auditor review. First written 2026-11-12; revised 2026-11-14 for the founder's issuance model: the whole supply is minted to a master wallet (an ordinary EOA, by the founder's choice), the master funds the swap by plain transfers and may withdraw the unowed reserve at any time, and nothing else is privileged. Revised again on 2026-11-14 for the founder's tokenomics: a fixed new supply of 2,000,000,000 CT and a swap ratio of 0.4 new CT per old CT. The contracts are **not audited**. Code: [`contracts/`](../contracts/). How to build, test and deploy: [`contracts/README.md`](../contracts/README.md).
 
 ## 1. Overview
 
@@ -11,24 +11,24 @@ Cojam moves from the old CT token to a new, plain token on the same chain (Kaia 
 | Name, symbol | Cojam, CT | Cojam Token, CT |
 | Address | `0x7f223b1607171b81ebd68d22f1ca79157fd4a44b` | set at deploy (deployed on its own, before the swap contract) |
 | Decimals | 18 | 18 |
-| Total supply | 4,083,262,533.9560001 CT (`4083262533956000100000000000` base units, read on chain 2026-11-12) | exactly the same number, fixed, minted once to the master wallet |
+| Total supply | 4,083,262,533.9560001 CT after burns (`4083262533956000100000000000` base units, read on chain 2026-11-12); 5,000,000,000 CT before burns | exactly 2,000,000,000 CT (`2000000000000000000000000000` base units), fixed, minted once to the master wallet |
 | Admin | owner `0xeb16…0518` (not controlled by the team) can pause, freeze and lock | none |
 
 The migration rules, all enforced by code:
 
-* **1:1.** One old base unit is credited as one new base unit. Same decimals, so there is no scaling.
-* **10% now, 90% after 7 days.** On each `migrate(amount)` the contract credits the old CT that actually arrived. 10% of the credit (rounded down) is sent in new CT in the same transaction. The rest (credit minus the instant part, so no dust is lost) becomes a **lot** locked for 7 days.
+* **0.4 new CT per old CT.** The ratio is set against the pre burn old supply: 5,000,000,000 old CT map to the 2,000,000,000 new CT, so the credit is `received * 2 / 5` (constants `RATIO_NUM = 2`, `RATIO_DEN = 5`), rounded down to the base unit. 10 old CT give 4 new CT. Both tokens have 18 decimals, so the ratio applies to base units directly. The whole current old supply needs about 1,633,305,013.58 new CT, which is under the 2B supply.
+* **10% now, 90% after 7 days.** On each `migrate(amount)` the contract measures the old CT that actually arrived and computes the credit. 10% of the credit (rounded down) is sent in new CT in the same transaction. The rest (credit minus the instant part, so no dust is lost) becomes a **lot** locked for 7 days. For 10 old CT: 0.4 new CT at once, 3.6 after 7 days.
 * **Release without action from the holder.** After 7 days anyone may release a matured lot (`claimFor`, `claimForMany`); the tokens always go to the lot owner, never to the caller. The team's gas wallet does this as a keeper and pays the gas. Holders can also call `claim` themselves.
 * **Window.** The window opens in the swap contract's deploy block (`WINDOW_START = block.timestamp` at deploy) and closes at `WINDOW_END = WINDOW_START + 365 days` (exclusive). Releasing lots works forever.
 * **Gasless for holders.** Through Kaia native fee delegation, the Cojam gas wallet co-signs and pays the gas for approve, migrate and claims. The holder still signs every transaction, so `msg.sender` is always the holder (section 3).
-* **Same rules for everyone.** No allowlist, no exclusions, no rewards, no bonus, no minimum.
+* **Same rules for everyone.** No allowlist, no exclusions, no rewards, no bonus. The only minimum is technical: 1 or 2 old base units credit 0 new base units, so `migrate` reverts `AmountTooSmall` for them.
 * **Funded by the master wallet.** The whole new supply is minted to the founder's master wallet. The master sends new CT to the swap contract with plain transfers, as much and as often as the plan says. A swap only succeeds while the contract holds enough new CT that no earlier lot is owed (the **reserve**).
 * **One narrow privilege: the master's withdraw.** The master wallet fixed at deploy can call `withdraw(amount)` at any time, during or after the window, to take back new CT that no lot is owed (at most `availableReserve()`); the tokens always go to the master. That is the only privileged function. Neither contract has an owner, a pause, a setter, a rescue function or an upgrade path. Nobody, the master included, can move locked user funds or old CT, or change the ratio, the 10% share, the lock or the window.
 * **Remainder.** Whatever is not swapped is withdrawn by the master whenever it decides; there is no automatic sweep.
 
 **Why the 7 day lock on 90%.** It deters swap abuse, such as swapping a large old balance and flipping the new supply on the market at once, and it favours real holders who intend to keep the token. Everyone gets 10% immediately, so the swap is usable at once, and the full amount always arrives after 7 days. The lock is a speed limit, not a ban: a holder can still sell 10% at once and the rest after a week, and the rule is identical for every address.
 
-A note on the supply figure: the supply is usually quoted as 4,083,262,533.956 CT. The real on chain value carries one more digit, 0.0000001 CT (`100000000000` base units). The new token copies the on chain value to the last base unit. Site copy may keep the rounded figure but should not claim it is exact to the base unit.
+A note on the supply figures: the old supply is usually quoted as 4,083,262,533.956 CT; the real on chain value carries one more digit, 0.0000001 CT (`100000000000` base units). The new supply is a round 2,000,000,000 CT. The 2,000,000,000 minus whatever is credited to swaps stays with the master (in its wallet or in the swap reserve, from which it can withdraw).
 
 ## 2. Wallets and addresses
 
@@ -80,7 +80,7 @@ Compiler: Solidity 0.8.28, optimizer on (200 runs), EVM target `paris` (no PUSH0
 ### 4.1 `CojamToken`
 
 * `ERC20("Cojam Token", "CT")` plus `ERC20Permit("Cojam Token")` (EIP-2612, domain version `"1"`).
-* `TOTAL_SUPPLY = 4083262533956000100000000000` (constant).
+* `TOTAL_SUPPLY = 2_000_000_000 * 10**18` (constant): exactly 2,000,000,000 CT.
 * Constructor `(address master)`: mints `TOTAL_SUPPLY` to `master`. OpenZeppelin reverts `ERC20InvalidReceiver(address(0))` on the zero address. There is no other mint path.
 * Deployed on its own, before the swap contract. It does not know the swap contract.
 * Nothing else: no owner, no `burn`, no pause, no blacklist, no hooks, no fee, no proxy.
@@ -95,7 +95,7 @@ Compiler: Solidity 0.8.28, optimizer on (200 runs), EVM target `paris` (no PUSH0
 2. Revert `OldOwnerNotAllowed` if `master` is the old CT owner `0xeb1622d0377da1f9815bfc6eff61afe3257a0518` (constant `OLD_CT_OWNER`).
 3. Revert `SameToken` if the two token addresses are equal.
 4. Revert `DecimalsMismatch` unless both tokens report 18 decimals.
-5. Revert `SupplyMismatch` if `newToken.totalSupply() < oldToken.totalSupply()`: the new supply must be able to back every old token that exists. Old CT can only shrink (it has `burn` and no `mint`), so an old CT burn between the token deploy and the swap deploy does not block the swap.
+5. Revert `SupplyMismatch` if `newToken.totalSupply() * RATIO_DEN < oldToken.totalSupply() * RATIO_NUM`: the new supply must cover every old token that exists at 0.4. With 2B new CT this holds for any old supply up to exactly 5B (tested at the boundary). Old CT can only shrink (it has `burn` and no `mint`), so an old CT burn between the token deploy and the swap deploy does not block the swap.
 6. Store immutables: `OLD_TOKEN`, `NEW_TOKEN`, `MASTER`, `WINDOW_START = block.timestamp`, `WINDOW_END = WINDOW_START + 365 days`.
 
 The contract starts with no new CT. Until the master funds it, `migrate` reverts `InsufficientReserve`.
@@ -107,15 +107,16 @@ The contract starts with no new CT. Until the master funds it, `migrate` reverts
 **`migrate(uint256 amount) returns (uint256 lotId)`**, `nonReentrant`:
 
 1. Revert `ZeroAmount` if `amount == 0`; `WindowClosed` if `now >= WINDOW_END`.
-2. Revert `InsufficientReserve(available, amount)` if `availableReserve() < amount`. This runs before any old CT is pulled, so a refused swap moves nothing and costs little gas. Because the credit can never exceed `amount`, a swap can never use new CT owed to earlier lots.
-3. Read the swap's old CT balance, call `OLD_TOKEN.safeTransferFrom(msg.sender, this, amount)`, read the balance again.
-4. `received = after - before`. Revert `NothingReceived` if nothing arrived; revert `ReceivedMoreThanSent` if `received > amount`.
-5. `instant = received * 10 / 100` (rounded down); `locked = received - instant`. `locked` is always at least 1, and `instant + locked == received` exactly.
-6. Append lot `{amount: locked, unlockAt: now + 7 days}` to `msg.sender`'s list; `lotId` is its index.
-7. `totalMigrated += received; totalInstant += instant; totalOwed += locked`; emit `Migrated`.
-8. Last step: if `instant > 0`, transfer `instant` new CT to `msg.sender`.
+2. `maxCredit = amount * 2 / 5` (rounded down). Revert `AmountTooSmall` if it is 0 (1 or 2 base units).
+3. Revert `InsufficientReserve(available, maxCredit)` if `availableReserve() < maxCredit`. This runs before any old CT is pulled, so a refused swap moves nothing and costs little gas. The real credit below can never exceed `maxCredit`, so a swap can never use new CT owed to earlier lots.
+4. Read the swap's old CT balance, call `OLD_TOKEN.safeTransferFrom(msg.sender, this, amount)`, read the balance again.
+5. `received = after - before`. Revert `NothingReceived` if nothing arrived; revert `ReceivedMoreThanSent` if `received > amount`.
+6. `credit = received * 2 / 5` (rounded down); revert `AmountTooSmall` if it is 0 (only reachable with a fee taking token). `instant = credit * 10 / 100` (rounded down); `locked = credit - instant`. `locked` is always at least 1, and `instant + locked == credit` exactly.
+7. Append lot `{amount: locked, unlockAt: now + 7 days}` to `msg.sender`'s list; `lotId` is its index.
+8. `totalMigrated += received; totalCredited += credit; totalInstant += instant; totalOwed += locked`; emit `Migrated`.
+9. Last step: if `instant > 0`, transfer `instant` new CT to `msg.sender`.
 
-Rounding examples: 1 wei gives 0 now and 1 locked; 9 wei gives 0 and 9; 10 wei gives 1 and 9; 19 wei gives 1 and 18; 12,500 CT gives 1,250 CT and 11,250 CT. Old CT received stays in the swap contract forever (section 9.1).
+Rounding examples (old base units → credit, now, locked): 1 and 2 revert; 3 → 1, 0, 1; 5 → 2, 0, 2; 7 → 2, 0, 2; 24 → 9, 0, 9; 25 → 10, 1, 9; 27 → 10, 1, 9; 253 → 101, 10, 91. In whole CT: 10 old → 4 new (0.4 now, 3.6 locked); 12,500 old → 5,000 new (500 now, 4,500 locked). The rounding of the credit loses at most 0.6 of one new base unit per swap (an old amount that is not a multiple of 5 base units); the split itself loses nothing. Old CT received stays in the swap contract forever (section 9.1).
 
 **Release of matured lots.** All three entry points share one internal routine and are `nonReentrant`:
 
@@ -138,7 +139,7 @@ Why a cursor is correct: `LOCK_PERIOD` is a constant and block time never goes b
 
 Allowed at any time, during or after the window. It can never reduce the balance below `totalOwed`, so every lot stays fully backed whatever the master does. Withdrawing during the window shrinks the reserve, so later swaps revert `InsufficientReserve` until the master funds the contract again.
 
-**Views**: `availableReserve()`, `isOpen()` (true while `now < WINDOW_END`; it does not look at the reserve), `previewSplit(received) → (instant, locked)`, `lotCount(user)`, `lotOf(user, lotId) → (amount, unlockAt, claimed)` (amount is the locked 90% part), `claimable(user, maxLots) → (amount, lots)`, `pendingOf(user)` (all unreleased, matured or not; loops, view only), public counters `totalMigrated`, `totalInstant`, `totalOwed`, `totalClaimed`, `totalWithdrawn`, `nextClaimIndex(user)`, constants `WINDOW`, `LOCK_PERIOD`, `INSTANT_PERCENT`, `DECIMALS`, `OLD_CT_OWNER`, and the immutables `OLD_TOKEN`, `NEW_TOKEN`, `MASTER`, `WINDOW_START`, `WINDOW_END`.
+**Views**: `availableReserve()`, `isOpen()` (true while `now < WINDOW_END`; it does not look at the reserve), `previewSwap(oldAmount) → (credit, instant, locked)` (exact numbers for the site; a credit of 0 means the swap would revert), `lotCount(user)`, `lotOf(user, lotId) → (amount, unlockAt, claimed)` (amount is the locked 90% part), `claimable(user, maxLots) → (amount, lots)`, `pendingOf(user)` (all unreleased, matured or not; loops, view only), public counters `totalMigrated` (old CT received), `totalCredited` (new CT credited), `totalInstant`, `totalOwed`, `totalClaimed`, `totalWithdrawn`, `nextClaimIndex(user)`, constants `WINDOW`, `LOCK_PERIOD`, `INSTANT_PERCENT`, `RATIO_NUM`, `RATIO_DEN`, `DECIMALS`, `OLD_CT_OWNER`, and the immutables `OLD_TOKEN`, `NEW_TOKEN`, `MASTER`, `WINDOW_START`, `WINDOW_END`.
 
 **Invariants** (checked after every step of the fuzz tests, where `funded` is all new CT ever transferred into the swap):
 
@@ -146,7 +147,8 @@ Allowed at any time, during or after the window. It can never reduce the balance
 * `totalOwed == sum of unreleased lot amounts`
 * `NEW_TOKEN.balanceOf(swap) + totalInstant + totalClaimed + totalWithdrawn == funded`
 * `NEW_TOKEN.balanceOf(MASTER) == TOTAL_SUPPLY - funded + totalWithdrawn`
-* `totalMigrated == totalInstant + totalOwed + totalClaimed`
+* `totalCredited == totalInstant + totalOwed + totalClaimed`
+* `totalCredited <= totalMigrated * 2 / 5` (rounding never favours the holder)
 * `OLD_TOKEN.balanceOf(swap) >= totalMigrated` (equal unless someone sent old CT directly)
 * every address holds exactly its instant parts plus its released lots; a keeper or any third party caller never receives anything
 
@@ -167,11 +169,11 @@ These five are the only functions that change state. The master's `withdraw` is 
 
 | Parameter | Value | Where set | Changeable |
 | --- | --- | --- | --- |
-| Ratio | 1:1 (base unit for base unit) | code | no |
+| Ratio | 0.4: `received * 2 / 5` new per old, rounded down | `RATIO_NUM`, `RATIO_DEN` constants | no |
 | Instant share | 10%, rounded down | `INSTANT_PERCENT` constant | no |
 | Lock on the rest | 7 days (604,800 s) | `LOCK_PERIOD` constant | no |
 | Decimals | 18 and 18 | code, checked at deploy | no |
-| New supply | 4,083,262,533.9560001 CT, all minted to the master | `CojamToken.TOTAL_SUPPLY`, constructor argument `master` | no |
+| New supply | 2,000,000,000 CT, all minted to the master | `CojamToken.TOTAL_SUPPLY`, constructor argument `master` | no |
 | Window start | the swap's deploy block timestamp | constructor (`block.timestamp`) | no |
 | Window length | 365 days | `WINDOW` constant | no |
 | `MASTER` | the master wallet (an ordinary EOA, founder's choice) | constructor | no |
@@ -208,7 +210,7 @@ Fork tests against the real bytecode confirmed: `pause()` blocks `transferFrom` 
 
 | Event | When |
 | --- | --- |
-| `Migrated(address indexed user, uint256 indexed lotId, uint256 oldAmount, uint256 instantAmount, uint256 lockedAmount, uint256 unlockAt)` | each successful `migrate`. `oldAmount` is what actually arrived; `instantAmount + lockedAmount == oldAmount` |
+| `Migrated(address indexed user, uint256 indexed lotId, uint256 oldAmount, uint256 newAmount, uint256 instantAmount, uint256 lockedAmount, uint256 unlockAt)` | each successful `migrate`. `oldAmount` is the old CT that actually arrived; `newAmount` is the credit (`oldAmount * 2 / 5`); `instantAmount + lockedAmount == newAmount` |
 | `Claimed(address indexed user, uint256 indexed lotId, uint256 amount, address indexed caller)` | once per lot released. `user` received the tokens; `caller` sent the transaction (the owner, the keeper or anyone) |
 | `Withdrawn(uint256 amount)` | each successful `withdraw`; the recipient is always `MASTER` |
 
@@ -222,10 +224,11 @@ Plus the standard ERC-20 `Transfer` and `Approval` on both tokens; funding shows
 | `OldOwnerNotAllowed` | constructor | master is the old CT owner |
 | `SameToken` | constructor | old and new token are the same address |
 | `DecimalsMismatch` | constructor | old or new token is not 18 decimals |
-| `SupplyMismatch` | constructor | new supply is below the old `totalSupply()` |
+| `SupplyMismatch` | constructor | new supply is below 0.4 times the old `totalSupply()` |
+| `AmountTooSmall` | migrate | the credit rounds to 0 (1 or 2 old base units) |
 | `ZeroAmount` | migrate, withdraw | amount is zero |
 | `WindowClosed` | migrate | at or after `WINDOW_END` |
-| `InsufficientReserve(available, needed)` | migrate, withdraw | the unowed new CT in the swap is below the amount |
+| `InsufficientReserve(available, needed)` | migrate, withdraw | the unowed new CT in the swap is below the credit (`amount * 2 / 5`) or the withdraw amount |
 | `NothingReceived` | migrate | the transfer moved no old CT into the swap |
 | `ReceivedMoreThanSent` | migrate | more arrived than `amount` (non standard token) |
 | `NothingToClaim` | claim, claimFor, claimForMany | no matured unreleased lot within `maxLots` (for the batch: for every listed user) |
@@ -267,7 +270,7 @@ Costs of having no other admin, accepted by the founder:
 
 * The window still opens in the swap's deploy block, so the swap deploy is the launch. Funding can happen in the same hour, but until it does every `migrate` reverts `InsufficientReserve`. Recommended order: deploy token, deploy swap, verify both on Kaiascan, fund, then announce.
 * The swap only ever hands out what it holds unowed. A holder who swaps is fully backed at that moment and stays backed: nothing can take new CT out except releases to lot owners and the master's withdraw capped at the unowed part.
-* If the master funds less than the old supply, swaps beyond the reserve wait until the next top up. The site must show this state honestly (section 8).
+* If the master funds less than 0.4 times the old supply (about 1,633,305,014 CT), swaps beyond the reserve wait until the next top up. The site must show this state honestly (section 8).
 
 ### 9.4 Permissionless release for the keeper
 
@@ -279,7 +282,7 @@ The founder wants the 90% to arrive without the holder doing anything. `claimFor
 
 ### 9.5 Measured credit
 
-The credit is the swap's balance change, not the requested amount, and the 10/90 split is applied to that credit. Fee on transfer or other non standard behaviour can never over credit (tested with a 1% fee mock and in fuzz runs with a 0.37% fee). The real CT has no fee (fork test: credit equals amount). The reserve check uses `amount`, which is never below the credit, so it is conservative.
+The credit is computed from the swap's balance change, not the requested amount: `received * 2 / 5`, then the 10/90 split is applied to that credit. Fee on transfer or other non standard behaviour can never over credit (tested with a 1% fee mock and in fuzz runs with a 0.37% fee). The real CT has no fee (fork test: received equals amount). The reserve check uses `amount * 2 / 5`, which is never below the real credit, so it is conservative.
 
 ### 9.6 Checks, effects, interactions
 
@@ -311,7 +314,7 @@ Each `migrate` call is its own lot with its own 7 day timer. A cursor per user p
 | **Lost keys** | Old CT in a lost wallet cannot be migrated by anyone. Its matching new CT simply stays with the master, or in the swap reserve, from which the master can withdraw it. Any compensation is an off chain policy. |
 | **Lost keys after migrating** | The lot is still released, but only to that address. Nobody can redirect it. |
 | **Late migrators** | `migrate` reverts from `WINDOW_END`; nobody can reopen it. The late policy (if any) is paid from the master wallet, off chain. Show the deadline everywhere. Open decision. |
-| **Tiny balances** | No minimum. Any amount from 1 base unit migrates exactly. Below 10 base units the instant part rounds to 0 and the whole amount is locked; nothing is lost. The "Max" button should send the whole balance. |
+| **Tiny balances** | Amounts of 1 or 2 base units revert `AmountTooSmall` (their credit is 0). From 3 base units every amount migrates; the credit rounds down to the base unit, so less than one new base unit is lost per swap. Below 25 old base units the instant part rounds to 0 and the whole credit is locked. The "Max" button should send the whole balance; the site should show `previewSwap` numbers. |
 | **Old CT paused by the unknown owner** | `migrate` reverts for everyone while paused; existing lots keep unlocking and being released. Fallback: take a snapshot of old CT balances at the pause block (balances cannot change while paused, so anyone can verify it) and publish a Merkle root. Funding: the master can withdraw the swap's unowed reserve at once and, with the CT it still holds, fund a Merkle claim contract. Mitigation before launch: find the old owner and ask for `renounceOwnership()` (removes pause and freeze for good), or accept the risk explicitly. |
 | **Holder frozen or locked by the old owner** | That holder (or that locked part) cannot migrate. Same fallback as a pause: evidence on chain, a claim funded from the master. |
 | **Old CT still transferable and trading** | Old CT keeps trading after launch and after `WINDOW_END`. Warn on the site against buying old CT late; show the deadline and the full old and new addresses everywhere (the ticker CT is reused by other tokens on MEXC). |
@@ -328,7 +331,7 @@ Each `migrate` call is its own lot with its own 7 day timer. A cursor per user p
 * **Backing.** Locked lots are always fully backed (first invariant). `migrate` and `withdraw` are both bounded by `balance - totalOwed`, so neither can reach owed tokens, in any order and at any time (fuzz tested with random funding and withdrawals).
 * **No redirection.** No function takes a recipient. The 10% goes to `msg.sender` of `migrate`; released lots go to the lot owner; withdrawals go to the immutable `MASTER`.
 * **Re-entrancy.** `nonReentrant` on `migrate`, `claim`, `claimFor`, `claimForMany`, `withdraw`. The new token has no hooks. The old token is fixed.
-* **Integer bounds.** Lot amounts are stored as `uint128` and unlock times as `uint64`, both through `SafeCast`. The supply is below 2^92, so `received * 10` cannot overflow.
+* **Integer bounds.** Lot amounts are stored as `uint128` and unlock times as `uint64`, both through `SafeCast`. Both supplies are below 2^92, so `received * 2` and `credit * 10` cannot overflow.
 * **Time.** Only `block.timestamp` comparisons with day scale margins; a validator's few seconds of drift do not matter.
 * **Front running.** No price and no shared queue, but the reserve is a shared, finite pool when the master funds less than the full supply: if two holders race for the last reserve, one swap reverts cleanly (nothing pulled) and succeeds after the next top up. Front running a keeper's release only pays the same owner the same amount.
 * **Phishing.** The main real world risk. Publish one official URL and the three addresses (old CT, new CT, swap) everywhere; never ask users to send tokens anywhere; the site never holds funds.
@@ -337,73 +340,75 @@ Each `migrate` call is its own lot with its own 7 day timer. A cursor per user p
 
 ## 12. Gas notes
 
-Measured on the Hardhat network on 2026-11-14 (`npm run gas` plus the gas lines the unit tests print; solc 0.8.28, optimizer 200 runs):
+Measured on the Hardhat network on 2026-11-14, after the 0.4 ratio change (`migrate` costs about 6,000 more than at 1:1: one more counter, `totalCredited`, and the ratio math) (`npm run gas` plus the gas lines the unit tests print; solc 0.8.28, optimizer 200 runs):
 
 | Action | Gas |
 | --- | --- |
-| Deploy `CojamToken` | 1,006,768 |
-| Deploy `CojamMigration` | about 1,165,110 |
-| Deploy both (the whole launch, excluding funding) | about 2,171,880 |
+| Deploy `CojamToken` | 1,006,696 |
+| Deploy `CojamMigration` | about 1,223,670 |
+| Deploy both (the whole launch, excluding funding) | about 2,230,370 |
 | Fund the swap (new CT `transfer` from the master) | 34,438 to 51,610 (the first transfer into an empty swap is the upper value) |
-| `migrate` (includes the instant transfer; a wallet's first lot, and the first swap in the contract, cost more) | 97,905 to 219,874, average 142,299 |
-| `claim`, 1 lot | about 57,670 |
-| `claim`, 25 lots | 212,515 |
-| `claimFor`, 1 lot | 70,413 to 97,125 |
-| `claimForMany`, 1 user with 25 lots | 179,512 |
-| `claimForMany`, 25 users with 1 lot each | 1,039,577 (about 41,600 per user) |
-| `withdraw` (master) | 49,199 to 83,519 |
+| `migrate` (includes the instant transfer; a wallet's first lot, and the first swap in the contract, cost more) | 103,650 to 242,719, average 150,517 |
+| `claim`, 1 lot | about 57,680 |
+| `claim`, 25 lots | 212,526 |
+| `claimFor`, 1 lot | 70,424 to 97,136 |
+| `claimForMany`, 1 user with 25 lots | 179,567 |
+| `claimForMany`, 25 users with 1 lot each | 1,039,668 (about 41,600 per user) |
+| `withdraw` (master) | 49,199 to 83,507 |
 | Old CT `approve` | about 46,000 |
 
 `claim(25)` in the measurement is the first release in its test, so it pays the one time cost of the release counters leaving zero; `claimForMany` with 25 lots came after it, which is why it is lower. Each extra lot in one release costs about 6,500 gas (one cold storage read plus one event). The keeper should batch users with `claimForMany` and keep each transaction to a few hundred lots; the front end can read `claimable(user, 100)` first. Costs in KAIA depend on the base fee at the time.
 
 ## 13. Test plan and results
 
-Command: `cd contracts && npm install && npm test`. Run on 2026-11-14, Node 22, Hardhat 2.28.6, OpenZeppelin 5.4.0, with the Kaia mainnet RPC reachable. Result: **51 passing, 0 failing** (40 unit, 5 fork against Kaia mainnet, 6 fuzz). Long fuzz campaign `npm run test:fuzz` (24 seeds by 200 steps): **24 passing, 0 failing**. With `SKIP_FORK=1`: 46 passing, 5 pending (the fork tests skip cleanly). The fee payer server (`cd server && npm test`): 59 passing.
+Command: `cd contracts && npm install && npm test`. Run on 2026-11-14, Node 22, Hardhat 2.28.6, OpenZeppelin 5.4.0, with the Kaia mainnet RPC reachable. Result: **53 passing, 0 failing** (42 unit, 5 fork against Kaia mainnet, 6 fuzz). Long fuzz campaign `npm run test:fuzz` (24 seeds by 200 steps): **24 passing, 0 failing**. With `SKIP_FORK=1`: 48 passing, 5 pending (the fork tests skip cleanly). The fee payer server (`cd server && npm test`): 59 passing. Fork dry runs of `scripts/deploy-mainnet.js` (`FORK_DRY_RUN=1`) and of the mainnet rehearsal in `scripts/ops.js` pass (credit 40 CTR for 100 old CT, 10% then the rest).
 
 | # | Test | Status |
 | --- | --- | --- |
-| 1 | New supply equals the old on chain supply exactly (4,083,262,533.9560001 CT) | Pass |
+| 1 | New supply is exactly 2,000,000,000 CT and covers the whole old supply at 0.4 (1,633,305,013.5824 CT) | Pass |
 | 2 | Whole supply minted to the master wallet; deployer and swap hold none | Pass |
 | 3 | Zero address master rejected by the token | Pass |
 | 4 | Token metadata; no owner, mint, pause, blacklist, freeze, upgrade, burn | Pass |
 | 5 | EIP-2612 permit works | Pass |
-| 6 | Window opens at the swap deploy; tokens, `MASTER`, constants | Pass |
+| 6 | Window opens at the swap deploy; tokens, `MASTER`, `RATIO_NUM = 2`, `RATIO_DEN = 5`, constants | Pass |
 | 7 | Swap has no admin surface beyond the master's withdraw: no owner, pause, recover, sweep or setter | Pass |
-| 8 | Constructor guards: zero tokens, zero master, old owner as master, same token, wrong decimals (old and new), new supply below old; an old CT burn before the swap deploy does not block it | Pass |
-| 9 | Migrate fails before funding; works after the master transfers new CT; reverts `InsufficientReserve(available, needed)` when short even though the contract holds owed tokens; top up reopens exactly up to the reserve; all lots pay in full | Pass |
+| 8 | Constructor guards: zero tokens, zero master, old owner as master, same token, wrong decimals (old and new); supply check at the boundary (an old supply of exactly 5B passes, one base unit more reverts `SupplyMismatch`); an old CT burn before the swap deploy does not block it | Pass |
+| 9 | Migrate fails before funding; the reserve check uses the credit (`InsufficientReserve(0, 0.4)` for 1 old CT); one base unit of credit over the reserve reverts, an amount that rounds to exactly the reserve fits; owed tokens are never used; top up reopens exactly up to the reserve; all lots pay in full | Pass |
 | 10 | A refused swap for a short reserve pulls nothing and creates no lot | Pass |
-| 11 | 1:1 swap: 10% lands in the same transaction, 90% becomes a 7 day lot, old CT kept, `Migrated` event | Pass |
-| 12 | 10% math and rounding: 1, 9, 10, 11, 19, 99, 100 wei, an odd 21 digit amount, the full balance; `instant + locked == credit`; `previewSplit` | Pass |
-| 13 | Zero amount reverts | Pass |
-| 14 | No approval and over balance revert | Pass |
-| 15 | Window edges: open in the blocks right after deploy, end minus 1 works, end reverts | Pass |
-| 16 | Old token paused: migrate reverts with no state change and no payout; works after unpause | Pass |
-| 17 | Frozen holder cannot migrate; freezing the swap changes nothing | Pass |
-| 18 | Fee on transfer old token: credit and split use only what arrived | Pass |
-| 19 | Inflating or lying token rejected | Pass |
-| 20 | Lock edges: unlock minus 1 reverts, unlock pays the 90%, total equals the credit | Pass |
-| 21 | `claimFor` by a stranger pays the owner, caller gets nothing, `Claimed` names the caller | Pass |
-| 22 | Nobody can redirect or take another user's lots (claim, claimFor, claimForMany with duplicates) | Pass |
-| 23 | `claimForMany` pays several owners and skips locked ones; reverts only if nothing at all | Pass |
-| 24 | Multiple lots, partial releases, `maxLots` bound, views | Pass |
-| 25 | 60 lots released in bounded chunks (gas recorded) | Pass |
-| 26 | `claimForMany` over 25 users with one lot each (keeper batch, gas recorded) | Pass |
-| 27 | The only state changing functions are `migrate`, `claim`, `claimFor`, `claimForMany` and `withdraw` (no path for old CT) | Pass |
-| 28 | Old CT and another token sent by mistake stay in the contract, even through a master withdrawal | Pass |
-| 29 | Only `MASTER` can withdraw: the deployer, holders, strangers and a contract wallet all revert `NotMaster` | Pass |
-| 30 | The master withdraws only the unowed part, in parts, always to itself; zero and one base unit over the reserve revert; owed tokens never leave; the lot pays in full afterwards | Pass |
-| 31 | A withdrawal during the window makes the next migrate revert `InsufficientReserve` (nothing pulled) until the master funds again; every lot then pays in full through `claimFor` and `claimForMany` | Pass |
-| 32 | After the window: no swaps even with a full reserve; the master withdraws the rest and a later top up; lots migrated in the last second pay after the window and five years later | Pass |
-| 33 | Nothing to withdraw when every remaining token is owed | Pass |
-| 34 to 38 | Re-entry into migrate, claim, withdraw (malicious token set as `MASTER`), claimFor, claimForMany from a malicious token is rejected | Pass |
-| 39 | Swallowed re-entry gains nothing, accounting exact | Pass |
-| 40 | Contract wallet: batched approve plus migrate, 10% at once, keeper releases 90%; lots keyed by `msg.sender` | Pass |
-| 41 | Fork: live old CT name, symbol, decimals, exact supply, owner, not paused | Pass |
-| 42 | Fork: deploy against real old CT (guards pass); migrate refused before funding; master funds the swap | Pass |
-| 43 | Fork: real old CT migrates 1:1 with no fee; 10% at once; keeper releases 90% after 7 days | Pass |
-| 44 | Fork: real `pause()` blocks migrate, existing lots still release, `unPause()` restores | Pass |
-| 45 | Fork: real `freeze()` blocks a holder; freezing the swap blocks nothing | Pass |
-| 46 to 51 | Fuzz: 6 seeds by 160 steps (2 with a fee token). Random partial funding and top ups by the master (inside and after the window), random master withdrawals (exact reserve, reserve plus 1, zero, random), withdraw attempts by non master addresses; random amounts (0, 1 wei, 9 wei, full, over balance, random) and timing (exact unlock and unlock minus 1 included); releases by the owner, by a keeper, by other users and in batches with duplicates; checked against a model; every invariant of section 4.2 after every step; final drain (the master withdraws the reserve, a keeper releases everything) leaves the swap at zero, the keeper with nothing, the master with exactly `supply - migrated`, and users holding exactly what they migrated | Pass |
+| 11 | 10 old CT give 4 new CT: 0.4 at once, 3.6 locked, `previewSwap` exact, the claim pays the rest | Pass |
+| 12 | 12,500 old CT: credit 5,000, 500 at once, 4,500 in a 7 day lot, old CT kept, `Migrated` carries both amounts, counters including `totalCredited` | Pass |
+| 13 | 0.4 math and 10% split rounding for 3 to 8, 24, 25, 27, 49, 250, 251, 253 base units (non multiples of 5 included), an odd 21 digit amount and the full balance; `previewSwap`; credit equals `old * 2 / 5`; `instant + locked == credit`; totals | Pass |
+| 14 | 1 and 2 base units revert `AmountTooSmall` and move nothing; 3 base units credit 1 | Pass |
+| 15 | Zero amount reverts | Pass |
+| 16 | No approval and over balance revert | Pass |
+| 17 | Window edges: open in the blocks right after deploy, end minus 1 works, end reverts | Pass |
+| 18 | Old token paused: migrate reverts with no state change and no payout; works after unpause | Pass |
+| 19 | Frozen holder cannot migrate; freezing the swap changes nothing | Pass |
+| 20 | Fee on transfer old token: credit and split use only what arrived | Pass |
+| 21 | Inflating or lying token rejected | Pass |
+| 22 | Lock edges: unlock minus 1 reverts, unlock pays the 90%, total equals the credit | Pass |
+| 23 | `claimFor` by a stranger pays the owner, caller gets nothing, `Claimed` names the caller | Pass |
+| 24 | Nobody can redirect or take another user's lots (claim, claimFor, claimForMany with duplicates) | Pass |
+| 25 | `claimForMany` pays several owners and skips locked ones; reverts only if nothing at all | Pass |
+| 26 | Multiple lots, partial releases, `maxLots` bound, views | Pass |
+| 27 | 60 lots released in bounded chunks (gas recorded) | Pass |
+| 28 | `claimForMany` over 25 users with one lot each (keeper batch, gas recorded) | Pass |
+| 29 | The only state changing functions are `migrate`, `claim`, `claimFor`, `claimForMany` and `withdraw` (no path for old CT) | Pass |
+| 30 | Old CT and another token sent by mistake stay in the contract, even through a master withdrawal | Pass |
+| 31 | Only `MASTER` can withdraw: the deployer, holders, strangers and a contract wallet all revert `NotMaster` | Pass |
+| 32 | The master withdraws only the unowed part, in parts, always to itself; zero and one base unit over the reserve revert; owed credit never leaves; the lot pays the full credit afterwards | Pass |
+| 33 | A withdrawal during the window makes the next migrate revert `InsufficientReserve` (nothing pulled) until the master funds again; every lot then pays in full through `claimFor` and `claimForMany` | Pass |
+| 34 | After the window: no swaps even with a full reserve; the master withdraws the rest and a later top up; lots migrated in the last second pay after the window and five years later | Pass |
+| 35 | Nothing to withdraw when every remaining token is owed | Pass |
+| 36 to 40 | Re-entry into migrate, claim, withdraw (malicious token set as `MASTER`), claimFor, claimForMany from a malicious token is rejected | Pass |
+| 41 | Swallowed re-entry gains nothing, accounting exact | Pass |
+| 42 | Contract wallet: batched approve plus migrate, 10% of the credit at once, keeper releases 90%; lots keyed by `msg.sender` | Pass |
+| 43 | Fork: live old CT name, symbol, decimals, exact supply, owner, not paused; 2B covers it at 0.4 | Pass |
+| 44 | Fork: deploy against real old CT (guards pass); migrate refused before funding; master funds the swap | Pass |
+| 45 | Fork: real old CT migrates at 0.4 with no fee; event carries old and new amounts; 10% of the credit at once; keeper releases 90% after 7 days; total equals the credit | Pass |
+| 46 | Fork: real `pause()` blocks migrate, existing lots still release, `unPause()` restores | Pass |
+| 47 | Fork: real `freeze()` blocks a holder; freezing the swap blocks nothing | Pass |
+| 48 to 53 | Fuzz: 6 seeds by 160 steps (2 with a fee token). Random partial funding and top ups by the master (inside and after the window), random master withdrawals (exact reserve, reserve plus 1, zero, random), withdraw attempts by non master addresses; random amounts (0, 1, 2, 3 and 9 base units, full, over balance, random) and timing (exact unlock and unlock minus 1 included); releases by the owner, by a keeper, by other users and in batches with duplicates; checked against a model of the 0.4 credit; every invariant of section 4.2 after every step; final drain (the master withdraws the reserve, a keeper releases everything) leaves the swap at zero, the keeper with nothing, the master with exactly `2B - totalCredited`, and users holding exactly what they were credited | Pass |
 
 Still to do before mainnet: external audit; Kairos end to end with the real front end, the keeper bot, a real Safe as a holder; a small mainnet dry run with team wallets right after the launch deploy.
 
@@ -412,7 +417,7 @@ Still to do before mainnet: external audit; Kairos end to end with the real fron
 1. External audit report published and linked on the site. Audit status stated honestly until then.
 2. Master wallet: a fresh EOA created for the relaunch (founder's choice), on a hardware wallet, used only for funding and withdrawals, address published. Not any old Cojam wallet.
 3. Old token: try to reach the old owner `0xeb16…0518`; ask for `renounceOwnership()`. If not possible, publish the pause and freeze risk and the fallback policy.
-4. Re-read the old `totalSupply()` right before deploy; it must not exceed `CojamToken.TOTAL_SUPPLY` (the swap deploy reverts otherwise).
+4. Re-read the old `totalSupply()` right before deploy; 0.4 of it must not exceed `CojamToken.TOTAL_SUPPLY` (the swap deploy reverts otherwise; both deploy scripts check it first).
 5. Kairos rehearsal: deploy with the script, fund, migrate from an EOA (with and without fee delegation) and a Safe, run the keeper against it, run through every front end state in HANDOFF 4.4 plus "reserve short".
 6. Gas wallet ready before mainnet deploy: fee payer service live with its allowlist of targets, selectors and spender (`withdraw` not sponsored), gas cap and per address rate limit; keeper watches `Migrated` and calls `claimForMany` after each `unlockAt`; alerts when its KAIA balance is low; top up procedure written down.
 7. Funding plan written down: how much new CT goes into the swap at launch, the reserve threshold that triggers a top up, and who signs top ups. The master can withdraw unowed CT at any time.
@@ -421,7 +426,7 @@ Still to do before mainnet: external audit; Kairos end to end with the real fron
 10. Small mainnet dry run with team wallets inside the live window (migrate, check the 10%, keeper releases the 90% after 7 days).
 11. Exchanges contacted (ERC-20 style token on Kaia accepted, swap support and dates, reserve sized for their balances); list published.
 12. Announcement with the three full addresses on every official channel, plus the official URL and the "we never ask you to send tokens" banner.
-13. Public dashboard from chain data: `totalMigrated`, `totalInstant`, `totalOwed`, `totalClaimed`, `totalWithdrawn`, `availableReserve`, old CT held by the swap, days left, upcoming unlocks.
+13. Public dashboard from chain data: `totalMigrated` (old CT), `totalCredited` (new CT), `totalInstant`, `totalOwed`, `totalClaimed`, `totalWithdrawn`, `availableReserve`, old CT held by the swap, days left, upcoming unlocks.
 14. Monitoring and alerts on `Migrated`, `Claimed`, `Withdrawn`, on new CT transfers into the swap, on the reserve falling below the threshold, on overdue matured lots (keeper health), and on old CT `paused()` and freeze activity.
 15. Incident runbook: there is no pause to press; the master's brake is withdrawing the reserve. The runbook covers a found bug (master withdraws the unowed reserve, announce, plan a replacement), old CT being paused or frozen (snapshot block, announcement, Merkle claim funded from the master), a keeper outage (announce "Release now", restart), a suspected master key compromise (move the remaining supply to a new wallet at once; the swap's `MASTER` cannot be changed, so a replacement swap may be needed), and phishing sites.
 16. After the window: the master withdraws `availableReserve()` when the plan says; confirm on chain that only `totalOwed` remains.

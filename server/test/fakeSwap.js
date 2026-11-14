@@ -76,10 +76,11 @@ function createFakeSwap({ startBlock = 100, startTime = 1_800_000_000, maxLogRan
     migrate(user, amount) {
       s.block += 1;
       const u = userOf(user);
-      const locked = amount - amount / 10n;
+      const credit = (amount * 2n) / 5n; // 0.4 new CT per old CT, as CojamMigration
+      const locked = credit - credit / 10n;
       const lotId = u.list.length;
       u.list.push({ amount: locked, unlockAt: s.time + LOCK });
-      emit('Migrated', [user, lotId, amount, amount / 10n, locked, s.time + LOCK]);
+      emit('Migrated', [user, lotId, amount, credit, credit / 10n, locked, s.time + LOCK]);
       return lotId;
     },
     userClaim(user) {

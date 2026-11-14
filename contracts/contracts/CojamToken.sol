@@ -12,10 +12,10 @@ import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20P
 /// no pause, no blacklist, no fee and no upgrade path.
 /// @dev ERC20Permit (EIP-2612) only adds signature based approvals for holders.
 contract CojamToken is ERC20, ERC20Permit {
-    /// @notice Equal to the old CT totalSupply() on Kaia mainnet, to the last base unit:
-    /// 4,083,262,533.9560001 CT (4083262533956000100000000000 base units, read on chain
-    /// 2026-11-12). Commonly rounded to 4,083,262,533.956 CT; the extra 0.0000001 CT is real.
-    uint256 public constant TOTAL_SUPPLY = 4_083_262_533_956_000_100_000_000_000;
+    /// @notice Fixed supply: exactly 2,000,000,000 CT. The swap converts old CT at 0.4
+    /// (set against the pre burn old supply of 5,000,000,000 CT), so this covers the whole
+    /// current old supply (4,083,262,533.9560001 CT x 0.4 = about 1,633,305,013.58 CT).
+    uint256 public constant TOTAL_SUPPLY = 2_000_000_000 * 10 ** 18;
 
     /// @param master Receives the whole supply (the founder's master wallet or a Safe).
     constructor(address master) ERC20("Cojam Token", "CT") ERC20Permit("Cojam Token") {

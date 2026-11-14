@@ -87,7 +87,7 @@ The server signs only what is on this list. Everything else is refused with a co
 | Allowed call | Target | Extra checks |
 | --- | --- | --- |
 | `approve(spender, amount)` | old CT (`OLD_CT_ADDRESS`) | `spender` must equal `SWAP_CONTRACT_ADDRESS`; any amount; the holder must hold at least `MIN_SPONSORED_OLD_CT` old CT |
-| `migrate(amount)` | swap | `amount >= MIN_SPONSORED_OLD_CT` (default 1 CT) |
+| `migrate(amount)` | swap | `amount >= MIN_SPONSORED_OLD_CT` (default 1 old CT, which credits 0.4 new CT at the 0.4 ratio) |
 | `claim(maxLots)` | swap | `1 <= maxLots <= MAX_CLAIM_LOTS` (50) |
 | `claimFor(user, maxLots)` | swap | `user` not zero, same `maxLots` bound |
 | `claimForMany(users, maxLotsEach)` | swap | 1 to `MAX_CLAIM_USERS` (10) users, none zero, same `maxLots` bound on `maxLotsEach` |
@@ -125,24 +125,24 @@ The limits live in an in memory store behind an interface (`server/src/store.js`
 
 ## 4. Cost per holder (estimate)
 
-**This is an estimate.** Gas figures are the Hardhat measurements in `docs/CONTRACT-SPEC.md` section 12 (re-measured 2026-11-14), adjusted for Kaia's intrinsic gas: plus 10,000 for fee delegated types and 100 gas per calldata byte instead of Ethereum's 4 or 16 [6]. Gas price is the node's `eth_gasPrice` on 2026-11-12: **27.5 gkei** (base fee 25 gkei). Confirm with real receipts on Kairos.
+**This is an estimate.** Gas figures are the Hardhat measurements in `docs/CONTRACT-SPEC.md` section 12 (re-measured 2026-11-14 after the 0.4 ratio change), adjusted for Kaia's intrinsic gas: plus 10,000 for fee delegated types and 100 gas per calldata byte instead of Ethereum's 4 or 16 [6]. Gas price is the node's `eth_gasPrice` on 2026-11-12: **27.5 gkei** (base fee 25 gkei). Confirm with real receipts on Kairos.
 
 `fee in KAIA = gas x 27.5 / 1,000,000,000`
 
 | Step | Who pays | Hardhat gas | Kaia adjustment | Estimated gas | KAIA |
 | --- | --- | --- | --- | --- | --- |
 | Approve old CT | gas wallet (sponsored) | about 46,000 | +10,000 fee delegation, +6,100 calldata (68 bytes) | about 62,100 | 0.00171 |
-| Migrate, average | gas wallet (sponsored) | 142,299 | +10,000, +3,300 (36 bytes) | about 155,600 | 0.00428 |
-| Migrate, a wallet's first lot | gas wallet (sponsored) | up to 219,874 | +13,300 | about 233,200 | 0.00641 |
-| Release by the keeper, per holder inside a `claimForMany` batch | gas wallet (keeper) | about 41,600 per user in a 25 user batch (1,039,577 in total) | +2,800 calldata (32 bytes per user) | about 44,400 | 0.00122 |
-| Release by the keeper, alone (`claimFor`, one lot) | gas wallet (keeper) | 70,413 to 97,125 | +2,800 | up to about 99,900 | up to 0.00275 |
+| Migrate, average | gas wallet (sponsored) | 150,517 | +10,000, +3,300 (36 bytes) | about 163,800 | 0.00450 |
+| Migrate, a wallet's first lot | gas wallet (sponsored) | up to 242,719 | +13,300 | about 256,000 | 0.00704 |
+| Release by the keeper, per holder inside a `claimForMany` batch | gas wallet (keeper) | about 41,600 per user in a 25 user batch (1,039,668 in total) | +2,800 calldata (32 bytes per user) | about 44,400 | 0.00122 |
+| Release by the keeper, alone (`claimFor`, one lot) | gas wallet (keeper) | 70,424 to 97,136 | +2,800 | up to about 99,900 | up to 0.00275 |
 
 Per holder who swaps once:
 
-* Typical: 0.00171 + 0.00428 + 0.00122 = **about 0.0072 KAIA**
-* Upper: 0.00171 + 0.00641 + 0.00275 = **about 0.0109 KAIA**
+* Typical: 0.00171 + 0.00450 + 0.00122 = **about 0.0074 KAIA**
+* Upper: 0.00171 + 0.00704 + 0.00275 = **about 0.0115 KAIA**
 
-At scale: 1,000 holders cost about 7.2 to 10.9 KAIA. If every one of the 22,578 holder addresses (`research/01-cojam-history.md`) swapped once with sponsorship, about 163 to 245 KAIA. Each extra swap by the same holder adds about 0.0043 to 0.0064 KAIA (approve again only if the allowance ran out). To convert to money, multiply by the KAIA price on the day.
+At scale: 1,000 holders cost about 7.4 to 11.5 KAIA. If every one of the 22,578 holder addresses (`research/01-cojam-history.md`) swapped once with sponsorship, about 168 to 260 KAIA. Each extra swap by the same holder adds about 0.0045 to 0.0070 KAIA (approve again only if the allowance ran out). To convert to money, multiply by the KAIA price on the day.
 
 ## 5. Monitoring and top up
 

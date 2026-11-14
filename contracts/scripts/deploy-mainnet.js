@@ -9,7 +9,8 @@ const fs = require("fs"), path = require("path");
 
 const OLD_CT = "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b";
 const OLD_OWNER = "0xeb1622d0377da1f9815bfc6eff61afe3257a0518";
-const SUPPLY = 4_083_262_533_956_000_100_000_000_000n;
+const SUPPLY = 2_000_000_000n * 10n ** 18n; // new CT fixed supply: 2,000,000,000 CT
+const RATIO_NUM = 2n, RATIO_DEN = 5n; // 0.4 new CT per old CT
 const W = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "deployments", "wallets.mainnet.json"), "utf8"));
 
 async function main() {
@@ -38,7 +39,7 @@ async function main() {
   if ((await ethers.provider.getCode(master)) !== "0x") fail("master has code; expected the founder's EOA");
   const old = await ethers.getContractAt("IERC20", OLD_CT);
   const oldSupply = await old.totalSupply();
-  if (oldSupply > SUPPLY) fail(`old supply ${oldSupply} is above the new supply`);
+  if (SUPPLY * RATIO_DEN < oldSupply * RATIO_NUM) fail(`old supply ${oldSupply} x 0.4 is above the new supply`);
   const bal = await ethers.provider.getBalance(deployer.address);
   if (bal < ethers.parseEther("0.3")) fail(`deployer has ${ethers.formatEther(bal)} KAIA; keep at least 0.3`);
   console.log(`${dry ? "DRY RUN on a mainnet fork" : "MAINNET"} | deployer ${deployer.address} (${ethers.formatEther(bal)} KAIA) | master ${master} | old CT supply ${ethers.formatUnits(oldSupply, 18)}`);

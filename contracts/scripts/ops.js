@@ -4,9 +4,9 @@
 // OPS_TASK picks the job:
 //   check             (default) addresses, KAIA and old CT balances, nonces. Sends nothing.
 //   rehearse-mainnet  small real rehearsal with the test wallet: deploys "Cojam Rehearsal" (CTR) and a 1 minute lock
-//                     copy of the swap, funds it, swaps REHEARSAL_AMOUNT old CT (default 100), checks the 10%,
-//                     waits for the unlock, releases the 90% with claimFor from the deployer (as the keeper would),
-//                     checks the full amount, then withdraws the rest of the reserve. The swapped old CT stays in the
+//                     copy of the swap, funds it, swaps REHEARSAL_AMOUNT old CT (default 100) at 0.4, checks that
+//                     10% of the credit arrived, waits for the unlock, releases the 90% with claimFor from the
+//                     deployer (as the keeper would), checks the total equals the credit, then withdraws the rest of the reserve. The swapped old CT stays in the
 //                     rehearsal contract forever. Needs CONFIRM_MAINNET=yes.
 //   deploy-mainnet    the real launch deploy (scripts/deploy-mainnet.js). Needs CONFIRM_MAINNET=yes. Launch day only.
 // Local dry run on a fork of mainnet, nothing broadcast (impersonates the test address, or a fresh one):
@@ -72,14 +72,16 @@ async function rehearse({ deployer, tester }, fork) {
   const swap = await (await ethers.getContractFactory("CojamMigrationShortLock", tester)).deploy(OLD_CT, out.rehearsalToken, tester.address);
   await swap.waitForDeployment(); out.rehearsalSwap = await swap.getAddress(); log("rehearsal swap (1 minute lock)", out.rehearsalSwap);
 
-  await wait("fund", tok.transfer(out.rehearsalSwap, amt * 2n));
+  await wait("fund", tok.transfer(out.rehearsalSwap, amt)); // more than the credit (0.4 x amt)
   const before = await tok.balanceOf(tester.address);
   await wait("approve", old.connect(tester).approve(out.rehearsalSwap, amt));
   await wait("migrate", swap.migrate(amt));
-  const [instant, locked] = await swap.previewSplit(amt);
+  const [creditAmt, instant, locked] = await swap.previewSwap(amt);
+  out.credit = fmt(creditAmt);
   const got = (await tok.balanceOf(tester.address)) - before;
   if (got !== instant) throw new Error(`10% check failed: got ${fmt(got)}, expected ${fmt(instant)}`);
-  log(`10% arrived: ${fmt(got)} CTR | locked ${fmt(await swap.pendingOf(tester.address))}`);
+  if ((await swap.pendingOf(tester.address)) !== locked) throw new Error("locked part differs from previewSwap");
+  log(`credit ${fmt(creditAmt)} CTR for ${fmt(amt)} old CT | 10% arrived: ${fmt(got)} CTR | locked ${fmt(locked)}`);
   try { await swap.claimFor.staticCall(tester.address, 10); throw new Error("release before unlock did not revert"); }
   catch (e) { if (/did not revert/.test(e.message)) throw e; log("release before unlock reverts, as it must"); }
 
@@ -89,7 +91,7 @@ async function rehearse({ deployer, tester }, fork) {
   const releaser = deployer || tester;
   await wait("release (claimFor)", swap.connect(releaser).claimFor(tester.address, 10));
   const total = (await tok.balanceOf(tester.address)) - before;
-  if (total !== amt) throw new Error(`full amount check failed: ${fmt(total)} of ${fmt(amt)}`);
+  if (total !== creditAmt) throw new Error(`full credit check failed: ${fmt(total)} of ${fmt(creditAmt)}`);
   log(`90% released by ${releaser === deployer ? "the deployer (keeper stand in)" : "the test wallet"}: total ${fmt(total)} CTR`);
   await wait("withdraw rest", swap.withdraw(await swap.availableReserve()));
   out.oldCtLockedForever = fmt(await old.balanceOf(out.rehearsalSwap));

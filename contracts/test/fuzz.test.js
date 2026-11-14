@@ -7,7 +7,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
-const { SUPPLY, DAY, WINDOW, LOCK, E18, split } = require("./helpers");
+const { OLD_SUPPLY, NEW_SUPPLY, DAY, WINDOW, LOCK, E18, credit, split } = require("./helpers");
 
 const RUNS = Number(process.env.FUZZ_RUNS || 6);
 const STEPS = Number(process.env.FUZZ_STEPS || 160);
@@ -49,8 +49,8 @@ for (let run = 0; run < RUNS; run++) {
       const callers = [...users, keeper];
 
       const oldToken = feeBps
-        ? await (await ethers.getContractFactory("MockFeeOnTransfer")).deploy(SUPPLY, feeBps)
-        : await (await ethers.getContractFactory("MockOldCojam")).deploy(SUPPLY);
+        ? await (await ethers.getContractFactory("MockFeeOnTransfer")).deploy(OLD_SUPPLY, feeBps)
+        : await (await ethers.getContractFactory("MockOldCojam")).deploy(OLD_SUPPLY);
       const newToken = await (await ethers.getContractFactory("CojamToken")).deploy(master.address);
       const migration = await (await ethers.getContractFactory("CojamMigration"))
         .deploy(await oldToken.getAddress(), await newToken.getAddress(), master.address);
@@ -75,8 +75,8 @@ for (let run = 0; run < RUNS; run++) {
       const lots = new Map(users.map((u) => [u.address, []]));
       const cursor = new Map(users.map((u) => [u.address, 0]));
       const paidTo = new Map(callers.map((u) => [u.address, 0n])); // new CT each address should hold
-      let totalMigrated = 0n, totalInstant = 0n, totalOwed = 0n, totalClaimed = 0n, totalWithdrawn = 0n;
-      const counts = { migrate: 0, migrateRevert: 0, shortReserve: 0, release: 0, releaseRevert: 0, fund: 0, withdraw: 0, withdrawRevert: 0, notMaster: 0 };
+      let totalMigrated = 0n, totalCredited = 0n, totalInstant = 0n, totalOwed = 0n, totalClaimed = 0n, totalWithdrawn = 0n;
+      const counts = { migrate: 0, migrateRevert: 0, tooSmall: 0, shortReserve: 0, release: 0, releaseRevert: 0, fund: 0, withdraw: 0, withdrawRevert: 0, notMaster: 0 };
 
       const nextTs = async (advance) => {
         now = now + 1n + advance;
@@ -103,6 +103,7 @@ for (let run = 0; run < RUNS; run++) {
         expect(held >= totalOwed, "held >= owed").to.equal(true);
         expect(await migration.totalOwed()).to.equal(totalOwed);
         expect(await migration.totalMigrated()).to.equal(totalMigrated);
+        expect(await migration.totalCredited()).to.equal(totalCredited);
         expect(await migration.totalInstant()).to.equal(totalInstant);
         expect(await migration.totalClaimed()).to.equal(totalClaimed);
         expect(await migration.totalWithdrawn()).to.equal(totalWithdrawn);
@@ -110,9 +111,10 @@ for (let run = 0; run < RUNS; run++) {
         for (const [addr, list] of lots) for (let i = cursor.get(addr); i < list.length; i++) sumUnreleased += list[i][0];
         expect(sumUnreleased).to.equal(totalOwed);
         expect(held + totalInstant + totalClaimed + totalWithdrawn).to.equal(funded);
-        expect(await newToken.balanceOf(master.address)).to.equal(SUPPLY - funded + totalWithdrawn);
+        expect(await newToken.balanceOf(master.address)).to.equal(NEW_SUPPLY - funded + totalWithdrawn);
         expect(await oldToken.balanceOf(m)).to.equal(totalMigrated);
-        expect(totalMigrated).to.equal(totalInstant + totalOwed + totalClaimed);
+        expect(totalCredited).to.equal(totalInstant + totalOwed + totalClaimed);
+        expect(totalCredited <= credit(totalMigrated)).to.equal(true); // rounding never favours the holder
         expect(await migration.availableReserve()).to.equal(held - totalOwed);
         for (const v of callers) expect(await newToken.balanceOf(v.address)).to.equal(paidTo.get(v.address));
       };
@@ -129,26 +131,32 @@ for (let run = 0; run < RUNS; run++) {
             now = BigInt(await time.latest());
           }
           const bal = await oldToken.balanceOf(u.address);
-          const pick = rnd.int(7);
-          const amount = [0n, bal, 1n, 9n, bal + 1n][pick] ?? rnd.big(bal);
+          const pick2 = rnd.int(9);
+          const amount = [0n, bal, 1n, 2n, 3n, 9n, bal + 1n][pick2] ?? rnd.big(bal);
           await nextTs(BigInt(rnd.int(3 * 86400)));
           const available = (await newToken.balanceOf(m)) - totalOwed;
+          const maxCredit = credit(amount);
           const p = migration.connect(u).migrate(amount);
           if (amount === 0n) { await expectRevert(p, migration, "ZeroAmount"); counts.migrateRevert++; }
           else if (now >= end) { await expectRevert(p, migration, "WindowClosed"); counts.migrateRevert++; }
-          else if (available < amount) {
-            await expect(p).to.be.revertedWithCustomError(migration, "InsufficientReserve").withArgs(available, amount);
+          else if (maxCredit === 0n) { await expectRevert(p, migration, "AmountTooSmall"); counts.tooSmall++; }
+          else if (available < maxCredit) {
+            await expect(p).to.be.revertedWithCustomError(migration, "InsufficientReserve").withArgs(available, maxCredit);
             counts.shortReserve++;
           }
           else if (amount > bal) { await expectRevert(p, oldToken, "ERC20InsufficientBalance"); counts.migrateRevert++; }
           else if (received(amount) === 0n) { await expectRevert(p, migration, "NothingReceived"); counts.migrateRevert++; }
+          else if (credit(received(amount)) === 0n) { await expectRevert(p, migration, "AmountTooSmall"); counts.tooSmall++; }
           else {
             const got = received(amount);
-            const [inst, locked] = split(got);
-            expect(inst + locked).to.equal(got);
-            await expect(p).to.emit(migration, "Migrated").withArgs(u.address, BigInt(list.length), got, inst, locked, now + LOCK);
+            const cr = credit(got);
+            const [inst, locked] = split(cr);
+            expect(inst + locked).to.equal(cr);
+            expect(cr <= maxCredit).to.equal(true);
+            await expect(p).to.emit(migration, "Migrated").withArgs(u.address, BigInt(list.length), got, cr, inst, locked, now + LOCK);
             list.push([locked, now + LOCK]);
             totalMigrated += got;
+            totalCredited += cr;
             totalInstant += inst;
             totalOwed += locked;
             paidTo.set(u.address, paidTo.get(u.address) + inst);
@@ -255,11 +263,11 @@ for (let run = 0; run < RUNS; run++) {
       await checkInvariants();
       expect(await newToken.balanceOf(m)).to.equal(0n);
       expect(await newToken.balanceOf(keeper.address)).to.equal(0n);
-      expect(await newToken.balanceOf(master.address)).to.equal(SUPPLY - totalMigrated);
+      expect(await newToken.balanceOf(master.address)).to.equal(NEW_SUPPLY - totalCredited);
       let usersHold = 0n;
       for (const u of users) usersHold += await newToken.balanceOf(u.address);
-      expect(usersHold).to.equal(totalMigrated); // every credited old CT became exactly one new CT
-      console.log(`      seed ${seed}: ${JSON.stringify(counts)}, migrated ${ethers.formatUnits(totalMigrated, 18)} CT`);
+      expect(usersHold).to.equal(totalCredited); // every credit was paid in full: 10% at once plus every lot
+      console.log(`      seed ${seed}: ${JSON.stringify(counts)}, migrated ${ethers.formatUnits(totalMigrated, 18)} old CT, credited ${ethers.formatUnits(totalCredited, 18)} new CT`);
     });
   });
 }

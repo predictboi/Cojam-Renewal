@@ -15,7 +15,8 @@ const { ethers, network } = require("hardhat");
 
 const OLD_CT_MAINNET = "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b";
 const OLD_OWNER = "0xeb1622d0377da1f9815bfc6eff61afe3257a0518";
-const SUPPLY = 4_083_262_533_956_000_100_000_000_000n;
+const OLD_SUPPLY = 4_083_262_533_956_000_100_000_000_000n; // mock old CT: the real old supply after burns
+const SUPPLY = 2_000_000_000n * 10n ** 18n; // new CT fixed supply
 
 function readAddress(name, value) {
   if (!ethers.isAddress(value) || value === ethers.ZeroAddress) {
@@ -59,7 +60,7 @@ async function main() {
   let oldAddress = process.env.OLD_TOKEN_ADDRESS || "";
   if (oldAddress.toLowerCase() === OLD_CT_MAINNET) throw new Error("OLD_TOKEN_ADDRESS is the mainnet token.");
   if (!oldAddress) {
-    const mock = await (await ethers.getContractFactory("MockOldCojam")).deploy(SUPPLY);
+    const mock = await (await ethers.getContractFactory("MockOldCojam")).deploy(OLD_SUPPLY);
     await mock.waitForDeployment();
     oldAddress = await mock.getAddress();
     console.log(`MockOldCojam (test old CT) deployed: ${oldAddress}`);
