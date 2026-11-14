@@ -1,5 +1,8 @@
-// Cojam wallet connection: environment detection, mobile deep links and the connect sheet. Mock only: picking a wallet
-// calls back into the page (the swap app runs CJ.ledger.connect with wallet.kind set); nothing talks to a real wallet.
+// Cojam wallet connection: environment detection, mobile deep links and the connect sheet. Picking a wallet calls back into
+// the page with its kind (kaia | mm | web3). Live (CJ.live with assets/chain.js loaded) the swap app connects that wallet
+// for real through CJ.chain.connect; with ?mock=1 or a ?state= preset it runs the mock ledger. Desktop extensions are found
+// by EIP-6963 discovery (CJ.chain.available) plus window.klaytn / window.kaia and window.ethereum.
+// WalletConnect needs a project ID that Cojam does not have yet: live, its rows show "Coming soon" and do nothing.
 // Load order: system.js, i18n/shell.js and shell.js before <main>; motion.js, this file, i18n/<page>.js and the page script at
 // the end of <body>. Styles: assets/wallet.css.
 //
@@ -65,6 +68,9 @@
     return '<svg width="' + (s || 18) + '" height="' + (s || 18) + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">' + P[name] + "</svg>";
   }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  // Strings that only the swap page dictionary has: English fallback on other pages.
+  function tt(key, fb) { var s = t(key); return s === key ? fb : s; }
+  function live() { return !!(CJ.live && CJ.chain); }
 
   // ---------- environment ----------
   var ua = navigator.userAgent || "";
@@ -89,9 +95,12 @@
     if (uaMobile) return p ? { mode: p === "kaia" ? "inapp-kaia" : p === "mm" ? "inapp-metamask" : "inapp-generic", inapp: true, kind: p, mobile: true, exts: [] }
       : { mode: "mobile-browser", inapp: false, kind: null, mobile: true, exts: [] };
     var exts = [];
-    if (window.klaytn || window.kaia) exts.push("kaia");
-    if (window.ethereum && window.ethereum.isMetaMask && !window.ethereum.isKaikas) exts.push("mm");
-    else if (window.ethereum && !exts.length) exts.push("web3");
+    if (live()) exts = CJ.chain.available();
+    else {
+      if (window.klaytn || window.kaia) exts.push("kaia");
+      if (window.ethereum && window.ethereum.isMetaMask && !window.ethereum.isKaikas) exts.push("mm");
+      else if (window.ethereum && !exts.length) exts.push("web3");
+    }
     return { mode: exts.length ? "desktop-ext" : "desktop-none", inapp: false, kind: null, mobile: false, exts: exts };
   }
 
@@ -138,6 +147,12 @@
     return "<" + tag + ' class="cj-opt" ' + attrs + '><span class="cj-opt-ic">' + ic(icon, 20) + '</span><span class="cj-opt-txt"><span class="cj-opt-name">' + name + "</span>" +
       '<span class="cj-opt-sub">' + sub + "</span>" + (badge ? '<span class="tag tag-sky cj-opt-tag">' + badge + "</span>" : "") + "</span>" + ic(trail || "chevron", 18) + "</" + tag + ">";
   }
+  // WalletConnect row: live it is not wired yet, so it reads "Coming soon" and cannot be picked.
+  function wcRow(attrs, sub) {
+    if (!live()) return opt("button", attrs, attrs.indexOf("data-view") > -1 ? "qr" : "link", t("wl.wc"), sub);
+    return opt("button", 'type="button" disabled aria-disabled="true" style="opacity:.62;cursor:default"', "link", t("wl.wc"),
+      tt("wl.wc.soon.sub", "Use Kaia Wallet or MetaMask for now."), tt("wl.wc.soon", "Coming soon"), "clock");
+  }
   function back() { return '<button type="button" class="btn btn-ghost cj-sheet-back" data-view="list">' + I("chevron", 18) + "<span>" + t("wl.back") + "</span></button>"; }
   function paint() {
     var e = env(), h = "";
@@ -155,7 +170,7 @@
           var android = s === STORE.kaiaAndroid;
           return '<a class="btn btn-block" href="' + s + '" target="_blank" rel="noopener">' + ic("down", 18) + "<span>" + t(android ? "wl.store.android" : "wl.store.ios") + "</span></a>";
         }).join("") + "</div>" +
-        '<button type="button" class="btn btn-ghost btn-block cj-sheet-alt" data-pick="wc">' + t("wl.kaia.wc") + "</button>";
+        (live() ? "" : '<button type="button" class="btn btn-ghost btn-block cj-sheet-alt" data-pick="wc">' + t("wl.kaia.wc") + "</button>");
     } else if (view === "qr") {
       h = back() + '<div class="cj-qr" role="img" aria-label="' + esc(t("wl.qr.aria")) + '"><span class="cj-qr-ph">' + ic("qr", 40) + "<span>" + t("wl.qr.ph") + "</span></span></div>" +
         '<p class="cj-sheet-lead">' + t("wl.qr.lead") + "</p>" +
@@ -168,12 +183,12 @@
         opt("a", 'href="' + esc(kaiaLink()) + '" data-deeplink="kaia"', "phone", t("wl.open.kaia"), t("wl.sub.kaia.open"), t("wl.rec"), "ext") +
         '<button type="button" class="btn btn-ghost btn-block cj-opt-alt" data-view="kaia">' + t("wl.kaia.alt") + "</button></div>" +
         opt("a", 'href="' + esc(metamaskLink()) + '" data-deeplink="mm"', "phone", t("wl.open.mm"), t("wl.sub.mm"), null, "ext") +
-        opt("button", 'type="button" data-pick="wc"', "link", t("wl.wc"), t("wl.sub.wc.mobile")) + "</div>";
+        wcRow('type="button" data-pick="wc"', t("wl.sub.wc.mobile")) + "</div>";
     } else if (e.mode === "desktop-none") {
       h = '<p class="cj-sheet-lead">' + t("wl.none.lead") + "</p><div class=\"cj-opts\">" +
         opt("a", 'href="' + STORE.kaiaChrome + '" target="_blank" rel="noopener"', "wallet", t("wl.install.kaia"), t("wl.sub.kaia"), t("wl.rec"), "ext") +
         opt("a", 'href="' + STORE.metamask + '" target="_blank" rel="noopener"', "wallet", t("wl.install.mm"), t("wl.sub.mm"), null, "ext") +
-        opt("button", 'type="button" data-view="qr"', "qr", t("wl.wc"), t("wl.sub.wc.desk")) + "</div>" +
+        wcRow('type="button" data-view="qr"', t("wl.sub.wc.desk")) + "</div>" +
         '<p class="small muted cj-sheet-foot">' + t("wl.none.reload") + "</p>";
     } else {
       // desktop with an extension (or an unforced inapp page that still asked for the sheet)
@@ -184,7 +199,7 @@
         (has("mm") ? opt("button", 'type="button" data-pick="mm"', "wallet", t("wl.name.mm"), t("wl.sub.mm"), t("wl.found"))
           : opt("a", 'href="' + STORE.metamask + '" target="_blank" rel="noopener"', "wallet", t("wl.install.mm"), t("wl.sub.mm"), null, "ext")) +
         (has("web3") ? opt("button", 'type="button" data-pick="web3"', "wallet", t("wl.name.web3"), t("wl.sub.web3"), t("wl.found")) : "") +
-        opt("button", 'type="button" data-view="qr"', "qr", t("wl.wc"), t("wl.sub.wc.desk")) + "</div>";
+        wcRow('type="button" data-view="qr"', t("wl.sub.wc.desk")) + "</div>";
     }
     body.innerHTML = h + '<p class="small muted cj-sheet-note">' + t("wl.note") + "</p>";
   }

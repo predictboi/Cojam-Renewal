@@ -1,7 +1,12 @@
-// Swap app (/migrate/). Mock only: every wait is a timer, every transaction a fake hash.
-// States are reachable by use and by ?state=<name> (see setState at the bottom).
+// Swap app (/migrate/). Two modes behind the same views:
+// - Live (CJ.live, assets/network.js): real wallets and the contracts in CJ.net. assets/chain.js fills CJ.ledger from the
+//   chain and sends the transactions; the flows below call it where the mock used timers (see "live flows").
+// - Mock (?mock=1 or ?state=<name>): every wait is a timer, every transaction a fake hash. States are reachable by use and
+//   by ?state=<name> (see setState at the bottom); design captures depend on them.
 (function () {
   var C = CJ.config, L = CJ.ledger, t = CJ.t, F = CJ.fmt, I = CJ.icon, DAY = CJ.DAY;
+  var LIVE = !!(CJ.live && CJ.chain), N = CJ.net || {};
+  // Self paid fee estimates in KAIA. Live: typical gas times the node's gas price (chain.js puts them in ledger.gas).
   var GAS = { approve: 0.004, swap: 0.012, claim: 0.006 };
   var BIG = 1000000, WALLET_MS = 1500, CHAIN_MS = 3000;
   var DOCS = (document.body.dataset.root || "../") + "docs/";
@@ -13,7 +18,8 @@
   var ui = freshUi();
   function freshUi() {
     return { phase: "form", text: null, amount: 0, error: null, errKind: null, wait: null, frozen: false, closed: false,
-      lotId: null, claimIds: null, mode: null, reviewed: false, partialOff: false, loading: false, walletKey: "kaia", view: null, payOwn: false };
+      lotId: null, claimIds: null, mode: null, reviewed: false, partialOff: false, loading: false, walletKey: "kaia", view: null, payOwn: false,
+      amountWei: null, sponsorCode: null, failKey: null };
   }
   var timer = null, lastView = null, lastLive = "";
 
@@ -56,8 +62,14 @@
       : row(t("gas.k") + help("help.gas"), num(t("f.gas.v", { amount: gas(need) })), null, t("f.gas.have", { amount: gas(led().wallet.kaia) }));
     return r.replace('<div class="mg-row">', '<div class="mg-row" id="mg-feerow">');
   }
-  function gasNeed(amt) { return led().allowance >= amt && amt > 0 ? GAS.swap : GAS.approve + GAS.swap; }
+  function gasNeed(amt, wei) { return hasAllowance(amt, wei) && amt > 0 ? GAS.swap : GAS.approve + GAS.swap; }
+  // Is the approval already enough for this amount? Live compares exact base units; the mock compares numbers.
+  function hasAllowance(amt, wei) {
+    if (LIVE && wei != null) { try { return BigInt(led().wei.allowance) >= BigInt(wei); } catch (e) { return false; } }
+    return led().allowance >= amt;
+  }
   function txLink(hash, label) {
+    if (!hash) return "";
     return '<a class="mg-tx" href="' + C.explorer + "/tx/" + hash + '" target="_blank" rel="noopener"><span>' + label + '</span> <span class="mg-hash">' + F.addr(hash) + "</span>" + I("ext", 14) + "</a>";
   }
   function help(key) {
@@ -94,11 +106,13 @@
   function cta(label, act, extra) {
     if (ui.error === "rejected") return note("error", t("er.rejected"), '<button type="button" class="btn btn-primary" data-act="' + act + '"' + (extra || "") + ">" + t("er.retry") + "</button>");
     if (ui.error === "sponsor") return sponsorNote(act, extra);
+    if (ui.error === "failed") return note("error", t(ui.failKey || "er.failed"), '<button type="button" class="btn btn-primary" data-act="' + act + '"' + (extra || "").replace(" disabled", "") + ">" + I("refresh", 18) + "<span>" + t("er.retry") + "</span></button>");
     return primary(label, act, extra);
   }
   // The fee payer could not pay (busy, or this wallet reached its limit): retry, or pay the fee in KAIA yourself.
   function sponsorNote(act, extra) {
-    return note("error", withHelp(t("er.sponsor"), "help.sponsor"),
+    var small = ui.sponsorCode === "AMOUNT_TOO_SMALL";
+    return note("error", withHelp(t(small ? "er.sponsor.small" : "er.sponsor", { min: C.sponsor.minOldCt }), "help.sponsor"),
       '<button type="button" class="btn btn-primary" data-retry data-act="' + act + '"' + (extra || "").replace(" disabled", "") + ">" + I("refresh", 18) + "<span>" + t("er.retry") + "</span></button>" +
       '<button type="button" class="btn" data-act="pay-own">' + t("er.sponsor.own") + "</button>");
   }
@@ -151,7 +165,7 @@
   // now, the 90% and its date, the receiving wallet, the fee and how many signatures follow. Large amounts add a check.
   var confirmD = $("mg-confirm");
   function confirmHtml() {
-    var amt = ui.amount, p = sp(amt), Ld = led(), big = amt > BIG, approved = Ld.allowance >= amt;
+    var amt = ui.amount, p = sp(amt), Ld = led(), big = amt > BIG, approved = hasAllowance(amt, ui.amountWei);
     var fee = sponsored() ? num(t("f.gas.free")) : num(t("f.gas.v", { amount: gas(approved ? GAS.swap : GAS.approve + GAS.swap) }));
     var pr = CJ.price && CJ.price.status() === "ok" && CJ.price.get();
     return '<div class="mg-sheet-head"><h2 id="mg-cf-h">' + t("cf.title") + '</h2><button type="button" class="btn btn-ghost mg-icon-btn" data-close aria-label="' + esc(t("ch.close")) + '">' + I("x", 20) + "</button></div>" +
@@ -184,7 +198,7 @@
     if (e.target === confirmD || e.target.closest("[data-close]")) { confirmD.close(); return; }
     var g = e.target.closest('[data-cf="go"]'); if (!g || g.disabled) return;
     opener = null; confirmD.close();
-    ui.reviewed = true; ui.frozen = false; ui.phase = led().allowance >= ui.amount ? "swap" : "approve"; render(true);
+    ui.reviewed = true; ui.frozen = false; ui.phase = hasAllowance(ui.amount, ui.amountWei) ? "swap" : "approve"; render(true);
   });
   confirmD.addEventListener("change", function (e) { if (e.target.id === "mg-cf-check") confirmD.querySelector('[data-cf="go"]').disabled = !e.target.checked; });
   confirmD.addEventListener("close", function () { if (opener && document.contains(opener)) opener.focus(); });
@@ -203,8 +217,13 @@
       '<div class="mg-actions">' + cta(CJ.wallet.ctaLabel(), "connect") + "</div>";
   };
   V["wrong-network"] = function () {
-    return head(t("wn.title")) + '<p class="mg-lead">' + t("wn.body", { id: C.chainId }) + "</p>" +
-      '<div class="mg-actions">' + cta(t("wn.cta"), "network") + "</div>";
+    var test = LIVE && N.testnet;
+    return head(t(test ? "wn.title.test" : "wn.title")) + '<p class="mg-lead">' + t(test ? "wn.body.test" : "wn.body", { id: C.chainId, name: N.name || C.chainName }) + "</p>" +
+      '<div class="mg-actions">' + cta(t(test ? "wn.cta.test" : "wn.cta"), "network") + "</div>";
+  };
+  // Live: connected, reading the wallet's balances and swaps from the chain.
+  V.loading = function () {
+    return head(t("ld.title")) + '<div class="mg-wait"><span class="spin" aria-hidden="true"></span><p>' + t("ld.body") + "</p></div>";
   };
   V.empty = function () {
     var done = led().lots.length > 0;
@@ -330,6 +349,8 @@
   };
 
   function gasShort(need) { return !sponsored() && led().wallet.kaia < need; }
+  // Live: the fee estimates follow the node's gas price.
+  function syncGas() { var g = LIVE && led().gas; if (g) { GAS.approve = g.approve; GAS.swap = g.swap; GAS.claim = g.claim; } }
   function gasError(need) {
     if (!gasShort(need)) return "";
     var mm = selfPay();
@@ -348,10 +369,11 @@
     if (ph === "claimed") return "claimed";
     if (ph === "approve" || ph === "swap") return ph;
     if (ui.error === "rpc") return "form";
+    if (LIVE && !Ld.loaded) return "loading";
     if (isClosed()) return "closed";
     if (lots("releasing").length && ui.mode !== "swap") return "claim";
     if (Ld.oldCT <= 0) return "empty";
-    if (Ld.allowance > 0 && !ui.partialOff) return "partial";
+    if (Ld.allowance > 0 && !ui.partialOff && (!LIVE || BigInt(Ld.wei.allowance) <= BigInt(Ld.wei.old))) return "partial";
     return "form";
   }
 
@@ -360,13 +382,25 @@
     var bal = led().oldCT, r = CJ.parseAmount(ui.text);
     if (r.empty) return { ok: false };
     if (!r.ok) return { ok: false, msg: t(r.reason) };
+    if (LIVE) {
+      var w = liveWei(ui.text);
+      if (w == null || w <= 0n) return { ok: false, msg: t("parse.junk") };
+      if (w > BigInt(led().wei.old)) return { ok: false, over: true, msg: t("f.over", { amount: A(bal) }) };
+      return { ok: true, value: r.value, wei: w };
+    }
     if (r.value > bal + 1e-9) return { ok: false, over: true, msg: t("f.over", { amount: A(bal) }) };
     return { ok: true, value: r.value };
+  }
+  // Live: the exact amount in base units. Max (or typing exactly the balance as shown) means the whole balance, dust included.
+  function liveWei(text) {
+    var Ld = led();
+    if (String(text).trim() === plain(Ld.oldCT)) return BigInt(Ld.wei.old);
+    return CJ.chain.toWei(text);
   }
   function updateForm() {
     var box = $("mg-box"), go = $("mg-go"); if (!box || !go) return;
     var s = formState(), Ld = led(), msg = $("mg-msg"), input = $("mg-amt");
-    var v = s.ok ? s.value : 0, need = gasNeed(v);
+    var v = s.ok ? s.value : 0, need = gasNeed(v, s.wei);
     box.classList.toggle("is-error", !!s.msg);
     input.setAttribute("aria-invalid", s.msg ? "true" : "false");
     msg.className = "field-msg" + (s.msg ? " is-error" : "");
@@ -381,17 +415,18 @@
     $("mg-gas-err").innerHTML = short ? gasError(need) : "";
     go.disabled = !s.ok || short || Ld.contract.reserveEmpty;
     go.textContent = s.ok ? t("f.cta", { amount: A(v) }) : t("f.cta.empty");
-    $("mg-hint").textContent = s.ok && Ld.allowance >= v ? t("f.hint.approved") : t("f.hint");
+    $("mg-hint").textContent = s.ok && hasAllowance(v, s.wei) ? t("f.hint.approved") : t("f.hint");
   }
   function submitForm() {
     var s = formState(), Ld = led();
-    if (!s.ok || Ld.contract.reserveEmpty || gasShort(gasNeed(s.value))) return;
-    ui.amount = s.value; ui.error = null;
+    if (!s.ok || Ld.contract.reserveEmpty || gasShort(gasNeed(s.value, s.wei))) return;
+    ui.amount = s.value; ui.amountWei = s.wei != null ? s.wei.toString() : null; ui.error = null;
     openConfirm($("mg-go"));
   }
 
   // ---------- flows ----------
   function startWallet(kind, amt, ok) {
+    if (LIVE) return liveWait(kind, amt);
     ui.wait = { kind: kind, amount: amt, prev: ui.phase === "wallet" && ui.wait ? ui.wait.prev : ui.phase };
     ui.phase = "wallet"; ui.error = null;
     render(true);
@@ -420,6 +455,12 @@
   }
   function cancelWallet() {
     if (ui.phase !== "wallet") return;
+    if (LIVE) {
+      // A wallet request cannot be withdrawn from the page: stop waiting, and let the 30 s refresh pick up a late signature.
+      reqSeq++;
+      ui.phase = ui.wait ? ui.wait.prev : "form"; ui.wait = null;
+      render(true); CJ.toast(t("toast.cancelled.live")); return;
+    }
     clearTimeout(timer);
     ui.phase = ui.wait ? ui.wait.prev : "form"; ui.wait = null; ui.frozen = false;
     render(true);
@@ -428,6 +469,7 @@
   // Only a self paid transaction costs the wallet KAIA; a fee delegated one is paid by Cojam's fee payer.
   function spendGas(x) { if (sponsored()) return; var Ld = led(); Ld.wallet.kaia = Math.max(0, +(Ld.wallet.kaia - x).toFixed(4)); }
   function doConnect(key) {
+    if (LIVE) return liveConnect(key);
     ui.walletKey = key;
     startWallet("connect", 0, function () {
       led().wallet.app = led().wallet.kind = key; L.connect();
@@ -437,9 +479,11 @@
     });
   }
   function doNetwork() {
+    if (LIVE) return liveNetwork();
     startWallet("network", 0, function () { ui.phase = "form"; ui.wait = null; L.setNetwork("kaia"); render(true); });
   }
   function doApprove() {
+    if (LIVE) return liveApprove();
     var amt = ui.amount;
     startWallet("approve", amt, function () {
       chain(function () {
@@ -451,6 +495,7 @@
     });
   }
   function doSwap() {
+    if (LIVE) return liveSwap();
     var amt = ui.amount;
     startWallet("swap", amt, function () {
       chain(function (tx) {
@@ -468,6 +513,7 @@
   function doClaim(idList) {
     var list = idList.map(byId).filter(function (l) { return l && L.lotStatus(l) === "releasing"; });
     if (!list.length) return;
+    if (LIVE) return liveClaim(list);
     var amt = sumL(list);
     ui.claimIds = list.map(function (l) { return l.id; });
     startWallet("claim", amt, function () {
@@ -481,6 +527,137 @@
         say(t("cd.title") + ". " + t(got.length && got[0].releasedBy !== "you" ? "cd.body.keeper" : "cd.body.you", { amount: A(amt), date: got.length ? F.date(got[0].releasedAt) : "" }));
         land("end"); // the 90% that just arrived
       });
+    });
+  }
+
+  // ---------- live flows (assets/chain.js) ----------
+  // Same phases as the mock: wallet (waiting for a signature), pending (on chain, with the real hash), then the success
+  // views once the receipt is in and the ledger has been read again. reqSeq drops the result of a request the holder
+  // stopped waiting for.
+  var reqSeq = 0;
+  function liveWait(kind, amt) {
+    ui.wait = { kind: kind, amount: amt, prev: ui.phase === "wallet" && ui.wait ? ui.wait.prev : ui.phase };
+    ui.phase = "wallet"; ui.error = null; ui.failKey = null; ui.sponsorCode = null;
+    render(true);
+    return ++reqSeq;
+  }
+  function stale(id) { return id !== reqSeq; }
+  function onHash(id) {
+    return function (hash) {
+      if (stale(id) || !ui.wait) return;
+      ui.phase = "pending"; ui.wait.tx = hash; ui.wait.started = Date.now();
+      render(true);
+    };
+  }
+  // Every failure lands on an existing state: rejected, fee payer (retry or pay the fee yourself), reserve, window
+  // closed, wrong network, read error, or a plain "did not go through" note with Try again.
+  function liveFail(id, e, kind) {
+    if (stale(id)) return;
+    var k = CJ.chain.classify(e);
+    ui.phase = ui.wait ? (ui.wait.prev === "wallet" || ui.wait.prev === "pending" ? "form" : ui.wait.prev) : "form";
+    ui.wait = null; ui.errKind = kind; ui.error = null; ui.failKey = null; ui.sponsorCode = null;
+    if (k === "rejected") ui.error = "rejected";
+    else if (k === "sponsor") { ui.error = "sponsor"; ui.sponsorCode = e && e.code; }
+    else if (k === "reserve") { var Ld = led(); Ld.contract.reserveEmpty = true; Ld.contract.reserveNeed = ui.amountWei; }
+    else if (k === "closed") ui.closed = true;
+    else if (k === "network") { /* chain.js has published the wallet's chain: the wrong network view takes over */ }
+    else if (k === "nothing") { refreshThen(function () { ui.phase = "form"; }); return; }
+    else if (k === "nogas") { ui.error = "failed"; ui.failKey = "er.nogas.short"; }
+    else if (k === "rpc") { ui.error = "failed"; ui.failKey = "er.net"; }
+    else if (k === "noprovider") { ui.error = "failed"; ui.failKey = "er.nowallet"; }
+    else { ui.error = "failed"; ui.failKey = "er.failed"; }
+    if (kind === "claim") ui.mode = null;
+    render(true);
+    CJ.chain.refresh().catch(function () {});
+  }
+  function refreshThen(fn, until) {
+    return CJ.chain.refresh(until ? { until: until } : null).then(function () { fn(); render(true); }, function () { fn(); render(true); });
+  }
+  function liveConnect(key) {
+    if (key === "wc") { CJ.toast(t("wl.wc.soon")); return; }
+    ui.walletKey = key;
+    var id = liveWait("connect", 0);
+    CJ.chain.connect(key).then(function (r) {
+      if (stale(id)) return;
+      ui = Object.assign(freshUi(), { walletKey: key });
+      if (r && r.readError) ui.error = "rpc";
+      render(true); say(t("toast.connected") + ". " + ($("mg-h") ? $("mg-h").textContent : ""));
+    }, function (e) {
+      if (stale(id)) return;
+      var k = CJ.chain.classify(e);
+      ui.phase = ui.wait ? ui.wait.prev : "form"; ui.wait = null;
+      if (k === "rejected") ui.error = "rejected";
+      render(true);
+      if (k !== "rejected") CJ.toast(t(k === "noprovider" ? "er.nowallet" : "er.connect"));
+    });
+  }
+  function liveNetwork() {
+    var id = liveWait("network", 0);
+    CJ.chain.switchNetwork().then(function () {
+      if (stale(id)) return;
+      ui.phase = ui.wait && ui.wait.prev !== "wallet" ? ui.wait.prev : "form"; ui.wait = null; render(true);
+    }, function (e) {
+      if (stale(id)) return;
+      var k = CJ.chain.classify(e);
+      ui.phase = ui.wait ? ui.wait.prev : "form"; ui.wait = null;
+      if (k === "rejected") ui.error = "rejected";
+      render(true);
+      if (k !== "rejected") CJ.toast(t("wn.manual", { name: N.name || C.chainName }));
+    });
+  }
+  function liveApprove() {
+    var amt = ui.amount, wei = ui.amountWei, id = liveWait("approve", amt);
+    CJ.chain.write("approve", { amount: BigInt(wei) }, { sponsored: sponsored(), onHash: onHash(id) }).then(function () {
+      if (stale(id)) return;
+      refreshThen(function () {
+        ui.phase = "swap"; ui.wait = null; ui.partialOff = true;
+        say(t("toast.approved", { amount: A(amt) }) + ". " + ($("mg-h") ? $("mg-h").textContent : ""));
+      }, function (Ld) { return BigInt(Ld.wei.allowance) >= BigInt(wei); });
+    }, function (e) { liveFail(id, e, "approve"); });
+  }
+  function liveSwap() {
+    var amt = ui.amount, wei = ui.amountWei, id = liveWait("swap", amt);
+    CJ.chain.write("migrate", { amount: BigInt(wei) }, { sponsored: sponsored(), onHash: onHash(id) }).then(function (r) {
+      if (stale(id)) return;
+      CJ.chain.refresh({ until: function (Ld) { return Ld.lots.some(function (l) { return l.id === r.lotId; }); } }).catch(function () {}).then(function () {
+        var lot = byId(r.lotId);
+        ui.wait = null; ui.text = null; ui.reviewed = false; ui.mode = null; ui.amountWei = null;
+        if (!lot) { ui.phase = "form"; render(true); return; }
+        if (!lot.txSwap) lot.txSwap = r.hash;
+        ui.lotId = lot.id; ui.phase = "success";
+        render("quiet");
+        say(t("ok.title") + ". " + t("ok.body", { instant: A(lot.instant), locked: A(lot.locked), date: F.date(lot.unlockAt) }));
+        land("now");
+      });
+    }, function (e) { liveFail(id, e, "swap"); });
+  }
+  // claim(maxLots) releases matured lots in id order from the wallet's cursor, so asking for a lot means releasing every
+  // matured lot before it as well (they are all ready: lots unlock in id order).
+  function liveClaim(list) {
+    var ready = lots("releasing").map(function (l) { return +l.id; }).sort(function (a, b) { return a - b; });
+    var want = Math.max.apply(null, list.map(function (l) { return +l.id; }));
+    var ids = ready.filter(function (n) { return n <= want; }).slice(0, 50).map(String); // the gas server takes at most 50 lots per claim
+    var amt = sumL(ids.map(byId));
+    ui.claimIds = ids;
+    var id = liveWait("claim", amt);
+    CJ.chain.write("claim", { maxLots: ids.length }, { sponsored: sponsored(), onHash: onHash(id) }).then(function () {
+      if (stale(id)) return;
+      CJ.chain.refresh({ until: function (Ld) { return ids.every(function (x) { var l = Ld.lots.filter(function (y) { return y.id === x; })[0]; return l && l.releasedAt; }); } })
+        .catch(function () {}).then(function () {
+          ui.phase = "claimed"; ui.wait = null; ui.mode = null;
+          render("quiet");
+          var got = ui.claimIds.map(byId).filter(function (l) { return l && l.releasedAt; });
+          say(t("cd.title") + ". " + t(got.length && got[0].releasedBy !== "you" ? "cd.body.keeper" : "cd.body.you", { amount: A(amt), date: got.length ? F.date(got[0].releasedAt) : "" }));
+          land("end");
+        });
+    }, function (e) {
+      // NothingToClaim: the keeper released them first. Show them as received.
+      if (!stale(id) && CJ.chain.classify(e) === "nothing") {
+        ui.wait = null;
+        refreshThen(function () { ui.phase = "claimed"; ui.mode = null; });
+        return;
+      }
+      liveFail(id, e, "claim");
     });
   }
   function say(s) { live.textContent = s; lastLive = s; }
@@ -527,6 +704,7 @@
   function render(focus) {
     var active = document.activeElement, typing = active && active.id === "mg-amt";
     var sel = typing ? [active.selectionStart, active.selectionEnd] : null;
+    syncGas();
     var v = computeView(); ui.view = v;
     panel.innerHTML = '<div class="mg-view' + (v !== lastView ? " is-enter" : "") + '" data-view="' + v + '">' + V[ui.view = computeView()]() + "</div>";
     lastView = v;
@@ -680,7 +858,7 @@
     var b = e.target.closest("[data-act]"); if (!b || b.disabled) return;
     var a = b.getAttribute("data-act"), idList = (b.getAttribute("data-ids") || "").split(",").filter(Boolean);
     ui.frozen = false;
-    if (b.hasAttribute("data-retry")) led().contract.sponsorDown = false; // mock: the fee payer answers on retry
+    if (b.hasAttribute("data-retry") && !LIVE) led().contract.sponsorDown = false; // mock: the fee payer answers on retry
     switch (a) {
       case "seen":
         idList.forEach(function (id) { var l = byId(id); if (l) l.seenRelease = true; });
@@ -695,16 +873,28 @@
       case "swap": doSwap(); break;
       case "cancel": cancelWallet(); break;
       case "done": done(); break;
-      case "add": CJ.toast(t("ok.add.toast")); break;
+      case "add":
+        if (!LIVE) { CJ.toast(t("ok.add.toast")); break; }
+        CJ.chain.watchAsset().then(function (ok) { CJ.toast(t(ok === false ? "toast.add.no" : "toast.added")); }, function (e) {
+          if (CJ.chain.classify(e) === "rejected") return;
+          CJ.copy(C.newToken.address); CJ.toast(t("toast.add.copy"));
+        });
+        break;
       case "claim": ui.error = null; doClaim(idList); break;
       case "to-swap": ui.mode = "swap"; ui.text = null; render(true); break;
       case "to-claim": ui.mode = null; render(true); break;
       case "retry":
         ui.loading = true; render(false);
+        if (LIVE) {
+          CJ.chain.refresh().then(function () { ui.loading = false; ui.error = null; ui.text = null; render(true); }, function () { ui.loading = false; render(true); });
+          break;
+        }
         setTimeout(function () { ui.loading = false; ui.error = null; ui.text = null; render(true); }, 1000); break;
-      case "resume": ui.amount = led().allowance; ui.partialOff = true; ui.phase = "swap"; render(true); break;
+      case "resume": ui.amount = led().allowance; ui.amountWei = LIVE ? led().wei.allowance : null; ui.partialOff = true; ui.phase = "swap"; render(true); break;
       case "start-over": ui.partialOff = true; render(true); break;
-      case "switch-wallet": L.disconnect(); ui = Object.assign(freshUi(), { walletKey: ui.walletKey }); render(false); openChooser(b, true); break;
+      case "switch-wallet":
+        if (LIVE) CJ.chain.disconnect(); else L.disconnect();
+        ui = Object.assign(freshUi(), { walletKey: ui.walletKey }); render(false); openChooser(b, true); break;
       case "see-hist": $("mg-hist-h").focus(); break;
     }
   }
@@ -762,9 +952,13 @@
     if (b.getAttribute("data-m") === "copy") { CJ.copy(led().wallet.address); closeMenu(true); return; }
     closeMenu(true);
     clearTimeout(timer);
-    var keep = ui.walletKey;
-    L.disconnect(); ui = Object.assign(freshUi(), { walletKey: keep }); render(false);
-    CJ.toast(t("toast.disconnected"), { label: t("toast.undo"), run: function () { L.connect(); render(false); } });
+    var keep = ui.walletKey, kindNow = led().wallet.kind;
+    if (LIVE) { reqSeq++; CJ.chain.disconnect(); } else L.disconnect();
+    ui = Object.assign(freshUi(), { walletKey: keep }); render(false);
+    CJ.toast(t("toast.disconnected"), { label: t("toast.undo"), run: function () {
+      if (LIVE) { if (kindNow) CJ.chain.connect(kindNow, { silent: true }).then(function () { render(false); }); return; }
+      L.connect(); render(false);
+    } });
   });
   menu.addEventListener("keydown", function (e) {
     if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
@@ -792,7 +986,7 @@
 
   // prototype controls (hidden in ?state captures)
   var proto = $("mg-proto");
-  if (!CJ.state) proto.hidden = false;
+  if (!CJ.state && !LIVE) proto.hidden = false;
   proto.addEventListener("click", function (e) {
     var b = e.target.closest("[data-proto]"); if (!b) return;
     var Ld = led(), k = b.getAttribute("data-proto");
@@ -853,13 +1047,49 @@
   window.CJMigrate = { states: STATES, setState: function (s) { setState(s); render(false); }, ui: function () { return ui; } };
 
   paintSheets();
-  if (CJ.state && STATES.indexOf(CJ.state) > -1) setState(CJ.state);
-  render(false);
+  if (!LIVE && CJ.state && STATES.indexOf(CJ.state) > -1) setState(CJ.state);
+
+  // ---------- live start ----------
+  // A small, clear notice while the page runs on a testnet, under the page title.
+  function paintNet() {
+    var el = $("mg-net");
+    if (!LIVE || !N.testnet) { if (el) el.remove(); return; }
+    if (!el) {
+      el = document.createElement("p"); el.id = "mg-net"; el.className = "small mg-net";
+      el.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px";
+      var h1 = document.querySelector("#mg-head h1"); if (h1) h1.after(el); else $("mg-head").appendChild(el);
+    }
+    el.innerHTML = '<span class="tag tag-warn">' + I("warn", 14) + "<span>" + esc(t("net.test.tag")) + '</span></span><span class="muted">' + esc(t("net.test.body", { name: N.name || "" })) + "</span>";
+  }
+  if (LIVE) {
+    paintNet();
+    document.addEventListener("cj:lang", paintNet);
+    document.addEventListener("cj:window", function () { render(false); });
+    // Wallet events: another account or network chosen in the wallet resets the flow to the start.
+    CJ.chain.on(function (type) {
+      if (type === "accounts" || type === "chain") {
+        if (ui.phase === "wallet" || ui.phase === "pending") return; // the running request settles first
+        ui = Object.assign(freshUi(), { walletKey: ui.walletKey }); render(false);
+      }
+      if (type === "readerror") { ui.error = "rpc"; render(false); }
+    });
+    // Reconnect quietly when this site is already authorised in the remembered wallet. The first paint waits for it
+    // (at most 1.5 s) so a returning holder does not see the connect screen flash.
+    var first = false, firstPaint = function () { if (first) return; first = true; render(false); CJ.ready(); };
+    var restoring = CJ.chain.restore().then(function (r) {
+      if (r) { ui.walletKey = r && led().wallet.kind || ui.walletKey; if (r.readError) ui.error = "rpc"; }
+    }, function () {});
+    var settled = function () { if (first) render(false); else firstPaint(); };
+    Promise.all([restoring, CJ.chain.contractInfo().catch(function () {})]).then(settled, settled);
+    setTimeout(firstPaint, CJ.chain.remembered() ? 1500 : 400);
+  } else {
+    render(false);
+  }
   if (ui.confirm) { ui.confirm = false; openConfirm(); }
   // A new price repaints the wallet card and an open confirm sheet in place (never the field being typed in).
   document.addEventListener("cj:price", function () {
     var wc = $("mg-wcard"); if (wc) wc.outerHTML = walletCard();
     if (confirmD.open) { var chk = $("mg-cf-check"), on = chk && chk.checked; confirmD.innerHTML = confirmHtml(); if (on) { $("mg-cf-check").checked = true; confirmD.querySelector('[data-cf="go"]').disabled = false; } }
   });
-  CJ.ready();
+  if (!LIVE) CJ.ready();
 })();

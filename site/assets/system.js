@@ -1,6 +1,7 @@
-// Cojam shared system: config, i18n, mock ledger, mock clock, formatters, amount parser, swap track, toasts.
-// Mock only: nothing here talks to a chain. Load order on every page: system.js, i18n/shell.js and shell.js right after
-// <div id="cj-top"></div> (so the header is in the first paint), then motion.js, wallet.js, i18n/<page>.js and the page script
+// Cojam shared system: config, i18n, ledger (mock, or filled from the chain by assets/chain.js), clock, formatters, amount
+// parser, swap track, toasts. Nothing here talks to a chain: on the live swap page chain.js reads it and calls
+// CJ.ledger.setLive. Load order on every page: system.js (then network.js on the swap page), i18n/shell.js and shell.js
+// right after <div id="cj-top"></div> (so the header is in the first paint), then motion.js, wallet.js, i18n/<page>.js and the page script
 // at the end of <body>.
 (function () {
   var DAY = 86400000;
@@ -24,9 +25,7 @@
     instantPercent: 10, // paid in the swap transaction; the rest is locked
     lockDays: 7,
     keeperDelayMin: 30, // mock keeper sends an unlocked lot this long after unlock
-    // Mock window. Launch is the swap contract's deploy date; the window is open for 1 year from it.
-    windowStart: Date.UTC(2026, 11, 1),
-    windowEnd: Date.UTC(2027, 11, 1),
+    // windowStart, windowEnd: defined below. Mock: Dec 1 2026 to Dec 1 2027. Live: read from the swap contract.
     oldHolders: 22500, // old CT holder addresses, for "share of holders who swapped"
     // Fee payer limits: the sponsor server's defaults (server/src/config.js, set by SENDER_DAILY_TX_LIMIT, DAILY_BUDGET_KAIA,
     // MIN_FEE_PAYER_BALANCE_KAIA and MIN_SPONSORED_OLD_CT in server/.env). Configuration, not data: change both together.
@@ -35,11 +34,49 @@
     since: 2019
   };
 
+  // ---------- live window: WINDOW_START and WINDOW_END from the swap contract ----------
+  // Any page that loads assets/network.js after this file runs live (CJ.live): CJ.now() is the real clock, and the window
+  // dates come from the swap named in CJ.net, read once with two raw eth_calls (no library needed), cached for the session
+  // (sessionStorage) and announced with a "cj:window" event {start, end} in ms. Pages that show the window listen to it and
+  // repaint. Reading config.windowStart / windowEnd, CJ.daysLeft() or CJ.windowState() starts the read; a cached value
+  // applies at once, so a second page load paints the right dates in its first frame. Mock pages keep the dates below.
+  var win = { start: Date.UTC(2026, 11, 1), end: Date.UTC(2027, 11, 1), tried: false };
+  var SEL = { start: "0x37b82556", end: "0x1f23c68a" }; // WINDOW_START(), WINDOW_END()
+  function setWindow(st, en, announce) {
+    var changed = win.start !== st || win.end !== en;
+    win.start = st; win.end = en; config.windowLive = true;
+    if (changed || announce) document.dispatchEvent(new CustomEvent("cj:window", { detail: { start: st, end: en } }));
+  }
+  function ensureWindow() {
+    if (win.tried) return;
+    var G = window.CJ, n = G && G.net;
+    if (!G || !n) return; // network.js has not run (yet, or on this page at all)
+    win.tried = true;
+    if (!G.live || !n.swap || !n.rpc) return;
+    var key = "cj.window." + n.chainId + "." + n.swap.toLowerCase(), cached = null;
+    try { cached = JSON.parse(sessionStorage.getItem(key)); } catch (e) {}
+    if (cached && cached.start > 0 && cached.end > cached.start) { win.start = cached.start; win.end = cached.end; config.windowLive = true; return; }
+    if (!window.fetch) return;
+    var call = function (data) {
+      return fetch(n.rpc, { method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_call", params: [{ to: n.swap, data: data }, "latest"] }) })
+        .then(function (r) { return r.json(); })
+        .then(function (j) { var v = j && j.result && j.result !== "0x" ? parseInt(j.result, 16) : 0; if (!v) throw new Error("no window"); return v * 1000; });
+    };
+    Promise.all([call(SEL.start), call(SEL.end)]).then(function (r) {
+      try { sessionStorage.setItem(key, JSON.stringify({ start: r[0], end: r[1] })); } catch (e) {}
+      setWindow(r[0], r[1], true);
+    }, function () { win.tried = false; });
+  }
+  Object.defineProperty(config, "windowStart", { enumerable: true, get: function () { ensureWindow(); return win.start; }, set: function (v) { win.start = v; } });
+  Object.defineProperty(config, "windowEnd", { enumerable: true, get: function () { ensureWindow(); return win.end; }, set: function (v) { win.end = v; } });
+
   // ---------- mock clock (?days=8 moves time forward) ----------
   var offset = (parseFloat(params.get("days")) || 0) * DAY;
   // The prototype pretends today is inside the window so every state can be shown.
-  var baseNow = Math.max(Date.now(), config.windowStart + 12 * DAY + 14.25 * 3600000); // mid afternoon UTC so daily figures look natural
-  function now() { return baseNow + offset + (Date.now() - loadedAt); }
+  var baseNow = Math.max(Date.now(), Date.UTC(2026, 11, 1) + 12 * DAY + 14.25 * 3600000); // mid afternoon UTC so daily figures look natural
+  // Live (assets/network.js sets CJ.live): the real clock. Mock and ?state= presets: the prototype clock.
+  function now() { return window.CJ && window.CJ.live ? Date.now() : baseNow + offset + (Date.now() - loadedAt); }
   var loadedAt = Date.now();
 
   // ---------- i18n ----------
@@ -150,19 +187,44 @@
     };
   }
   if (params.get("reset") === "1") { try { localStorage.removeItem(KEY); } catch (e) {} }
-  var ledger;
-  try { ledger = JSON.parse(localStorage.getItem(KEY)) || freshLedger(); } catch (e) { ledger = freshLedger(); }
-  if (document.body && document.body.getAttribute("data-page") === "swap") {
-    var st = params.get("state"), on = st ? st !== "disconnected" : !!(ledger.wallet && ledger.wallet.connected);
+  // Live ledger: the same shape, filled from the chain by assets/chain.js. Until it reads, a disconnected wallet.
+  // Only which keeper releases the holder has seen is kept in this browser (cj.live.seen), never balances.
+  function freshLive() {
+    return { live: true, loaded: false, wallet: { connected: false, address: "", network: "kaia", chainId: null, kaia: 0, kind: null, app: null },
+      oldCT: 0, newCT: 0, allowance: 0, wei: { old: "0", "new": "0", allowance: "0", kaia: "0" }, lots: [],
+      contract: { paused: false, reserveEmpty: false, sponsorDown: false, reserve: 0, reserveNeed: null }, gas: null };
+  }
+  function loadMock() { try { return JSON.parse(localStorage.getItem(KEY)) || freshLedger(); } catch (e) { return freshLedger(); } }
+  var SEEN_KEY = "cj.live.seen";
+  function seenSet() { try { return JSON.parse(localStorage.getItem(SEEN_KEY)) || {}; } catch (e) { return {}; } }
+  // The swap page starts live unless the URL asks for the mock (?mock=1) or a preset (?state=); chain.js corrects it with
+  // setMode once network.js has said whether this network has a deployed swap.
+  var swapPage = !!(document.body && document.body.getAttribute("data-page") === "swap");
+  var liveMode = swapPage && params.get("mock") !== "1" && !params.get("state");
+  var ledger = liveMode ? freshLive() : loadMock();
+  if (swapPage) {
+    var st = params.get("state"), lastWallet = null;
+    try { lastWallet = localStorage.getItem("cj.wallet.last"); } catch (e) {}
+    var on = st ? st !== "disconnected" : liveMode ? !!lastWallet : !!(ledger.wallet && ledger.wallet.connected);
     document.documentElement.setAttribute("data-wallet", on ? "on" : "off");
   }
-  function persist() { try { localStorage.setItem(KEY, JSON.stringify(ledger)); } catch (e) {} }
+  function seenKey(l) { return (ledger.wallet.address || "").toLowerCase() + ":" + l.id; }
+  function persist() {
+    if (liveMode) {
+      var seen = seenSet();
+      ledger.lots.forEach(function (l) { if (l.seenRelease) seen[seenKey(l)] = 1; });
+      try { localStorage.setItem(SEEN_KEY, JSON.stringify(seen)); } catch (e) {}
+      return;
+    }
+    try { localStorage.setItem(KEY, JSON.stringify(ledger)); } catch (e) {}
+  }
   function save() { persist(); emit(); }
   function emit() { document.dispatchEvent(new CustomEvent("cj:ledger", { detail: ledger })); }
   function fakeTx() { var h = "0x"; for (var i = 0; i < 64; i++) h += "0123456789abcdef"[(Math.random() * 16) | 0]; return h; }
   // Mock keeper: a lot still locked at unlockAt + 30 minutes is released to its owner then. Applied lazily on read,
   // credited once, and saved without an event so a render never triggers another render.
   function settle() {
+    if (liveMode) return; // live lots are released by the real keeper; the chain says when
     var n = now(), changed = false;
     ledger.lots.forEach(function (l) {
       if (l.releasedAt || n < l.unlockAt + KEEPER_MS) return;
@@ -181,7 +243,20 @@
     get: function () { settle(); return ledger; },
     save: save,
     persist: persist, // store without the cj:ledger event (a view marking something as seen while it renders)
-    reset: function () { ledger = freshLedger(); save(); },
+    reset: function () { ledger = liveMode ? freshLive() : freshLedger(); save(); },
+    // Live mode (assets/chain.js): setMode(true | false) once the network is known, setLive(ledger) after each chain read.
+    isLive: function () { return liveMode; },
+    setMode: function (live) {
+      if (!!live === liveMode) return;
+      liveMode = !!live; ledger = liveMode ? freshLive() : loadMock(); emit();
+    },
+    setLive: function (next) {
+      if (!liveMode) return;
+      var seen = seenSet(), prev = JSON.stringify(ledger);
+      ledger = next;
+      ledger.lots.forEach(function (l) { if (seen[seenKey(l)]) l.seenRelease = true; });
+      if (JSON.stringify(ledger) !== prev) emit();
+    },
     connect: function () { ledger.wallet.connected = true; save(); },
     disconnect: function () { ledger.wallet.connected = false; save(); },
     setNetwork: function (n) { ledger.wallet.network = n; save(); },
