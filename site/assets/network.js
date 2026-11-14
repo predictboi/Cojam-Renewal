@@ -38,8 +38,16 @@
     gasApi: null
   });
   var CJ = window.CJ || (window.CJ = {});
-  var q = new URLSearchParams(location.search).get("net");
+  // ?net=kaia-test is remembered in this browser, so a wallet reopening the page, a language switch or a link inside the
+  // site keeps the test. ?net=kairos (or ?net=default) forgets it and returns to the normal network.
+  var q = new URLSearchParams(location.search).get("net"), kept = null;
+  try {
+    if (q === "kairos" || q === "default") localStorage.removeItem("cj.net");
+    else if (q && NETS[q]) localStorage.setItem("cj.net", q);
+    kept = localStorage.getItem("cj.net");
+  } catch (e) {}
   if (q && NETS[q]) ACTIVE = q;
+  else if (q !== "kairos" && q !== "default" && kept && NETS[kept]) ACTIVE = kept;
   var net = NETS[ACTIVE];
   CJ.net = net;
   CJ.nets = NETS;

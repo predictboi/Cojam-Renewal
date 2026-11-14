@@ -20,5 +20,14 @@
     "checkedOnChain": "2026-11-14: name Cojam Token, symbol CT, 18 decimals, supply 2,000,000,000, master holds 2,000,000,000, deployer holds 0"
   },
   "migration": null,
-  "migrationDeployBlock": null
+  "migrationDeployBlock": null,
+  "testSwap": {
+    "address": "0x197e08ba085Ee1171AfD2fd7263cF14Db403FBbD",
+    "contract": "CojamMigrationShortLock (real swap code, 1 minute lock)",
+    "master": "0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb",
+    "funded": "4 new CT by the master",
+    "deployedBy": "Render cojam-ops, OPS_TASK=deploy-test-swap (deployer nonce 1)",
+    "sitePage": "https://cojam.app/migrate/?net=kaia-test (remembered in the browser; ?net=kairos to leave)",
+    "note": "Not the launch swap. Old CT swapped into it stays there forever."
+  }
 }
