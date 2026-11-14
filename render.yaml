@@ -31,7 +31,12 @@ services:
       - path: /*
         name: Strict-Transport-Security
         value: max-age=31536000; includeSubDomains
+      # Assets keep their file names between releases, so browsers must revalidate them: a year long
+      # immutable cache would keep visitors on old CSS and JS. Vendor bundles carry their version in the name.
       - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=300, must-revalidate
+      - path: /assets/vendor/*
         name: Cache-Control
         value: public, max-age=31536000, immutable
     routes:
