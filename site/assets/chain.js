@@ -83,6 +83,9 @@
 
   // ---------- providers: EIP-6963 discovery plus the injected globals ----------
   var found = {}; // kind -> {provider, info}
+  // Every other EVM wallet keeps its own slot, keyed by its EIP-6963 rdns (OKX, Phantom, Rabby, Coinbase...), so the
+  // chooser lists each by name and connecting one never opens another. Kind "x:<rdns>".
+  var extra = {};
   function kindOf(info, p) {
     var s = ((info && info.rdns) || "") + " " + ((info && info.name) || "");
     if (/kaia|kaikas|klutch/i.test(s) || (p && p.isKaikas)) return "kaia";
@@ -92,11 +95,16 @@
   window.addEventListener("eip6963:announceProvider", function (e) {
     var d = e.detail; if (!d || !d.provider) return;
     var k = kindOf(d.info, d.provider);
+    if (k === "web3") {
+      var id = String((d.info && (d.info.rdns || d.info.name)) || "wallet").replace(/[^\w.\-]/g, "");
+      if (!extra[id]) extra[id] = { provider: d.provider, info: d.info || {} };
+    }
     if (!found[k]) found[k] = { provider: d.provider, info: d.info || {} };
   });
   try { window.dispatchEvent(new Event("eip6963:requestProvider")); } catch (e) {}
   function providerFor(kind) {
     var eth = window.ethereum;
+    if (kind && kind.indexOf("x:") === 0) { var x = extra[kind.slice(2)]; return x ? x.provider : null; }
     if (kind === "kaia") return window.klaytn || window.kaia || (found.kaia && found.kaia.provider) || null;
     if (kind === "mm") {
       if (found.mm) return found.mm.provider;
@@ -110,8 +118,16 @@
     var out = [], eth = window.ethereum;
     if (providerFor("kaia")) out.push("kaia");
     if (providerFor("mm")) out.push("mm");
-    if (found.web3 || (eth && !eth.isMetaMask && !eth.isKaikas && eth !== window.klaytn)) out.push("web3");
+    var ids = Object.keys(extra);
+    ids.forEach(function (id) { out.push("x:" + id); });
+    // Wallets that inject window.ethereum but do not announce themselves: one generic slot.
+    if (!ids.length && eth && !eth.isMetaMask && !eth.isKaikas && eth !== window.klaytn) out.push("web3");
     return out;
+  }
+  // Display name of a wallet kind for the chooser and the wallet card ("OKX Wallet", "Phantom"), or null.
+  function label(kind) {
+    if (kind && kind.indexOf("x:") === 0) { var x = extra[kind.slice(2)]; return x && x.info && x.info.name ? String(x.info.name) : null; }
+    return null;
   }
   function req(p, method, prm) {
     if (p.request) return p.request({ method: method, params: prm || [] });
@@ -579,7 +595,7 @@
 
   CJ.chain = {
     net: net, gasApi: GAS_API, provider: rp, interfaces: { erc20: ERC20, swap: SWAP },
-    available: available, providerFor: providerFor, remembered: remembered,
+    available: available, providerFor: providerFor, remembered: remembered, label: label,
     connect: connect, restore: restore, disconnect: disconnect, switchNetwork: switchNetwork,
     refresh: refresh, contractInfo: contractInfo, readWallet: readWallet,
     write: write, watchAsset: watchAsset, previewSwap: previewSwap, classify: classify, toWei: toWei, on: on,

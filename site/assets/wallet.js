@@ -199,6 +199,11 @@
         (has("mm") ? opt("button", 'type="button" data-pick="mm"', "wallet", t("wl.name.mm"), t("wl.sub.mm"), t("wl.found"))
           : opt("a", 'href="' + STORE.metamask + '" target="_blank" rel="noopener"', "wallet", t("wl.install.mm"), t("wl.sub.mm"), null, "ext")) +
         (has("web3") ? opt("button", 'type="button" data-pick="web3"', "wallet", t("wl.name.web3"), t("wl.sub.web3"), t("wl.found")) : "") +
+        // each other detected wallet by its own name (OKX Wallet, Phantom, ...), so picking one opens that one
+        e.exts.filter(function (k) { return k.indexOf("x:") === 0; }).map(function (k) {
+          var nm = (CJ.chain && CJ.chain.label && CJ.chain.label(k)) || t("wl.name.web3");
+          return opt("button", 'type="button" data-pick="' + esc(k) + '"', "wallet", esc(nm), t("wl.sub.web3"), t("wl.found"));
+        }).join("") +
         wcRow('type="button" data-view="qr"', t("wl.sub.wc.desk")) + "</div>";
     }
     body.innerHTML = h + '<p class="small muted cj-sheet-note">' + t("wl.note") + "</p>";

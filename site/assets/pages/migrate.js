@@ -40,7 +40,16 @@
   function isClosed() { return ui.closed || CJ.windowState() === "closed"; }
   function plain(v) { return new Intl.NumberFormat("en-US", { maximumFractionDigits: 6 }).format(v); }
   function gas(v) { return F.amount(v, 3); }
-  function walletName() { return t("ch." + (led().wallet.app || ui.walletKey || "kaia")); }
+  function nameOf(k) {
+    k = k || "kaia";
+    if (k.indexOf("x:") === 0) return (CJ.chain && CJ.chain.label && CJ.chain.label(k)) || t("ch.web3");
+    return t("ch." + k);
+  }
+  function walletName() {
+    var k = led().wallet.app || ui.walletKey || "kaia";
+    if (k.indexOf("x:") === 0) return (CJ.chain && CJ.chain.label && CJ.chain.label(k)) || t("ch.web3");
+    return t("ch." + k);
+  }
   function num(s) { return '<span class="num">' + s + "</span>"; }
   function dur(ms) {
     var s = Math.max(0, Math.floor(ms / 1000)), d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), x = s % 60, o = [];
@@ -56,7 +65,7 @@
   // "web3" is an unknown injected wallet: treated like MetaMask, since only Kaia aware wallets sign fee delegated transactions.
   function kind() { var w = led().wallet; return w.kind || w.app || ui.walletKey || "kaia"; }
   // WalletConnect pays its own fee until Kaia Wallet fee delegated signing over WalletConnect is verified (see wallet.js).
-  function selfPay() { var k = kind(); return k === "mm" || k === "web3" || k === "wc"; }
+  function selfPay() { var k = kind(); return k === "mm" || k === "web3" || k === "wc" || k.indexOf("x:") === 0; }
   // No fee payer on a network without a gas API (the private mainnet test): every wallet pays its own fee there.
   function sponsored() { return !selfPay() && !ui.payOwn && !(window.CJ && CJ.live && CJ.net && !CJ.net.gasApi); }
   function feeRow(need) {
@@ -286,7 +295,7 @@
   };
   V.wallet = function () {
     var w = ui.wait || {}, k = w.kind || "approve";
-    var line = t("wa." + k, { amount: A(w.amount || 0), wallet: t("ch." + ui.walletKey) });
+    var line = t("wa." + k, { amount: A(w.amount || 0), wallet: nameOf(ui.walletKey) });
     return head(t("wa.title")) +
       '<div class="mg-wait"><span class="spin" aria-hidden="true"></span><p>' + line + "</p></div>" +
       '<p class="small muted">' + t("wa.hint") + "</p>" +
