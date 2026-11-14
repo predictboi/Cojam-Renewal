@@ -38,7 +38,7 @@ CJ.dict({
     "docs.lock.claim": "You can also claim it yourself at any time after the unlock, for example if the keeper is late. There is no deadline.",
     "docs.lock.why": "Why the lock: it deters swap abuse and favours real holders. Only 10% is free at once, so swapping just to sell straight away does not pay.",
     "docs.lock.window": "The swap window is open for 1 year from launch, the day the swap contract is deployed: {start} to {end}. After it closes no new swaps are possible, but locked 90% remainders still release.",
-    "docs.lock.reserve": "New CT that is not swapped stays in the swap contract until 30 days after the window closes. Then anyone can trigger a sweep that returns the unswapped remainder to Cojam's master wallet, an address fixed at deploy. The sweep can never take new CT owed to locked 90% remainders.",
+    "docs.lock.reserve": "The swap reserve is funded and managed by Cojam's master wallet, an address fixed at deploy. The new CT owed to locked 90% remainders is set aside in the contract, and no one, not even Cojam, can move it. If the reserve runs low, swaps are on hold until it is topped up, and your old CT does not move.",
 
     "docs.sp.exchange.t": "CT on an exchange",
     "docs.sp.exchange.b": "The exchange handles the swap for CT it holds for you. The list of exchanges is to be announced. Follow your exchange's own notice.",
@@ -71,7 +71,7 @@ CJ.dict({
     "docs.safe.addr": "<strong>Check full addresses.</strong> The ticker CT is used by other tokens too, including some listed on MEXC. Compare the full contract address before you add, buy or swap a token.",
 
     "docs.c.supply": "New CT has a fixed supply of {supply} CT, exactly the same as old CT after burns. All of it is minted once to Cojam's master wallet, which funds the swap contract with transfers and tops it up as swaps come in.",
-    "docs.c.plain": "New CT is a plain KIP-7 token (ERC-20 compatible, 18 decimals) with no owner, no mint, no pause and no blacklist. The swap contract has no owner either: no one can pause it, withdraw from it or change its rules.",
+    "docs.c.plain": "New CT is a plain KIP-7 token (ERC-20 compatible, 18 decimals) with no owner, no mint, no pause and no blacklist. The swap contract has no owner and no pause either, and no one can change the 1:1 rate, the 10%, the 7 day lock, the window or any swap already made. Its reserve is funded and managed by Cojam's master wallet, while the new CT owed to locked 90% is set aside and no one can move it. Old CT received by the swap contract stays there forever.",
     "docs.c.audit": "Audit in progress",
     "docs.c.audit_b": "The report will be linked here when it is published.",
 
@@ -90,7 +90,7 @@ CJ.dict({
     "docs.w.wc.b": "Connects other wallet apps. For now you pay a small network fee in KAIA for each step, as with MetaMask.",
     "docs.example": "Example",
     "docs.sp.reserve.t": "The app says the reserve is empty",
-    "docs.sp.reserve.b": "Cojam's master wallet funds the swap reserve in steps and tops it up as swaps come in, so it can run low between top ups. If a swap is refused because the reserve is low, nothing leaves your wallet: your old CT stays where it is. Swaps you already made are not affected, because the new CT owed to your locked 90% is always kept aside. Wait a little: the team tops the reserve up, and the official announcements say when it is done. Do not send CT to anyone who offers to swap it for you.",
+    "docs.sp.reserve.b": "The swap reserve is funded and managed by Cojam's master wallet in steps, so it can run low. If a swap is refused because the reserve is low, nothing leaves your wallet: your old CT stays where it is. Swaps you already made are not affected: the new CT owed to your locked 90% is set aside in the contract, and no one, not even Cojam, can move it. Swaps resume once the reserve is topped up, and the official announcements say when that happens. Do not send CT to anyone who offers to swap it for you.",
     "docs.cta": "Go to Swap"
   },
   ko: {
@@ -127,7 +127,7 @@ CJ.dict({
     "docs.lock.claim": "해제 뒤에는 언제든 직접 받을 수도 있어요. 자동 지급이 늦어질 때 쓰면 돼요. 받는 기한은 없어요.",
     "docs.lock.why": "락업을 두는 이유: 교환 악용을 막고 실제 보유자를 보호하기 위해서예요. 바로 풀리는 건 10%뿐이라 교환하자마자 팔려는 목적이라면 이득이 없어요.",
     "docs.lock.window": "교환 기간은 {start}부터 {end}까지, 교환 컨트랙트를 배포하는 출시일부터 1년이에요. 기간이 끝나면 새로 교환할 수 없지만, 락업된 90%는 계속 지급돼요.",
-    "docs.lock.reserve": "교환되지 않은 새 CT는 교환 기간이 끝나고 30일이 지날 때까지 교환 컨트랙트에 남아 있어요. 그 뒤에는 누구나 회수를 실행할 수 있고, 남은 물량은 배포 때 고정된 Cojam 마스터 지갑으로 돌아가요. 회수로는 락업 중인 90%로 지급할 새 CT를 절대 가져갈 수 없어요.",
+    "docs.lock.reserve": "교환 준비금은 배포 때 고정된 Cojam 마스터 지갑이 채우고 관리해요. 락업된 90%로 지급할 새 CT는 컨트랙트에 따로 묶여 있어서 Cojam을 포함해 누구도 옮길 수 없어요. 준비금이 부족하면 다시 채워질 때까지 교환이 잠시 멈추고, 기존 CT는 그대로 있어요.",
     "docs.sp.exchange.t": "CT가 거래소에 있다면",
     "docs.sp.exchange.b": "거래소에 맡긴 CT는 거래소가 교환해 줘요. 지원 거래소 목록은 따로 알려 드릴게요. 이용 중인 거래소 공지를 확인하세요.",
     "docs.sp.pool.t": "CT가 Klayswap 풀에 있다면",
@@ -155,7 +155,7 @@ CJ.dict({
     "docs.safe.send": "<strong>교환하면서 다른 사람이나 지갑으로 CT를 보낼 일은 없어요.</strong> 내가 거래하는 상대는 교환 컨트랙트뿐이에요.",
     "docs.safe.addr": "<strong>주소는 끝까지 확인하세요.</strong> MEXC에 상장된 토큰을 비롯해 다른 토큰도 CT라는 티커를 써요. 토큰을 추가하거나 사거나 교환하기 전에 컨트랙트 주소 전체를 비교하세요.",
     "docs.c.supply": "새 CT 공급량은 {supply} CT로 고정돼 있어요. 소각 후 남은 기존 CT와 정확히 같은 양이에요. 전량을 Cojam 마스터 지갑에 한 번만 발행하고, 마스터 지갑이 전송으로 교환 컨트랙트를 채우며 교환이 늘면 다시 채워요.",
-    "docs.c.plain": "새 CT는 KIP-7 일반 토큰(ERC-20 호환, 소수점 18자리)이에요. 소유자, 추가 발행, 일시 정지, 블랙리스트 기능은 모두 없어요. 교환 컨트랙트에도 소유자가 없어서 누구도 멈추거나, 인출하거나, 규칙을 바꿀 수 없어요.",
+    "docs.c.plain": "새 CT는 KIP-7 일반 토큰(ERC-20 호환, 소수점 18자리)이에요. 소유자, 추가 발행, 일시 정지, 블랙리스트 기능은 모두 없어요. 교환 컨트랙트에도 소유자와 일시 정지 기능이 없고, 1:1 비율, 10%, 7일 락업, 교환 기간, 이미 한 교환 건은 누구도 바꿀 수 없어요. 준비금은 Cojam 마스터 지갑이 채우고 관리하지만, 락업된 90%로 지급할 새 CT는 따로 묶여 있어서 누구도 옮길 수 없어요. 교환 컨트랙트로 들어온 기존 CT는 영원히 그 안에 남아요.",
     "docs.c.audit": "보안 감사 진행 중",
     "docs.c.audit_b": "보고서가 나오면 여기에 링크를 걸어 둘게요.",
     "docs.contact.b": "<strong>고객 지원 채널은 출시와 함께 열려요.</strong> 그전까지 DM은 절대 믿지 마세요. DM으로 도와주겠다는 사람은 Cojam이 아니에요. 지금 필요한 내용은 이 페이지의 안내와 보안 수칙에 모두 있어요.",
@@ -173,7 +173,7 @@ CJ.dict({
     "docs.w.wc.b": "다른 지갑 앱을 연결해요. 지금은 MetaMask처럼 단계마다 적은 수수료를 KAIA로 내요.",
     "docs.example": "예시",
     "docs.sp.reserve.t": "준비금이 비었다고 나온다면",
-    "docs.sp.reserve.b": "교환 준비금은 Cojam 마스터 지갑이 단계적으로 채우고, 교환이 늘면 다시 채워요. 그래서 다시 채우기 전에 부족해질 수 있어요. 준비금이 부족해 교환이 거절되면 지갑에서는 아무것도 빠져나가지 않아요. 기존 CT도 그대로 있어요. 이미 한 교환은 영향을 받지 않아요. 락업 중인 90%로 지급할 새 CT는 늘 따로 남겨 두거든요. 조금 기다려 주세요. 팀이 준비금을 다시 채우고, 채운 뒤에는 공식 공지로 알려 드려요. 대신 교환해 주겠다는 사람에게 CT를 보내지 마세요.",
+    "docs.sp.reserve.b": "교환 준비금은 Cojam 마스터 지갑이 단계적으로 채우고 관리해요. 그래서 준비금이 부족해질 때가 있어요. 준비금이 부족해 교환이 거절되면 지갑에서는 아무것도 빠져나가지 않아요. 기존 CT도 그대로 있어요. 이미 한 교환은 영향을 받지 않아요. 락업된 90%로 지급할 새 CT는 컨트랙트에 따로 묶여 있어서 Cojam을 포함해 누구도 옮길 수 없거든요. 준비금이 다시 채워지면 교환할 수 있고, 그때 공식 공지로 알려 드려요. 대신 교환해 주겠다는 사람에게 CT를 보내지 마세요.",
     "docs.cta": "교환하러 가기"
   },
   ja: {
@@ -214,7 +214,7 @@ CJ.dict({
     "docs.lock.claim": "自動送付ボットが遅れた場合などは、解除後いつでもご自身で受け取ることもできます。受け取りの期限はありません。",
     "docs.lock.why": "ロックを設けるのは、交換の悪用を防ぎ、実際の保有者を優遇するためです。すぐに使えるのは10%だけなので、交換してすぐ売るだけの交換は割に合いません。",
     "docs.lock.window": "交換期間は、交換コントラクトをデプロイするローンチ日から1年間、{start}から{end}までです。終了後は新たな交換はできませんが、ロック中の90%は引き続き送付されます。",
-    "docs.lock.reserve": "交換されなかった新CTは、交換期間の終了から30日が経過するまで交換コントラクトに残ります。その後は誰でも回収を実行でき、未交換の残りはデプロイ時に固定されたCojamのマスターウォレットに戻ります。回収でロック中の90%に充てる新CTが持ち出されることはありません。",
+    "docs.lock.reserve": "交換リザーブは、デプロイ時に固定されたCojamのマスターウォレットが入金し、管理します。ロック中の90%に充てる新CTはコントラクト内で別に確保されており、Cojamを含め誰も動かせません。リザーブが不足した場合は、補充されるまで交換が一時的に止まります。旧CTは動きません。",
 
     "docs.sp.exchange.t": "取引所にあるCT",
     "docs.sp.exchange.b": "取引所が預かっているCTは、取引所が交換を行います。対象の取引所は追ってお知らせします。ご利用の取引所の告知に従ってください。",
@@ -247,7 +247,7 @@ CJ.dict({
     "docs.safe.addr": "<strong>アドレス全体を確認してください。</strong>CTというティッカーは、MEXCに上場しているものを含め、他のトークンにも使われています。トークンを追加、購入、交換する前に、コントラクトアドレス全体を照合してください。",
 
     "docs.c.supply": "新CTの供給量は、バーン後の旧CTとまったく同じ{supply} CTで固定されています。全量を一度だけCojamのマスターウォレットに発行し、マスターウォレットが送金で交換コントラクトに入金し、交換の進み具合に応じて補充します。",
-    "docs.c.plain": "新CTは、オーナー、発行、一時停止、ブラックリストのいずれの機能も持たない、シンプルなKIP-7トークン(ERC-20互換、小数点以下18桁)です。交換コントラクトにもオーナーはおらず、誰も停止、引き出し、ルールの変更はできません。",
+    "docs.c.plain": "新CTは、オーナー、発行、一時停止、ブラックリストのいずれの機能も持たない、シンプルなKIP-7トークン(ERC-20互換、小数点以下18桁)です。交換コントラクトにもオーナーや一時停止の機能はなく、1:1の交換比率、10%、7日間のロック、交換期間、すでに行われた交換は誰も変更できません。リザーブはCojamのマスターウォレットが入金し、管理しますが、ロック中の90%に充てる新CTは別に確保されており、誰も動かせません。交換コントラクトに入った旧CTは、永久にそこに残ります。",
     "docs.c.audit": "監査中",
     "docs.c.audit_b": "レポートが公開され次第、ここにリンクします。",
 
@@ -266,7 +266,7 @@ CJ.dict({
     "docs.w.wc.b": "ほかのウォレットアプリを接続します。現時点では、MetaMaskと同様に手順ごとに少額のネットワーク手数料をKAIAで支払います。",
     "docs.example": "例",
     "docs.sp.reserve.t": "リザーブが空と表示された場合",
-    "docs.sp.reserve.b": "交換リザーブは、Cojamのマスターウォレットが段階的に入金し、交換の進み具合に応じて補充します。そのため、補充の前に不足することがあります。リザーブ不足で交換が拒否されても、ウォレットからは何も出ていかないため、旧CTはそのまま残ります。すでに行った交換には影響しません。ロック中の90%に充てる新CTは常に別に確保されています。少しお待ちください。チームがリザーブを補充し、完了したら公式のお知らせでご案内します。代わりに交換すると申し出る人にCTを送らないでください。",
+    "docs.sp.reserve.b": "交換リザーブは、Cojamのマスターウォレットが段階的に入金し、管理しています。そのため、不足することがあります。リザーブ不足で交換が拒否されても、ウォレットからは何も出ていかないため、旧CTはそのまま残ります。すでに行った交換には影響しません。ロック中の90%に充てる新CTはコントラクト内で別に確保されており、Cojamを含め誰も動かせないからです。リザーブが補充されると交換を再開でき、補充されたときは公式のお知らせでご案内します。代わりに交換すると申し出る人にCTを送らないでください。",
     "docs.cta": "交換ページへ"
   }
 });

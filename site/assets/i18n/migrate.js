@@ -43,7 +43,7 @@ CJ.dict({
     "help.lock": "Each swap becomes its own lot. 10% of the new CT arrives in the swap transaction; the other 90% unlocks 7 days later. Cojam then sends it to your wallet automatically, and you can also claim it yourself at any time, even after the swap window ends. It can only go to the wallet that swapped.",
     "help.gas": "MetaMask cannot sign Kaia fee delegated transactions, so with MetaMask you pay a small network fee in KAIA for each approve, swap and claim. With Kaia Wallet you need no KAIA: Cojam pays the fee.",
     "help.approve": "An approval is a standard token permission. It sets how much old CT the swap contract may move from your wallet. The limit is the amount you approve, and the contract can only use it for this swap.",
-    "help.reserve": "New CT is paid out of a reserve held by the swap contract. Cojam's master wallet funds the reserve in steps and tops it up as swaps come in. If it runs low, a swap is refused until it is topped up. The new CT owed to locked 90% is always kept aside.",
+    "help.reserve": "New CT is paid out of a reserve held by the swap contract. The reserve is funded and managed by Cojam's master wallet. If it runs low, swaps are on hold until it is topped up, and your old CT does not move. The new CT owed to locked 90% is set aside in the contract, and no one, not even Cojam, can move it.",
     "help.sponsor": "Kaia lets another account pay a transaction's network fee. You sign in your wallet, and Cojam's fee payer co-signs and pays the fee. It only pays for approving, swapping and claiming on the Cojam contracts, with a limit per wallet, and it can never move your tokens.",
     "help.split": "10% is rounded down to the smallest unit of CT, and the locked part is the rest, so the two always add up to exactly what you swap.",
 
@@ -275,7 +275,7 @@ CJ.dict({
     "help.lock": "교환할 때마다 한 건으로 따로 기록돼요. 새 CT의 10%는 교환 트랜잭션에서 바로 들어오고, 나머지 90%는 7일 뒤 해제돼요. 해제되면 Cojam이 지갑으로 자동으로 보내 드리고, 교환 기간이 끝난 뒤에도 언제든 직접 받을 수 있어요. 받는 곳은 교환한 지갑뿐이에요.",
     "help.gas": "MetaMask는 Kaia 수수료 대납 트랜잭션에 서명할 수 없어서, 승인, 교환, 받기를 할 때마다 적은 수수료를 KAIA로 내야 해요. Kaia Wallet이라면 KAIA가 필요 없어요. 수수료는 Cojam이 내요.",
     "help.approve": "승인은 일반적인 토큰 사용 허락이에요. 교환 컨트랙트가 내 지갑에서 가져갈 수 있는 기존 CT 수량을 정해요. 승인한 수량까지만, 이번 교환에만 쓸 수 있어요.",
-    "help.reserve": "새 CT는 교환 컨트랙트가 가진 준비금에서 지급돼요. Cojam 마스터 지갑이 준비금을 단계적으로 채우고, 교환이 늘면 다시 채워요. 준비금이 부족하면 다시 채워질 때까지 교환이 거절돼요. 락업 중인 90%로 지급할 새 CT는 늘 따로 남겨 둬요.",
+    "help.reserve": "새 CT는 교환 컨트랙트가 가진 준비금에서 지급돼요. 교환 준비금은 Cojam 마스터 지갑이 채우고 관리해요. 준비금이 부족하면 다시 채워질 때까지 교환이 잠시 멈추고, 기존 CT는 그대로 있어요. 락업된 90%로 지급할 새 CT는 컨트랙트에 따로 묶여 있어서 Cojam을 포함해 누구도 옮길 수 없어요.",
     "help.sponsor": "Kaia에서는 다른 계정이 트랜잭션 수수료를 대신 낼 수 있어요. 내가 지갑에서 서명하면 Cojam 대납 지갑이 함께 서명하고 수수료를 내요. Cojam 컨트랙트의 승인, 교환, 받기에만, 지갑별 한도 안에서 수수료를 내고, 내 토큰은 절대 옮길 수 없어요.",
     "help.split": "10%는 CT 최소 단위에서 버림하고, 나머지를 락업 물량으로 잡아요. 그래서 둘을 더하면 언제나 교환한 수량과 똑같아요.",
     "dc.title": "지갑을 연결하고 시작하세요",
@@ -490,7 +490,7 @@ CJ.dict({
     "help.lock": "交換は1回ごとに個別のロットになります。新CTの10%は交換トランザクションで届き、残りの90%は7日後に解除されます。解除後はCojamがウォレットへ自動送付し、交換期間の終了後でも、いつでもご自身で受け取れます。送付先は交換したウォレットに限られます。",
     "help.gas": "MetaMaskはKaiaの手数料の肩代わりに対応したトランザクションに署名できないため、MetaMaskでは承認、交換、受け取りのたびに少額のネットワーク手数料をKAIAで支払います。Kaia WalletならKAIAは不要で、手数料はCojamが負担します。",
     "help.approve": "承認は一般的なトークンの許可設定です。交換コントラクトがウォレットから移動できる旧CTの数量を決めます。上限は承認した数量で、コントラクトはこの交換にのみ使用できます。",
-    "help.reserve": "新CTは交換コントラクトが保有するリザーブから支払われます。Cojamのマスターウォレットが段階的にリザーブに入金し、交換の進み具合に応じて補充します。不足した場合は、補充されるまで交換が拒否されます。ロック中の90%に充てる新CTは常に別に確保されています。",
+    "help.reserve": "新CTは、交換コントラクトが保有するリザーブから支払われます。リザーブはCojamのマスターウォレットが入金し、管理します。不足した場合は、補充されるまで交換が一時的に止まります。旧CTは動きません。ロック中の90%に充てる新CTはコントラクト内で別に確保されており、Cojamを含め誰も動かせません。",
     "help.sponsor": "Kaiaでは、トランザクションのネットワーク手数料を別のアカウントが支払えます。ウォレットで署名すると、Cojamのガス代ウォレットが連署して手数料を支払います。支払うのはCojamコントラクトでの承認、交換、受け取りの手数料のみで、ウォレットごとに上限があり、あなたのトークンを動かすことは決してできません。",
     "help.split": "10%はCTの最小単位で切り捨て、ロック分はその残りとなるため、2つの合計は常に交換した数量とぴったり一致します。",
 
