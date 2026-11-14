@@ -148,15 +148,29 @@
     });
     drag();
   }
+  // Wallet logos: the official marks, bundled in assets/wallets/, or the icon a wallet announces about itself (EIP-6963).
+  var LOGO_DIR = (document.body && document.body.dataset.root || "../") + "assets/wallets/";
+  var LOGOS = { kaia: LOGO_DIR + "kaia-wallet.png", mm: LOGO_DIR + "metamask.svg", wc: LOGO_DIR + "walletconnect.svg" };
+  function logoFor(kind) {
+    if (LOGOS[kind]) return LOGOS[kind];
+    var u = CJ.chain && CJ.chain.iconOf && CJ.chain.iconOf(kind);
+    // only image data URIs or https images, so an announced icon can never inject markup
+    return u && /^(data:image\/(png|svg\+xml|jpeg|webp|gif)[;,]|https:\/\/)/i.test(u) ? u : null;
+  }
+  function icHtml(icon, name) {
+    var src = typeof icon === "string" && icon.indexOf("logo:") === 0 ? logoFor(icon.slice(5)) : null;
+    if (src) return '<img class="cj-opt-logo" src="' + esc(src) + '" alt="" width="28" height="28" loading="lazy" decoding="async">';
+    return ic(typeof icon === "string" && icon.indexOf("logo:") === 0 ? "wallet" : icon, 20);
+  }
   function opt(tag, attrs, icon, name, sub, badge, trail) {
     // The tag is its own grid item: beside the name when the row is wide, after the sub line on a narrow phone.
-    return "<" + tag + ' class="cj-opt" ' + attrs + '><span class="cj-opt-ic">' + ic(icon, 20) + '</span><span class="cj-opt-txt"><span class="cj-opt-name">' + name + "</span>" +
+    return "<" + tag + ' class="cj-opt" ' + attrs + '><span class="cj-opt-ic' + (String(icon).indexOf("logo:") === 0 ? " has-logo" : "") + '">' + icHtml(icon) + '</span><span class="cj-opt-txt"><span class="cj-opt-name">' + name + "</span>" +
       '<span class="cj-opt-sub">' + sub + "</span>" + (badge ? '<span class="tag tag-sky cj-opt-tag">' + badge + "</span>" : "") + "</span>" + ic(trail || "chevron", 18) + "</" + tag + ">";
   }
   // WalletConnect row: live it is not wired yet, so it reads "Coming soon" and cannot be picked.
   function wcRow(attrs, sub) {
-    if (!live()) return opt("button", attrs, attrs.indexOf("data-view") > -1 ? "qr" : "link", t("wl.wc"), sub);
-    return opt("button", 'type="button" disabled aria-disabled="true" style="opacity:.62;cursor:default"', "link", t("wl.wc"),
+    if (!live()) return opt("button", attrs, "logo:wc", t("wl.wc"), sub);
+    return opt("button", 'type="button" disabled aria-disabled="true" style="opacity:.62;cursor:default"', "logo:wc", t("wl.wc"),
       tt("wl.wc.soon.sub", "Use Kaia Wallet or MetaMask for now."), tt("wl.wc.soon", "Coming soon"), "clock");
   }
   function back() { return '<button type="button" class="btn btn-ghost cj-sheet-back" data-view="list">' + I("chevron", 18) + "<span>" + t("wl.back") + "</span></button>"; }
@@ -186,29 +200,29 @@
       // the line under it leads to Copy link and the store links.
       h = '<p class="cj-sheet-lead">' + t("wl.mobile.lead") + "</p><div class=\"cj-opts\">" +
         '<div class="cj-opt-group">' +
-        opt("a", 'href="' + esc(kaiaLink()) + '" data-deeplink="kaia"', "phone", t("wl.open.kaia"), t("wl.sub.kaia.open"), t("wl.rec"), "ext") +
+        opt("a", 'href="' + esc(kaiaLink()) + '" data-deeplink="kaia"', "logo:kaia", t("wl.open.kaia"), t("wl.sub.kaia.open"), t("wl.rec"), "ext") +
         '<button type="button" class="btn btn-ghost btn-block cj-opt-alt" data-view="kaia">' + t("wl.kaia.alt") + "</button></div>" +
-        opt("a", 'href="' + esc(metamaskLink()) + '" data-deeplink="mm"', "phone", t("wl.open.mm"), t("wl.sub.mm"), null, "ext") +
+        opt("a", 'href="' + esc(metamaskLink()) + '" data-deeplink="mm"', "logo:mm", t("wl.open.mm"), t("wl.sub.mm"), null, "ext") +
         wcRow('type="button" data-pick="wc"', t("wl.sub.wc.mobile")) + "</div>";
     } else if (e.mode === "desktop-none") {
       h = '<p class="cj-sheet-lead">' + t("wl.none.lead") + "</p><div class=\"cj-opts\">" +
-        opt("a", 'href="' + STORE.kaiaChrome + '" target="_blank" rel="noopener"', "wallet", t("wl.install.kaia"), t("wl.sub.kaia"), t("wl.rec"), "ext") +
-        opt("a", 'href="' + STORE.metamask + '" target="_blank" rel="noopener"', "wallet", t("wl.install.mm"), t("wl.sub.mm"), null, "ext") +
+        opt("a", 'href="' + STORE.kaiaChrome + '" target="_blank" rel="noopener"', "logo:kaia", t("wl.install.kaia"), t("wl.sub.kaia"), t("wl.rec"), "ext") +
+        opt("a", 'href="' + STORE.metamask + '" target="_blank" rel="noopener"', "logo:mm", t("wl.install.mm"), t("wl.sub.mm"), null, "ext") +
         wcRow('type="button" data-view="qr"', t("wl.sub.wc.desk")) + "</div>" +
         '<p class="small muted cj-sheet-foot">' + t("wl.none.reload") + "</p>";
     } else {
       // desktop with an extension (or an unforced inapp page that still asked for the sheet)
       var has = function (k) { return e.exts.indexOf(k) > -1 || e.kind === k; };
       h = '<div class="cj-opts">' +
-        (has("kaia") ? opt("button", 'type="button" data-pick="kaia"', "wallet", t("wl.name.kaia"), t("wl.sub.kaia"), t("wl.found"))
-          : opt("a", 'href="' + STORE.kaiaChrome + '" target="_blank" rel="noopener"', "wallet", t("wl.install.kaia"), t("wl.sub.kaia"), t("wl.rec"), "ext")) +
-        (has("mm") ? opt("button", 'type="button" data-pick="mm"', "wallet", t("wl.name.mm"), t("wl.sub.mm"), t("wl.found"))
-          : opt("a", 'href="' + STORE.metamask + '" target="_blank" rel="noopener"', "wallet", t("wl.install.mm"), t("wl.sub.mm"), null, "ext")) +
+        (has("kaia") ? opt("button", 'type="button" data-pick="kaia"', "logo:kaia", t("wl.name.kaia"), t("wl.sub.kaia"), t("wl.found"))
+          : opt("a", 'href="' + STORE.kaiaChrome + '" target="_blank" rel="noopener"', "logo:kaia", t("wl.install.kaia"), t("wl.sub.kaia"), t("wl.rec"), "ext")) +
+        (has("mm") ? opt("button", 'type="button" data-pick="mm"', "logo:mm", t("wl.name.mm"), t("wl.sub.mm"), t("wl.found"))
+          : opt("a", 'href="' + STORE.metamask + '" target="_blank" rel="noopener"', "logo:mm", t("wl.install.mm"), t("wl.sub.mm"), null, "ext")) +
         (has("web3") ? opt("button", 'type="button" data-pick="web3"', "wallet", t("wl.name.web3"), t("wl.sub.web3"), t("wl.found")) : "") +
         // each other detected wallet by its own name (OKX Wallet, Phantom, ...), so picking one opens that one
         e.exts.filter(function (k) { return k.indexOf("x:") === 0; }).map(function (k) {
           var nm = (CJ.chain && CJ.chain.label && CJ.chain.label(k)) || t("wl.name.web3");
-          return opt("button", 'type="button" data-pick="' + esc(k) + '"', "wallet", esc(nm), t("wl.sub.web3"), t("wl.found"));
+          return opt("button", 'type="button" data-pick="' + esc(k) + '"', "logo:" + k, esc(nm), t("wl.sub.web3"), t("wl.found"));
         }).join("") +
         wcRow('type="button" data-view="qr"', t("wl.sub.wc.desk")) + "</div>";
     }

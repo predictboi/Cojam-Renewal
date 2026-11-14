@@ -148,6 +148,11 @@
     if (!ids.length && eth && (imposter(eth) || (!eth.isMetaMask && !eth.isKaikas)) && eth !== window.klaytn) out.push("web3");
     return out;
   }
+  // The icon a wallet announced about itself (EIP-6963 info.icon, a data URI), for the chooser; null when none.
+  function iconOf(kind) {
+    var x = kind && kind.indexOf("x:") === 0 ? extra[kind.slice(2)] : kind === "kaia" ? found.kaia : kind === "mm" ? found.mm : null;
+    return x && x.info && x.info.icon ? String(x.info.icon) : null;
+  }
   // Display name of a wallet kind for the chooser and the wallet card ("OKX Wallet", "Phantom"), or null.
   function label(kind) {
     if (kind && kind.indexOf("x:") === 0) { var x = extra[kind.slice(2)]; return x && x.info && x.info.name ? String(x.info.name) : null; }
@@ -619,7 +624,7 @@
 
   CJ.chain = {
     net: net, gasApi: GAS_API, provider: rp, interfaces: { erc20: ERC20, swap: SWAP },
-    available: available, providerFor: providerFor, remembered: remembered, label: label, rescan: rescan,
+    available: available, providerFor: providerFor, remembered: remembered, label: label, rescan: rescan, iconOf: iconOf,
     connect: connect, restore: restore, disconnect: disconnect, switchNetwork: switchNetwork,
     refresh: refresh, contractInfo: contractInfo, readWallet: readWallet,
     write: write, watchAsset: watchAsset, previewSwap: previewSwap, classify: classify, toWei: toWei, on: on,

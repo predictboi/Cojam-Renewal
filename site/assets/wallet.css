@@ -67,3 +67,7 @@
   .cj-sheet[open] { animation: none; }
   .cj-sheet { transition: none; }
 }
+
+/* official wallet logos in the chooser rows */
+.cj-opt-ic.has-logo { background: #fff; padding: 0; overflow: hidden; }
+.cj-opt-logo { display: block; width: 28px; height: 28px; object-fit: contain; border-radius: 8px; }
