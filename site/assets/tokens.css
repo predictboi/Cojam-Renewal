@@ -8,24 +8,37 @@
 @font-face { font-family: "Pretendard Fallback"; src: local("Arial"), local("ArialMT"), local("Helvetica"), local("Liberation Sans"); font-weight: 450 549; size-adjust: 102.7%; }
 @font-face { font-family: "Pretendard Fallback"; src: local("Arial Bold"), local("Arial-BoldMT"), local("Helvetica Bold"), local("Liberation Sans Bold"); font-weight: 550 900; size-adjust: 98.7%; }
 :root {
-  /* brand */
-  --brand: #124CC4;          /* primary action and current selection only (white text 7.35:1) */
+  /* brand, direction B "Signal": one loud colour (Cojam blue as the ground of the header and page heads), two quiet ones
+     (snow for content, ink for cards and text) and one key colour (volt) for the primary action and the current selection.
+     Ink text on volt 15.7:1, snow on blue 7.35:1, volt on blue 6.4:1. Volt is never text on snow. */
+  --brand: #124CC4;          /* the blue ground: header, page head band, footer; links and focus on snow (white text 7.35:1) */
   --brand-hover: #0F3FA6;    /* white text 9.2:1 */
-  --brand-tint: #E7EEFB;     /* selected background; brand text on it 6.31:1 */
+  --brand-deep: #0D3A9C;
+  --brand-tint: #E7EEFB;     /* brand text on it 6.31:1 */
+  --volt: #D6FF3D;           /* primary action and current selection only, always with ink text and an ink edge */
+  --volt-hover: #CBF52A;
+  --on-volt: #0B1530;
+  --accent: var(--volt);
   --sky: #97DBFF;            /* data colour for new CT; dark ink on it */
   --sky-tint: #E3F5FF;
   --sky-soft: #C9EDFF;       /* a released lot's track: lighter than live data, clearly filled against --inset */
 
-  /* light ground */
-  --bg: #F5F7FB;
+  /* light ground: content areas stay snow so data, forms and tables read calmly */
+  --snow: #FDFDFF;
+  --bg: #FDFDFF;
   --surface: #FFFFFF;
-  --inset: #EEF2F9;
+  --inset: #EEF2F9;          /* mist */
   --line: #DCE3EF;
   --line-strong: #C3CDDF;
   --ink: #0B1530;
-  --ink-2: #4A5672;          /* 6.8:1 on --bg, 6.5:1 on --inset */
+  --ink-2: #4A5672;          /* 7.3:1 on snow, 6.5:1 on --inset */
+  --ink-soft: #A9B4D0;       /* secondary text on ink, 9.6:1 */
+  --ink-line: #1B2A55;       /* hairlines and empty slots on ink */
   --on-brand: #FFFFFF;
+  --on-brand-2: #D6E2FA;     /* secondary text on the blue ground, 5.5:1 */
   --on-sky: #0B1530;
+  --edge-ink: 2px solid var(--ink);   /* the B card edge */
+  --grid-line: rgba(255, 255, 255, 0.14); /* faint grid on the blue ground */
 
   /* status */
   --up: #0E7A4D;   --up-tint: #E4F4EC;
@@ -45,18 +58,25 @@
   /* type */
   --font: "Pretendard Variable", Pretendard, "Pretendard Fallback", -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
   --font-ja: "Pretendard JP Variable", "Pretendard JP", "Pretendard Fallback", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-display: "Archivo", "Pretendard Variable", Pretendard, "Pretendard Fallback", system-ui, sans-serif; /* wide heavy headings */
+  --font-display-ja: "Archivo", "Pretendard JP Variable", "Pretendard JP", "Pretendard Fallback", system-ui, sans-serif;
   --font-data: ui-monospace, "SF Mono", Menlo, Consolas, monospace; /* addresses and tx hashes only */
   --fs-12: 12px; --fs-13: 13px; --fs-14: 14px; --fs-16: 16px; --fs-20: 20px; --fs-24: 24px; --fs-32: 32px;
   --fs-display: clamp(36px, 5.2vw, 56px);
-  --fw-regular: 400; --fw-medium: 500; --fw-semi: 600;
+  --fw-regular: 400; --fw-medium: 500; --fw-semi: 600; --fw-bold: 700; --fw-heavy: 800;
 
   /* space and shape */
   --s-4: 4px; --s-8: 8px; --s-12: 12px; --s-16: 16px; --s-24: 24px; --s-32: 32px; --s-48: 48px; --s-64: 64px; --s-96: 96px;
-  --r-control: 8px;
-  --r-panel: 12px;
+  --r-control: 14px;         /* fields, rows, small boxes */
+  --r-panel: 24px;           /* cards and sheets */
+  --r-pill: 999px;           /* buttons, tags, nav links */
   --container: 1120px;
   --gutter: 16px;
   --shadow-pop: 0 8px 24px rgba(11, 21, 48, 0.12);
+  --shadow-hard: 0 4px 0 var(--ink);       /* volt buttons: a hard ink drop that presses down */
+  --shadow-hard-up: 0 6px 0 var(--ink);
+  --shadow-hard-down: 0 1px 0 var(--ink);
+  --shadow-sheet: 6px 6px 0 var(--ink);    /* sheets and dialogs */
 
   /* rhythm: one set of names for page level spacing. Phones (under 600 px) get tighter values below. */
   --sp-page: 32px;           /* main top padding on app pages (swap, status, docs, admin) */
@@ -69,20 +89,19 @@
   --sp-foot: 48px;           /* footer top padding; the footer margin above it is --sp-section */
 
   /* light: decorative only, always at low alpha. Never text, never a fill behind text on its own. */
-  --glow: rgba(18, 76, 196, 0.16);        /* brand light: primary button glow, edge highlights */
+  --glow: rgba(18, 76, 196, 0.16);        /* brand light: edge highlights */
   --glow-sky: rgba(151, 219, 255, 0.55);  /* sky light: the 10% block, success burst, ambient */
-  --edge: linear-gradient(135deg, rgba(18, 76, 196, 0.30), var(--line) 38%, var(--line) 62%, var(--sky)); /* gradient hairline */
+  --edge: linear-gradient(var(--ink), var(--ink)); /* row plate edge on hover: plain ink in B */
   --tile: linear-gradient(145deg, var(--brand-tint), var(--sky-tint)); /* icon tiles */
-  --band: linear-gradient(180deg, var(--sky-tint), rgba(227, 245, 255, 0)); /* soft header band on app pages */
-  --brand-top: #1D58D2;      /* top of the primary button gradient (white text 6.2:1) */
-  --brand-bottom: #1045B5;   /* bottom of the primary button gradient (white text 8.3:1) */
+  /* the blue page head band: Cojam blue with a faint 44 px grid, as on the landing hero */
+  --band: linear-gradient(var(--grid-line) 1px, transparent 1px) -1px -1px / 44px 44px, linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) -1px -1px / 44px 44px, var(--brand);
 
   --shadow-lift: 0 10px 24px -8px rgba(11, 21, 48, 0.16), 0 2px 6px rgba(11, 21, 48, 0.05);
   --shadow-lift-night: 0 12px 28px -10px rgba(0, 0, 0, 0.55);
   --sheen: rgba(255, 255, 255, 0.6);       /* shimmer highlight on sky fills */
-  --ripple: rgba(255, 255, 255, 0.32);     /* touch ripple on the primary button */
+  --ripple: rgba(11, 21, 48, 0.16);        /* touch ripple on the volt primary button */
   --press-shade: rgba(11, 21, 48, 0.07);   /* quick shade on press, light buttons */
-  --press-shade-strong: rgba(11, 21, 48, 0.16); /* on the brand fill */
+  --press-shade-strong: rgba(11, 21, 48, 0.08); /* on the volt fill */
   --press-shade-night: rgba(255, 255, 255, 0.08);
 
   /* motion: transform and opacity only, 120 to 400 ms. motion.js reads none of these; CSS owns timing. */
@@ -105,7 +124,7 @@
 
   color-scheme: light;
 }
-:lang(ja) { --font: var(--font-ja); }
+:lang(ja) { --font: var(--font-ja); --font-display: var(--font-display-ja); }
 @media (min-width: 768px) { :root { --gutter: 32px; } }
 /* Phones: about a third less vertical rhythm. Touch targets stay 44 px; only the air between blocks shrinks. */
 @media (max-width: 599px) {

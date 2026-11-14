@@ -24,7 +24,8 @@
       '<a class="cj-skip" href="#main" data-i18n="nav.skip"></a>' +
       '<div class="cj-banner" role="note"><div class="container">' + I("shield", 16) + '<span data-i18n="banner.text"></span></div></div>' +
       '<header class="cj-header"><div class="container cj-header-row">' +
-        '<a class="cj-brand" href="' + root + '" data-i18n-attr="aria-label:nav.home"><img src="' + root + 'assets/cojam-mark.svg" alt="" width="28" height="28"><span>Cojam</span></a>' +
+        // Logo pill and the "since 2019" tag, as on the landing header.
+        '<a class="cj-brand" href="' + root + '" data-i18n-attr="aria-label:nav.home"><span class="cj-chip"><img src="' + root + 'assets/cojam-mark.svg" alt="" width="26" height="26"><span>Cojam</span></span><span class="cj-since" aria-hidden="true">since 2019</span></a>' +
         nav("cj-nav") +
         '<div class="cj-tools">' +
           '<label class="cj-lang">' + I("globe", 18) + '<span class="sr-only" data-i18n="nav.lang"></span>' +
@@ -43,7 +44,7 @@
     if (foot) {
       foot.outerHTML =
         '<footer class="cj-footer"><div class="container cj-foot-grid">' +
-          '<div class="cj-foot-brand"><a class="cj-brand" href="' + root + '" data-i18n-attr="aria-label:nav.home"><img src="' + root + 'assets/cojam-mark.svg" alt="" width="28" height="28"><span>Cojam</span></a>' +
+          '<div class="cj-foot-brand"><a class="cj-brand" href="' + root + '" data-i18n-attr="aria-label:nav.home"><span class="cj-chip"><img src="' + root + 'assets/cojam-mark.svg" alt="" width="26" height="26"><span>Cojam</span></span></a>' +
             '<p class="muted small" data-i18n="foot.tagline"></p></div>' +
           '<div><h2 class="cj-foot-h" data-i18n="foot.site"></h2>' +
             (compact ? nav("cj-foot-nav").replace("</nav>", '<a href="#' + compact + '" data-i18n="foot.contracts"></a></nav>') : nav("cj-foot-nav")) + "</div>" +

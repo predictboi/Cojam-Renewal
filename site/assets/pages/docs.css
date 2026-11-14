@@ -1,62 +1,66 @@
 /* Docs page layout (Read mode). Components come from base.css. */
-.dc { position: relative; isolation: isolate; padding: var(--sp-page) 0 0; }
-.dc::before { content: ""; position: absolute; inset: 0 0 auto; height: 320px; z-index: -1; pointer-events: none; background: var(--band); }
+/* The page head is the blue band (.cj-band in base.css), spanning the full layout so the band reaches both edges. */
+.dc { position: relative; isolation: isolate; padding: 0; }
 .dc-layout { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-stack); }
-@media (max-width: 599px) { .dc-lede { margin-top: var(--s-8); font-size: 18px; } }
-.dc-head h1 { font-size: clamp(32px, 4.4vw, 44px); }
-.dc-lede { margin-top: var(--s-12); font-size: var(--fs-20); line-height: 1.5; color: var(--ink-2); max-width: 32em; }
+.dc-lede { margin-top: var(--s-16); font-size: var(--fs-20); line-height: 1.5; max-width: 32em; }
+@media (max-width: 599px) { .dc-lede { margin-top: var(--s-12); font-size: 17px; } }
 
 /* ---------- mobile jump list ---------- */
-.dc-jump { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); }
-.dc-jump > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--s-8); min-height: 52px; padding: 0 var(--s-16); cursor: pointer; font-weight: var(--fw-medium); list-style: none; border-radius: var(--r-panel); }
+.dc-jump { background: var(--surface); border: var(--edge-ink); border-radius: 22px; }
+.dc-jump > summary { display: flex; align-items: center; justify-content: space-between; gap: var(--s-8); min-height: 52px; padding: 0 var(--s-16) 0 20px; cursor: pointer; font-weight: var(--fw-heavy); list-style: none; border-radius: 20px; }
 .dc-jump > summary::-webkit-details-marker { display: none; }
-.dc-jump > summary::after { content: ""; width: 8px; height: 8px; margin-right: 4px; border-right: 1.75px solid var(--ink-2); border-bottom: 1.75px solid var(--ink-2); transform: rotate(45deg); transition: transform var(--dur) var(--ease); }
+.dc-jump > summary::after { content: ""; width: 8px; height: 8px; margin-right: 4px; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(45deg); transition: transform var(--dur) var(--ease); }
 .dc-jump[open] > summary::after { transform: rotate(-135deg); }
-.dc-jump ol { list-style: none; margin: 0; padding: 0 var(--s-8) var(--s-8); border-top: 1px solid var(--line); }
-.dc-jump a { display: flex; align-items: center; min-height: 44px; padding: 0 var(--s-8); color: var(--ink); text-decoration: none; border-radius: var(--r-control); }
+.dc-jump ol { list-style: none; margin: 0; padding: var(--s-4) var(--s-8) var(--s-8); border-top: 1px solid var(--line); }
+.dc-jump a { display: flex; align-items: center; min-height: 44px; padding: 0 var(--s-12); color: var(--ink); font-weight: var(--fw-semi); text-decoration: none; border-radius: var(--r-pill); }
 .dc-jump a:hover { background: var(--inset); color: var(--ink); }
 
 /* ---------- desktop table of contents ---------- */
 .dc-toc { display: none; }
-.dc-toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; border-left: 1px solid var(--line); }
-.dc-toc-h { font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--ink-2); margin-bottom: var(--s-8); }
-.dc-toc a { display: flex; align-items: center; min-height: 36px; padding: 0 var(--s-12); margin-left: -1px; border-left: 2px solid transparent; color: var(--ink-2); text-decoration: none; font-size: var(--fs-14); }
-.dc-toc a:hover { color: var(--ink); }
-.dc-toc a[aria-current] { color: var(--brand); border-left-color: var(--brand); font-weight: var(--fw-medium); }
+.dc-toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.dc-toc-h { font-size: var(--fs-13); font-weight: var(--fw-heavy); color: var(--ink-2); letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: var(--s-8); }
+:is(:lang(ko), :lang(ja)) .dc-toc-h { letter-spacing: 0; }
+/* Current section: a volt pill with ink text and an ink ring, the site's current selection. */
+.dc-toc a { display: flex; align-items: center; min-height: 40px; padding: 0 14px; border-radius: var(--r-pill); color: var(--ink-2); text-decoration: none; font-size: var(--fs-14); font-weight: var(--fw-semi); }
+.dc-toc a:hover { color: var(--ink); background: var(--inset); }
+.dc-toc a[aria-current] { color: var(--on-volt); background: var(--volt); box-shadow: inset 0 0 0 1.5px var(--ink); font-weight: var(--fw-heavy); }
 
 /* ---------- body ---------- */
 .dc-body { min-width: 0; max-width: 680px; }
 /* Anchors land below the sticky header: html scroll-padding-top (72 px, in the shell CSS) plus this margin. */
 .dc-sec, .dc-body [id] { scroll-margin-top: var(--s-16); }
-.dc-sec { padding: var(--sp-group) 0; border-top: 1px solid var(--line); }
+.dc-sec { padding: var(--sp-group) 0; border-top: var(--edge-ink); }
 .dc-sec:first-child { border-top: 0; padding-top: var(--s-8); }
-.dc-h2 { font-size: var(--fs-24); letter-spacing: -0.015em; margin-bottom: var(--s-16); }
-@media (max-width: 599px) { .dc-h2 { font-size: 22px; margin-bottom: var(--s-12); } .dc-step { padding-bottom: var(--s-16); } }
-.dc-h3 { font-size: var(--fs-16); font-weight: var(--fw-semi); line-height: 1.4; letter-spacing: 0; }
+/* Section headings: Archivo wide capitals, as the landing's section titles, at reading size. */
+.dc-h2 { font-family: var(--font-display); font-size: clamp(24px, 3vw, 32px); font-weight: 900; font-stretch: 115%; text-transform: uppercase; letter-spacing: -0.025em; line-height: 1; margin-bottom: var(--s-16); }
+:is(:lang(ko), :lang(ja)) .dc-h2 { font-stretch: 100%; letter-spacing: -0.035em; line-height: 1.2; }
+@media (max-width: 599px) { .dc-h2 { margin-bottom: var(--s-12); } .dc-step { padding-bottom: var(--s-16); } }
+.dc-h3 { font-size: 17px; font-weight: var(--fw-heavy); line-height: 1.4; letter-spacing: -0.005em; }
 .dc-body p, .dc-body li, .dc-body dd { max-width: 65ch; }
-.dc-body strong { font-weight: var(--fw-semi); }
+.dc-body strong { font-weight: var(--fw-heavy); }
 
 .dc-list { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s-12); }
 .dc-list > li { position: relative; padding-left: var(--s-24); }
-.dc-list > li::before { content: ""; position: absolute; left: 6px; top: 0.72em; width: 6px; height: 6px; border-radius: 50%; background: var(--line-strong); }
+.dc-list > li::before { content: ""; position: absolute; left: 4px; top: 0.6em; width: 8px; height: 8px; border-radius: 2px; background: var(--brand); transform: rotate(45deg); }
 
 .dc-steps { margin: 0; padding: 0; list-style: none; counter-reset: dcstep; display: grid; }
-.dc-step { position: relative; padding: 0 0 var(--s-24) 48px; counter-increment: dcstep; }
-.dc-step::before { content: counter(dcstep); position: absolute; left: 0; top: 0; width: 32px; height: 32px; border-radius: 50%; background: var(--tile); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), inset 0 0 0 1px rgba(18, 76, 196, 0.1); color: var(--ink); font-size: var(--fs-14); font-weight: var(--fw-semi); display: flex; align-items: center; justify-content: center; }
-.dc-step::after { content: ""; position: absolute; left: 15.5px; top: 36px; bottom: 4px; width: 1px; background: var(--line); }
+/* Numbered steps: ink discs with Archivo figures in volt (15.7:1), joined by an ink rail. */
+.dc-step { position: relative; padding: 0 0 var(--s-24) 52px; counter-increment: dcstep; }
+.dc-step::before { content: counter(dcstep, decimal-leading-zero); position: absolute; left: 0; top: 0; width: 36px; height: 36px; border-radius: 50%; background: var(--ink); color: var(--volt); font-family: var(--font-display); font-size: var(--fs-13); font-weight: 900; font-stretch: 112%; display: flex; align-items: center; justify-content: center; }
+.dc-step::after { content: ""; position: absolute; left: 17px; top: 40px; bottom: 4px; width: 2px; background: var(--ink); opacity: 0.18; }
 .dc-step:last-child { padding-bottom: 0; }
 .dc-step:last-child::after { display: none; }
-.dc-step .dc-h3 { padding-top: 4px; }
+.dc-step .dc-h3 { padding-top: 6px; }
 .dc-step p { margin-top: var(--s-4); color: var(--ink-2); }
 .dc-cta { margin-top: var(--sp-stack); }
 
 .dc-trackbox { margin: 0 0 var(--sp-stack); padding: var(--sp-panel); }
 
 .dc-fees { margin-top: var(--s-16); }
-.dc-sub { margin-top: var(--sp-stack); padding: var(--s-16) var(--s-24); border-radius: var(--r-panel); background: var(--surface); border: 1px solid var(--line); }
+.dc-sub { margin-top: var(--sp-stack); padding: var(--s-16) var(--s-24) 20px; border-radius: var(--r-panel); background: var(--inset); }
 .dc-sub > * + * { margin-top: var(--s-12); }
 /* the answer a fix link from the swap app points at */
-.dc-sub:target { border-color: var(--line-strong); }
+.dc-sub:target { box-shadow: inset 0 0 0 2px var(--ink); }
 @media (max-width: 599px) { .dc-sub { padding: var(--s-16); } }
 
 .dc-addrs { display: grid; gap: var(--s-8); padding: var(--s-16) var(--s-24); margin-bottom: var(--sp-stack); }
@@ -64,11 +68,10 @@
 .dc-audit .tag { vertical-align: 1px; }
 
 @media (min-width: 960px) {
-  .dc { padding-top: var(--s-48); }
   .dc-layout { grid-template-columns: 220px minmax(0, 1fr); column-gap: var(--s-64); row-gap: var(--s-32); }
-  .dc-head { grid-column: 2; }
+  .dc-head { grid-column: 1 / -1; }
   .dc-jump { display: none; }
-  .dc-toc { display: block; grid-column: 1; grid-row: 1 / span 2; align-self: start; position: sticky; top: 96px; }
+  .dc-toc { display: block; grid-column: 1; grid-row: 2; align-self: start; position: sticky; top: 96px; }
   .dc-body { grid-column: 2; grid-row: 2; }
 }
 @media (max-width: 599px) {
@@ -79,11 +82,11 @@
 
 /* ---------- bordered row lists: which wallet, special cases ---------- */
 .dc-sec-lede { color: var(--ink-2); margin-bottom: var(--s-16); }
-.dc-rows { list-style: none; margin: 0; padding: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-panel); }
+.dc-rows { list-style: none; margin: 0; padding: 0; background: var(--surface); border: var(--edge-ink); border-radius: var(--r-panel); }
 .dc-rows > li { max-width: none; }
 .dc-rows > li + li { border-top: 1px solid var(--line); }
 .dc-row { display: grid; grid-template-columns: 20px minmax(0, 1fr); gap: var(--s-12); padding: var(--s-16); }
-.dc-row-ico { display: inline-flex; width: 20px; height: 20px; flex: none; color: var(--ink-2); }
+.dc-row-ico { display: inline-flex; width: 20px; height: 20px; flex: none; color: var(--brand); }
 .dc-row-ico svg { display: block; }
 .dc-row .dc-row-ico { margin-top: 2px; }
 .dc-row-t { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4) var(--s-8); }
@@ -92,9 +95,9 @@
 .dc-case > summary { display: flex; align-items: center; gap: var(--s-12); min-height: 56px; padding: var(--s-12) var(--s-16); cursor: pointer; list-style: none; border-radius: var(--r-panel); }
 .dc-case > summary::-webkit-details-marker { display: none; }
 .dc-case > summary .dc-h3 { flex: 1; min-width: 0; }
-.dc-case > summary::after { content: ""; flex: none; width: 8px; height: 8px; margin-right: 4px; border-right: 1.75px solid var(--ink-2); border-bottom: 1.75px solid var(--ink-2); transform: rotate(45deg); transition: transform var(--dur) var(--ease); }
+.dc-case > summary::after { content: ""; flex: none; width: 8px; height: 8px; margin-right: 4px; border-right: 2px solid var(--ink); border-bottom: 2px solid var(--ink); transform: rotate(45deg); transition: transform var(--dur) var(--ease); }
 .dc-case[open] > summary::after { transform: rotate(-135deg); }
-.dc-case > summary:focus-visible { outline: 2px solid var(--brand); outline-offset: -2px; }
+.dc-case > summary:focus-visible { outline: 3px solid var(--brand); outline-offset: -3px; }
 .dc-case > .dc-row-b { margin: 0; padding: 0 var(--s-16) var(--s-16) calc(var(--s-16) + 20px + var(--s-12)); }
 .dc-case:target > summary .dc-h3 { text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; }
 /* wide screens: every case is open and reads as a plain list, so the toggle stays out of the way */

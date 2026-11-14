@@ -1,51 +1,49 @@
 /* Status page layout (Operate mode: dense and calm). Components come from base.css. */
-.st { position: relative; isolation: isolate; padding: var(--sp-page) 0 0; }
+.st { position: relative; isolation: isolate; padding: 0; }
 .st > .container { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-stack); }
-/* A soft sky band behind the page head, fading into the ground before the first panel ends. */
-.st::before { content: ""; position: absolute; inset: 0 0 auto; height: 360px; z-index: -1; pointer-events: none; background: var(--band); }
+/* The page head is the blue band (.cj-band in base.css); the grid gap below it gives the first panel air. */
 .st-recent, .st-recent > * { min-width: 0; }
 
 /* ---------- head ---------- */
 .st-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-16) var(--s-24); }
-.st-head h1 { font-size: var(--fs-32); letter-spacing: -0.02em; }
-.st-head-copy p { margin-top: var(--s-8); }
+.st-head-copy p { margin-top: var(--s-12); font-weight: var(--fw-semi); }
 .st-head-tools { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-16); }
-.st-live { display: inline-flex; align-items: center; gap: var(--s-8); color: var(--ink-2); min-width: 11em; }
+.st-live { display: inline-flex; align-items: center; gap: var(--s-8); min-height: 36px; padding: 0 14px 0 12px; border-radius: var(--r-pill); background: rgba(11, 21, 48, 0.32); color: var(--on-brand); font-weight: var(--fw-semi); min-width: 11em; }
 /* the dot is .live-dot from base.css: sky, never green; grey while stale */
 .st-error strong { font-weight: var(--fw-semi); }
 
 .st-sample strong { font-weight: var(--fw-semi); }
 
 /* ---------- headline figures ---------- */
-.st-label { font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--ink-2); letter-spacing: 0; line-height: 1.4; }
-.st-unit { font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--ink-2); white-space: nowrap; }
+.st-label { font-size: var(--fs-14); font-weight: var(--fw-bold); color: var(--ink-2); letter-spacing: 0; line-height: 1.4; }
+.st-unit { font-size: var(--fs-14); font-weight: var(--fw-semi); color: var(--ink-2); white-space: nowrap; }
 .st-top { display: grid; gap: var(--sp-stack); padding: var(--sp-panel); }
-/* Headline panel: a faint sky light at the top edge. */
-.st-top { background: linear-gradient(180deg, var(--sky-tint), rgba(227, 245, 255, 0) 140px), var(--surface); }
+
 .st-hero { display: grid; gap: var(--s-8); align-content: start; min-width: 0; }
 .st-hero-value { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 var(--s-8); margin-top: var(--s-4); }
-.st-hero-num { font-size: clamp(30px, 8vw, 48px); font-weight: var(--fw-semi); line-height: 1.1; letter-spacing: -0.02em; font-variant-numeric: proportional-nums; white-space: nowrap; }
+/* The headline figure in Archivo, blue on white (7.35:1), as the landing's numbers. */
+.st-hero-num { font-family: var(--font-display); font-size: clamp(32px, 8vw, 52px); font-weight: 900; font-stretch: 100%; line-height: 1; letter-spacing: -0.03em; color: var(--brand); white-space: nowrap; }
 .st-hero-value .st-unit { font-size: var(--fs-16); }
 
 .st-split { margin-top: var(--s-16); display: grid; gap: var(--s-12); }
-.st-split-title { font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--ink); }
-.st-bar { display: flex; gap: 2px; height: 28px; }
-.st-seg-part { min-width: 2px; border-radius: 4px; display: flex; align-items: center; padding: 0 var(--s-8); font-size: var(--fs-13); font-weight: var(--fw-medium); overflow: visible; }
+.st-split-title { font-size: var(--fs-14); font-weight: var(--fw-heavy); color: var(--ink); }
+.st-bar { display: flex; gap: 3px; height: 32px; padding: 3px; border: var(--edge-ink); border-radius: 12px; }
+.st-seg-part { min-width: 2px; border-radius: 7px; display: flex; align-items: center; padding: 0 var(--s-8); font-size: var(--fs-13); font-weight: var(--fw-bold); overflow: visible; }
 .st-seg-label { white-space: nowrap; }
-.is-claimed { background: var(--line-strong); color: var(--ink); }
+.is-claimed { background: var(--brand); color: var(--on-brand); }
 .is-held { background: var(--sky); color: var(--on-sky); }
-.is-reserve { background: var(--inset); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.is-reserve { background: var(--inset); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
 .st-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-4); font-size: var(--fs-14); }
 .st-legend li { display: flex; align-items: center; gap: var(--s-8); min-height: 28px; }
 .st-legend-name { color: var(--ink-2); }
-.st-legend-val { margin-left: auto; color: var(--ink); }
-.st-key { width: 12px; height: 12px; border-radius: 3px; flex: none; }
+.st-legend-val { margin-left: auto; color: var(--ink); font-weight: var(--fw-bold); }
+.st-key { width: 14px; height: 14px; border-radius: 4px; flex: none; }
 
 .st-figs { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); border-top: 1px solid var(--line); }
 .st-fig { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label value" "sub value"; align-items: center; column-gap: var(--s-16); min-height: 68px; padding: var(--s-12) 0; border-bottom: 1px solid var(--line); }
 .st-fig:last-child { border-bottom: 0; }
 .st-fig .st-label { grid-area: label; }
-.st-fig-value { grid-area: value; margin: 0; font-size: var(--fs-16); font-weight: var(--fw-semi); text-align: right; white-space: nowrap; }
+.st-fig-value { grid-area: value; margin: 0; font-size: var(--fs-16); font-weight: var(--fw-heavy); letter-spacing: -0.01em; text-align: right; white-space: nowrap; }
 .st-fig-sub { grid-area: sub; margin: 0; line-height: 1.4; }
 
 @media (min-width: 720px) {
@@ -67,7 +65,9 @@
 /* One column: the daily chart, then the aggregate track panel at full width, so no column ends early and leaves a gap. */
 .st-grid { display: grid; gap: var(--sp-stack); grid-template-columns: minmax(0, 1fr); align-items: start; }
 .st-panel-head { display: grid; gap: var(--s-4); margin-bottom: var(--s-16); }
-.st-h2 { font-size: var(--fs-20); letter-spacing: -0.01em; }
+/* Card headings: Archivo wide capitals, as the landing's concept cards. */
+.st-h2 { font-family: var(--font-display); font-size: 22px; font-weight: 900; font-stretch: 112%; text-transform: uppercase; letter-spacing: -0.02em; line-height: 1.05; }
+:is(:lang(ko), :lang(ja)) .st-h2 { font-stretch: 100%; letter-spacing: -0.03em; line-height: 1.25; }
 
 /* ---------- daily chart ---------- */
 .st-chart { position: relative; border-radius: var(--r-control); }
@@ -77,19 +77,19 @@
 .st-base { stroke: var(--line-strong); stroke-width: 1; }
 .st-axis { fill: var(--ink-2); font-size: 12px; font-family: var(--font); font-variant-numeric: tabular-nums; }
 .st-peak { fill: var(--ink); font-size: 12px; font-weight: var(--fw-semi); font-family: var(--font); }
-.st-col { fill: var(--sky); transition: opacity var(--dur) var(--ease); }
-.st-col.is-dim { opacity: 0.45; }
+.st-col { fill: var(--brand); transition: opacity var(--dur) var(--ease); }
+.st-col.is-dim { opacity: 0.35; }
 .st-tip {
   position: absolute; left: 0; top: 0; pointer-events: none; z-index: 5;
-  display: grid; gap: 2px; padding: var(--s-8) var(--s-12); border-radius: var(--r-control);
-  background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow-pop);
+  display: grid; gap: 2px; padding: var(--s-8) var(--s-12); border-radius: 14px;
+  background: var(--surface); border: var(--edge-ink); box-shadow: 4px 4px 0 var(--ink);
   font-size: var(--fs-13); line-height: 1.4; white-space: nowrap;
 }
 .st-tip[hidden] { display: none; }
-.st-tip strong { font-size: var(--fs-14); font-weight: var(--fw-semi); color: var(--ink); }
+.st-tip strong { font-size: var(--fs-14); font-weight: var(--fw-heavy); color: var(--ink); }
 
 .st-table-toggle { margin-top: var(--s-16); border-top: 1px solid var(--line); }
-.st-table-toggle > summary { display: inline-flex; align-items: center; gap: var(--s-8); min-height: 44px; cursor: pointer; color: var(--ink); font-size: var(--fs-14); font-weight: var(--fw-medium); list-style: none; }
+.st-table-toggle > summary { display: inline-flex; align-items: center; gap: var(--s-8); min-height: 44px; cursor: pointer; color: var(--ink); font-size: var(--fs-14); font-weight: var(--fw-bold); list-style: none; }
 .st-table-toggle > summary::-webkit-details-marker { display: none; }
 .st-table-toggle > summary::before { content: ""; width: 7px; height: 7px; border-right: 1.75px solid currentColor; border-bottom: 1.75px solid currentColor; transform: rotate(-45deg); transition: transform var(--dur) var(--ease); }
 .st-table-toggle[open] > summary::before { transform: rotate(45deg); }
@@ -108,21 +108,21 @@
 }
 .st-cal { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
 .st-unlock #st-track { margin: var(--s-8) 0 var(--s-24); }
-.st-cal-h { font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--ink); padding-top: var(--s-16); border-top: 1px solid var(--line); margin-bottom: var(--s-4); }
+.st-cal-h { font-size: var(--fs-14); font-weight: var(--fw-heavy); color: var(--ink); padding-top: var(--s-16); border-top: 1px solid var(--line); margin-bottom: var(--s-4); }
 .st-cal-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); min-height: 32px; }
 .st-cal-date { color: var(--ink-2); white-space: nowrap; }
-.st-cal-d { display: inline-block; min-width: 3.6em; color: var(--ink); font-weight: var(--fw-medium); }
-.st-cal-row.is-next .st-cal-amt .num { font-weight: var(--fw-semi); }
+.st-cal-d { display: inline-block; min-width: 3.6em; color: var(--ink); font-weight: var(--fw-bold); }
+.st-cal-row.is-next .st-cal-amt .num { font-weight: var(--fw-heavy); }
 /* Aggregate track: taller levels, the first label starts at its tick, and the CT of each day under its tick when there is room. */
 .st-unlock .track-agg .track-rail { height: 56px; }
 .st-unlock .track-axis { margin-top: 0; }
 .st-unlock .track-axis > :empty { display: none; }
 .st-unlock .track-axis > :nth-child(2) { grid-column: 2 / 5; text-align: left; }
 .st-unlock .track-axis > :last-child { grid-column: 6 / 9; text-align: right; }
-.st-tick-vals { grid-column: 1 / -1; display: none; grid-template-columns: minmax(18px, 0.78fr) repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: -6px; font-size: var(--fs-12); font-weight: var(--fw-medium); color: var(--ink); text-align: center; white-space: nowrap; }
+.st-tick-vals { grid-column: 1 / -1; display: none; grid-template-columns: minmax(18px, 0.78fr) repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: -6px; font-size: var(--fs-12); font-weight: var(--fw-bold); color: var(--ink); text-align: center; white-space: nowrap; }
 @container (min-width: 520px) { .st-tick-vals { display: grid; } }
 .st-cal-amt { text-align: right; white-space: nowrap; color: var(--ink); }
-.st-cal-total { margin-top: var(--s-12); padding-top: var(--s-12); border-top: 1px solid var(--line); color: var(--ink); }
+.st-cal-total { margin-top: var(--s-12); padding-top: var(--s-12); border-top: var(--edge-ink); color: var(--ink); font-weight: var(--fw-semi); }
 
 /* ---------- recent activity ---------- */
 .st-recent { display: grid; gap: var(--s-16); }
@@ -140,7 +140,8 @@
 /* Cards are not links (the tx button inside is), so they stay still under the finger. */
 .st-card { display: grid; gap: var(--s-4); padding: var(--s-12) var(--s-16) var(--s-4); }
 .st-card-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4) var(--s-8); }
-.st-card-amt { font-size: var(--fs-20); font-weight: var(--fw-semi); line-height: 1.25; }
+.st-card { border-radius: 20px; }
+.st-card-amt { font-size: var(--fs-20); font-weight: var(--fw-heavy); letter-spacing: -0.01em; line-height: 1.25; }
 .st-card-amt .st-unit { font-size: var(--fs-14); }
 .st-card-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--s-8); margin-top: var(--s-4); padding-top: var(--s-4); border-top: 1px solid var(--line); }
 .st-card-foot .st-tx { margin-right: calc(var(--s-12) * -1); }
@@ -156,7 +157,7 @@
 }
 
 /* ---------- mechanism details ---------- */
-.st-fees { color: var(--ink); max-width: 34em; }
+.st-fees { color: var(--ink); font-weight: var(--fw-semi); max-width: 34em; }
 .st-later { white-space: nowrap; }
 .st-card .st-later { margin-left: var(--s-4); }
 
@@ -175,7 +176,7 @@
 .st-label .help > summary { width: 32px; height: 32px; margin: -4px; }
 /* Phones: 5 recent cards, then the rest on request */
 .st-more { margin-top: var(--s-12); }
-.st-card:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+.st-card:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
 /* Wide screens: the error note is one line with Retry at its end */
 @media (min-width: 720px) {
   .st-error { align-items: center; }
