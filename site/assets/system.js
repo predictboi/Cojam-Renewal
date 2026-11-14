@@ -166,6 +166,8 @@
     if (dec.length > 18) return { ok: false, reason: "parse.decimals" };
     var v = parseFloat(s);
     if (!(v > 0)) return { ok: false, reason: "parse.zero" };
+    // The contract credits old * 2 / 5 rounded down, so 1 or 2 base units would credit 0 and revert (AmountTooSmall).
+    if (!/[1-9]/.test(s.split(".")[0]) && +(dec + "000000000000000000").slice(0, 18) < 3) return { ok: false, reason: "parse.small" };
     return { ok: true, value: v };
   }
 
@@ -180,8 +182,13 @@
   // splitNew(newAmt): the 10 / 90 split of a new CT amount.
   function splitNewMicro(n) { var i = Math.floor(n * config.instantPercent / 100); return { credit: n / 1e6, instant: i / 1e6, locked: (n - i) / 1e6 }; }
   function splitNew(newAmt) { return splitNewMicro(Math.round((+newAmt || 0) * 1e6)); }
-  // split(oldAmt): what a swap of oldAmt old CT gives: {old, credit (new CT in total), instant (10%), locked (90%)}.
-  function split(oldAmt) {
+  // split(oldAmt[, oldWei]): what a swap of oldAmt old CT gives: {old, credit (new CT in total), instant (10%), locked (90%)}.
+  // With oldWei (the exact amount in base units, live) it is the contract's previewSwap to the unit.
+  function split(oldAmt, oldWei) {
+    if (oldWei != null && window.BigInt) {
+      var c = toNewWei(oldWei), i = c * BigInt(config.instantPercent) / 100n, E = 1000000000000000000n, f = function (x) { return Number(x / E) + Number(x % E) / 1e18; };
+      return { old: f(BigInt(oldWei)), credit: f(c), instant: f(i), locked: f(c - i) };
+    }
     var u = Math.round((+oldAmt || 0) * 1e6), r = splitNewMicro(toNewMicro(u));
     r.old = u / 1e6; return r;
   }

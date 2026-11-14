@@ -54,7 +54,8 @@
 
   // ---------- chain access ----------
   var SWAP_ABI = [
-    "function totalMigrated() view returns (uint256)", "function totalInstant() view returns (uint256)",
+    // totalMigrated: old CT received. totalCredited: new CT credited (instant + owed + claimed). The rest count new CT.
+    "function totalMigrated() view returns (uint256)", "function totalCredited() view returns (uint256)", "function totalInstant() view returns (uint256)",
     "function totalOwed() view returns (uint256)", "function totalClaimed() view returns (uint256)",
     "function availableReserve() view returns (uint256)",
     "function WINDOW_START() view returns (uint256)", "function WINDOW_END() view returns (uint256)",
@@ -208,7 +209,8 @@
     // totalMigrated counts old CT received; totalInstant, totalOwed and totalClaimed count new CT.
     U.swapped = micro(chain.totalMigrated); U.instant = micro(chain.totalInstant); U.released = micro(chain.totalClaimed);
     U.locked = Math.max(0, micro(chain.totalOwed) - U.releasing);
-    U.credit = U.instant + micro(chain.totalOwed) + U.released;
+    // totalCredited is the contract's own sum; the first 1:1 Kairos contracts lack it, so fall back to the parts.
+    U.credit = chain.totalCredited != null ? micro(chain.totalCredited) : U.instant + micro(chain.totalOwed) + U.released;
     Object.keys(U).forEach(function (k) { tot[k] = U[k] / 1e6; });
     tot.u = U;
     var walletList = Object.keys(wallets).map(function (k) {
@@ -219,7 +221,7 @@
       gas: gas, health: health || null,
       supply: micro(chain.newSupply) / 1e6, supplyText: supplyText(chain.newSupply),
       chain: {
-        block: chain.block, totalMigrated: U.swapped / 1e6, totalInstant: U.instant / 1e6, totalOwed: micro(chain.totalOwed) / 1e6,
+        block: chain.block, totalMigrated: U.swapped / 1e6, totalCredited: U.credit / 1e6, totalInstant: U.instant / 1e6, totalOwed: micro(chain.totalOwed) / 1e6,
         totalClaimed: U.released / 1e6, availableReserve: micro(chain.availableReserve) / 1e6,
         newSupply: micro(chain.newSupply) / 1e6, oldSupply: micro(chain.oldSupply) / 1e6, oldSupplyText: supplyText(chain.oldSupply),
         oldHeld: micro(chain.oldHeld) / 1e6, windowStart: C.windowStart, windowEnd: C.windowEnd
@@ -243,14 +245,15 @@
       var scanP = to > cache.scanned ? scan(cache.scanned + 1, to).then(function (logs) { addLogs(logs); cache.scanned = to; }) : Promise.resolve();
       var reads = Promise.all([
         swap.totalMigrated(tag), swap.totalInstant(tag), swap.totalOwed(tag), swap.totalClaimed(tag), swap.availableReserve(tag),
-        swap.WINDOW_START(), swap.WINDOW_END(), newT.totalSupply(tag), oldT.totalSupply(tag), oldT.balanceOf(net.swap, tag)
+        swap.WINDOW_START(), swap.WINDOW_END(), newT.totalSupply(tag), oldT.totalSupply(tag), oldT.balanceOf(net.swap, tag),
+        swap.totalCredited(tag).catch(function () { return null; })
       ]);
       return Promise.all([reads, scanP]).then(function (r) {
         var v = r[0];
         return blockTimes().then(function () {
           writeCache(cache);
           C.windowStart = Number(v[5]) * 1000; C.windowEnd = Number(v[6]) * 1000;
-          return { block: to, totalMigrated: v[0], totalInstant: v[1], totalOwed: v[2], totalClaimed: v[3], availableReserve: v[4], newSupply: v[7], oldSupply: v[8], oldHeld: v[9] };
+          return { block: to, totalMigrated: v[0], totalInstant: v[1], totalOwed: v[2], totalClaimed: v[3], availableReserve: v[4], newSupply: v[7], oldSupply: v[8], oldHeld: v[9], totalCredited: v[10] };
         });
       });
     }).then(function (chain) {

@@ -92,6 +92,7 @@ CJ.dict({
     "parse.junk": "Use digits only, for example 1,250.5",
     "parse.decimals": "CT has 18 decimals at most.",
     "parse.zero": "Enter an amount above 0.",
+    "parse.small": "That amount is too small to swap. Enter a larger amount.",
     "wl.sub.kaia.open": "Opens this page in the app. No KAIA needed.",
     "wl.kaia.alt": "Kaia Wallet did not open? Copy the link instead"
   },
@@ -187,6 +188,7 @@ CJ.dict({
     "parse.junk": "숫자만 입력하세요. 예: 1,250.5",
     "parse.decimals": "CT는 소수점 18자리까지만 돼요.",
     "parse.zero": "0보다 큰 수량을 입력하세요.",
+    "parse.small": "교환하기에는 수량이 너무 적어요. 더 큰 수량을 입력하세요.",
     "wl.sub.kaia.open": "앱에서 이 페이지가 열려요. KAIA는 필요 없어요.",
     "wl.kaia.alt": "Kaia Wallet이 안 열리나요? 링크를 복사하세요"
   },
@@ -282,6 +284,7 @@ CJ.dict({
     "parse.junk": "数字のみ入力してください。例: 1,250.5",
     "parse.decimals": "CTの小数点以下は18桁までです。",
     "parse.zero": "0より大きい数量を入力してください。",
+    "parse.small": "交換するには数量が少なすぎます。もっと大きい数量を入力してください。",
     "wl.sub.kaia.open": "アプリでこのページを開きます。KAIAは不要です。",
     "wl.kaia.alt": "開かない場合はリンクをコピー"
   }

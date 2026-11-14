@@ -128,7 +128,7 @@
     var od = T.nOverdue > 0;
     // whole new CT parts that add up: instant + locked + released = swapped (new CT at the 0.4 rate), exactly as on the
     // status page. U.swapped is the old CT swapped in. Shares of supply are of the 2,000,000,000 new CT supply.
-    var U = T.u, W = CJ.sample.wholeParts([U.instant, U.locked + U.releasing, U.released]), sw = W[0] + W[1] + W[2];
+    var U = T.u, W = CJ.sample.wholeParts([U.instant, U.locked + U.releasing, U.released], U.credit != null ? Math.round(U.credit / 1e6) : null), sw = W[0] + W[1] + W[2];
     var reserve = Math.round(SUP - sw);
     // Urgency first: overdue releases lead the grid while there are any; otherwise the tile closes it.
     var overdue = kpi(t("kpi.overdue"), amt0(T.overdue), ct, od ? t("kpi.overdue_sub", { n: pl("n.req", T.nOverdue) }) : t("kpi.overdue_none"), od ? "is-warn" : "");

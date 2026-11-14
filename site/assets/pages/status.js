@@ -34,7 +34,8 @@
     var S = LIVE ? LIVE_S : CJ.sample.state(), U = S.tot.u, n = S.now, supply = S.supply || SUPPLY;
     // headline parts, in whole new CT: instant + locked (still locked or being sent) + released = swapped (the new CT the
     // swaps gave, at the 0.4 rate). swappedOld: the old CT swapped in. Shares of supply are of the new supply.
-    var W = CJ.sample.wholeParts([U.instant, U.locked + U.releasing, U.released]);
+    // The parts sum exactly to the credited total (totalCredited live), rounded once to whole CT.
+    var W = CJ.sample.wholeParts([U.instant, U.locked + U.releasing, U.released], U.credit != null ? Math.round(U.credit / 1e6) : null);
     var swapped = W[0] + W[1] + W[2], reserve = Math.round(supply - swapped), swappedOld = Math.round(U.swapped / 1e6);
     // the aggregate track: tick 1 = swapped in the last 24 hours, tick 7 = unlocks in the next 24 hours
     var ticksU = [0, 0, 0, 0, 0, 0, 0];

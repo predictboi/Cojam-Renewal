@@ -30,8 +30,9 @@
   function lots(status) { return led().lots.filter(function (l) { return !status || L.lotStatus(l) === status; }); }
   function sum(arr) { return arr.reduce(function (a, l) { return a + l.amount; }, 0); }
   function sumL(arr) { return arr.reduce(function (a, l) { return a + l.locked; }, 0); }
-  // What a swap of v old CT gives at the 0.4 rate: {credit (new CT in total), instant (10%), locked (90%)}.
-  function sp(v) { return CJ.split(v); }
+  // What a swap of v old CT gives at the 0.4 rate: {credit (new CT in total), instant (10%), locked (90%)}. Live, with the
+  // exact amount in base units, it matches the contract's previewSwap to the unit.
+  function sp(v, wei) { return CJ.split(v, wei); }
   // month and day, short enough to sit beside the amount at 390 px; the full date is in the help and on the track
   function md(ts) { return new Intl.DateTimeFormat({ en: "en-US", ko: "ko-KR", ja: "ja-JP" }[CJ.lang()], { month: "short", day: "numeric", timeZone: "UTC" }).format(ts); }
   function ids(arr) { return arr.map(function (l) { return l.id; }).join(","); }
@@ -130,7 +131,7 @@
 
   // "You get now: X new CT (10%)" and "On <date>: Y new CT (90%)", shared by the form, approve and swap views.
   function splitRows(amt, ids) {
-    var p = sp(amt);
+    var p = sp(amt, amt && amt === ui.amount ? ui.amountWei : null);
     return row(t("f.now") + help("help.split"), num(t("f.now.v", { amount: A(p.instant) })), ids ? "mg-now" : null) +
       row(t("f.later", { date: md(unlockAt()) }) + help("help.lock"), num(t("f.later.v", { amount: A(p.locked) })), ids ? "mg-later" : null, t("f.later.sub"));
   }
@@ -166,7 +167,7 @@
   // now, the 90% and its date, the receiving wallet, the fee and how many signatures follow. Large amounts add a check.
   var confirmD = $("mg-confirm");
   function confirmHtml() {
-    var amt = ui.amount, p = sp(amt), Ld = led(), big = amt > BIG, approved = hasAllowance(amt, ui.amountWei);
+    var amt = ui.amount, p = sp(amt, ui.amountWei), Ld = led(), big = amt > BIG, approved = hasAllowance(amt, ui.amountWei);
     var fee = sponsored() ? num(t("f.gas.free")) : num(t("f.gas.v", { amount: gas(approved ? GAS.swap : GAS.approve + GAS.swap) }));
     var pr = CJ.price && CJ.price.status() === "ok" && CJ.price.get();
     return '<div class="mg-sheet-head"><h2 id="mg-cf-h">' + t("cf.title") + '</h2><button type="button" class="btn btn-ghost mg-icon-btn" data-close aria-label="' + esc(t("ch.close")) + '">' + I("x", 20) + "</button></div>" +
@@ -271,7 +272,7 @@
   V.swap = function () {
     var res = led().contract.reserveEmpty;
     return head(t("sw.title"), { back: true }) + steps(2) +
-      '<p class="mg-lead">' + t("sw.body", { amount: A(ui.amount), instant: A(sp(ui.amount).instant), locked: A(sp(ui.amount).locked), date: F.date(unlockAt()) }) + "</p>" +
+      '<p class="mg-lead">' + t("sw.body", { amount: A(ui.amount), instant: A(sp(ui.amount, ui.amountWei).instant), locked: A(sp(ui.amount, ui.amountWei).locked), date: F.date(unlockAt()) }) + "</p>" +
       summary(ui.amount) + gasError(GAS.swap) +
       (res ? reserveNote() : "") +
       '<div class="mg-actions">' + cta(t("sw.cta", { amount: A(ui.amount) }), "swap", res || gasShort(GAS.swap) ? " disabled" : "") + "</div>";
@@ -386,6 +387,7 @@
     if (LIVE) {
       var w = liveWei(ui.text);
       if (w == null || w <= 0n) return { ok: false, msg: t("parse.junk") };
+      if (w < 3n) return { ok: false, msg: t("parse.small") }; // the contract reverts AmountTooSmall below 3 base units
       if (w > BigInt(led().wei.old)) return { ok: false, over: true, msg: t("f.over", { amount: A(bal) }) };
       return { ok: true, value: r.value, wei: w };
     }
@@ -407,7 +409,7 @@
     msg.className = "field-msg" + (s.msg ? " is-error" : "");
     msg.innerHTML = s.msg ? '<span class="mg-msg-t">' + I("warn", 16) + "<span>" + esc(s.msg) + "</span></span>" + (s.over ? '<button type="button" class="btn mg-fix" data-act="max">' + t("f.usemax") + "</button>" : "") : "";
     // No valid amount: a muted dash in both split rows (never "0 new CT"); the button reads "Enter an amount".
-    var p = sp(v), none = '<span class="mg-ph" aria-hidden="true">\u2013</span><span class="sr-only">' + t("f.none") + "</span>";
+    var p = sp(v, s.ok ? s.wei : null), none = '<span class="mg-ph" aria-hidden="true">\u2013</span><span class="sr-only">' + t("f.none") + "</span>";
     $("mg-now").innerHTML = num(s.ok ? t("f.now.v", { amount: A(p.instant) }) : none);
     $("mg-later").firstChild.innerHTML = s.ok ? t("f.later.v", { amount: A(p.locked) }) : none;
     var fr = $("mg-feerow"), nf = feeRow(need);
@@ -563,6 +565,7 @@
     else if (k === "closed") ui.closed = true;
     else if (k === "network") { /* chain.js has published the wallet's chain: the wrong network view takes over */ }
     else if (k === "nothing") { refreshThen(function () { ui.phase = "form"; }); return; }
+    else if (k === "small") { ui.error = "failed"; ui.failKey = "er.small"; } // AmountTooSmall: 1 or 2 base units credit 0
     else if (k === "nogas") { ui.error = "failed"; ui.failKey = "er.nogas.short"; }
     else if (k === "rpc") { ui.error = "failed"; ui.failKey = "er.net"; }
     else if (k === "noprovider") { ui.error = "failed"; ui.failKey = "er.nowallet"; }

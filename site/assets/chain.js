@@ -59,13 +59,15 @@
     "function lotOf(address user, uint256 lotId) view returns (uint256 amount, uint256 unlockAt, bool claimed)",
     "function nextClaimIndex(address user) view returns (uint256)",
     "function availableReserve() view returns (uint256)",
+    // exact result for oldAmount arriving: credit = oldAmount * 2 / 5, instant = credit * 10 / 100, locked = the rest
+    "function previewSwap(uint256 oldAmount) view returns (uint256 credit, uint256 instant, uint256 locked)",
     "function WINDOW_START() view returns (uint256)",
     "function WINDOW_END() view returns (uint256)",
     "function LOCK_PERIOD() view returns (uint256)",
     // newAmount = oldAmount * 2 / 5 rounded down; instantAmount + lockedAmount = newAmount (10% now, 90% locked)
     "event Migrated(address indexed user, uint256 indexed lotId, uint256 oldAmount, uint256 newAmount, uint256 instantAmount, uint256 lockedAmount, uint256 unlockAt)",
     "event Claimed(address indexed user, uint256 indexed lotId, uint256 amount, address indexed caller)",
-    "error ZeroAmount()", "error WindowClosed()", "error InsufficientReserve(uint256 available, uint256 needed)",
+    "error ZeroAmount()", "error AmountTooSmall()", "error WindowClosed()", "error InsufficientReserve(uint256 available, uint256 needed)",
     "error NothingReceived()", "error ReceivedMoreThanSent()", "error NothingToClaim()", "error NotMaster()"
   ]);
   var rp = new E.JsonRpcProvider(net.rpc, net.chainId, { staticNetwork: true, batchMaxCount: 20 });
@@ -148,9 +150,10 @@
     return "unknown";
   }
   function revertKind(name) {
-    return name === "InsufficientReserve" ? "reserve" : name === "WindowClosed" ? "closed" : name === "NothingToClaim" ? "nothing" : "failed";
+    return name === "InsufficientReserve" ? "reserve" : name === "WindowClosed" ? "closed" : name === "NothingToClaim" ? "nothing"
+      : name === "AmountTooSmall" ? "small" : "failed";
   }
-  // One word for the page: rejected | sponsor | reserve | closed | nothing | network | nogas | rpc | failed | noprovider | switch
+  // One word for the page: rejected | sponsor | reserve | closed | nothing | small | network | nogas | rpc | failed | noprovider | switch
   function classify(e) {
     if (!e) return "failed";
     if (e.cj) return e.cj;
@@ -553,6 +556,12 @@
     return req(S.p, "wallet_watchAsset", { type: "ERC20", options: { address: net.newToken, symbol: "CT", decimals: 18 } });
   }
 
+  // The contract's own preview of a swap of oldWei base units: {credit, instant, locked} as BigInt. The page computes the
+  // same thing locally (CJ.split with the wei amount); this is for checks against the deployed contract.
+  function previewSwap(oldWei) {
+    return swapC.previewSwap(oldWei).then(function (r) { return { credit: r[0], instant: r[1], locked: r[2] }; });
+  }
+
   // Exact amount helpers: the page keeps numbers for display and these for the transaction.
   function toWei(text) {
     var s = String(text == null ? "" : text).trim().replace(/\s*(old\s*)?ct$/i, "").replace(/,/g, "").replace(/\s/g, "");
@@ -573,7 +582,7 @@
     available: available, providerFor: providerFor, remembered: remembered,
     connect: connect, restore: restore, disconnect: disconnect, switchNetwork: switchNetwork,
     refresh: refresh, contractInfo: contractInfo, readWallet: readWallet,
-    write: write, watchAsset: watchAsset, classify: classify, toWei: toWei, on: on,
+    write: write, watchAsset: watchAsset, previewSwap: previewSwap, classify: classify, toWei: toWei, on: on,
     state: function () { return { kind: S.kind, address: S.address, chainId: S.chainId }; }
   };
 })();
