@@ -1,8 +1,16 @@
-// Status page: public swap dashboard. Every figure comes from CJ.sample (system.js), the same seeded set the admin
-// monitor reads, so the two pages agree. Sums are taken in micro CT integers and rounded once, so the parts always add up.
-// ?state=loading keeps the skeleton; ?state=error shows "Could not reach Kaia" with Retry.
+// Status page: public swap dashboard. Live (CJ.live): every figure is read from the swap contract and its events on
+// CJ.net through CJ.liveStats (live-stats.js), refreshed every 15 seconds. Mock (?mock=1, a ?state= preset, or no
+// deployed swap): CJ.sample (system.js), the same seeded set the admin monitor reads. Both give the same shape.
+// Sums are taken in micro CT integers and rounded once, so the parts always add up.
+// ?state=loading keeps the skeleton; ?state=error shows "Could not reach Kaia" with Retry. Live, a failed read shows the same.
 (function () {
   var C = CJ.config, DAY = CJ.DAY, SUPPLY = C.newToken.supply, SUPPLY_TEXT = C.newToken.supplyText;
+  var LS = CJ.live && CJ.liveStats ? CJ.liveStats : null, LIVE = !!CJ.live, LIVE_S = null;
+  // The real clock when live; the mock clock (CJ.now, ?days=) for design review.
+  function rel(ts) { return LS ? LS.rel(ts) : F.rel(ts); }
+  function winState() { return LS ? LS.windowState() : CJ.windowState(); }
+  // UTC midnight of the day the window opened: daily buckets are UTC days (the live window opens at the deploy second).
+  function day0() { return Math.floor(C.windowStart / DAY) * DAY; }
   var $ = function (id) { return document.getElementById(id); };
   var t = CJ.t, F = CJ.fmt, I = CJ.icon;
   var VIEW_KEY = "cj.status.view";
@@ -11,20 +19,22 @@
   function loc() { return { en: "en-US", ko: "ko-KR", ja: "ja-JP" }[CJ.lang()] || "en-US"; }
   function cmp(n) { return new Intl.NumberFormat(loc(), { notation: "compact", maximumFractionDigits: 1 }).format(n); }
   function whole(n) { return F.amount(n, 0); }
+  // A share that rounds to zero but is not zero reads "<0.1%", never "0%" (the first live swaps are tiny next to the supply).
+  function pctMin(x, dp) { var min = Math.pow(10, -(dp + 2)); return x > 0 && x < min / 2 ? "<" + F.pct(min, dp) : F.pct(x, dp); }
   // Activity amounts: whole CT from 1,000 up, two fixed decimals below, the same rule everywhere on the page.
   function amtR(n) { return n >= 1000 ? whole(n) : new Intl.NumberFormat(loc(), { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n); }
   // Days left to swap: whole days rounded down, the same figure as the swap app, the landing and the admin monitor.
-  function daysLeft(now) { return CJ.daysLeft ? CJ.daysLeft() : Math.max(0, Math.floor((C.windowEnd - now) / DAY)); }
+  function daysLeft(now) { return LS ? LS.daysLeft() : CJ.daysLeft ? CJ.daysLeft() : Math.max(0, Math.floor((C.windowEnd - now) / DAY)); }
   function shortDate(ts) { return new Intl.DateTimeFormat(loc(), { month: "short", day: "numeric", timeZone: "UTC" }).format(ts); }
   function hm(ts) { return new Intl.DateTimeFormat(loc(), { hour: "2-digit", minute: "2-digit", hourCycle: "h23", timeZone: "UTC" }).format(ts); }
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
 
   // ---------- model: everything the page shows, from the shared sample ----------
   function model() {
-    var S = CJ.sample.state(), U = S.tot.u, n = S.now;
+    var S = LIVE ? LIVE_S : CJ.sample.state(), U = S.tot.u, n = S.now, supply = S.supply || SUPPLY;
     // headline parts: instant + locked (still locked or being sent) + released = swapped, in whole CT
     var W = CJ.sample.wholeParts([U.instant, U.locked + U.releasing, U.released]);
-    var swapped = W[0] + W[1] + W[2], reserve = Math.round(SUPPLY - swapped);
+    var swapped = W[0] + W[1] + W[2], reserve = Math.round(supply - swapped);
     // the aggregate track: tick 1 = swapped in the last 24 hours, tick 7 = unlocks in the next 24 hours
     var ticksU = [0, 0, 0, 0, 0, 0, 0];
     S.lots.forEach(function (l) {
@@ -37,13 +47,13 @@
     // per day volume since the window opened, today counted so far
     var days = [], byDay = {};
     S.lots.forEach(function (l) {
-      var d = Math.floor((l.swappedAt - C.windowStart) / DAY), b = byDay[d] || (byDay[d] = { u: 0, w: {} });
+      var d = Math.floor((l.swappedAt - day0()) / DAY), b = byDay[d] || (byDay[d] = { u: 0, w: {} });
       b.u += Math.round(l.amount * 1e6); b.w[l.wallet] = 1;
     });
-    var today = Math.floor((Math.min(n, C.windowEnd) - C.windowStart) / DAY);
+    var today = Math.floor((Math.min(n, C.windowEnd) - day0()) / DAY);
     for (var d = 0; d <= today; d++) {
       var b = byDay[d] || { u: 0, w: {} };
-      days.push({ d: d, start: C.windowStart + d * DAY, vol: b.u / 1e6, holders: Object.keys(b.w).length, partial: d === today && n < C.windowEnd });
+      days.push({ d: d, start: day0() + d * DAY, vol: b.u / 1e6, holders: Object.keys(b.w).length, partial: d === today && n < C.windowEnd });
     }
     // recent activity: swaps and releases, newest first
     var events = [];
@@ -56,28 +66,39 @@
     return {
       now: n, swapped: swapped, instant: W[0], locked: W[1], released: W[2], reserve: reserve,
       ticks: lockParts.slice(0, 7), sending: lockParts[7], holders: S.walletList.length, oldHolders: S.holders,
-      days: days, events: events.slice(0, 8), gas: S.gas, shares: shares
+      days: days, events: events.slice(0, 8), gas: S.gas, shares: shares,
+      supply: supply, supplyText: S.supplyText || SUPPLY_TEXT, chain: S.chain || null
     };
   }
 
   // ---------- head, live stamp, error ----------
   var lastRead = 0, M = null;
   function paintHead() {
-    var closed = CJ.windowState() === "closed";
+    if (LIVE && !M) { $("st-window").innerHTML = mode === "loading" ? sk("22em") : ""; return; } // the window is read from the chain
+    var closed = winState() === "closed";
     $("st-window").textContent = t(closed ? "status.window.closed" : "status.window.open", { start: F.date(C.windowStart), end: F.date(C.windowEnd) });
   }
   function paintLive() {
     var el = $("st-live-text"), dot = $("st-live-dot");
     dot.classList.toggle("is-stale", mode !== "live");
     if (mode === "loading") { el.textContent = t("status.live.loading"); return; }
-    if (mode === "error") { el.textContent = t("status.live.stale", { time: hm(lastRead) + " UTC" }); return; }
-    el.textContent = t("status.live.updated", { rel: F.rel(CJ.now() - (Date.now() - lastRead)) });
+    if (mode === "error") { el.textContent = lastRead ? t("status.live.stale", { time: hm(lastRead) + " UTC" }) : t("status.live.none"); return; }
+    el.textContent = t("status.live.updated", { rel: LS ? LS.rel(lastRead) : F.rel(CJ.now() - (Date.now() - lastRead)) });
   }
   function tick() { var dot = $("st-live-dot"); dot.classList.remove("is-tick"); void dot.offsetWidth; dot.classList.add("is-tick"); }
   function paintError() {
     var box = $("st-error");
     box.hidden = mode !== "error";
-    if (mode === "error") $("st-error-text").textContent = t("status.error.body", { time: hm(lastRead) + " UTC" });
+    if (mode === "error") $("st-error-text").textContent = lastRead ? t("status.error.body", { time: hm(lastRead) + " UTC" }) : t("status.error.body_none");
+  }
+  // Live: the sample note becomes the network stamp while on the testnet; a mainnet read needs no note.
+  function paintNote() {
+    var box = document.querySelector(".st-sample");
+    if (!box || !LIVE) return;
+    box.hidden = !CJ.net.testnet;
+    var title = box.querySelector('[data-i18n="status.sample.title"], [data-live="title"]'), body = box.querySelector('[data-i18n="status.sample.body"], [data-live="body"]');
+    if (title) { title.removeAttribute("data-i18n"); title.setAttribute("data-live", "title"); title.textContent = t("status.net.title"); }
+    if (body) { body.removeAttribute("data-i18n"); body.setAttribute("data-live", "body"); body.textContent = t("status.net.body"); }
   }
 
   // ---------- skeleton (first read, retry, ?state=loading) ----------
@@ -115,15 +136,20 @@
     var m = M, ct = t("unit.ct");
     $("st-top").setAttribute("aria-busy", "false");
     $("st-swapped").innerHTML = '<span data-count="' + m.swapped + '" data-count-key="st-swapped">' + whole(m.swapped) + "</span>";
-    $("st-swapped-sub").textContent = t("status.fig.swapped_sub", { pct: F.pct(m.swapped / SUPPLY, 1), supply: SUPPLY_TEXT + " " + ct });
-    $("st-fees").textContent = t("status.fees", { kaia: F.amount(m.gas.kaia, 2), n: whole(m.gas.tx) });
-    var left = daysLeft(m.now), closed = CJ.windowState() === "closed";
+    $("st-swapped-sub").textContent = t("status.fig.swapped_sub", { pct: pctMin(m.swapped / m.supply, 1), supply: m.supplyText + " " + ct });
+    // Live fees come from the gas server, whose counters restart on each deploy: say since when. Hidden when it is unreachable.
+    var fees = $("st-fees");
+    fees.hidden = !m.gas;
+    fees.textContent = !m.gas ? "" : LIVE ? t("status.fees_live", { kaia: F.amount(m.gas.kaia, 2), n: whole(m.gas.tx), date: F.date(m.gas.since || m.now) })
+      : t("status.fees", { kaia: F.amount(m.gas.kaia, 2), n: whole(m.gas.tx) });
+    var left = daysLeft(m.now), closed = winState() === "closed";
     $("st-figs").innerHTML =
       fig(t("status.fig.instant") + help("status.help.instant"), whole(m.instant), ct, t("status.fig.instant_sub"), m.instant, "instant") +
       fig(t("status.fig.locked") + help("status.help.locked"), whole(m.locked), ct, m.sending ? t("status.fig.locked_sub_sending", { n: whole(m.sending) }) : t("status.fig.locked_sub"), m.locked, "locked") +
       fig(t("status.fig.released") + help("status.help.released"), whole(m.released), ct, t("status.fig.released_sub"), m.released, "released") +
-      fig(t("status.fig.holders"), t("status.fig.holders_value", { n: whole(m.holders) }), "", t("status.fig.holders_sub", { pct: F.pct(m.holders / m.oldHolders, 1), n: whole(m.oldHolders) })) +
-      fig(t("status.fig.reserve") + help("status.help.reserve"), whole(m.reserve), ct, t("status.fig.reserve_sub"), m.reserve, "reserve") +
+      // The chain has no holder count for old CT, so live shows the unique wallets without a share of holders.
+      fig(t("status.fig.holders"), t(m.holders === 1 ? "status.fig.holders_value_one" : "status.fig.holders_value", { n: whole(m.holders) }), "", m.oldHolders ? t("status.fig.holders_sub", { pct: F.pct(m.holders / m.oldHolders, 1), n: whole(m.oldHolders) }) : t("status.fig.holders_sub_live")) +
+      fig(t("status.fig.reserve") + help("status.help.reserve"), whole(m.reserve), ct, m.chain ? t("status.fig.reserve_sub_live", { n: whole(m.chain.availableReserve) }) : t("status.fig.reserve_sub"), m.reserve, "reserve") +
       (closed
         ? fig(t("status.fig.time"), t("status.fig.time_closed"), "", t("status.fig.time_closed_sub", { date: F.date(C.windowEnd) }))
         : fig(t("status.fig.time"), t(left === 1 ? "status.fig.time_value_one" : "status.fig.time_value", { n: whole(left) }), "", t("status.fig.time_sub", { date: F.date(C.windowEnd) })));
@@ -134,11 +160,13 @@
       { key: "locked", v: m.locked, cls: "is-held", share: m.shares[1] },
       { key: "reserve", v: m.reserve, cls: "is-reserve", share: m.shares[2] }
     ];
+    // largest remainder shares can round a real part to 0%: show it as "<0.1%"
+    var spct = function (p) { return p.share === 0 && p.v > 0 ? pctMin(1e-9, 1) : F.pct(p.share, 1); };
     var bar = $("st-bar"), total = parts[0].v + parts[1].v + parts[2].v || 1;
     bar.innerHTML = parts.map(function (p) {
-      return '<span class="st-seg-part ' + p.cls + '" style="flex-grow:' + (p.v / total).toFixed(6) + '"><span class="st-seg-label">' + F.pct(p.share, 1) + "</span></span>";
+      return '<span class="st-seg-part ' + p.cls + '" style="flex-grow:' + (p.v / total).toFixed(6) + '"><span class="st-seg-label">' + spct(p) + "</span></span>";
     }).join("");
-    var item = function (p) { return t("status.split.item", { amount: whole(p.v), pct: F.pct(p.share, 1) }); };
+    var item = function (p) { return t("status.split.item", { amount: whole(p.v), pct: spct(p) }); };
     bar.setAttribute("aria-label", t("status.split.aria", { a: item(parts[0]), b: item(parts[1]), c: item(parts[2]) }));
     // a label that does not fit its block is dropped: the legend and the aria label carry it
     bar.querySelectorAll(".st-seg-part").forEach(function (seg) {
@@ -296,7 +324,7 @@
     return tag + ' <span class="st-later small muted">' + note + "</span>";
   }
   function unitFor(r) { return r.type === "release" ? t("unit.new") : t("unit.old"); }
-  function timeEl(r) { return '<time datetime="' + new Date(r.at).toISOString() + '" title="' + esc(F.dateTime(r.at)) + '">' + F.rel(r.at) + "</time>"; }
+  function timeEl(r) { return '<time datetime="' + new Date(r.at).toISOString() + '" title="' + esc(F.dateTime(r.at)) + '">' + rel(r.at) + "</time>"; }
   var recentKey = "", allCards = false, PHONE_CARDS = 5;
   var phone = window.matchMedia("(max-width: 719px)");
   function paintRecent(soft) {
@@ -307,10 +335,11 @@
     document.querySelectorAll(".st-view .seg-btn").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.view === view)); });
     // a refresh with the same rows only updates the relative times, so focus and scroll stay put
     if (soft && key === recentKey) {
-      body.querySelectorAll("time[datetime]").forEach(function (el) { el.textContent = F.rel(Date.parse(el.getAttribute("datetime"))); });
+      body.querySelectorAll("time[datetime]").forEach(function (el) { el.textContent = rel(Date.parse(el.getAttribute("datetime"))); });
       return;
     }
     recentKey = key;
+    if (!rows.length) { body.innerHTML = '<div class="panel"><p class="muted">' + t("status.recent.empty") + "</p></div>"; return; }
     if (view === "table") {
       body.innerHTML = '<div class="panel panel-flush"><div class="st-scroll"><table class="table st-recent-table"><thead><tr>' +
         '<th scope="col">' + t("status.col.wallet") + "</th>" +
@@ -356,11 +385,27 @@
 
   // ---------- read and paint ----------
   function read() { M = model(); lastRead = Date.now() - (mode === "error" ? STALE_MIN * 60000 : 3000); }
+  // Live read: resolves once the chain answered. A failure keeps the last figures and shows the error with Retry.
+  var reading = false;
+  function readLive() {
+    if (reading) return Promise.resolve();
+    reading = true;
+    return LS.load({ gas: true }).then(function (s) {
+      reading = false; LIVE_S = s; M = model(); lastRead = LS.lastRead; mode = "live";
+    }, function () { reading = false; mode = "error"; });
+  }
+  function paintContracts() {
+    var m = M, note = t("status.contracts.note", { supply: m ? m.supplyText : SUPPLY_TEXT });
+    if (m && m.chain) note += " " + t("status.contracts.read", { old: m.chain.oldSupplyText, held: whole(m.chain.oldHeld) });
+    if (LIVE && CJ.net.testnet) note += " " + t("status.contracts.testnet");
+    $("st-contracts-note").textContent = note;
+    if (LS) LS.fixLinks();
+  }
   function paintAll() {
-    paintHead(); paintError(); paintLive();
-    if (mode === "loading" || !M) { paintSkeleton(); return; }
+    paintHead(); paintError(); paintLive(); paintNote();
+    if (mode === "loading" || !M) { paintSkeleton(); paintContracts(); return; }
     paintFigures(); paintTrack(); paintChart(); paintRecent();
-    $("st-contracts-note").textContent = t("status.contracts.note", { supply: SUPPLY_TEXT });
+    paintContracts();
   }
   $("st-sample-icon").outerHTML = I("info", 18);
   $("st-error-icon").outerHTML = I("warn", 18);
@@ -368,16 +413,31 @@
   $("st-retry").addEventListener("click", function () {
     var btn = this; btn.disabled = true;
     mode = "loading"; paintAll();
-    setTimeout(function () { mode = "live"; read(); paintAll(); tick(); btn.disabled = false; $("st-hero-label").focus(); }, 700);
+    var done = function () { paintAll(); if (mode === "live") tick(); btn.disabled = false; $("st-hero-label").focus(); };
+    if (LS) { lastTry = Date.now(); readLive().then(done); }
+    else setTimeout(function () { mode = "live"; read(); done(); }, 700);
   });
   bindChart();
-  if (mode !== "loading") read();
-  paintAll();
-  CJ.ready();
+  var lastTry = Date.now();
+  if (LIVE && !LS) mode = "error"; // live, but the chain helper or ethers did not load
+  if (LS) { mode = "loading"; paintAll(); CJ.ready(); readLive().then(function () { paintAll(); if (mode === "live") tick(); }); }
+  else {
+    if (mode !== "loading") read();
+    paintAll();
+    CJ.ready();
+  }
 
-  // live stamp ticks every second; the mock read runs every 15 seconds while live
+  // The live stamp ticks every second. The read runs every 15 seconds while live; after a failed live read it is retried
+  // every 30 seconds in the background, and the Retry button reads at once.
   setInterval(function () {
-    if (mode === "live" && Date.now() - lastRead >= REFRESH) {
+    var since = Date.now() - lastTry;
+    if (LS && !reading && ((mode === "live" && since >= REFRESH) || (mode === "error" && since >= 2 * REFRESH))) {
+      var was = mode; lastTry = Date.now();
+      readLive().then(function () {
+        if (mode === "live" && was === "live") { paintFigures(); paintTrack(); paintChart(); paintRecent(true); paintContracts(); tick(); }
+        else paintAll();
+      });
+    } else if (!LS && mode === "live" && Date.now() - lastRead >= REFRESH) {
       read(); paintFigures(); paintTrack(); paintChart(); paintRecent(true); tick();
     }
     paintLive();

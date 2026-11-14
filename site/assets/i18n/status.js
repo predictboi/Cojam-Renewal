@@ -25,6 +25,7 @@ CJ.dict({
     "status.fig.released_sub": "90% parts sent by the keeper or claimed by holders",
     "status.fig.holders": "Holders swapped",
     "status.fig.holders_value": "{n} wallets",
+    "status.fig.holders_value_one": "1 wallet",
     "status.fig.holders_sub": "{pct} of about {n} old CT holders",
     "status.fig.reserve": "Not swapped yet",
     "status.fig.reserve_sub": "In the swap reserve or Cojam's master wallet",
@@ -105,7 +106,17 @@ CJ.dict({
     "status.tx.aria": "View transaction {hash} in Kaiascan",
 
     "status.contracts.title": "Contracts on Kaia",
-    "status.contracts.note": "New CT has a fixed supply of {supply} CT, minted once to Cojam's master wallet, which funds and manages the swap reserve. The token has no owner, pause, mint or blacklist. The swap contract has no owner or pause, its rules cannot change, and the new CT owed to locked 90% is set aside where no one can move it. Audit in progress."
+    "status.contracts.note": "New CT has a fixed supply of {supply} CT, minted once to Cojam's master wallet, which funds and manages the swap reserve. The token has no owner, pause, mint or blacklist. The swap contract has no owner or pause, its rules cannot change, and the new CT owed to locked 90% is set aside where no one can move it. Audit in progress.",
+    "status.live.none": "Not read yet",
+    "status.error.body_none": "Could not reach Kaia. Check your connection and try again.",
+    "status.net.title": "Live from Kaia Kairos testnet.",
+    "status.net.body": "These figures are read from the test contracts that rehearse the swap before launch, so the CT here is test CT. Mainnet figures appear here at launch.",
+    "status.fees_live": "Network fees paid by Cojam since {date}: {kaia} KAIA for {n} transactions.",
+    "status.fig.holders_sub_live": "Unique wallets, each counted once",
+    "status.fig.reserve_sub_live": "{n} CT of it is in the swap contract, verifiable on chain",
+    "status.recent.empty": "No swaps yet. The first one will show here.",
+    "status.contracts.read": "Read from the chain now: the old CT supply is {old} CT, and the swap contract holds {held} CT of it for good.",
+    "status.contracts.testnet": "These are the Kaia Kairos testnet contracts. The mainnet addresses are published at launch."
   },
   ko: {
     "status.title": "교환 현황",
@@ -131,6 +142,7 @@ CJ.dict({
     "status.fig.released_sub": "자동 지급분과 보유자가 직접 받은 90%",
     "status.fig.holders": "교환한 보유자",
     "status.fig.holders_value": "지갑 {n}개",
+    "status.fig.holders_value_one": "지갑 1개",
     "status.fig.holders_sub": "기존 CT 보유자 약 {n}명 중 {pct}",
     "status.fig.reserve": "아직 교환 전",
     "status.fig.reserve_sub": "교환 준비금이나 Cojam 마스터 지갑에 보관",
@@ -206,7 +218,17 @@ CJ.dict({
     "status.tx.view": "보기",
     "status.tx.aria": "Kaiascan에서 트랜잭션 {hash} 보기",
     "status.contracts.title": "Kaia 컨트랙트",
-    "status.contracts.note": "새 CT 공급량은 {supply} CT로 고정돼 있고, 전량을 Cojam 마스터 지갑에 발행했어요. 교환 준비금은 마스터 지갑이 채우고 관리해요. 토큰에는 소유자, 일시 정지, 추가 발행, 블랙리스트 기능이 없어요. 교환 컨트랙트에도 소유자와 일시 정지 기능이 없고 규칙은 바뀌지 않으며, 락업된 90%로 지급할 새 CT는 따로 묶여 있어서 누구도 옮길 수 없어요. 보안 감사가 진행 중이에요."
+    "status.contracts.note": "새 CT 공급량은 {supply} CT로 고정돼 있고, 전량을 Cojam 마스터 지갑에 발행했어요. 교환 준비금은 마스터 지갑이 채우고 관리해요. 토큰에는 소유자, 일시 정지, 추가 발행, 블랙리스트 기능이 없어요. 교환 컨트랙트에도 소유자와 일시 정지 기능이 없고 규칙은 바뀌지 않으며, 락업된 90%로 지급할 새 CT는 따로 묶여 있어서 누구도 옮길 수 없어요. 보안 감사가 진행 중이에요.",
+    "status.live.none": "아직 불러오지 못했어요",
+    "status.error.body_none": "Kaia에 연결하지 못했어요. 인터넷 연결을 확인하고 다시 시도해 주세요.",
+    "status.net.title": "Kaia Kairos 테스트넷의 실시간 데이터예요.",
+    "status.net.body": "출시 전에 교환을 미리 점검하는 테스트 컨트랙트에서 읽어 온 수치라서, 여기 나오는 CT는 테스트용이에요. 출시하면 메인넷 수치를 보여 드려요.",
+    "status.fees_live": "{date}부터 Cojam이 대신 낸 수수료는 {kaia} KAIA예요 (트랜잭션 {n}건).",
+    "status.fig.holders_sub_live": "같은 지갑은 한 번만 세요",
+    "status.fig.reserve_sub_live": "이 중 {n} CT는 교환 컨트랙트에 있고, 온체인에서 확인할 수 있어요",
+    "status.recent.empty": "아직 교환 내역이 없어요. 첫 교환이 여기에 표시돼요.",
+    "status.contracts.read": "지금 체인에서 읽은 값이에요. 기존 CT 공급량은 {old} CT이고, 이 중 {held} CT는 교환 컨트랙트에 영구히 보관돼요.",
+    "status.contracts.testnet": "위 주소는 Kaia Kairos 테스트넷 컨트랙트예요. 메인넷 주소는 출시할 때 공개해요."
   },
   ja: {
     "status.title": "交換状況",
@@ -233,6 +255,7 @@ CJ.dict({
     "status.fig.released_sub": "ボット送付分と保有者の受け取り分",
     "status.fig.holders": "交換した保有者",
     "status.fig.holders_value": "{n}ウォレット",
+    "status.fig.holders_value_one": "1ウォレット",
     "status.fig.holders_sub": "旧CT保有者約{n}人中{pct}",
     "status.fig.reserve": "未交換",
     "status.fig.reserve_sub": "交換リザーブかCojamのマスターウォレットに保管",
@@ -313,6 +336,16 @@ CJ.dict({
     "status.tx.aria": "Kaiascanでトランザクション{hash}を表示",
 
     "status.contracts.title": "Kaia上のコントラクト",
-    "status.contracts.note": "新CTの供給量は{supply} CTで固定されており、全量をCojamのマスターウォレットに発行しています。交換リザーブはマスターウォレットが入金し、管理します。トークンにはオーナー、一時停止、発行、ブラックリストの機能がありません。交換コントラクトにもオーナーや一時停止の機能はなく、ルールは変更できません。ロック中の90%に充てる新CTは別に確保されており、誰も動かせません。監査は現在進行中です。"
+    "status.contracts.note": "新CTの供給量は{supply} CTで固定されており、全量をCojamのマスターウォレットに発行しています。交換リザーブはマスターウォレットが入金し、管理します。トークンにはオーナー、一時停止、発行、ブラックリストの機能がありません。交換コントラクトにもオーナーや一時停止の機能はなく、ルールは変更できません。ロック中の90%に充てる新CTは別に確保されており、誰も動かせません。監査は現在進行中です。",
+    "status.live.none": "まだ読み込めていません",
+    "status.error.body_none": "Kaiaに接続できませんでした。接続を確認して、もう一度お試しください。",
+    "status.net.title": "Kaia Kairosテストネットのライブデータです。",
+    "status.net.body": "ローンチ前に交換をリハーサルするテスト用コントラクトから読み取った数値のため、ここに表示されるCTはテスト用です。ローンチ後はメインネットの数値を表示します。",
+    "status.fees_live": "{date}以降にCojamが負担したネットワーク手数料: {n}件のトランザクションで{kaia} KAIA。",
+    "status.fig.holders_sub_live": "同じウォレットは1回だけ数えます",
+    "status.fig.reserve_sub_live": "うち{n} CTは交換コントラクトにあり、オンチェーンで確認できます",
+    "status.recent.empty": "まだ交換はありません。最初の交換がここに表示されます。",
+    "status.contracts.read": "現在チェーンから読み取った値です。旧CTの供給量は{old} CTで、うち{held} CTは交換コントラクトに永久に保管されます。",
+    "status.contracts.testnet": "上記はKaia Kairosテストネットのコントラクトです。メインネットのアドレスはローンチ時に公開します。"
   }
 });

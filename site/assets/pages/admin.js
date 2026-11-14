@@ -1,12 +1,21 @@
-// Admin swap monitor. Read only. Mock: CJ.sample (system.js) stands in for the swap contract's
-// Migrated(user, lotId, ...) and Claimed(user, lotId, amount, caller) events, the same seeded set the status page reads.
-// Claimed's caller tells a keeper release from a holder claim.
+// Admin swap monitor. Read only, public data only: no keys in the browser.
+// Live (CJ.live): CJ.liveStats (live-stats.js) reads the swap contract's counters and its Migrated(user, lotId, ...) and
+// Claimed(user, lotId, amount, caller) events on CJ.net, plus the gas server's GET /api/gas-wallet and /api/health,
+// and refreshes every 30 seconds. Mock (?mock=1, a ?state= preset, or no deployed swap): CJ.sample (system.js), the same
+// seeded set the status page reads. Both give the same shape. Claimed's caller tells a keeper release from a holder claim.
 // Fee delegation: the same Cojam gas wallet pays approve, swap and claim for fee delegated wallets, and every keeper release.
 (function () {
   var DAY = CJ.DAY, HOUR = 3600000, C = CJ.config, F = CJ.fmt, I = CJ.icon;
   var t = function (k, v) { return CJ.t(k, v); };
   var $ = function (id) { return document.getElementById(id); };
   var SUPPLY = C.newToken.supply, HOLDERS = C.oldHolders;
+  var LS = CJ.live && CJ.liveStats ? CJ.liveStats : null, LIVE = !!CJ.live, REFRESH = 30000;
+  // The real clock when live; the mock clock (CJ.now, ?days=) for design review.
+  function winState() { return LS ? LS.windowState(D.now) : CJ.windowState(); }
+  function daysLeftNow() { return LS ? LS.daysLeft(D.now) : CJ.daysLeft ? CJ.daysLeft() : Math.floor((C.windowEnd - D.now) / DAY); }
+  function supply() { return (D && D.supply) || SUPPLY; }
+  // A share that rounds to zero but is not zero reads "<0.01%", never "0%".
+  function pctMin(x, dp) { var min = Math.pow(10, -(dp + 2)); return x > 0 && x < min / 2 ? "<" + F.pct(min, dp) : F.pct(x, dp); }
   // 25 rows per page on a table, 10 cards per page under 760 px (the stacked layout in admin.css), so a phone page stays short.
   var mqCards = window.matchMedia ? matchMedia("(max-width: 759px)") : { matches: false };
   var PER_PAGE = mqCards.matches ? 10 : 25, BIG_KEY = "cj.admin.bigThreshold";
@@ -15,8 +24,16 @@
   var SORT_ICO = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path class="up" d="M8 10l4-4 4 4"/><path class="dn" d="M8 14l4 4 4-4"/></svg>';
 
   // ---------- derived state (shared sample, see CJ.sample in system.js) ----------
-  var D, lastRead;
+  var D, lastRead, loadErr = null, reading = false;
   function derive() { D = CJ.sample.state(); lastRead = Date.now(); }
+  // Live read: resolves once the chain answered. A failure keeps the last figures and shows the error note with Retry.
+  function readLive() {
+    if (reading) return Promise.resolve();
+    reading = true; paintNote();
+    return LS.load({ gas: true, health: true }).then(function (s) {
+      reading = false; D = s; lastRead = LS.lastRead; loadErr = null;
+    }, function (e) { reading = false; loadErr = e || new Error("read failed"); });
+  }
 
   // ---------- formatting ----------
   function loc() { return { en: "en-US", ko: "ko-KR", ja: "ja-JP" }[CJ.lang()] || "en-US"; }
@@ -61,9 +78,35 @@
 
   // ---------- live stamp ----------
   function paintStamp() {
+    var dot = document.querySelector("#adm-stamp .live-dot");
+    if (dot) dot.classList.toggle("is-stale", !D || !!loadErr);
+    if (!D) { $("adm-stamp-text").textContent = t(loadErr ? "stamp.none" : "stamp.loading"); $("adm-stamp").title = ""; return; }
     var s = Math.max(0, Math.floor((Date.now() - lastRead) / 1000));
     $("adm-stamp-text").textContent = s < 60 ? t("stamp.s", { n: s }) : t("stamp.m", { n: Math.floor(s / 60) });
     $("adm-stamp").title = t("stamp.title", { time: dt(D.now) });
+  }
+
+  // ---------- live note: network, read errors, Retry ----------
+  function paintNote() {
+    if (!LIVE) return;
+    var box = document.querySelector(".adm-note"), body = box && box.querySelector(".note-body");
+    if (!body) return;
+    body.removeAttribute("data-i18n");
+    box.classList.toggle("note-warn", !!loadErr);
+    if (loadErr) {
+      body.innerHTML = "<span>" + esc(D ? t("head.error", { time: dt(lastRead) }) : t("head.error_none")) + '</span> <button type="button" class="btn btn-sm" id="adm-retry"' + (reading ? " disabled" : "") + ">" + I("refresh", 16) + "<span>" + esc(t("head.retry")) + "</span></button>";
+      return;
+    }
+    body.textContent = t("head.note_live", { net: t(CJ.net.testnet ? "net.testnet" : "net.mainnet") });
+  }
+  // Before the first live read: placeholder tiles, so nothing reads as a real zero.
+  function paintSkeleton() {
+    var sk = function (w) { return '<span class="skel" style="width:' + w + '"></span>'; };
+    var tile = '<div class="kpi"><dt>' + sk("7em") + '</dt><dd><span class="kpi-v">' + sk("5em") + '</span><span class="kpi-sub">' + sk("10em") + "</span></dd></div>";
+    $("kpi-grid").innerHTML = tile + tile + tile + tile + tile + tile + tile;
+    $("gas-grid").innerHTML = tile + tile + tile + tile;
+    ["unl-chart", "day-chart"].forEach(function (id) { $(id).innerHTML = '<span class="skel" style="display:block;width:100%;height:160px"></span>'; });
+    $("lots-body").innerHTML = ""; $("lots-count").textContent = ""; $("lots-pager").innerHTML = "";
   }
 
   // ---------- KPIs ----------
@@ -75,23 +118,24 @@
       '<span class="kpi-sub">' + sub + "</span></dd></div>";
   }
   function renderKpis() {
-    var T = D.tot, ct = t("unit.ct_plain"), nW = D.walletList.length, ws = CJ.windowState(), win;
+    var T = D.tot, ct = t("unit.ct_plain"), nW = D.walletList.length, ws = winState(), win, SUP = supply();
     if (ws === "open") {
       // whole days rounded down, from the shared helper, so swap, status, landing and this tile agree
-      var left = CJ.daysLeft ? CJ.daysLeft() : Math.floor((C.windowEnd - D.now) / DAY);
+      var left = daysLeftNow();
       win = kpi(t("kpi.window"), amt0(left), t(left === 1 ? "n.day.one" : "n.day.other", { n: "" }).trim(), t("kpi.window_sub", { date: dOnly(C.windowEnd), start: dOnly(C.windowStart) }));
     } else if (ws === "closed") win = kpi(t("kpi.window"), t("kpi.window_closed"), "", t("kpi.window_closed_sub", { date: dOnly(C.windowEnd) }));
     else win = kpi(t("kpi.window"), t("kpi.window_upcoming"), "", t("kpi.window_sub", { date: dOnly(C.windowEnd), start: dOnly(C.windowStart) }));
     var od = T.nOverdue > 0;
     // whole CT parts that add up: instant + locked + released = swapped, exactly as on the status page
     var U = T.u, W = CJ.sample.wholeParts([U.instant, U.locked + U.releasing, U.released]), sw = W[0] + W[1] + W[2];
-    var reserve = Math.round(SUPPLY - sw);
+    var reserve = Math.round(SUP - sw);
     // Urgency first: overdue releases lead the grid while there are any; otherwise the tile closes it.
     var overdue = kpi(t("kpi.overdue"), amt0(T.overdue), ct, od ? t("kpi.overdue_sub", { n: pl("n.req", T.nOverdue) }) : t("kpi.overdue_none"), od ? "is-warn" : "");
     $("kpi-grid").innerHTML = (od ? overdue : "") +
-      kpi(t("kpi.swapped"), amt0(sw), ct, t("kpi.swapped_sub", { pct: F.pct(sw / SUPPLY, 2), supply: C.newToken.supplyText, n: amt0(D.lots.length) }), "", sw, "swapped") +
-      kpi(t("kpi.wallets"), amt0(nW), t("unit.wallets"), t("kpi.wallets_sub", { n: amt0(HOLDERS), pct: F.pct(nW / HOLDERS, 1) }), "", nW, "wallets") +
-      kpi(t("kpi.reserve"), amt0(reserve), ct, t("kpi.reserve_sub", { pct: F.pct(reserve / SUPPLY, 2) }), "", reserve, "reserve") +
+      kpi(t("kpi.swapped"), amt0(sw), ct, t("kpi.swapped_sub", { pct: pctMin(sw / SUP, 2), supply: D.supplyText || C.newToken.supplyText, n: amt0(D.lots.length) }), "", sw, "swapped") +
+      // The chain has no holder count for old CT: live shows the unique wallets without a share of holders.
+      kpi(t("kpi.wallets"), amt0(nW), t("unit.wallets"), D.live ? t("kpi.wallets_sub_live") : t("kpi.wallets_sub", { n: amt0(HOLDERS), pct: F.pct(nW / HOLDERS, 1) }), "", nW, "wallets") +
+      kpi(t("kpi.reserve"), amt0(reserve), ct, D.chain ? t("kpi.reserve_sub_live", { pct: pctMin(reserve / SUP, 2), n: amt0(D.chain.availableReserve) }) : t("kpi.reserve_sub", { pct: F.pct(reserve / SUP, 2) }), "", reserve, "reserve") +
       win +
       kpi(t("kpi.instant"), amt0(W[0]), ct, t("kpi.instant_sub", { n: amt0(D.lots.length) }), "", W[0], "instant") +
       kpi(t("kpi.locked"), amt0(W[1]), ct, t("kpi.locked_sub", { n: amt0(T.nLocked), m: amt0(T.nReleasing) }), "", W[1], "locked") +
@@ -102,23 +146,58 @@
 
   // ---------- gas wallet ----------
   function renderGas() {
-    var g = D.gas, low = g.runway < 7, k = t("unit.kaia");
-    var runway = kpi(t("gas.runway"), isFinite(g.runway) ? amt0(Math.floor(g.runway)) : "∞", t(Math.floor(g.runway) === 1 ? "n.day.one" : "n.day.other", { n: "" }).trim(),
-        t(low ? "gas.runway_low" : "gas.runway_sub", { rate: F.amount(g.rate, 3) }), low ? "is-warn" : "");
+    var g = D.gas, k = t("unit.kaia"), L = C.sponsor, lim = function (k, v) { return "<div><dt>" + t(k) + '</dt><dd class="num">' + v + "</dd></div>"; };
+    var limits = function (budget, floor) {
+      $("gas-limits").innerHTML =
+        lim("gas.lim.wallet", t("gas.lim.wallet_v", { n: amt0(L.walletTxPerDay) })) +
+        lim("gas.lim.budget", t("gas.lim.kaia_v", { n: amt0(budget) })) +
+        lim("gas.lim.floor", t("gas.lim.kaia_v", { n: amt0(floor) })) +
+        lim("gas.lim.min", t("gas.lim.min_v", { n: amt0(L.minOldCt) }));
+    };
+    if (!g) {
+      // Live, and the gas server did not answer: dashes, never made up figures.
+      var dash = "\u2013";
+      $("gas-grid").innerHTML = kpi(t("gas.balance"), dash, "", t("gas.unreachable")) + kpi(t("gas.runway"), dash, "", "") +
+        kpi(t("gas.today"), dash, "", "") + kpi(t("gas.total"), dash, "", "");
+      $("gas-note").innerHTML = keeperNote();
+      limits(L.dailyBudgetKaia, L.balanceFloorKaia);
+      paintNotesToggles();
+      return;
+    }
+    var low = g.runway < 7;
+    var runway = kpi(t("gas.runway"), isFinite(g.runway) ? amt0(Math.floor(g.runway)) : "\u221e", t(Math.floor(g.runway) === 1 ? "n.day.one" : "n.day.other", { n: "" }).trim(),
+        !isFinite(g.runway) && D.live ? t("gas.runway_none") : t(low ? "gas.runway_low" : "gas.runway_sub", { rate: F.amount(g.rate, 3) }), low ? "is-warn" : "");
+    var balSub = !D.live ? t("gas.balance_sub") : g.active ? t("gas.balance_sub_on", { floor: F.amount(g.floor, 2) }) : t("gas.balance_sub_off", { floor: F.amount(g.floor, 2), left: F.amount(g.budgetLeft, 2) });
     // A short runway is the gas wallet's alarm: it leads the grid.
     $("gas-grid").innerHTML = (low ? runway : "") +
-      kpi(t("gas.balance"), F.amount(g.balance, 2), k, t("gas.balance_sub")) + (low ? "" : runway) +
+      kpi(t("gas.balance"), F.amount(g.balance, 2), k, balSub, !D.live || g.active ? "" : "is-warn") + (low ? "" : runway) +
       kpi(t("gas.today"), amt0(g.txToday), t("unit.tx"), t("gas.spent", { kaia: F.amount(g.kaiaToday, 3) })) +
-      kpi(t("gas.total"), amt0(g.tx), t("unit.tx"), t("gas.spent", { kaia: F.amount(g.kaia, 3) }));
-    $("gas-note").textContent = t("gas.note", { n: pl("n.release", g.releasesToday) });
-    // The fee payer's limits come from configuration (CJ.config.sponsor mirrors the server defaults), never from sample data.
-    var L = C.sponsor, lim = function (k, v) { return "<div><dt>" + t(k) + '</dt><dd class="num">' + v + "</dd></div>"; };
-    $("gas-limits").innerHTML =
-      lim("gas.lim.wallet", t("gas.lim.wallet_v", { n: amt0(L.walletTxPerDay) })) +
-      lim("gas.lim.budget", t("gas.lim.kaia_v", { n: amt0(L.dailyBudgetKaia) })) +
-      lim("gas.lim.floor", t("gas.lim.kaia_v", { n: amt0(L.balanceFloorKaia) })) +
-      lim("gas.lim.min", t("gas.lim.min_v", { n: amt0(L.minOldCt) }));
+      kpi(D.live && g.since ? t("gas.total_since", { date: dShort(g.since) }) : t("gas.total"), amt0(g.tx), t("unit.tx"), t("gas.spent", { kaia: F.amount(g.kaia, 3) }));
+    if (D.live) {
+      $("gas-note").innerHTML = esc(t("gas.note_live", { n: pl("n.release", g.releasesToday) })) + " " + keeperNote() + " " + gasAddr(g.address);
+      limits(g.budget, g.floor);
+    } else {
+      $("gas-note").textContent = t("gas.note", { n: pl("n.release", g.releasesToday) });
+      // The fee payer's limits come from configuration (CJ.config.sponsor mirrors the server defaults), never from sample data.
+      limits(L.dailyBudgetKaia, L.balanceFloorKaia);
+    }
     paintNotesToggles();
+  }
+  // Keeper state from GET /api/health (live only).
+  function keeperNote() {
+    var h = D.health;
+    if (!D.live) return "";
+    if (!h) return esc(t(D.gas ? "gas.health_none" : "gas.unreachable"));
+    var k = h.keeper || {}, out = [];
+    if (!k.enabled) out.push(t("gas.keeper_off"));
+    else out.push(t("gas.keeper", { rel: k.lastRunAt ? LS.rel(Date.parse(k.lastRunAt)) : "\u2013", p: amt0(k.pendingLots || 0), d: amt0(k.dueLots || 0), e: amt0(k.consecutiveErrors || 0) }));
+    if (k.lastError) out.push(t("gas.keeper_err", { err: k.lastError }));
+    if (h.degraded) out.push(t("gas.health_bad"));
+    return esc(out.join(" "));
+  }
+  function gasAddr(a) {
+    if (!a) return "";
+    return '<span class="adm-gas-addr">' + esc(t("gas.addr")) + ' <a href="' + C.explorer + "/address/" + a + '" target="_blank" rel="noopener" style="overflow-wrap:anywhere">' + a + "</a></span>";
   }
 
   // Phones: KPI tiles show label and figure only; one toggle per panel shows the notes under them (alerts always show theirs).
@@ -248,7 +327,8 @@
   // ---------- daily requests ----------
   var measure = "ct";
   function renderDaily() {
-    var n = D.now, today = Math.floor(n / DAY) * DAY, startDay = Math.max(C.windowStart, today - 29 * DAY);
+    // UTC days: the live window opens at the deploy second, so its first day starts at that day's UTC midnight.
+    var n = D.now, today = Math.floor(n / DAY) * DAY, startDay = Math.max(Math.floor(C.windowStart / DAY) * DAY, today - 29 * DAY);
     var len = Math.round((today - startDay) / DAY) + 1, days = [];
     for (var i = 0; i < len; i++) days.push({ start: startDay + i * DAY, v: 0, c: 0 });
     D.lots.forEach(function (l) { var i = Math.floor((l.swappedAt - startDay) / DAY); if (i >= 0 && i < len) { days[i].v += l.amount; days[i].c++; } });
@@ -365,7 +445,8 @@
       "released_at_utc", "released_by", "fee_paid_by", "swap_tx", "release_tx"];
     var lines = [head.join(",")].concat(rows.map(function (l) {
       return [l.id, l.wallet, l.n, l.amount, l.instant, l.locked, iso(l.swappedAt), iso(l.unlockAt), l.status, l.overdue ? "yes" : "no",
-        iso(l.releasedAt), l.releasedBy || "", l.kind === "mm" ? "holder" : "cojam", l.txSwap, l.txRelease || ""].map(csvCell).join(",");
+        // fee_paid_by is known for sample rows only: the chain events do not say whether a swap was fee delegated
+        iso(l.releasedAt), l.releasedBy || "", l.kind ? (l.kind === "mm" ? "holder" : "cojam") : "", l.txSwap, l.txRelease || ""].map(csvCell).join(",");
     }));
     var blob = new Blob([lines.join("\n") + "\n"], { type: "text/csv;charset=utf-8" });
     var a = document.createElement("a"), d = new Date(D.now).toISOString().slice(0, 16).replace(/[-:]/g, "").replace("T", "-");
@@ -430,7 +511,7 @@
       '<dl class="sheet-stats">' +
         stat("sheet.total", amt(w.total), "CT") + stat("sheet.lots", w.lots.length) +
         stat("sheet.instant", amt(w.instant), "CT") + stat("sheet.locked", amt(w.locked + w.releasing), "CT") +
-        stat("sheet.released", amt(w.released), "CT") + stat("sheet.share", F.pct(w.total / (D.tot.swapped || 1), 2)) +
+        stat("sheet.released", amt(w.released), "CT") + stat("sheet.share", pctMin(w.total / (D.tot.swapped || 1), 2)) +
         stat("sheet.first", dt(first)) +
       "</dl>" +
       '<h3 class="sheet-h3">' + t("sheet.lots_h") + "</h3>" +
@@ -441,7 +522,7 @@
           '<span class="sheet-txs"><span class="sheet-tx">' + t("sheet.swap_tx") + txLink(l.txSwap) + "</span>" +
           (l.txRelease ? '<span class="sheet-tx">' + t("sheet.release_tx") + txLink(l.txRelease, "row.release_tx") + "</span>" : "") + "</span></div></li>";
       }).join("") + "</ol>";
-    lots.forEach(function (l) { CJ.track($("sheet-body").querySelector('[data-lot="' + l.id + '"]'), l); });
+    lots.forEach(function (l) { (LS ? LS.track : CJ.track)($("sheet-body").querySelector('[data-lot="' + l.id + '"]'), l); });
   }
   function openSheet(addr, from) {
     sheetWallet = addr; opener = from || document.activeElement;
@@ -472,8 +553,11 @@
 
   // ---------- render all ----------
   function renderAll() {
+    paintNote();
+    if (!D) { paintSkeleton(); paintStamp(); return; }
     renderKpis(); renderUnlock(); renderDaily(); renderTable(); renderTop(); renderBig(); paintStamp();
     if (sheetWallet) renderSheet();
+    if (LS) LS.fixLinks();
   }
 
   // ---------- events ----------
@@ -531,14 +615,24 @@
   $("big-input").addEventListener("change", function () { setThreshold(this.value); });
   $("big-input").addEventListener("keydown", function (e) { if (e.key === "Enter") setThreshold(this.value); });
   $("big-input").addEventListener("blur", function () { if (!this.getAttribute("aria-invalid")) this.value = amt0(threshold); });
-  $("adm-refresh").addEventListener("click", function () {
-    derive(); renderAll();
+  function refreshed() {
     var dot = document.querySelector("#adm-stamp .live-dot"); if (dot) { dot.classList.remove("is-tick"); void dot.offsetWidth; dot.classList.add("is-tick"); }
-    $("adm-status").textContent = t("head.refreshed", { time: dt(D.now) });
+    $("adm-status").textContent = loadErr ? t(D ? "head.error" : "head.error_none", { time: D ? dt(lastRead) : "" }) : t("head.refreshed", { time: dt(D.now) });
+  }
+  var lastTry = Date.now();
+  function refreshLive() {
+    var btn = $("adm-refresh"); btn.disabled = true; lastTry = Date.now();
+    return readLive().then(function () { btn.disabled = false; renderAll(); refreshed(); });
+  }
+  $("adm-refresh").addEventListener("click", function () {
+    if (LS) { refreshLive(); return; }
+    derive(); renderAll(); refreshed();
   });
+  document.addEventListener("click", function (e) { if (e.target.closest("#adm-retry")) refreshLive(); });
   document.addEventListener("cj:lang", renderAll);
   // Crossing the card breakpoint changes the page size; keep the first visible request on screen.
   function onCards() {
+    if (!D) return;
     var first = (S.page - 1) * PER_PAGE;
     PER_PAGE = mqCards.matches ? 10 : 25; S.page = Math.floor(first / PER_PAGE) + 1; renderTable();
   }
@@ -549,6 +643,7 @@
     new ResizeObserver(function () {
       clearTimeout(rTimer);
       rTimer = setTimeout(function () {
+        if (!D) return;
         var a = $("unl-chart").clientWidth, b = $("day-chart").clientWidth;
         if (a !== lastW.unl) { lastW.unl = a; renderUnlock(); }
         if (b !== lastW.day) { lastW.day = b; renderDaily(); }
@@ -556,8 +651,18 @@
     }).observe(document.querySelector(".adm-charts"));
   }
 
-  derive();
-  renderAll();
-  CJ.ready();
+  if (LS) {
+    renderAll();
+    readLive().then(function () { renderAll(); CJ.ready(); });
+    // Live: read again every 30 seconds (after a failed read too), unless a read is running.
+    setInterval(function () { if (!reading && Date.now() - lastTry >= REFRESH) { lastTry = Date.now(); readLive().then(renderAll); } }, 5000);
+  } else if (LIVE) {
+    // live, but the chain helper or ethers did not load
+    loadErr = new Error("live-stats.js or ethers did not load"); renderAll(); CJ.ready();
+  } else {
+    derive();
+    renderAll();
+    CJ.ready();
+  }
   setInterval(paintStamp, 1000);
 })();
