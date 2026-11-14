@@ -33,6 +33,9 @@ module.exports = {
       accounts,
     },
   },
+  // Source verification through Sourcify, which supports Kaia (8217) and Kairos (1001); Kaiascan reads it.
+  sourcify: { enabled: true },
+  etherscan: { enabled: false },
   gasReporter: {
     enabled: process.env.REPORT_GAS === "true",
   },

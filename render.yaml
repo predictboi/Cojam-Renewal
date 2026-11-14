@@ -80,7 +80,7 @@ services:
       # Secret: the gas wallet key. Entered in the Render dashboard, never in the repo.
       - key: FEE_PAYER_PRIVATE_KEY
         sync: false
-      # The site origin(s), for example https://<new domain>. Comma separated.
+      # The site origins, comma separated: https://cojam.app,https://www.cojam.app
       - key: ALLOWED_ORIGINS
         sync: false
       - key: MAX_GAS_PRICE_GKEI

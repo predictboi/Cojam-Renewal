@@ -28,7 +28,7 @@ This file holds what is specific to Cojam and overrides the handoff where they d
 | Old token admin | The team does NOT control the old owner key; the founder accepts this and focuses on the new token. No snapshot fallback planned |
 | Reserve after window | No automatic sweep: the master withdraws the unowed reserve with `withdraw(amount)` whenever it decides, during or after the window (locked lots are never touched). Wallet map: token contract (no powers), master wallet (an EOA by the founder's choice; receives the whole supply, funds the swap, the only address that can withdraw the unowed reserve; never the old owner; protect its key), swap contract (holds the funded reserve, the owed lots and the received old CT forever), deployer EOA (gas only, holds nothing) |
 | Open decisions | Launch date, domain, master EOA key custody, funding plan (full supply at once or tranches; the master can withdraw the unowed reserve at any time), late migration policy |
-| Domain | New domain, name TBD. X and Telegram come later |
+| Domain | `cojam.app` (bought 2026-11-14). Site on `cojam.app` (www redirects to it), gas API on `api.cojam.app`. Setup steps in `docs/RENDER-SETUP.md`. X and Telegram come later |
 | Deploy | Render static site from `site/` via `render.yaml` |
 | Old token | "Cojam" (CT), Kaia (formerly Klaytn), `0x7f223b1607171b81ebd68d22f1ca79157fd4a44b`, 18 decimals, supply 4,083,262,533.9560001 after burns, owner `0xeb1622d0377da1f9815bfc6eff61afe3257a0518`, pausable, not paused (checked on chain 2026-11-12). Ticker CT is now reused by other tokens on MEXC: always show the full address. Details in `research/01-cojam-history.md` |
 | Everything else | TBD: see the Brand sheet in `docs/HANDOFF.md` section 2 and `brand/BRAND.md` |

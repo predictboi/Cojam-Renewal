@@ -31,7 +31,7 @@
     // Fee payer limits: the sponsor server's defaults (server/src/config.js, set by SENDER_DAILY_TX_LIMIT, DAILY_BUDGET_KAIA,
     // MIN_FEE_PAYER_BALANCE_KAIA and MIN_SPONSORED_OLD_CT in server/.env). Configuration, not data: change both together.
     sponsor: { walletTxPerDay: 10, dailyBudgetKaia: 50, balanceFloorKaia: 5, minOldCt: 1 },
-    officialUrl: null, // new domain, to be announced
+    officialUrl: "https://cojam.app",
     since: 2019
   };
 
