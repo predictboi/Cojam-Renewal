@@ -8,6 +8,7 @@
 //                     10% of the credit arrived, waits for the unlock, releases the 90% with claimFor from the
 //                     deployer (as the keeper would), checks the total equals the credit, then withdraws the rest of the reserve. The swapped old CT stays in the
 //                     rehearsal contract forever. Needs CONFIRM_MAINNET=yes.
+//   sign-message      signs SIGN_MESSAGE (default: Kaiascan's ownership text) with the deployer key and prints it.
 //   deploy-token      new CT token only (2,000,000,000 CT, 18 decimals, all to the master). Needs CONFIRM_MAINNET=yes.
 //   deploy-test-swap  a 1 minute lock test swap on mainnet against the live new CT. Needs CONFIRM_MAINNET=yes.
 //   deploy-mainnet    the real launch deploy (scripts/deploy-mainnet.js). Needs CONFIRM_MAINNET=yes. Launch day only.
@@ -107,6 +108,19 @@ async function main() {
   if (!fork) {
     const { chainId } = await ethers.provider.getNetwork();
     if (chainId !== 8217n) throw new Error(`ops runs on Kaia mainnet (8217); connected to ${chainId}`);
+  }
+  if (task === "sign-message") {
+    // Personal sign (EIP-191) with the deployer key, for explorer ownership checks such as Kaiascan's "Verify Address
+    // Ownership". The signature proves who signed this exact text; it is not a key and moves nothing.
+    if (!process.env.DEPLOYER_PRIVATE_KEY) throw new Error("Set DEPLOYER_PRIVATE_KEY.");
+    const w = new ethers.Wallet(process.env.DEPLOYER_PRIVATE_KEY);
+    const msg = (process.env.SIGN_MESSAGE || "I, hereby verify that I am the owner/creator of the address [" + w.address.toLowerCase() + "]").replace(/\\n/g, "\n");
+    const sig = await w.signMessage(msg);
+    console.log("signer   ", w.address);
+    console.log("message  ", JSON.stringify(msg));
+    console.log("signature", sig);
+    console.log("check    ", ethers.verifyMessage(msg, sig) === w.address ? "recovers the signer: OK" : "MISMATCH");
+    return;
   }
   if (task === "deploy-token") return require("./deploy-token-mainnet.js");
   if (task === "deploy-test-swap") return require("./deploy-test-swap-mainnet.js");
