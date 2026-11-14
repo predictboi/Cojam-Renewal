@@ -100,3 +100,15 @@ Script: `contracts/scripts/deploy-mainnet.js`. It reads the deployer key from `D
 - Real deploy: `CONFIRM_MAINNET=yes npx hardhat run scripts/deploy-mainnet.js --network kaia`, then `node scripts/verify-sourcify.js 8217 <token> CojamToken <swap> CojamMigration`.
 - The 1 year window starts in the deploy block, so deploy on launch day, after the audit.
 - Order: deploy token, deploy swap, verify both, fund the swap from the master wallet app in steps, update the site and gas API addresses, then announce. Remove `DEPLOYER_PRIVATE_KEY` from the environment afterwards.
+
+## 6. Key jobs on Render: `cojam-ops`
+
+A Render cron job that holds the deployer key and the mainnet test wallet key, separate from the internet facing gas API. It runs only when you press **Trigger Run** (its yearly schedule runs the harmless `check`).
+
+1. After the Blueprint syncs, open `cojam-ops`, then **Environment**, and enter `DEPLOYER_PRIVATE_KEY` (deployer `0xB181…4a33`) and `MAINNET_TEST_PRIVATE_KEY` (the test wallet). Private keys, not seed phrases.
+2. **Check:** leave `OPS_TASK=check` and press **Trigger Run**. The log lists both addresses, their KAIA, old CT and nonce. Nothing is sent.
+3. **Small mainnet rehearsal:** the test wallet needs at least `REHEARSAL_AMOUNT` old CT (default 100) and 0.5 KAIA. Set `OPS_TASK=rehearse-mainnet` and `CONFIRM_MAINNET=yes`, then **Trigger Run**. About 2 minutes. The log ends with `"result": "PASS"` and every transaction hash. The swapped old CT stays in the rehearsal contract forever. A dry run on a mainnet fork passed on 2026-11-14.
+4. Set `CONFIRM_MAINNET` back to `no` and `OPS_TASK` back to `check`.
+5. **Launch day only:** `OPS_TASK=deploy-mainnet`, `CONFIRM_MAINNET=yes`, **Trigger Run**. Then delete both keys from the dashboard.
+
+Claude can read every result on chain from the addresses alone, so there is no need to copy logs unless a run fails.

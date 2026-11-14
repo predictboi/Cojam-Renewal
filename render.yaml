@@ -112,6 +112,43 @@ services:
       - key: KEEPER_UNLOCK_DELAY_SECONDS
         value: "120"
 
+  # Key jobs (mainnet rehearsal, launch deploy). A cron job so it never serves traffic and the keys stay out of the
+  # internet facing gas API. It only runs when someone presses "Trigger Run" in the dashboard (the schedule, once a
+  # year on 1 January, runs the harmless default task "check"). Pick the job with OPS_TASK and CONFIRM_MAINNET,
+  # see contracts/scripts/ops.js. Remove the two keys from the dashboard when the jobs are done.
+  - type: cron
+    name: cojam-ops
+    runtime: node
+    rootDir: contracts
+    region: singapore
+    plan: starter
+    schedule: "0 0 1 1 *"
+    buildCommand: npm ci && npx hardhat compile
+    startCommand: npx hardhat run scripts/ops.js --network kaia
+    buildFilter:
+      paths:
+        - contracts/**
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # check | rehearse-mainnet | deploy-mainnet
+      - key: OPS_TASK
+        value: check
+      # Set to yes in the dashboard right before a run that sends real transactions, then back to no.
+      - key: CONFIRM_MAINNET
+        value: "no"
+      - key: REHEARSAL_AMOUNT
+        value: "100"
+      # Public Kaia mainnet RPC. Replace with a dedicated endpoint if it rate limits.
+      - key: KAIA_RPC_URL
+        value: https://public-en.node.kaia.io
+      # Secrets, entered in the dashboard only: the deployer wallet 0xB18149317Bf633F5Dc2a6044a11103D580cA4a33
+      # and the mainnet test wallet.
+      - key: DEPLOYER_PRIVATE_KEY
+        sync: false
+      - key: MAINNET_TEST_PRIVATE_KEY
+        sync: false
+
   # Optional split, off for now: uncomment and set RUN_MODE=api on cojam-gas-api above.
   # Counters are per process until the usage store moves to Redis (Render Key Value).
   # - type: worker
