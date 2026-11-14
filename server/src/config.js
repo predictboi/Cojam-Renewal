@@ -118,6 +118,7 @@ function loadConfig(env = process.env) {
       maxGasLimitApprove: int('MAX_GAS_LIMIT_APPROVE', 120000, { min: 21000 }),
       maxGasLimitSwap: int('MAX_GAS_LIMIT_SWAP', 600000, { min: 21000 }),
       maxClaimLots: int('MAX_CLAIM_LOTS', 50, { min: 1, max: 1000 }),
+      maxClaimUsers: int('MAX_CLAIM_USERS', 10, { min: 1, max: 100 }),
       senderDailyLimit: int('SENDER_DAILY_TX_LIMIT', 10, { min: 1 }),
       ipDailyLimit: int('IP_DAILY_TX_LIMIT', 40, { min: 1 }),
       dailyBudgetWei: kaia('DAILY_BUDGET_KAIA', '50'),

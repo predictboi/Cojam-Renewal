@@ -6,7 +6,9 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {CojamToken} from "./CojamToken.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /// @title Cojam migration: old CT to new CT, 1:1, 10% at once and 90% after 7 days
 /// @notice Holders call `migrate(amount)` after approving old CT. The contract
@@ -16,12 +18,18 @@ import {CojamToken} from "./CojamToken.sol";
 /// `claimFor` / `claimForMany` (anyone, for example a keeper bot). Released tokens
 /// always go to the lot owner, never to the caller.
 ///
-/// There is no admin key. Every parameter is immutable. The window opens at deploy
-/// and lasts 365 days. After the window and the grace period, anyone may call
-/// `sweep()`, which sends only the reserve that no lot is owed to the immutable TREASURY.
+/// Funding: the new token is deployed on its own and its whole supply goes to the
+/// project's master wallet. The owner funds this contract with plain transfers of
+/// new CT. `migrate` only hands out the reserve, which is the new CT held here minus
+/// `totalOwed` (what earlier lots are still owed).
+///
+/// Owner powers (Ownable2Step, nothing more): pause and unpause `migrate` only,
+/// withdraw reserve new CT (never what lots are owed), and recover stray tokens
+/// other than old CT and new CT. The owner cannot pause releases, move old CT,
+/// touch any lot, or change the ratio, the 10% share, the lock or the window.
 ///
 /// Received old CT stays in this contract forever: no function can move it.
-contract CojamMigration is ReentrancyGuard {
+contract CojamMigration is Ownable2Step, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     /// @notice Length of the migration window, counted from deploy.
@@ -30,17 +38,13 @@ contract CojamMigration is ReentrancyGuard {
     uint256 public constant LOCK_PERIOD = 7 days;
     /// @notice Share of each credit paid at once, in percent (rounded down).
     uint256 public constant INSTANT_PERCENT = 10;
-    /// @notice Upper bound for the grace period, to catch unit mistakes at deploy.
-    uint256 public constant MAX_GRACE_PERIOD = 365 days;
     /// @notice Both tokens use 18 decimals, so 1 old base unit = 1 new base unit.
     uint8 public constant DECIMALS = 18;
 
     IERC20 public immutable OLD_TOKEN;
     IERC20 public immutable NEW_TOKEN;
-    address public immutable TREASURY;
     uint256 public immutable WINDOW_START;
     uint256 public immutable WINDOW_END;
-    uint256 public immutable SWEEP_OPENS_AT;
 
     /// @dev One storage slot. `amount` fits: the whole supply is below 2^92.
     struct Lot {
@@ -61,8 +65,8 @@ contract CojamMigration is ReentrancyGuard {
     uint256 public totalOwed;
     /// @notice New CT released from lots.
     uint256 public totalClaimed;
-    /// @notice New CT sent to TREASURY by `sweep`.
-    uint256 public totalSwept;
+    /// @notice New CT taken out of the reserve by the owner through `withdrawReserve`.
+    uint256 public totalWithdrawn;
 
     event Migrated(
         address indexed user,
@@ -73,42 +77,41 @@ contract CojamMigration is ReentrancyGuard {
         uint256 unlockAt
     );
     event Claimed(address indexed user, uint256 indexed lotId, uint256 amount, address indexed caller);
-    event Swept(address indexed to, uint256 amount);
+    event ReserveWithdrawn(address indexed to, uint256 amount);
+    event ERC20Recovered(address indexed token, address indexed to, uint256 amount);
 
     error ZeroAddress();
-    error GracePeriodTooLong();
+    error InvalidRecipient();
+    error SameToken();
     error DecimalsMismatch();
     error SupplyMismatch();
     error ZeroAmount();
     error WindowClosed();
+    error InsufficientReserve(uint256 available, uint256 needed);
     error NothingReceived();
     error ReceivedMoreThanSent();
-    error ReserveExhausted();
     error NothingToClaim();
-    error SweepNotOpen();
-    error NothingToSweep();
+    error CannotRecoverOldToken();
+    error UseWithdrawReserve();
+    error RenounceDisabled();
 
-    /// @param oldToken    Old CT (Kaia mainnet 0x7f223b1607171b81ebd68d22f1ca79157fd4a44b).
-    /// @param treasury    Receives the unowed reserve after WINDOW_END + gracePeriod
-    ///                    (the new relaunch multisig).
-    /// @param gracePeriod Seconds after WINDOW_END before `sweep` opens.
-    constructor(IERC20 oldToken, address treasury, uint256 gracePeriod) {
-        if (address(oldToken) == address(0) || treasury == address(0)) revert ZeroAddress();
-        if (gracePeriod > MAX_GRACE_PERIOD) revert GracePeriodTooLong();
+    /// @param oldToken     Old CT (Kaia mainnet 0x7f223b1607171b81ebd68d22f1ca79157fd4a44b).
+    /// @param newToken     New CT (`CojamToken`), deployed before this contract.
+    /// @param initialOwner The founder's master wallet or a Safe. Ownership moves only
+    ///                     in two steps (`transferOwnership`, then `acceptOwnership`).
+    constructor(IERC20 oldToken, IERC20 newToken, address initialOwner) Ownable(initialOwner) {
+        if (address(oldToken) == address(0) || address(newToken) == address(0)) revert ZeroAddress();
+        if (address(oldToken) == address(newToken)) revert SameToken();
         if (IERC20Metadata(address(oldToken)).decimals() != DECIMALS) revert DecimalsMismatch();
-
-        // The new token is created here and its whole supply is minted to this
-        // contract in the same transaction, so no other address ever holds it first.
-        CojamToken token = new CojamToken(address(this));
-        if (token.decimals() != DECIMALS) revert DecimalsMismatch();
-        if (token.totalSupply() != oldToken.totalSupply()) revert SupplyMismatch();
+        if (IERC20Metadata(address(newToken)).decimals() != DECIMALS) revert DecimalsMismatch();
+        // The new supply must be able to cover every old token still in existence.
+        // (Old CT can only shrink: it has burn and no mint.)
+        if (newToken.totalSupply() < oldToken.totalSupply()) revert SupplyMismatch();
 
         OLD_TOKEN = oldToken;
-        NEW_TOKEN = IERC20(address(token));
-        TREASURY = treasury;
+        NEW_TOKEN = newToken;
         WINDOW_START = block.timestamp;
         WINDOW_END = block.timestamp + WINDOW;
-        SWEEP_OPENS_AT = block.timestamp + WINDOW + gracePeriod;
     }
 
     // ------------------------------------------------------------------
@@ -117,13 +120,17 @@ contract CojamMigration is ReentrancyGuard {
 
     /// @notice Swap `amount` old CT for the same amount of new CT: 10% now, 90% locked for 7 days.
     /// @dev Requires a prior `approve(this, amount)` on old CT (old CT has no permit).
+    /// The reserve is checked against `amount` before the pull; the credit is at most
+    /// `amount`, so a swap can never use new CT owed to earlier lots.
     /// The pull happens before the state writes on purpose: the credit is the measured
     /// balance change, which only exists after the transfer. `nonReentrant` closes the
     /// window this ordering would otherwise open. The instant payout is the last step.
     /// @return lotId Index of the new lot in the caller's lot list.
-    function migrate(uint256 amount) external nonReentrant returns (uint256 lotId) {
+    function migrate(uint256 amount) external nonReentrant whenNotPaused returns (uint256 lotId) {
         if (amount == 0) revert ZeroAmount();
         if (block.timestamp >= WINDOW_END) revert WindowClosed();
+        uint256 available = availableReserve();
+        if (available < amount) revert InsufficientReserve(available, amount);
 
         uint256 balanceBefore = OLD_TOKEN.balanceOf(address(this));
         OLD_TOKEN.safeTransferFrom(msg.sender, address(this), amount);
@@ -133,8 +140,7 @@ contract CojamMigration is ReentrancyGuard {
         uint256 received = balanceAfter - balanceBefore;
         if (received > amount) revert ReceivedMoreThanSent();
 
-        // 1:1 with equal decimals: the credit in new CT equals `received`.
-        if (received > availableReserve()) revert ReserveExhausted();
+        // 1:1 with equal decimals: the credit in new CT equals `received` (<= amount <= available).
         uint256 instant = (received * INSTANT_PERCENT) / 100; // rounded down
         uint256 locked = received - instant; // always > 0, and instant + locked == received
 
@@ -153,6 +159,7 @@ contract CojamMigration is ReentrancyGuard {
     }
 
     /// @notice Release the caller's matured lots, oldest first, at most `maxLots` of them.
+    /// Never pausable.
     /// @return amount New CT sent to the caller.
     function claim(uint256 maxLots) external nonReentrant returns (uint256 amount) {
         amount = _release(msg.sender, maxLots);
@@ -162,6 +169,7 @@ contract CojamMigration is ReentrancyGuard {
 
     /// @notice Release `user`'s matured lots to `user`. Anyone may call it (for example
     /// a keeper bot paying the gas). The tokens always go to `user`, never to the caller.
+    /// Never pausable.
     /// @return amount New CT sent to `user`.
     function claimFor(address user, uint256 maxLots) external nonReentrant returns (uint256 amount) {
         amount = _release(user, maxLots);
@@ -171,6 +179,7 @@ contract CojamMigration is ReentrancyGuard {
 
     /// @notice Batch form of `claimFor` for keepers. Users with nothing matured are
     /// skipped instead of reverting the batch. Each user is paid only their own lots.
+    /// Never pausable.
     /// @return total New CT released across all users.
     function claimForMany(address[] calldata users, uint256 maxLotsEach)
         external
@@ -214,35 +223,67 @@ contract CojamMigration is ReentrancyGuard {
     }
 
     // ------------------------------------------------------------------
-    // Permissionless housekeeping
+    // Owner actions
     // ------------------------------------------------------------------
 
-    /// @notice After WINDOW_END + grace, send the reserve that no lot is owed to TREASURY.
-    /// @dev Anyone may call it, as often as they like. It never touches `totalOwed`,
-    /// so every locked remainder stays fully backed and releasable forever.
-    function sweep() external nonReentrant returns (uint256 amount) {
-        if (block.timestamp < SWEEP_OPENS_AT) revert SweepNotOpen();
-        amount = availableReserve();
-        if (amount == 0) revert NothingToSweep();
+    /// @notice Stop new swaps. Releases (`claim`, `claimFor`, `claimForMany`) keep working.
+    function pauseMigrate() external onlyOwner {
+        _pause();
+    }
 
-        totalSwept += amount;
-        emit Swept(TREASURY, amount);
+    /// @notice Allow new swaps again (inside the window).
+    function unpauseMigrate() external onlyOwner {
+        _unpause();
+    }
 
-        NEW_TOKEN.safeTransfer(TREASURY, amount);
+    /// @notice Send `amount` reserve new CT to `to`. Allowed at any time, but never more
+    /// than `availableReserve()`: new CT owed to lots cannot be withdrawn.
+    function withdrawReserve(address to, uint256 amount) external onlyOwner nonReentrant {
+        if (to == address(0) || to == address(this)) revert InvalidRecipient();
+        if (amount == 0) revert ZeroAmount();
+        uint256 available = availableReserve();
+        if (amount > available) revert InsufficientReserve(available, amount);
+
+        totalWithdrawn += amount;
+        emit ReserveWithdrawn(to, amount);
+
+        NEW_TOKEN.safeTransfer(to, amount);
+    }
+
+    /// @notice Send a token sent here by mistake to `to`. Old CT can never be moved, and
+    /// new CT only leaves through `withdrawReserve` (which protects what lots are owed).
+    function recoverERC20(IERC20 token, address to, uint256 amount) external onlyOwner nonReentrant {
+        if (token == OLD_TOKEN) revert CannotRecoverOldToken();
+        if (token == NEW_TOKEN) revert UseWithdrawReserve();
+        if (to == address(0) || to == address(this)) revert InvalidRecipient();
+        if (amount == 0) revert ZeroAmount();
+
+        emit ERC20Recovered(address(token), to, amount);
+
+        token.safeTransfer(to, amount);
+    }
+
+    /// @notice Disabled. Without an owner the reserve could never be withdrawn and a
+    /// pause could never be lifted. Ownership can still move with `transferOwnership`
+    /// and `acceptOwnership`.
+    function renounceOwnership() public pure override {
+        revert RenounceDisabled();
     }
 
     // ------------------------------------------------------------------
     // Views
     // ------------------------------------------------------------------
 
-    /// @notice New CT held here that no lot is owed to (what migrate can still hand out).
+    /// @notice New CT held here that no lot is owed to (what migrate can still hand
+    /// out, and what the owner may withdraw).
     function availableReserve() public view returns (uint256) {
         return NEW_TOKEN.balanceOf(address(this)) - totalOwed;
     }
 
-    /// @notice True while `migrate` is accepted.
+    /// @notice True while `migrate` is accepted: inside the window and not paused.
+    /// (It does not check the reserve; see `availableReserve`.)
     function isOpen() external view returns (bool) {
-        return block.timestamp < WINDOW_END;
+        return block.timestamp < WINDOW_END && !paused();
     }
 
     /// @notice Split of a credit of `received` old CT: (instant now, locked for 7 days).

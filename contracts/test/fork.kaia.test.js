@@ -4,7 +4,7 @@
 const { expect } = require("chai");
 const { ethers, network } = require("hardhat");
 const { time, reset, impersonateAccount, setBalance } = require("@nomicfoundation/hardhat-network-helpers");
-const { SUPPLY, LOCK, GRACE, E18, split } = require("./helpers");
+const { SUPPLY, LOCK, E18, split } = require("./helpers");
 
 const RPC = process.env.KAIA_RPC_URL || "https://public-en.node.kaia.io";
 const OLD_CT = "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b";
@@ -62,7 +62,7 @@ describe("fork: real old CT on Kaia mainnet", function () {
   });
 
   describe("on a local fork", function () {
-    let old, migration, newToken, treasury, holder, other, keeper, owner, balanceSlot;
+    let old, migration, newToken, master, holder, other, keeper, owner, balanceSlot;
 
     // Credit a test wallet with old CT by writing the balances mapping slot directly,
     // instead of moving a real holder's tokens. This does not change totalSupply.
@@ -73,10 +73,11 @@ describe("fork: real old CT on Kaia mainnet", function () {
 
     before(async function () {
       await reset(RPC, forkBlock);
-      [, treasury, holder, other, keeper] = await ethers.getSigners();
+      [, master, holder, other, keeper] = await ethers.getSigners();
       old = await ethers.getContractAt(OLD_ABI, OLD_CT);
-      migration = await (await ethers.getContractFactory("CojamMigration")).deploy(OLD_CT, treasury.address, GRACE);
-      newToken = await ethers.getContractAt("CojamToken", await migration.NEW_TOKEN());
+      newToken = await (await ethers.getContractFactory("CojamToken")).deploy(master.address);
+      migration = await (await ethers.getContractFactory("CojamMigration"))
+        .deploy(OLD_CT, await newToken.getAddress(), master.address);
 
       for (let slot = 0; slot <= 20 && balanceSlot === undefined; slot++) {
         balanceSlot = slot;
@@ -94,9 +95,17 @@ describe("fork: real old CT on Kaia mainnet", function () {
       owner = await ethers.getSigner(OLD_OWNER);
     });
 
-    it("deploys against the real old CT (supply and decimals guards pass)", async function () {
+    it("deploys against the real old CT (supply and decimals guards pass); the master funds the swap", async function () {
       expect(await newToken.totalSupply()).to.equal(await old.totalSupply());
-      expect(await newToken.balanceOf(await migration.getAddress())).to.equal(SUPPLY);
+      expect(await newToken.balanceOf(master.address)).to.equal(SUPPLY);
+      const m = await migration.getAddress();
+      await old.connect(holder).approve(m, 1n);
+      await credit(holder.address, 1n);
+      await expect(migration.connect(holder).migrate(1n)).to.be.revertedWithCustomError(migration, "InsufficientReserve");
+      await credit(holder.address, 0n);
+      await newToken.connect(master).transfer(m, SUPPLY);
+      expect(await migration.availableReserve()).to.equal(SUPPLY);
+      expect(await migration.owner()).to.equal(master.address);
     });
 
     it("migrates real old CT 1:1 (no transfer fee): 10% at once, 90% released by a keeper after 7 days", async function () {
@@ -129,6 +138,18 @@ describe("fork: real old CT on Kaia mainnet", function () {
 
       await old.connect(owner).unPause();
       await expect(migration.connect(other).migrate(10n * E18)).to.emit(migration, "Migrated");
+    });
+
+    it("the swap owner's pauseMigrate stops real old CT swaps but not releases", async function () {
+      await credit(holder.address, 50n * E18);
+      await old.connect(holder).approve(await migration.getAddress(), 50n * E18);
+      await migration.connect(holder).migrate(20n * E18);
+      await time.increase(LOCK);
+      await migration.connect(master).pauseMigrate();
+      await expect(migration.connect(holder).migrate(10n * E18)).to.be.revertedWithCustomError(migration, "EnforcedPause");
+      await expect(migration.connect(keeper).claimFor(holder.address, 10)).to.changeTokenBalance(newToken, holder, 18n * E18);
+      await migration.connect(master).unpauseMigrate();
+      await expect(migration.connect(holder).migrate(10n * E18)).to.emit(migration, "Migrated");
     });
 
     it("real freeze(): a frozen holder cannot migrate; freezing the swap contract does not block migrate or claim", async function () {

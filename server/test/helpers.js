@@ -42,6 +42,7 @@ const calls = {
   migrate: (amount = parseUnits('1000', 18)) => swapAbi.encodeFunctionData('migrate', [amount]),
   claim: (maxLots = 10) => swapAbi.encodeFunctionData('claim', [maxLots]),
   claimFor: (user, maxLots = 10) => swapAbi.encodeFunctionData('claimFor', [user, maxLots]),
+  claimForMany: (users, maxLotsEach = 10) => swapAbi.encodeFunctionData('claimForMany', [users, maxLotsEach]),
 };
 
 function nodeError(message) {

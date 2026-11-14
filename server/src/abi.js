@@ -27,7 +27,8 @@ const swapAbi = new Interface([
   'error NothingToClaim()',
   'error ZeroAmount()',
   'error WindowClosed()',
-  'error ReserveExhausted()',
+  'error InsufficientReserve(uint256 available, uint256 needed)',
+  'error EnforcedPause()',
   'error NothingReceived()',
   'error ReceivedMoreThanSent()',
 ]);
@@ -37,11 +38,24 @@ const SELECTORS = {
   migrate: swapAbi.getFunction('migrate').selector,
   claim: swapAbi.getFunction('claim').selector,
   claimFor: swapAbi.getFunction('claimFor').selector,
+  claimForMany: swapAbi.getFunction('claimForMany').selector,
 };
+
+// Owner only functions of CojamMigration (Ownable2Step). Listed so tests can prove the
+// policy never sponsors them; the policy itself is an allowlist and needs no denylist.
+const ownerAbi = new Interface([
+  'function pauseMigrate()',
+  'function unpauseMigrate()',
+  'function withdrawReserve(address to, uint256 amount)',
+  'function recoverERC20(address token, address to, uint256 amount)',
+  'function transferOwnership(address newOwner)',
+  'function acceptOwnership()',
+  'function renounceOwnership()',
+]);
 
 const TOPICS = {
   Migrated: swapAbi.getEvent('Migrated').topicHash,
   Claimed: swapAbi.getEvent('Claimed').topicHash,
 };
 
-module.exports = { oldCtAbi, swapAbi, SELECTORS, TOPICS };
+module.exports = { oldCtAbi, swapAbi, ownerAbi, SELECTORS, TOPICS };

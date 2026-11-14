@@ -7,7 +7,7 @@ const { parseTransaction, KlaytnTxFactory, TxType } = require('@kaiachain/js-ext
 const { createFeePayerService } = require('../src/feePayer');
 const { MemoryUsageStore } = require('../src/store');
 const { silentLogger } = require('../src/log');
-const { swapAbi, oldCtAbi } = require('../src/abi');
+const { oldCtAbi, ownerAbi } = require('../src/abi');
 const h = require('./helpers');
 
 function setup({ env = {}, chain: chainOpts = {} } = {}) {
@@ -76,6 +76,46 @@ test('accepts claimFor(user, maxLots) on the swap contract', async () => {
   assert.equal((await svc.sponsor(raw)).action, 'claimFor');
 });
 
+test('accepts claimForMany(users, maxLotsEach) on the swap contract', async () => {
+  const { svc, holder } = setup();
+  const others = [EthersWallet.createRandom().address, EthersWallet.createRandom().address];
+  const raw = await h.senderSign(holder, { to: h.SWAP, data: h.calls.claimForMany([holder.address, ...others], 5), gasLimit: 400000n });
+  const out = await svc.sponsor(raw);
+  assert.equal(out.action, 'claimForMany');
+});
+
+test('rejects claimForMany with no users, too many users, a zero user or a bad maxLotsEach', async () => {
+  const { svc, holder, cfg } = setup();
+  const many = Array.from({ length: cfg.policy.maxClaimUsers + 1 }, () => EthersWallet.createRandom().address);
+  const cases = [
+    h.calls.claimForMany([], 5),
+    h.calls.claimForMany(many, 5),
+    h.calls.claimForMany([holder.address, '0x0000000000000000000000000000000000000000'], 5),
+    h.calls.claimForMany([holder.address], 0),
+    h.calls.claimForMany([holder.address], cfg.policy.maxClaimLots + 1),
+  ];
+  for (const [i, data] of cases.entries()) {
+    await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.SWAP, data, nonce: i })), 'CALLDATA_INVALID');
+  }
+});
+
+test('never sponsors the swap owner functions, even when the owner signs', async () => {
+  const { svc, holder, chain } = setup();
+  const calls = [
+    ownerAbi.encodeFunctionData('pauseMigrate', []),
+    ownerAbi.encodeFunctionData('unpauseMigrate', []),
+    ownerAbi.encodeFunctionData('withdrawReserve', [holder.address, parseUnits('1', 18)]),
+    ownerAbi.encodeFunctionData('recoverERC20', [h.OLD_CT, holder.address, 1n]),
+    ownerAbi.encodeFunctionData('transferOwnership', [holder.address]),
+    ownerAbi.encodeFunctionData('acceptOwnership', []),
+    ownerAbi.encodeFunctionData('renounceOwnership', []),
+  ];
+  for (const [i, data] of calls.entries()) {
+    await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.SWAP, data, nonce: i })), 'SELECTOR_NOT_ALLOWED');
+  }
+  assert.equal(chain.state.sent.length, 0);
+});
+
 test('rejects a value transfer inside a smart contract execution', async () => {
   const { svc, holder, chain } = setup();
   const raw = await h.senderSign(holder, { to: h.SWAP, data: h.calls.migrate(), value: 1n });
@@ -133,10 +173,8 @@ test('rejects unknown selectors on both contracts', async () => {
   const { svc, holder } = setup();
   const transfer = '0xa9059cbb' + '00'.repeat(12) + h.SWAP.slice(2).toLowerCase() + '00'.repeat(31) + '01';
   await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.OLD_CT, data: transfer })), 'SELECTOR_NOT_ALLOWED');
-  const many = swapAbi.encodeFunctionData('claimForMany', [[holder.address], 5]);
-  await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.SWAP, data: many, nonce: 1 })), 'SELECTOR_NOT_ALLOWED');
-  const sweep = '0x35faa416';
-  await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.SWAP, data: sweep, nonce: 2 })), 'SELECTOR_NOT_ALLOWED');
+  const removedSweep = '0x35faa416'; // sweep() of the earlier design: no longer exists, never sponsored
+  await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.SWAP, data: removedSweep, nonce: 2 })), 'SELECTOR_NOT_ALLOWED');
   const allowanceRead = oldCtAbi.encodeFunctionData('allowance', [holder.address, h.SWAP]);
   await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.OLD_CT, data: allowanceRead, nonce: 3 })), 'SELECTOR_NOT_ALLOWED');
 });

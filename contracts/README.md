@@ -1,13 +1,13 @@
 # Cojam migration contracts
 
-Smart contracts for the Cojam token migration on Kaia: old CT (`0x7f223b1607171b81ebd68d22f1ca79157fd4a44b`) to the new Cojam Token, 1:1. On each swap 10% of the new CT arrives at once and 90% is locked for 7 days, then released to the holder (by the holder, or by anyone such as the team's keeper bot, always paid to the holder). The window opens at deploy and lasts 365 days. The full design, policies and test plan are in [`../docs/CONTRACT-SPEC.md`](../docs/CONTRACT-SPEC.md).
+Smart contracts for the Cojam token migration on Kaia: old CT (`0x7f223b1607171b81ebd68d22f1ca79157fd4a44b`) to the new Cojam Token, 1:1. On each swap 10% of the new CT arrives at once and 90% is locked for 7 days, then released to the holder (by the holder, or by anyone such as the team's keeper bot, always paid to the holder). The window opens when the swap contract is deployed and lasts 365 days. The whole new supply is minted to the project's master wallet; the owner funds the swap contract by plain transfers and may pause new swaps and withdraw the unowed reserve, but can never touch tokens owed to locked lots, old CT, or the swap rules. The full design, policies and test plan are in [`../docs/CONTRACT-SPEC.md`](../docs/CONTRACT-SPEC.md).
 
 These contracts have **not** been audited.
 
 | File | What it is |
 | --- | --- |
-| `contracts/CojamToken.sol` | New CT. Plain OpenZeppelin ERC-20 plus EIP-2612 permit. Fixed supply, minted once to the migration contract. No owner, mint, pause, blacklist, fee or upgrade. |
-| `contracts/CojamMigration.sol` | Swap. Deploys `CojamToken` in its constructor and opens the window. `migrate` takes old CT, pays 10% at once and opens a 7 day lot for the rest. `claim` (owner), `claimFor` and `claimForMany` (anyone, paid to the owner) release matured lots. `sweep` sends the unowed remainder to the treasury after the window plus grace. No admin key. |
+| `contracts/CojamToken.sol` | New CT. Plain OpenZeppelin ERC-20 plus EIP-2612 permit. Fixed supply, minted once to the master wallet passed to the constructor. No owner, mint, pause, blacklist, fee or upgrade. |
+| `contracts/CojamMigration.sol` | Swap. Takes the old and new token addresses and an owner (`Ownable2Step`), and opens the window at deploy. `migrate` takes old CT, pays 10% at once and opens a 7 day lot for the rest; it reverts with `InsufficientReserve` when the unowed new CT held by the contract is below the amount. `claim` (lot owner), `claimFor` and `claimForMany` (anyone, paid to the lot owner) release matured lots and can never be paused. Owner only: `pauseMigrate` / `unpauseMigrate` (migrate only), `withdrawReserve` (only up to `availableReserve()`), `recoverERC20` (never old CT, never new CT). |
 | `contracts/mocks/*` | Test only stand ins: old CT with pause and freeze, fee on transfer token, malicious re-entering token, decimals token, Safe style contract wallet. Never deploy these to mainnet. |
 | `test/CojamMigration.test.js` | Unit tests. |
 | `test/fuzz.test.js` | Randomized sequences checked against a model, with invariants after every step. |
@@ -43,16 +43,17 @@ Fork knobs: `KAIA_RPC_URL` (default `https://public-en.node.kaia.io`), `SKIP_FOR
 ## Deploy to Kairos testnet
 
 1. `cp .env.example .env` and fill it in. Use a throwaway test key only, funded from the Kairos faucet. Never put a real key in this repository.
-2. `TREASURY_ADDRESS` must be the **new relaunch multisig** (a Kaia Safe). It must not be the deployer and must not be the old Cojam owner `0xeb16…0518`, which is unrelated to the relaunch. The script refuses both.
+2. `MASTER_ADDRESS` receives the **whole new CT supply**. `OWNER_ADDRESS` owns the swap contract (defaults to the master). Neither may be the old Cojam owner `0xeb16…0518`, which is unrelated to the relaunch; the script refuses it. On mainnet both should be a new Kaia Safe.
 3. Leave `OLD_TOKEN_ADDRESS` empty to deploy a test old CT (`MockOldCojam`) with the exact old supply.
-4. Run:
+4. Optional: if the deployer key **is** the master, set `FUND_AMOUNT` (in CT, for example `1000000`) and the script transfers that much new CT into the swap right after deploy. Otherwise the master funds the swap later with a plain transfer. Until then `migrate` reverts with `InsufficientReserve`.
+5. Run:
 
 ```bash
 npm run deploy:kairos
 ```
 
-The script deploys `CojamMigration` (which deploys `CojamToken`, mints the whole supply to itself and opens the 365 day window in the deploy block), then checks that the reserve equals the total supply and that the deployer holds no new CT, and prints every address and timestamp as JSON. Verify both contracts on Kaiascan; the `CojamToken` constructor argument is the migration contract address.
+The script deploys (the mock old CT if needed), then `CojamToken(master)`, then `CojamMigration(old, new, owner)` (which opens the 365 day window in its deploy block), funds the swap if asked, and checks: the supply is the fixed supply, the master holds the full supply minus the funded amount, the swap holds exactly the funded amount, the deployer holds no new CT unless it is the master, and the swap's tokens and owner are the ones requested. It prints every address, the swap's deploy block and the window timestamps as JSON. Verify both contracts on Kaiascan: the `CojamToken` constructor argument is the master; the `CojamMigration` arguments are old token, new token, owner.
 
-`npm run deploy:local` runs the same script against the in-process Hardhat network as a dry run.
+`npm run deploy:local` runs the same script against the in-process Hardhat network as a dry run (the deployer is the master and funds 1,000,000 CT).
 
-Mainnet deployment is deliberately not scripted here: because the deploy opens the window, it is the launch itself and follows the launch checklist in the spec.
+Mainnet deployment is deliberately not scripted here: because the swap deploy opens the window, it is the launch itself and follows the launch checklist in the spec. Funding is a separate step by the master, so the owner can deploy, verify and fund before announcing; the window still runs from the swap's deploy block.

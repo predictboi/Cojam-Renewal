@@ -1,12 +1,12 @@
 // Randomized (fuzz style) sequences of migrate, claim, claimFor, claimForMany,
-// time travel and sweep,
-// checked step by step against a plain JavaScript model, with invariants after
-// every step. Reproducible: FUZZ_SEED picks the first seed, FUZZ_RUNS the count,
+// time travel and owner actions (funding by plain transfer, withdrawReserve,
+// pause and unpause), checked step by step against a plain JavaScript model,
+// with invariants after every step. Reproducible: FUZZ_SEED picks the first seed, FUZZ_RUNS the count,
 // FUZZ_STEPS the length of each run.
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
-const { SUPPLY, DAY, WINDOW, LOCK, GRACE, E18, split } = require("./helpers");
+const { SUPPLY, DAY, WINDOW, LOCK, E18, split } = require("./helpers");
 
 const RUNS = Number(process.env.FUZZ_RUNS || 6);
 const STEPS = Number(process.env.FUZZ_STEPS || 160);
@@ -40,24 +40,27 @@ for (let run = 0; run < RUNS; run++) {
   const feeBps = run % 3 === 2 ? 37n : 0n; // every third run uses a fee on transfer old token
 
   describe(`fuzz run seed=${seed}${feeBps ? " (fee on transfer old token)" : ""}`, function () {
-    it(`random migrate / release / time / sweep sequence keeps every invariant (${STEPS} steps)`, async function () {
+    it(`random migrate / release / time / owner sequence keeps every invariant (${STEPS} steps)`, async function () {
       const rnd = prng(seed);
       const signers = await ethers.getSigners();
-      const [deployer, treasury, keeper] = signers;
+      const [deployer, master, keeper] = signers;
       const users = signers.slice(3, 11);
       const callers = [...users, keeper];
 
       const oldToken = feeBps
         ? await (await ethers.getContractFactory("MockFeeOnTransfer")).deploy(SUPPLY, feeBps)
         : await (await ethers.getContractFactory("MockOldCojam")).deploy(SUPPLY);
+      const newToken = await (await ethers.getContractFactory("CojamToken")).deploy(master.address);
       const migration = await (await ethers.getContractFactory("CojamMigration"))
-        .deploy(await oldToken.getAddress(), treasury.address, GRACE);
-      const newToken = await ethers.getContractAt("CojamToken", await migration.NEW_TOKEN());
+        .deploy(await oldToken.getAddress(), await newToken.getAddress(), master.address);
       const m = await migration.getAddress();
       const start = await migration.WINDOW_START();
       const end = start + WINDOW;
-      const sweepOpens = end + GRACE;
       const received = (x) => x - (x * feeBps) / 10_000n;
+
+      // Partial funding, so a short reserve (InsufficientReserve) is exercised too.
+      let funded = rnd.int(3) === 0 ? 0n : rnd.big(300_000_000n * E18);
+      if (funded > 0n) await newToken.connect(master).transfer(m, funded);
 
       // Random odd balances, including tiny ones (1 to 1000 wei).
       for (const u of users) {
@@ -71,8 +74,9 @@ for (let run = 0; run < RUNS; run++) {
       const lots = new Map(users.map((u) => [u.address, []]));
       const cursor = new Map(users.map((u) => [u.address, 0]));
       const paidTo = new Map(callers.map((u) => [u.address, 0n])); // new CT each address should hold
-      let totalMigrated = 0n, totalInstant = 0n, totalOwed = 0n, totalClaimed = 0n, totalSwept = 0n;
-      const counts = { migrate: 0, migrateRevert: 0, release: 0, releaseRevert: 0, sweep: 0, sweepRevert: 0 };
+      let totalMigrated = 0n, totalInstant = 0n, totalOwed = 0n, totalClaimed = 0n, totalWithdrawn = 0n;
+      let paused = false;
+      const counts = { migrate: 0, migrateRevert: 0, shortReserve: 0, release: 0, releaseRevert: 0, fund: 0, withdraw: 0, ownerRevert: 0, pauseToggle: 0 };
 
       const nextTs = async (advance) => {
         now = now + 1n + advance;
@@ -101,11 +105,13 @@ for (let run = 0; run < RUNS; run++) {
         expect(await migration.totalMigrated()).to.equal(totalMigrated);
         expect(await migration.totalInstant()).to.equal(totalInstant);
         expect(await migration.totalClaimed()).to.equal(totalClaimed);
-        expect(await migration.totalSwept()).to.equal(totalSwept);
+        expect(await migration.totalWithdrawn()).to.equal(totalWithdrawn);
+        expect(await migration.paused()).to.equal(paused);
         let sumUnreleased = 0n;
         for (const [addr, list] of lots) for (let i = cursor.get(addr); i < list.length; i++) sumUnreleased += list[i][0];
         expect(sumUnreleased).to.equal(totalOwed);
-        expect(held + totalInstant + totalClaimed + totalSwept).to.equal(SUPPLY);
+        expect(held + totalInstant + totalClaimed + totalWithdrawn).to.equal(funded);
+        expect(await newToken.balanceOf(master.address)).to.equal(SUPPLY - funded + totalWithdrawn);
         expect(await oldToken.balanceOf(m)).to.equal(totalMigrated);
         expect(totalMigrated).to.equal(totalInstant + totalOwed + totalClaimed);
         expect(await migration.availableReserve()).to.equal(held - totalOwed);
@@ -127,9 +133,15 @@ for (let run = 0; run < RUNS; run++) {
           const pick = rnd.int(7);
           const amount = [0n, bal, 1n, 9n, bal + 1n][pick] ?? rnd.big(bal);
           await nextTs(BigInt(rnd.int(3 * 86400)));
+          const available = (await newToken.balanceOf(m)) - totalOwed;
           const p = migration.connect(u).migrate(amount);
-          if (amount === 0n) { await expectRevert(p, migration, "ZeroAmount"); counts.migrateRevert++; }
+          if (paused) { await expectRevert(p, migration, "EnforcedPause"); counts.migrateRevert++; }
+          else if (amount === 0n) { await expectRevert(p, migration, "ZeroAmount"); counts.migrateRevert++; }
           else if (now >= end) { await expectRevert(p, migration, "WindowClosed"); counts.migrateRevert++; }
+          else if (available < amount) {
+            await expect(p).to.be.revertedWithCustomError(migration, "InsufficientReserve").withArgs(available, amount);
+            counts.shortReserve++;
+          }
           else if (amount > bal) { await expectRevert(p, oldToken, "ERC20InsufficientBalance"); counts.migrateRevert++; }
           else if (received(amount) === 0n) { await expectRevert(p, migration, "NothingReceived"); counts.migrateRevert++; }
           else {
@@ -183,20 +195,47 @@ for (let run = 0; run < RUNS; run++) {
             }
           }
         } else if (r < 0.94) {
-          // sweep attempt by anyone
+          // Owner actions: fund by plain transfer, withdraw reserve, pause / unpause,
+          // and a non owner trying an owner function.
           await nextTs(BigInt(rnd.int(86400)));
-          const avail = (await newToken.balanceOf(m)) - totalOwed;
-          const p = migration.connect(callers[rnd.int(callers.length)]).sweep();
-          if (now < sweepOpens) { await expectRevert(p, migration, "SweepNotOpen"); counts.sweepRevert++; }
-          else if (avail === 0n) { await expectRevert(p, migration, "NothingToSweep"); counts.sweepRevert++; }
-          else {
-            await expect(p).to.emit(migration, "Swept").withArgs(treasury.address, avail);
-            totalSwept += avail;
-            counts.sweep++;
+          const sub = rnd.int(4);
+          if (sub === 0) {
+            const masterBal = await newToken.balanceOf(master.address);
+            const cap = masterBal < 200_000_000n * E18 ? masterBal : 200_000_000n * E18;
+            const amt = rnd.int(3) === 0 ? BigInt(1 + rnd.int(1000)) : rnd.big(cap);
+            if (amt > 0n && amt <= masterBal) {
+              await newToken.connect(master).transfer(m, amt);
+              funded += amt;
+              counts.fund++;
+            }
+          } else if (sub === 1) {
+            const avail = (await newToken.balanceOf(m)) - totalOwed;
+            const amount = [avail, avail + 1n, 0n][rnd.int(4)] ?? rnd.big(avail);
+            const p = migration.connect(master).withdrawReserve(master.address, amount);
+            if (amount === 0n) { await expectRevert(p, migration, "ZeroAmount"); counts.ownerRevert++; }
+            else if (amount > avail) {
+              await expect(p).to.be.revertedWithCustomError(migration, "InsufficientReserve").withArgs(avail, amount);
+              counts.ownerRevert++;
+            } else {
+              await expect(p).to.emit(migration, "ReserveWithdrawn").withArgs(master.address, amount);
+              totalWithdrawn += amount;
+              counts.withdraw++;
+            }
+          } else if (sub === 2) {
+            if (paused) { await migration.connect(master).unpauseMigrate(); paused = false; counts.pauseToggle++; }
+            else if (rnd.int(2) === 0) { await migration.connect(master).pauseMigrate(); paused = true; counts.pauseToggle++; }
+          } else {
+            const who = callers[rnd.int(callers.length)];
+            const p = rnd.int(2) === 0
+              ? migration.connect(who).withdrawReserve(who.address, 1n)
+              : migration.connect(who).pauseMigrate();
+            await expect(p).to.be.revertedWithCustomError(migration, "OwnableUnauthorizedAccount");
+            counts.ownerRevert++;
+            if (paused) { await migration.connect(master).unpauseMigrate(); paused = false; counts.pauseToggle++; }
           }
         } else {
-          // Time jump. Late in the run the jumps get big, pushing it across END and
-          // the grace period, so post window releases and sweeps get exercised too.
+          // Time jump. Late in the run the jumps get big, pushing it across END,
+          // so post window releases and withdrawals get exercised too.
           now += step < STEPS * 0.6 ? BigInt(1 + rnd.int(3)) * DAY : BigInt(20 + rnd.int(60)) * DAY;
           await time.setNextBlockTimestamp(now);
           await ethers.provider.send("evm_mine", []);
@@ -204,12 +243,12 @@ for (let run = 0; run < RUNS; run++) {
         await checkInvariants();
       }
 
-      // Drain: after everything is open, sweep, then a keeper releases every lot.
-      // Nothing may be missing or stranded.
-      if (now < sweepOpens + LOCK) { now = sweepOpens + LOCK; await time.setNextBlockTimestamp(now); await ethers.provider.send("evm_mine", []); }
+      // Drain: after the window and the last lock, the owner withdraws the whole reserve,
+      // then a keeper releases every lot. Nothing may be missing or stranded.
+      if (now < end + LOCK) { now = end + LOCK; await time.setNextBlockTimestamp(now); await ethers.provider.send("evm_mine", []); }
       now = BigInt(await time.latest()) + 1n;
       const avail = (await newToken.balanceOf(m)) - totalOwed;
-      if (avail > 0n) { await migration.sweep(); totalSwept += avail; now++; }
+      if (avail > 0n) { await migration.connect(master).withdrawReserve(master.address, avail); totalWithdrawn += avail; now++; }
       for (const u of users) {
         while (true) {
           const [amt, i] = releasable(u.address, 50);
@@ -223,7 +262,7 @@ for (let run = 0; run < RUNS; run++) {
       await checkInvariants();
       expect(await newToken.balanceOf(m)).to.equal(0n);
       expect(await newToken.balanceOf(keeper.address)).to.equal(0n);
-      expect(await newToken.balanceOf(treasury.address)).to.equal(SUPPLY - totalMigrated);
+      expect(await newToken.balanceOf(master.address)).to.equal(SUPPLY - totalMigrated);
       let usersHold = 0n;
       for (const u of users) usersHold += await newToken.balanceOf(u.address);
       expect(usersHold).to.equal(totalMigrated); // every credited old CT became exactly one new CT

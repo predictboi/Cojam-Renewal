@@ -9,7 +9,10 @@
 //   2. swap    migrate(amount > 0)
 //   3. swap    claim(1 <= maxLots <= MAX_CLAIM_LOTS)
 //   4. swap    claimFor(user != 0, 1 <= maxLots <= MAX_CLAIM_LOTS)
-// Anything else is rejected with a code. Nothing else is ever signed.
+//   5. swap    claimForMany(1 <= users <= MAX_CLAIM_USERS, no zero user, 1 <= maxLotsEach <= MAX_CLAIM_LOTS)
+// Anything else is rejected with a code. Nothing else is ever signed: in particular the
+// swap owner's functions (pauseMigrate, unpauseMigrate, withdrawReserve, recoverERC20,
+// transferOwnership, acceptOwnership, renounceOwnership) are never sponsored.
 
 const { keccak256, recoverAddress, getAddress, isHexString, ZeroAddress, Signature } = require('ethers');
 const { parseTransaction, KlaytnTxFactory, TxType } = require('@kaiachain/js-ext-core');
@@ -200,8 +203,19 @@ function checkStatic(tx, cfg) {
       }
       action = 'claimFor';
       args = { user: getAddress(user), maxLots: Number(maxLots) };
+    } else if (selector === SELECTORS.claimForMany) {
+      const [users, maxLotsEach] = decodeCall(swapAbi, 'claimForMany', data);
+      if (users.length < 1 || users.length > pol.maxClaimUsers) {
+        reject('CALLDATA_INVALID', `claimForMany takes between 1 and ${pol.maxClaimUsers} users`);
+      }
+      if (users.some((u) => u === ZeroAddress)) reject('CALLDATA_INVALID', 'claimForMany users must not include the zero address');
+      if (maxLotsEach < 1n || maxLotsEach > BigInt(pol.maxClaimLots)) {
+        reject('CALLDATA_INVALID', `claimForMany maxLotsEach must be between 1 and ${pol.maxClaimLots}`);
+      }
+      action = 'claimForMany';
+      args = { users: users.map((u) => getAddress(u)), maxLotsEach: Number(maxLotsEach) };
     } else {
-      reject('SELECTOR_NOT_ALLOWED', 'Only migrate, claim and claimFor are sponsored on the swap contract');
+      reject('SELECTOR_NOT_ALLOWED', 'Only migrate, claim, claimFor and claimForMany are sponsored on the swap contract');
     }
     gasCap = pol.maxGasLimitSwap;
   } else {
