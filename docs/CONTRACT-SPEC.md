@@ -75,11 +75,11 @@ Holders swap without owning KAIA. Kaia supports fee delegation natively at the t
 
 ## 4. Contracts and exact behaviour
 
-Compiler: Solidity 0.8.28, optimizer on (200 runs), EVM target `paris` (no PUSH0, no transient storage, so the bytecode runs on every Kaia hardfork). Libraries: OpenZeppelin Contracts 5.4.0 (`ERC20`, `ERC20Permit`, `SafeERC20`, `SafeCast`, `ReentrancyGuard`).
+Compiler: Solidity 0.8.28, optimizer on (200 runs), EVM target `paris` (no PUSH0, no transient storage, so the bytecode runs on every Kaia hardfork). Libraries: OpenZeppelin Contracts 5.4.0 (`ERC20`, `SafeERC20`, `SafeCast`, `ReentrancyGuard`).
 
 ### 4.1 `CojamToken`
 
-* `ERC20("Cojam Token", "CT")` plus `ERC20Permit("Cojam Token")` (EIP-2612, domain version `"1"`).
+* `ERC20("Cojam Token", "CT")` only, 18 decimals. No permit and no function beyond the ERC-20 standard, by the founder's choice (2026-11-14: "the most basic token, like a standard Solana token").
 * `TOTAL_SUPPLY = 2_000_000_000 * 10**18` (constant): exactly 2,000,000,000 CT.
 * Constructor `(address master)`: mints `TOTAL_SUPPLY` to `master`. OpenZeppelin reverts `ERC20InvalidReceiver(address(0))` on the zero address. There is no other mint path.
 * Deployed on its own, before the swap contract. It does not know the swap contract.
@@ -290,7 +290,7 @@ Releases and `withdraw` follow checks, effects, interactions strictly (state fir
 
 ### 9.7 No permit based migrate
 
-Old CT has no `permit` (EIP-2612), so a one signature migrate is impossible. Holders send two transactions: approve, then migrate. Contract wallets such as Safe can batch both atomically (MultiSend), which is tested. The front end should approve the exact amount, not an unlimited allowance. The new token does support `permit`, for later DEX and app use.
+Old CT has no `permit` (EIP-2612), so a one signature migrate is impossible. Holders send two transactions: approve, then migrate. Contract wallets such as Safe can batch both atomically (MultiSend), which is tested. The front end should approve the exact amount, not an unlimited allowance. The new token has no `permit` either: it is a basic ERC-20 by the founder's choice.
 
 ### 9.8 Lots and cursor releases
 
@@ -369,7 +369,7 @@ Command: `cd contracts && npm install && npm test`. Run on 2026-11-14, Node 22, 
 | 2 | Whole supply minted to the master wallet; deployer and swap hold none | Pass |
 | 3 | Zero address master rejected by the token | Pass |
 | 4 | Token metadata; no owner, mint, pause, blacklist, freeze, upgrade, burn | Pass |
-| 5 | EIP-2612 permit works | Pass |
+| 5 | New CT has no permit and no function beyond ERC-20 (18 decimals) | Pass |
 | 6 | Window opens at the swap deploy; tokens, `MASTER`, `RATIO_NUM = 2`, `RATIO_DEN = 5`, constants | Pass |
 | 7 | Swap has no admin surface beyond the master's withdraw: no owner, pause, recover, sweep or setter | Pass |
 | 8 | Constructor guards: zero tokens, zero master, old owner as master, same token, wrong decimals (old and new); supply check at the boundary (an old supply of exactly 5B passes, one base unit more reverts `SupplyMismatch`); an old CT burn before the swap deploy does not block it | Pass |

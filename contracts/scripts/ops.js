@@ -8,7 +8,7 @@
 //                     10% of the credit arrived, waits for the unlock, releases the 90% with claimFor from the
 //                     deployer (as the keeper would), checks the total equals the credit, then withdraws the rest of the reserve. The swapped old CT stays in the
 //                     rehearsal contract forever. Needs CONFIRM_MAINNET=yes.
-//   deploy-token      new CT token only (2,000,000,000 CT, 9 decimals, all to the master). Needs CONFIRM_MAINNET=yes.
+//   deploy-token      new CT token only (2,000,000,000 CT, 18 decimals, all to the master). Needs CONFIRM_MAINNET=yes.
 //   deploy-mainnet    the real launch deploy (scripts/deploy-mainnet.js). Needs CONFIRM_MAINNET=yes. Launch day only.
 // Local dry run on a fork of mainnet, nothing broadcast (impersonates the test address, or a fresh one):
 //   OPS_TASK=rehearse-mainnet OPS_TEST_ADDRESS=0x.. npx hardhat run scripts/ops.js

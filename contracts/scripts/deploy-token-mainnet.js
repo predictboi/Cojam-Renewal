@@ -1,4 +1,4 @@
-// Kaia mainnet deploy of CojamToken ONLY (2,000,000,000 CT, 9 decimals, all to the master). The swap contract is a
+// Kaia mainnet deploy of CojamToken ONLY (2,000,000,000 CT, 18 decimals, all to the master). The swap contract is a
 // separate, later deploy: the 1 year swap window starts only when the swap is deployed, never with the token.
 //   Render cojam-ops: OPS_TASK=deploy-token, CONFIRM_MAINNET=yes, Trigger Run
 //   or: DEPLOYER_PRIVATE_KEY=0x.. CONFIRM_MAINNET=yes npx hardhat run scripts/deploy-token-mainnet.js --network kaia
@@ -8,7 +8,7 @@ const fs = require("fs"), path = require("path");
 const helpers = require("@nomicfoundation/hardhat-network-helpers");
 
 const OLD_OWNER = "0xeb1622d0377da1f9815bfc6eff61afe3257a0518";
-const SUPPLY = 2_000_000_000n * 10n ** 9n;
+const SUPPLY = 2_000_000_000n * 10n ** 18n;
 const W = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "deployments", "wallets.mainnet.json"), "utf8"));
 const RPC = process.env.KAIA_RPC_URL || "https://public-en.node.kaia.io";
 
@@ -47,13 +47,13 @@ async function main() {
   if (addr.toLowerCase() !== predicted.toLowerCase()) fail("address differs from the prediction");
   const [name, symbol, dec, supply, mbal, dbal] = await Promise.all([token.name(), token.symbol(), token.decimals(), token.totalSupply(), token.balanceOf(master), token.balanceOf(deployer.address)]);
   if (name !== "Cojam Token" || symbol !== "CT") fail("name or symbol");
-  if (dec !== 9n) fail("decimals");
+  if (dec !== 18n) fail("decimals");
   if (supply !== SUPPLY || mbal !== SUPPLY) fail("the master does not hold the whole 2,000,000,000 CT");
   if (dbal !== 0n) fail("deployer holds CT");
   const out = { network: dry ? "kaia-fork-dry-run" : "kaia", chainId: 8217, deployedAt: new Date().toISOString(), deployer: deployer.address, master,
-    newToken: addr, tokenTx: rc.hash, tokenBlock: rc.blockNumber, name, symbol, decimals: 9, totalSupply: "2000000000", gasUsed: rc.gasUsed.toString() };
+    newToken: addr, tokenTx: rc.hash, tokenBlock: rc.blockNumber, name, symbol, decimals: 18, totalSupply: "2000000000", gasUsed: rc.gasUsed.toString() };
   console.log(JSON.stringify(out, null, 2));
-  console.log(`PASS: ${name} (${symbol}) ${addr}, 2,000,000,000 CT with 9 decimals held by the master ${master}`);
+  console.log(`PASS: ${name} (${symbol}) ${addr}, 2,000,000,000 CT with 18 decimals held by the master ${master}`);
   if (!dry) console.log(`Explorer: https://kaiascan.io/token/${addr}`);
 }
 main().catch((e) => { console.error("FAILED:", e.message || e); process.exitCode = 1; });

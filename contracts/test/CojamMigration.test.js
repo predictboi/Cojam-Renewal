@@ -43,21 +43,11 @@ describe("CojamToken", function () {
     }
   });
 
-  it("supports EIP-2612 permit", async function () {
-    const { alice, bob, migration, oldToken, newToken } = await loadFixture(fixture);
-    await approveAndMigrate(oldToken, migration, alice, 250n * E18); // credit 100 new CT, 10 arrive at once
-
-    const deadline = BigInt(await time.latest()) + 3600n;
-    const { chainId } = await ethers.provider.getNetwork();
-    const domain = { name: "Cojam Token", version: "1", chainId, verifyingContract: await newToken.getAddress() };
-    const types = { Permit: [
-      { name: "owner", type: "address" }, { name: "spender", type: "address" }, { name: "value", type: "uint256" },
-      { name: "nonce", type: "uint256" }, { name: "deadline", type: "uint256" },
-    ] };
-    const value = { owner: alice.address, spender: bob.address, value: 5n * E18, nonce: 0n, deadline };
-    const sig = ethers.Signature.from(await alice.signTypedData(domain, types, value));
-    await newToken.permit(alice.address, bob.address, 5n * E18, deadline, sig.v, sig.r, sig.s);
-    expect(await newToken.allowance(alice.address, bob.address)).to.equal(5n * E18);
+  it("has no permit or any function beyond ERC-20 (basic token by the founder's choice)", async function () {
+    const { newToken } = await loadFixture(fixture);
+    expect(newToken.permit).to.equal(undefined);
+    expect(newToken.nonces).to.equal(undefined);
+    expect(await newToken.decimals()).to.equal(18n);
   });
 });
 
