@@ -26,12 +26,12 @@ Recorded mainnet addresses (`contracts/deployments/wallets.mainnet.json`):
 | Fee payer (gas wallet) | `0xB3CB36B4faE25a0661E2dDD5eca59e18B53152da` |
 | Pool | `0x487939b5557B995C90f2e943104A31f900f3e0F2` |
 
-The mainnet fee payer is for launch. For the Kairos rehearsal on Render, use a separate testnet gas wallet.
+The fee payer wallet serves both the Kairos rehearsal and mainnet: the same key, different chains.
 
 ## 2. Render: create the services from the Blueprint
 
 1. Render dashboard: **New**, then **Blueprint**. Connect the GitHub repository `predictboi/cojam-renewal`.
-2. Branch: `main` after pull request #1 is merged (recommended), or the working branch `ccr-ae3111c3-lc250i` for an early look.
+2. Branch: the working branch `ccr-ae3111c3-lc250i` now, or `main` once pull request #1 is merged.
 3. Render reads `render.yaml` and proposes two services:
    - `cojam-site`: static site from `site/`. No settings needed.
    - `cojam-gas-api`: Node service (fee payer API and keeper), Singapore region, one instance. It needs a paid instance type (Starter is enough). A free instance sleeps and would stop the keeper.
@@ -43,6 +43,9 @@ Note: the site is still the prototype with mock data. Connecting the site to the
 
 ### Now: Kairos testnet rehearsal
 
+`render.yaml` already carries every Kairos value below except the key, so the Blueprint asks for one thing only: `FEE_PAYER_PRIVATE_KEY`. Use the fee payer wallet `0xB3CB36B4faE25a0661E2dDD5eca59e18B53152da` (the same key works on Kairos and mainnet; it already holds 20 test KAIA on Kairos). A local boot with these exact values passed `/api/health` on 2026-11-14.
+
+
 | Key | Value |
 | --- | --- |
 | `CHAIN_ID` | `1001` (already in render.yaml) |
@@ -50,7 +53,7 @@ Note: the site is still the prototype with mock data. Connecting the site to the
 | `SWAP_CONTRACT_ADDRESS` | `0x12C3ED5EC87B42C4C36b77f2693D72657f7229B0` |
 | `SWAP_DEPLOY_BLOCK` | `233001353` |
 | `OLD_CT_ADDRESS` | `0x6E86699DE0182884E5ee627E43764c718832D5e8` (test old CT on Kairos) |
-| `FEE_PAYER_PRIVATE_KEY` | Private key of a **new testnet gas wallet** created for this, funded from the Kaia faucet |
+| `FEE_PAYER_PRIVATE_KEY` | Private key of the fee payer wallet `0xB3CB…52da` (entered in the dashboard) |
 | `ALLOWED_ORIGINS` | `https://cojam.app,https://www.cojam.app` |
 
 Check after deploy: open `https://<cojam-gas-api>.onrender.com/api/health` (or `https://api.cojam.app/api/health` once the domain is set). It should report chain 1001, the swap address and the gas wallet balance.
@@ -64,7 +67,7 @@ Check after deploy: open `https://<cojam-gas-api>.onrender.com/api/health` (or `
 | `SWAP_CONTRACT_ADDRESS` | Mainnet swap address from the mainnet deploy |
 | `SWAP_DEPLOY_BLOCK` | Its deploy block |
 | `OLD_CT_ADDRESS` | Delete it (mainnet defaults to the real old CT `0x7f223b1607171b81ebd68d22f1ca79157fd4a44b`) |
-| `FEE_PAYER_PRIVATE_KEY` | Private key of the **mainnet gas wallet** (a different wallet from the testnet one) |
+| `FEE_PAYER_PRIVATE_KEY` | Unchanged: the same fee payer wallet, now holding mainnet KAIA |
 
 ## 4. Domain: cojam.app
 

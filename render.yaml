@@ -55,6 +55,8 @@ services:
     runtime: node
     rootDir: server
     region: singapore
+    # Starter or above: a free instance sleeps when idle and would stop the keeper.
+    plan: starter
     numInstances: 1
     buildCommand: npm ci --omit=dev
     startCommand: node src/index.js
@@ -68,20 +70,22 @@ services:
       # 1001 Kairos for the rehearsal, 8217 Kaia mainnet at launch.
       - key: CHAIN_ID
         value: "1001"
+      # Kairos rehearsal values (contracts/deployments/kairos.json). Public addresses, not secrets.
+      # At launch: CHAIN_ID 8217, a dedicated mainnet RPC, the mainnet swap and block, and delete OLD_CT_ADDRESS.
       - key: KAIA_RPC_URL
-        sync: false
+        value: https://public-en-kairos.node.kaia.io
       - key: SWAP_CONTRACT_ADDRESS
-        sync: false
+        value: "0x12C3ED5EC87B42C4C36b77f2693D72657f7229B0"
       - key: SWAP_DEPLOY_BLOCK
-        sync: false
-      # Only needed on Kairos (mainnet defaults to 0x7f223b1607171b81ebd68d22f1ca79157fd4a44b).
+        value: "233001353"
+      # Only on Kairos (mainnet defaults to the real old CT 0x7f223b1607171b81ebd68d22f1ca79157fd4a44b).
       - key: OLD_CT_ADDRESS
-        sync: false
-      # Secret: the gas wallet key. Entered in the Render dashboard, never in the repo.
-      - key: FEE_PAYER_PRIVATE_KEY
-        sync: false
-      # The site origins, comma separated: https://cojam.app,https://www.cojam.app
+        value: "0x6E86699DE0182884E5ee627E43764c718832D5e8"
       - key: ALLOWED_ORIGINS
+        value: https://cojam.app,https://www.cojam.app
+      # The only secret: the gas wallet's private key (fee payer 0xB3CB36B4faE25a0661E2dDD5eca59e18B53152da).
+      # Entered in the Render dashboard when the Blueprint asks, never in the repo.
+      - key: FEE_PAYER_PRIVATE_KEY
         sync: false
       - key: MAX_GAS_PRICE_GKEI
         value: "50"
