@@ -90,6 +90,7 @@
   var mq = window.matchMedia("(max-width: 899px)");
   if (mq.addEventListener) mq.addEventListener("change", paint); else if (mq.addListener) mq.addListener(paint);
   document.addEventListener("cj:lang", paint);
+  document.addEventListener("cj:window", paint); // live window dates read from the swap contract (system.js)
   paint();
   CJ.ready();
 

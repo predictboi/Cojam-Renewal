@@ -46,6 +46,13 @@ Colour rules learned so far: `#124CC4` and `#3E58E3` sit at 1.3:1 against each o
 - `tools/video/`: video pipeline scripts; set `VIDEO_ROOT` to the working folder before use.
 - `.claude/skills/`: ui-ux-kit skills (impeccable, hallmark, web-design-guidelines, redesign-existing-projects, animate, motion-design).
 
+## Live site wiring
+
+- `site/assets/network.js`: the active network (`ACTIVE = "kairos"` now) and every address. Mainnet launch: set `ACTIVE = "kaia"` and fill `newToken`, `swap`, `deployBlock` from `contracts/deployments/kaia.json`; nothing else changes.
+- `site/assets/chain.js`: live wallet connect (EIP-6963, Kaia Wallet, MetaMask), reads, approve, migrate, claim, fee delegation through `api.cojam.app`. `site/assets/live-stats.js`: live figures for status and admin.
+- `?mock=1` or any `?state=` preset keeps the mock ledger for design review. E2E against Kairos: `node tools/e2e/live-swap.js`.
+- Asset URLs carry `?v=YYYYMMDD`; bump it on a release that must reach visitors at once (assets revalidate every 5 minutes anyway).
+
 ## Local preview
 
 `python3 -m http.server 8811 -d site` then open `http://localhost:8811/?lang=ko`.
