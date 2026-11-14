@@ -1,7 +1,7 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { loadFixture, time, setBalance } = require("@nomicfoundation/hardhat-network-helpers");
-const { SUPPLY, DAY, WINDOW, LOCK, GRACE, E18, split, deploySystem, approveAndMigrate } = require("./helpers");
+const { SUPPLY, DAY, WINDOW, LOCK, E18, split, deploySystem, approveAndMigrate } = require("./helpers");
 
 const fixture = () => deploySystem("MockOldCojam");
 const unfunded = () => deploySystem("MockOldCojam", [], { fund: 0n });
@@ -59,14 +59,12 @@ describe("CojamToken", function () {
 });
 
 describe("CojamMigration: deployment", function () {
-  it("opens the window at deploy and sets the tokens, MASTER, the sweep time and the constants", async function () {
+  it("opens the window at deploy and sets the tokens, MASTER and the constants", async function () {
     const { migration, oldToken, newToken, master } = await loadFixture(fixture);
     const deployBlock = await ethers.provider.getBlock((await migration.deploymentTransaction().wait()).blockNumber);
     const start = BigInt(deployBlock.timestamp);
     expect(await migration.WINDOW_START()).to.equal(start);
     expect(await migration.WINDOW_END()).to.equal(start + WINDOW);
-    expect(await migration.SWEEP_OPENS_AT()).to.equal(start + WINDOW + GRACE);
-    expect(await migration.GRACE()).to.equal(GRACE);
     expect(await migration.OLD_TOKEN()).to.equal(await oldToken.getAddress());
     expect(await migration.NEW_TOKEN()).to.equal(await newToken.getAddress());
     expect(await migration.MASTER()).to.equal(master.address);
@@ -75,11 +73,11 @@ describe("CojamMigration: deployment", function () {
     expect(await migration.isOpen()).to.equal(true);
   });
 
-  it("has no admin surface: no owner, pause, withdraw, recover or setter", async function () {
+  it("has no admin surface beyond the master's withdraw: no owner, pause, recover, sweep or setter", async function () {
     const { migration } = await loadFixture(fixture);
     const names = migration.interface.fragments.filter((f) => f.type === "function").map((f) => f.name);
     for (const banned of ["owner", "pendingOwner", "transferOwnership", "acceptOwnership", "renounceOwnership", "pause", "unpause",
-      "pauseMigrate", "unpauseMigrate", "paused", "withdrawReserve", "recoverERC20", "totalWithdrawn", "upgradeTo"]) {
+      "pauseMigrate", "unpauseMigrate", "paused", "withdrawReserve", "recoverERC20", "sweep", "SWEEP_OPENS_AT", "GRACE", "upgradeTo"]) {
       expect(names, banned).to.not.include(banned);
     }
   });
@@ -433,17 +431,17 @@ describe("CojamMigration: release of the locked 90%", function () {
   });
 });
 
-describe("CojamMigration: no admin, state changing functions", function () {
-  it("the only state changing functions are migrate, the three releases and sweep (no path for old CT)", async function () {
+describe("CojamMigration: state changing functions", function () {
+  it("the only state changing functions are migrate, the three releases and withdraw (no path for old CT)", async function () {
     const { migration } = await loadFixture(fixture);
     const names = migration.interface.fragments
       .filter((f) => f.type === "function" && f.stateMutability !== "view" && f.stateMutability !== "pure")
       .map((f) => f.name).sort();
-    expect(names).to.deep.equal(["claim", "claimFor", "claimForMany", "migrate", "sweep"]);
+    expect(names).to.deep.equal(["claim", "claimFor", "claimForMany", "migrate", "withdraw"]);
   });
 
   it("old CT and other tokens sent by mistake stay in the contract; nobody can take them out", async function () {
-    const { deployer, alice, migration, oldToken, start } = await loadFixture(fixture);
+    const { deployer, alice, master, migration, oldToken, start } = await loadFixture(fixture);
     const m = await migration.getAddress();
     await approveAndMigrate(oldToken, migration, alice, 100n * E18);
     await oldToken.connect(deployer).transfer(m, 5n * E18); // plain transfer, not migrate: not credited
@@ -451,109 +449,133 @@ describe("CojamMigration: no admin, state changing functions", function () {
     await stray.transfer(m, 7n * E18);
     expect(await migration.totalMigrated()).to.equal(100n * E18);
 
-    await time.increaseTo(start + WINDOW + GRACE);
-    await migration.sweep(); // moves new CT only
+    await time.increaseTo(start + WINDOW + 1n);
+    await migration.connect(master).withdraw(await migration.availableReserve()); // moves new CT only
     expect(await oldToken.balanceOf(m)).to.equal(105n * E18);
     expect(await stray.balanceOf(m)).to.equal(7n * E18);
   });
 });
 
-describe("CojamMigration: after the window and sweep", function () {
-  async function migratedAndClosed() {
-    const f = await deploySystem("MockOldCojam");
-    const { alice, bob, migration, oldToken } = f;
-    await approveAndMigrate(oldToken, migration, alice, 100n * E18);
-    await approveAndMigrate(oldToken, migration, bob, 250n * E18);
-    await time.increase(LOCK);
-    await migration.connect(alice).claim(10); // alice released, bob did not
-    return f;
-  }
-
-  it("migrate is closed after the window even with a full reserve; isOpen is false", async function () {
-    const { alice, migration, oldToken, start } = await loadFixture(fixture);
-    await oldToken.connect(alice).approve(await migration.getAddress(), E18);
-    await time.setNextBlockTimestamp(start + WINDOW);
-    await expect(migration.connect(alice).migrate(E18)).to.be.revertedWithCustomError(migration, "WindowClosed");
-    expect(await migration.isOpen()).to.equal(false);
-    expect(await migration.availableReserve()).to.equal(SUPPLY);
+describe("CojamMigration: master withdraw", function () {
+  it("only MASTER can withdraw; every other address reverts NotMaster", async function () {
+    const { deployer, alice, stranger, master, migration, newToken } = await loadFixture(fixture);
+    for (const who of [deployer, alice, stranger]) {
+      await expect(migration.connect(who).withdraw(1n)).to.be.revertedWithCustomError(migration, "NotMaster");
+    }
+    // A contract wallet calling on someone's behalf is not MASTER either.
+    const wallet = await (await ethers.getContractFactory("MockSmartWallet")).deploy(alice.address);
+    await expect(wallet.connect(alice).execute(await migration.getAddress(), migration.interface.encodeFunctionData("withdraw", [1n])))
+      .to.be.revertedWithCustomError(wallet, "CallFailed");
+    expect(await newToken.balanceOf(await migration.getAddress())).to.equal(SUPPLY);
+    await expect(migration.connect(master).withdraw(1n)).to.changeTokenBalance(newToken, master, 1n);
   });
 
-  it("sweep is closed until END + grace, then anyone sends only the unowed part to MASTER; locked lots stay whole", async function () {
-    const { bob, stranger, master, migration, newToken, start } = await loadFixture(migratedAndClosed);
+  it("withdraws only the unowed part, always to MASTER; owed tokens can never be taken", async function () {
+    const { master, alice, migration, oldToken, newToken } = await loadFixture(unfunded);
+    const m = await migration.getAddress();
+    await newToken.connect(master).transfer(m, 1_000n * E18);
+    await approveAndMigrate(oldToken, migration, alice, 500n * E18); // 50 paid, 450 owed
+    expect(await newToken.balanceOf(m)).to.equal(950n * E18);
+    expect(await migration.availableReserve()).to.equal(500n * E18);
+
+    await expect(migration.connect(master).withdraw(0n)).to.be.revertedWithCustomError(migration, "ZeroAmount");
+    await expect(migration.connect(master).withdraw(501n * E18))
+      .to.be.revertedWithCustomError(migration, "InsufficientReserve").withArgs(500n * E18, 501n * E18);
+
+    await expect(migration.connect(master).withdraw(200n * E18)).to.emit(migration, "Withdrawn").withArgs(200n * E18);
+    const tx = migration.connect(master).withdraw(300n * E18);
+    await expect(tx).to.changeTokenBalances(newToken, [master, migration], [300n * E18, -300n * E18]);
+    expect(await migration.totalWithdrawn()).to.equal(500n * E18);
+    expect(await migration.availableReserve()).to.equal(0n);
+    expect(await newToken.balanceOf(m)).to.equal(await migration.totalOwed());
+
+    // Not even one base unit of the owed 450 CT can leave.
+    await expect(migration.connect(master).withdraw(1n))
+      .to.be.revertedWithCustomError(migration, "InsufficientReserve").withArgs(0n, 1n);
+
+    // After the withdrawal the lot still pays in full.
+    await time.increase(LOCK);
+    await expect(migration.connect(alice).claim(1)).to.changeTokenBalance(newToken, alice, 450n * E18);
+    expect(await newToken.balanceOf(alice.address)).to.equal(500n * E18);
+    expect(await newToken.balanceOf(m)).to.equal(0n);
+  });
+
+  it("a withdrawal during the window makes migrate fail with InsufficientReserve until the master funds again", async function () {
+    const { master, alice, bob, carol, stranger, migration, oldToken, newToken } = await loadFixture(fixture);
+    const m = await migration.getAddress();
+    await approveAndMigrate(oldToken, migration, alice, 10n * E18);
+    await approveAndMigrate(oldToken, migration, bob, 20n * E18);
+    const available = await migration.availableReserve();
+    expect(available).to.equal(SUPPLY - 30n * E18);
+    await migration.connect(master).withdraw(available);
+    expect(await newToken.balanceOf(master.address)).to.equal(available);
+    expect(await migration.isOpen()).to.equal(true); // window still open, reserve empty
+
+    await oldToken.connect(carol).approve(m, 5n * E18);
+    await expect(migration.connect(carol).migrate(5n * E18))
+      .to.be.revertedWithCustomError(migration, "InsufficientReserve").withArgs(0n, 5n * E18);
+    expect(await oldToken.balanceOf(carol.address)).to.equal(1_000_000n * E18); // nothing pulled
+
+    await newToken.connect(master).transfer(m, 5n * E18);
+    await expect(migration.connect(carol).migrate(5n * E18)).to.emit(migration, "Migrated");
+
+    // Every lot, before and after the withdrawal, pays in full through the keeper paths.
+    await time.increase(LOCK);
+    await expect(migration.connect(stranger).claimFor(alice.address, 5)).to.changeTokenBalance(newToken, alice, 9n * E18);
+    await expect(migration.connect(stranger).claimForMany([bob.address, carol.address], 5))
+      .to.changeTokenBalances(newToken, [bob, carol, stranger], [18n * E18, 4_500_000_000_000_000_000n, 0n]);
+    expect(await newToken.balanceOf(m)).to.equal(0n);
+    expect(await migration.totalOwed()).to.equal(0n);
+  });
+
+  it("after the window: no new swaps even with a full reserve; the master withdraws the rest; lots pay years later", async function () {
+    const { master, alice, bob, stranger, migration, oldToken, newToken, start } = await loadFixture(fixture);
     const end = start + WINDOW;
-    const opens = end + GRACE;
+    await approveAndMigrate(oldToken, migration, bob, 20n * E18);
+    await oldToken.connect(alice).approve(await migration.getAddress(), 20n * E18);
+    await time.setNextBlockTimestamp(end - 1n);
+    await migration.connect(alice).migrate(10n * E18); // last second of the window
 
     await time.setNextBlockTimestamp(end);
-    await expect(migration.connect(stranger).sweep()).to.be.revertedWithCustomError(migration, "SweepNotOpen");
-    await time.setNextBlockTimestamp(opens - 1n);
-    await expect(migration.connect(stranger).sweep()).to.be.revertedWithCustomError(migration, "SweepNotOpen");
+    await expect(migration.connect(alice).migrate(10n * E18)).to.be.revertedWithCustomError(migration, "WindowClosed");
+    expect(await migration.isOpen()).to.equal(false);
 
-    const owed = 225n * E18; // bob's locked 90%
-    const expected = SUPPLY - 350n * E18; // supply minus everything migrated (paid or owed)
-    expect(await migration.availableReserve()).to.equal(expected);
+    const rest = await migration.availableReserve();
+    expect(rest).to.equal(SUPPLY - 30n * E18);
+    await expect(migration.connect(master).withdraw(rest)).to.emit(migration, "Withdrawn").withArgs(rest);
+    expect(await newToken.balanceOf(await migration.getAddress())).to.equal(27n * E18);
+    await expect(migration.connect(master).withdraw(1n)).to.be.revertedWithCustomError(migration, "InsufficientReserve");
 
-    await time.setNextBlockTimestamp(opens);
-    const tx = migration.connect(stranger).sweep(); // anyone can call it; it always pays MASTER
-    await expect(tx).to.emit(migration, "Swept").withArgs(expected);
-    await expect(tx).to.changeTokenBalances(newToken, [master, migration, stranger], [expected, -expected, 0n]);
-    expect(await migration.totalSwept()).to.equal(expected);
+    // New CT sent later can be withdrawn again; owed tokens still cannot.
+    await newToken.connect(master).transfer(await migration.getAddress(), 9n);
+    await expect(migration.connect(master).withdraw(9n)).to.emit(migration, "Withdrawn").withArgs(9n);
 
-    expect(await newToken.balanceOf(await migration.getAddress())).to.equal(owed);
-    expect(await migration.totalOwed()).to.equal(owed);
-    await expect(migration.sweep()).to.be.revertedWithCustomError(migration, "NothingToSweep");
-
-    // The locked lot still pays in full after the sweep.
-    await expect(migration.connect(stranger).claimFor(bob.address, 10)).to.changeTokenBalance(newToken, bob, owed);
+    await time.increaseTo(end + LOCK);
+    await expect(migration.connect(alice).claim(1)).to.changeTokenBalance(newToken, alice, 9n * E18);
+    await time.increase(5n * 365n * DAY);
+    await expect(migration.connect(stranger).claimFor(bob.address, 1)).to.changeTokenBalance(newToken, bob, 18n * E18);
     expect(await newToken.balanceOf(await migration.getAddress())).to.equal(0n);
+    expect(await newToken.balanceOf(master.address)).to.equal(SUPPLY - 30n * E18);
   });
 
-  it("is repeatable: new CT sent later is swept to MASTER too, never below what is owed", async function () {
-    const { bob, master, stranger, migration, newToken, start } = await loadFixture(migratedAndClosed);
-    await time.increaseTo(start + WINDOW + GRACE);
-    await migration.connect(bob).sweep();
-    await newToken.connect(master).transfer(await migration.getAddress(), 9n); // stray top up
-    await expect(migration.connect(stranger).sweep()).to.emit(migration, "Swept").withArgs(9n);
-    expect(await migration.availableReserve()).to.equal(0n);
-    expect(await migration.pendingOf(bob.address)).to.equal(225n * E18);
-    await expect(migration.sweep()).to.be.revertedWithCustomError(migration, "NothingToSweep");
-  });
-
-  it("when every remaining token is owed to lots there is nothing to sweep", async function () {
-    const { deployer, alice, bob, carol, migration, oldToken, newToken, start } = await loadFixture(fixture);
+  it("when every remaining token is owed to lots there is nothing to withdraw", async function () {
+    const { deployer, alice, bob, carol, master, migration, oldToken, newToken } = await loadFixture(fixture);
     for (const s of [deployer, alice, bob, carol]) {
       await approveAndMigrate(oldToken, migration, s, await oldToken.balanceOf(s.address));
     }
     expect((await migration.totalInstant()) + (await migration.totalOwed())).to.equal(SUPPLY);
     expect(await newToken.balanceOf(await migration.getAddress())).to.equal(await migration.totalOwed());
-    await time.increaseTo(start + WINDOW + GRACE);
-    await expect(migration.sweep()).to.be.revertedWithCustomError(migration, "NothingToSweep");
-  });
-
-  it("with partial funding the sweep returns exactly the unswapped funded part; lots pay years later", async function () {
-    const { master, alice, bob, stranger, migration, oldToken, newToken, start } = await loadFixture(unfunded);
-    const m = await migration.getAddress();
-    await newToken.connect(master).transfer(m, 1_000n * E18);
-    await approveAndMigrate(oldToken, migration, bob, 20n * E18);
-    await oldToken.connect(alice).approve(m, 10n * E18);
-    await time.setNextBlockTimestamp(start + WINDOW - 1n);
-    await migration.connect(alice).migrate(10n * E18); // last second of the window
-
-    await time.increaseTo(start + WINDOW + GRACE);
-    await expect(migration.connect(stranger).sweep()).to.emit(migration, "Swept").withArgs(970n * E18);
-    expect(await newToken.balanceOf(master.address)).to.equal(SUPPLY - 1_000n * E18 + 970n * E18);
-    expect(await newToken.balanceOf(m)).to.equal(27n * E18);
-
-    await time.increase(5n * 365n * DAY);
-    await expect(migration.connect(stranger).claimForMany([alice.address, bob.address], 5))
-      .to.changeTokenBalances(newToken, [alice, bob], [9n * E18, 18n * E18]);
-    expect(await newToken.balanceOf(m)).to.equal(0n);
+    await expect(migration.connect(master).withdraw(1n))
+      .to.be.revertedWithCustomError(migration, "InsufficientReserve").withArgs(0n, 1n);
   });
 });
 
 describe("CojamMigration: reentrancy", function () {
-  const evil = () => deploySystem("MockMaliciousToken");
+  // The malicious old token is made the MASTER, so its re-entry into withdraw passes the
+  // master check and is stopped by the reentrancy guard itself.
+  const evil = () => deploySystem("MockMaliciousToken", [], { masterOf: ({ oldToken }) => oldToken.getAddress() });
 
-  for (const [mode, label] of [[1, "migrate"], [2, "claim"], [3, "sweep"], [7, "claimFor"], [8, "claimForMany"]]) {
+  for (const [mode, label] of [[1, "migrate"], [2, "claim"], [3, "withdraw"], [7, "claimFor"], [8, "claimForMany"]]) {
     it(`a malicious old token re-entering ${label} from transferFrom is rejected`, async function () {
       const { alice, migration, oldToken } = await evil();
       await oldToken.connect(alice).approve(await migration.getAddress(), 10n * E18);

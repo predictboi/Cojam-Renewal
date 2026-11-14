@@ -6,7 +6,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 interface IMigration {
     function migrate(uint256 amount) external returns (uint256);
     function claim(uint256 maxLots) external returns (uint256);
-    function sweep() external returns (uint256);
+    function withdraw(uint256 amount) external;
     function claimFor(address user, uint256 maxLots) external returns (uint256);
     function claimForMany(address[] calldata users, uint256 maxLotsEach) external returns (uint256);
 }
@@ -16,7 +16,7 @@ interface IMigration {
 ///   0 honest
 ///   1 re-enter migrate and bubble the revert
 ///   2 re-enter claim and bubble the revert
-///   3 re-enter sweep and bubble the revert
+///   3 re-enter withdraw and bubble the revert (the test makes this token the MASTER)
 ///   4 re-enter migrate inside try/catch and record whether it succeeded
 ///   5 credit the recipient more than `value` (inflating transfer)
 ///   6 move nothing but return true (lying transfer)
@@ -48,7 +48,7 @@ contract MockMaliciousToken is ERC20 {
         } else if (mode == 2) {
             target.claim(1);
         } else if (mode == 3) {
-            target.sweep();
+            target.withdraw(1);
         } else if (mode == 4) {
             reentryAttempted = true;
             try target.migrate(1) {

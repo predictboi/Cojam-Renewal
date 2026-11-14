@@ -99,9 +99,10 @@ test('rejects claimForMany with no users, too many users, a zero user or a bad m
   }
 });
 
-test('never sponsors sweep or any admin style selector', async () => {
+test('never sponsors the master withdraw or any admin style selector', async () => {
   const { svc, holder, chain } = setup();
   const calls = [
+    notSponsoredAbi.encodeFunctionData('withdraw', [parseUnits('1', 18)]),
     notSponsoredAbi.encodeFunctionData('sweep', []),
     notSponsoredAbi.encodeFunctionData('pauseMigrate', []),
     notSponsoredAbi.encodeFunctionData('withdrawReserve', [holder.address, parseUnits('1', 18)]),
@@ -171,8 +172,8 @@ test('rejects unknown selectors on both contracts', async () => {
   const { svc, holder } = setup();
   const transfer = '0xa9059cbb' + '00'.repeat(12) + h.SWAP.slice(2).toLowerCase() + '00'.repeat(31) + '01';
   await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.OLD_CT, data: transfer })), 'SELECTOR_NOT_ALLOWED');
-  const sweep = '0x35faa416'; // sweep(): permissionless, never sponsored
-  await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.SWAP, data: sweep, nonce: 2 })), 'SELECTOR_NOT_ALLOWED');
+  const withdraw = '0x2e1a7d4d' + '00'.repeat(31) + '01'; // withdraw(1): master only, never sponsored
+  await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.SWAP, data: withdraw, nonce: 2 })), 'SELECTOR_NOT_ALLOWED');
   const allowanceRead = oldCtAbi.encodeFunctionData('allowance', [holder.address, h.SWAP]);
   await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.OLD_CT, data: allowanceRead, nonce: 3 })), 'SELECTOR_NOT_ALLOWED');
 });

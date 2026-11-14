@@ -7,9 +7,9 @@
 // CojamMigration(old, new, master). The whole new supply is minted to MASTER_ADDRESS.
 // The swap starts empty: the master funds it with plain transfers of new CT. If the
 // deployer is the master and FUND_AMOUNT is set, this script does that transfer.
-// The migration window opens in the swap's deploy block and lasts 365 days; from
-// WINDOW_END + 30 days anyone can sweep the unowed remainder back to the master.
-// Neither contract has an owner or any admin function.
+// The migration window opens in the swap's deploy block and lasts 365 days. The master
+// (an ordinary EOA by the founder's choice) may withdraw unowed reserve at any time with
+// withdraw(amount); nothing else is privileged. Neither contract has an owner.
 // Mainnet is refused on purpose: a mainnet deploy is a separate, reviewed step.
 const { ethers, network } = require("hardhat");
 
@@ -95,7 +95,7 @@ async function main() {
   if ((await migration.availableReserve()) !== fund) throw new Error("availableReserve differs from the funded amount");
 
   if ((await ethers.provider.getCode(master)) === "0x") {
-    console.warn(`NOTE: MASTER_ADDRESS ${master} has no code (an EOA). On mainnet a Safe multisig is recommended.`);
+    console.warn(`NOTE: MASTER_ADDRESS ${master} is an EOA. It holds the supply and is the only address that can withdraw the swap reserve: protect its key.`);
   }
 
   console.log(JSON.stringify({
@@ -109,7 +109,6 @@ async function main() {
     master,
     windowStart: (await migration.WINDOW_START()).toString(),
     windowEnd: (await migration.WINDOW_END()).toString(),
-    sweepOpensAt: (await migration.SWEEP_OPENS_AT()).toString(),
     totalSupply: supply.toString(),
     funded: fund.toString(),
     fundTx,

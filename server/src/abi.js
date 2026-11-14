@@ -16,7 +16,6 @@ const swapAbi = new Interface([
   'function claim(uint256 maxLots) returns (uint256 amount)',
   'function claimFor(address user, uint256 maxLots) returns (uint256 amount)',
   'function claimForMany(address[] users, uint256 maxLotsEach) returns (uint256 total)',
-  'function sweep() returns (uint256 amount)',
   'function OLD_TOKEN() view returns (address)',
   'function NEW_TOKEN() view returns (address)',
   'function LOCK_PERIOD() view returns (uint256)',
@@ -29,8 +28,7 @@ const swapAbi = new Interface([
   'error ZeroAmount()',
   'error WindowClosed()',
   'error InsufficientReserve(uint256 available, uint256 needed)',
-  'error SweepNotOpen()',
-  'error NothingToSweep()',
+  'error NotMaster()',
   'error NothingReceived()',
   'error ReceivedMoreThanSent()',
 ]);
@@ -43,9 +41,11 @@ const SELECTORS = {
   claimForMany: swapAbi.getFunction('claimForMany').selector,
 };
 
-// Functions that do not exist on CojamMigration (it has no owner) or that a fee payer
-// has no reason to pay for. Listed only so tests can prove the allowlist refuses them.
+// Functions the fee payer must never pay for: the master's own withdraw (the master pays
+// its own gas) and admin style selectors that CojamMigration does not have. Listed only so
+// tests can prove the allowlist refuses them.
 const notSponsoredAbi = new Interface([
+  'function withdraw(uint256 amount)',
   'function sweep() returns (uint256 amount)',
   'function pauseMigrate()',
   'function withdrawReserve(address to, uint256 amount)',

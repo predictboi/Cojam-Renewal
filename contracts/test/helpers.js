@@ -5,7 +5,6 @@ const SUPPLY = 4_083_262_533_956_000_100_000_000_000n;
 const DAY = 24n * 60n * 60n;
 const WINDOW = 365n * DAY;
 const LOCK = 7n * DAY;
-const GRACE = 30n * DAY;
 const E18 = 10n ** 18n;
 
 /**
@@ -15,7 +14,8 @@ const E18 = 10n ** 18n;
  * reserve never runs short unless a test wants it to). Hands old CT to holders.
  * @param {string} oldKind contract name of the old token mock
  * @param {any[]} extraArgs constructor args after the supply
- * @param {{fund?: bigint}} opts
+ * @param {{fund?: bigint, masterOf?: (ctx) => Promise<string>}} opts  masterOf overrides the
+ *   swap's MASTER address (the master signer still holds the supply and funds the swap)
  */
 async function deploySystem(oldKind = "MockOldCojam", extraArgs = [], opts = {}) {
   const [deployer, alice, bob, carol, master, stranger, ...rest] = await ethers.getSigners();
@@ -23,8 +23,9 @@ async function deploySystem(oldKind = "MockOldCojam", extraArgs = [], opts = {})
   const oldToken = await Old.deploy(SUPPLY, ...extraArgs);
 
   const newToken = await (await ethers.getContractFactory("CojamToken")).deploy(master.address);
+  const masterAddr = opts.masterOf ? await opts.masterOf({ oldToken, master }) : master.address;
   const Migration = await ethers.getContractFactory("CojamMigration");
-  const migration = await Migration.deploy(await oldToken.getAddress(), await newToken.getAddress(), master.address);
+  const migration = await Migration.deploy(await oldToken.getAddress(), await newToken.getAddress(), masterAddr);
   const start = await migration.WINDOW_START(); // the window opens at deploy
 
   const fund = opts.fund === undefined ? SUPPLY : opts.fund;
@@ -47,4 +48,4 @@ async function approveAndMigrate(oldToken, migration, signer, amount) {
   return migration.connect(signer).migrate(amount);
 }
 
-module.exports = { SUPPLY, DAY, WINDOW, LOCK, GRACE, E18, split, deploySystem, approveAndMigrate };
+module.exports = { SUPPLY, DAY, WINDOW, LOCK, E18, split, deploySystem, approveAndMigrate };

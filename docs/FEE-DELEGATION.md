@@ -1,6 +1,6 @@
 # Gasless swap: Kaia fee delegation and the claim keeper
 
-Status: built and unit tested (59 tests passing on 2026-11-14, against the no admin swap contract with `sweep`). Not yet run end to end against a deployed swap on Kairos. Code: `server/`. Deploy: the `cojam-gas-api` service in `render.yaml`.
+Status: built and unit tested (59 tests passing on 2026-11-14, against the swap contract whose only privileged call is the master's `withdraw`). Not yet run end to end against a deployed swap on Kairos. Code: `server/`. Deploy: the `cojam-gas-api` service in `render.yaml`.
 
 Holders should be able to swap old CT for new CT without owning KAIA. Kaia supports this natively: a transaction can carry two signatures, one from the sender (the holder) and one from a fee payer (our gas wallet), and the fee payer's balance pays the gas. The holder still signs every action in their own wallet, and `msg.sender` in the swap contract is the holder, so lots always belong to the holder (see `docs/CONTRACT-SPEC.md` section 3 and 9.9).
 
@@ -92,7 +92,7 @@ The server signs only what is on this list. Everything else is refused with a co
 | `claimFor(user, maxLots)` | swap | `user` not zero, same `maxLots` bound |
 | `claimForMany(users, maxLotsEach)` | swap | 1 to `MAX_CLAIM_USERS` (10) users, none zero, same `maxLots` bound on `maxLotsEach` |
 
-Calldata must be the exact canonical ABI encoding (no extra bytes). `sweep()` is never sponsored: it is permissionless housekeeping after the window, and whoever triggers it (the keeper is fine) pays its own gas. The swap has no admin functions; a test also checks that admin style selectors (pause, withdraw, recover, ownership) would be refused with `SELECTOR_NOT_ALLOWED`. Calls to the new CT token are not sponsored either.
+Calldata must be the exact canonical ABI encoding (no extra bytes). The master's `withdraw(amount)` is never sponsored: the master pays its own gas. A test checks it is refused with `SELECTOR_NOT_ALLOWED`, together with admin style selectors the swap does not have (sweep, pause, recover, ownership). Calls to the new CT token are not sponsored either.
 
 | Check | Default | Error code (HTTP) |
 | --- | --- | --- |
@@ -132,17 +132,17 @@ The limits live in an in memory store behind an interface (`server/src/store.js`
 | Step | Who pays | Hardhat gas | Kaia adjustment | Estimated gas | KAIA |
 | --- | --- | --- | --- | --- | --- |
 | Approve old CT | gas wallet (sponsored) | about 46,000 | +10,000 fee delegation, +6,100 calldata (68 bytes) | about 62,100 | 0.00171 |
-| Migrate, average | gas wallet (sponsored) | 141,771 | +10,000, +3,300 (36 bytes) | about 155,100 | 0.00426 |
-| Migrate, a wallet's first lot | gas wallet (sponsored) | up to 219,962 | +13,300 | about 233,300 | 0.00641 |
-| Release by the keeper, per holder inside a `claimForMany` batch | gas wallet (keeper) | about 41,600 per user in a 25 user batch (1,039,623 in total) | +2,800 calldata (32 bytes per user) | about 44,400 | 0.00122 |
-| Release by the keeper, alone (`claimFor`, one lot) | gas wallet (keeper) | 70,413 to 92,325 | +2,800 | up to about 95,100 | up to 0.00262 |
+| Migrate, average | gas wallet (sponsored) | 142,299 | +10,000, +3,300 (36 bytes) | about 155,600 | 0.00428 |
+| Migrate, a wallet's first lot | gas wallet (sponsored) | up to 219,874 | +13,300 | about 233,200 | 0.00641 |
+| Release by the keeper, per holder inside a `claimForMany` batch | gas wallet (keeper) | about 41,600 per user in a 25 user batch (1,039,577 in total) | +2,800 calldata (32 bytes per user) | about 44,400 | 0.00122 |
+| Release by the keeper, alone (`claimFor`, one lot) | gas wallet (keeper) | 70,413 to 97,125 | +2,800 | up to about 99,900 | up to 0.00275 |
 
 Per holder who swaps once:
 
-* Typical: 0.00171 + 0.00426 + 0.00122 = **about 0.0072 KAIA**
-* Upper: 0.00171 + 0.00641 + 0.00262 = **about 0.0107 KAIA**
+* Typical: 0.00171 + 0.00428 + 0.00122 = **about 0.0072 KAIA**
+* Upper: 0.00171 + 0.00641 + 0.00275 = **about 0.0109 KAIA**
 
-At scale: 1,000 holders cost about 7.2 to 10.7 KAIA. If every one of the 22,578 holder addresses (`research/01-cojam-history.md`) swapped once with sponsorship, about 162 to 243 KAIA. Each extra swap by the same holder adds about 0.0043 to 0.0064 KAIA (approve again only if the allowance ran out). To convert to money, multiply by the KAIA price on the day.
+At scale: 1,000 holders cost about 7.2 to 10.9 KAIA. If every one of the 22,578 holder addresses (`research/01-cojam-history.md`) swapped once with sponsorship, about 163 to 245 KAIA. Each extra swap by the same holder adds about 0.0043 to 0.0064 KAIA (approve again only if the allowance ran out). To convert to money, multiply by the KAIA price on the day.
 
 ## 5. Monitoring and top up
 
@@ -156,7 +156,7 @@ At scale: 1,000 holders cost about 7.2 to 10.7 KAIA. If every one of the 22,578 
 * Runway under 14 days, or balance under 2 x the floor: top up.
 * `keeper.dueLots > 0` with `oldestDueUnlockAt` more than 1 hour ago: the keeper is stuck; announce "Release now" on the site while fixing it.
 * `keeper.consecutiveErrors >= 3` or `rpc.ok == false`: RPC problem; switch `KAIA_RPC_URL` to another provider.
-* Log lines `sponsored tx reverted on chain` or a rising rate of `SIMULATION_FAILED`: investigate (it may be old CT being paused or frozen by its owner, the window having closed, or a swap reserve too small for the amount; simulation refuses all of these before we pay any gas).
+* Log lines `sponsored tx reverted on chain` or a rising rate of `SIMULATION_FAILED`: investigate (it may be old CT being paused or frozen by its owner, the window having closed, or a swap reserve too small for the amount, for example after the master withdrew it; simulation refuses all of these before we pay any gas).
 
 **Top up procedure:**
 
@@ -168,7 +168,7 @@ When the balance falls under `MIN_FEE_PAYER_BALANCE_KAIA` (5) the API stops spon
 
 ## 6. Key handling
 
-* **A dedicated gas wallet.** A fresh EOA used only for gas. It holds KAIA only, never CT, and has no role in any contract: the swap has no admin, the gas wallet is never the master wallet, and `claimFor` always pays the lot owner. If the key leaks, the loss is the KAIA in it, nothing else.
+* **A dedicated gas wallet.** A fresh EOA used only for gas. It holds KAIA only, never CT, and has no role in any contract: the gas wallet is never the master wallet (the only address that can withdraw from the swap), and `claimFor` always pays the lot owner. If the key leaks, the loss is the KAIA in it, nothing else.
 * **Now: Render secret environment variable.** `FEE_PAYER_PRIVATE_KEY` is declared with `sync: false` in `render.yaml`, so its value is entered in the Render dashboard and never stored in the repository. `server/.env.example` has placeholders only. The key is validated at start but never logged, returned or printed (the logger also masks any field that looks like a key).
 * **Limit what a leak can cost:** keep about 30 days of runway in the wallet, no more.
 * **Rotation:** create a new EOA, move the KAIA, update `FEE_PAYER_PRIVATE_KEY` on Render, redeploy, record the new address for the admin page and the alerts.

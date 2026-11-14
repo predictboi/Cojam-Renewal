@@ -20,9 +20,9 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 /// new CT. `migrate` only hands out the reserve, which is the new CT held here minus
 /// `totalOwed` (what earlier lots are still owed).
 ///
-/// There is no admin key: no owner, no pause, no setter, no upgrade. After
-/// WINDOW_END + GRACE anyone may call `sweep()`, which sends only the reserve that no
-/// lot is owed to the immutable MASTER, so unswapped tokens are never stuck.
+/// No owner, no pause, no setter, no upgrade. The one privileged call is
+/// `withdraw(amount)`: only MASTER may call it, at any time, and it sends at most
+/// `availableReserve()` back to MASTER. New CT owed to lots can never be withdrawn.
 ///
 /// Received old CT stays in this contract forever: no function can move it.
 /// Any other token sent here by mistake (anything but new CT) is stuck forever too.
@@ -31,8 +31,6 @@ contract CojamMigration is ReentrancyGuard {
 
     /// @notice Length of the migration window, counted from deploy.
     uint256 public constant WINDOW = 365 days;
-    /// @notice Wait after WINDOW_END before `sweep` opens (late lots, announcements).
-    uint256 public constant GRACE = 30 days;
     /// @notice Each lot unlocks this long after its migrate call.
     uint256 public constant LOCK_PERIOD = 7 days;
     /// @notice Share of each credit paid at once, in percent (rounded down).
@@ -44,11 +42,10 @@ contract CojamMigration is ReentrancyGuard {
 
     IERC20 public immutable OLD_TOKEN;
     IERC20 public immutable NEW_TOKEN;
-    /// @notice Funds the swap by plain transfers and receives the swept remainder.
+    /// @notice Funds the swap by plain transfers; the only address that may `withdraw`.
     address public immutable MASTER;
     uint256 public immutable WINDOW_START;
     uint256 public immutable WINDOW_END;
-    uint256 public immutable SWEEP_OPENS_AT;
 
     /// @dev One storage slot. `amount` fits: the whole supply is below 2^92.
     struct Lot {
@@ -69,8 +66,8 @@ contract CojamMigration is ReentrancyGuard {
     uint256 public totalOwed;
     /// @notice New CT released from lots.
     uint256 public totalClaimed;
-    /// @notice New CT sent to MASTER by `sweep`.
-    uint256 public totalSwept;
+    /// @notice New CT sent back to MASTER by `withdraw`.
+    uint256 public totalWithdrawn;
 
     event Migrated(
         address indexed user,
@@ -81,7 +78,7 @@ contract CojamMigration is ReentrancyGuard {
         uint256 unlockAt
     );
     event Claimed(address indexed user, uint256 indexed lotId, uint256 amount, address indexed caller);
-    event Swept(uint256 amount);
+    event Withdrawn(uint256 amount);
 
     error ZeroAddress();
     error OldOwnerNotAllowed();
@@ -94,12 +91,11 @@ contract CojamMigration is ReentrancyGuard {
     error NothingReceived();
     error ReceivedMoreThanSent();
     error NothingToClaim();
-    error SweepNotOpen();
-    error NothingToSweep();
+    error NotMaster();
 
     /// @param oldToken Old CT (Kaia mainnet 0x7f223b1607171b81ebd68d22f1ca79157fd4a44b).
     /// @param newToken New CT (`CojamToken`), deployed before this contract.
-    /// @param master   The master wallet: funds this contract and receives the sweep.
+    /// @param master   The master wallet: funds this contract and may withdraw the reserve.
     constructor(IERC20 oldToken, IERC20 newToken, address master) {
         if (address(oldToken) == address(0) || address(newToken) == address(0) || master == address(0)) {
             revert ZeroAddress();
@@ -117,7 +113,6 @@ contract CojamMigration is ReentrancyGuard {
         MASTER = master;
         WINDOW_START = block.timestamp;
         WINDOW_END = block.timestamp + WINDOW;
-        SWEEP_OPENS_AT = block.timestamp + WINDOW + GRACE;
     }
 
     // ------------------------------------------------------------------
@@ -226,20 +221,20 @@ contract CojamMigration is ReentrancyGuard {
     }
 
     // ------------------------------------------------------------------
-    // Permissionless housekeeping
+    // Master
     // ------------------------------------------------------------------
 
-    /// @notice From WINDOW_END + GRACE, send the reserve that no lot is owed to MASTER.
-    /// @dev Anyone may call it, as often as they like (later stray new CT can be swept
-    /// too). It never touches `totalOwed`, so every locked remainder stays fully backed
-    /// and releasable forever. `migrate` is closed by then, so `totalOwed` only falls.
-    function sweep() external nonReentrant returns (uint256 amount) {
-        if (block.timestamp < SWEEP_OPENS_AT) revert SweepNotOpen();
-        amount = availableReserve();
-        if (amount == 0) revert NothingToSweep();
+    /// @notice Send `amount` reserve new CT back to MASTER. Only MASTER may call it, at
+    /// any time (inside or after the window). Capped at `availableReserve()`, so new CT
+    /// owed to lots can never be withdrawn and every lot stays fully backed.
+    function withdraw(uint256 amount) external nonReentrant {
+        if (msg.sender != MASTER) revert NotMaster();
+        if (amount == 0) revert ZeroAmount();
+        uint256 available = availableReserve();
+        if (amount > available) revert InsufficientReserve(available, amount);
 
-        totalSwept += amount;
-        emit Swept(amount);
+        totalWithdrawn += amount;
+        emit Withdrawn(amount);
 
         NEW_TOKEN.safeTransfer(MASTER, amount);
     }
@@ -249,7 +244,7 @@ contract CojamMigration is ReentrancyGuard {
     // ------------------------------------------------------------------
 
     /// @notice New CT held here that no lot is owed to (what migrate can still hand
-    /// out, and what `sweep` sends to MASTER after the window and the grace period).
+    /// out, and what MASTER may `withdraw`).
     function availableReserve() public view returns (uint256) {
         return NEW_TOKEN.balanceOf(address(this)) - totalOwed;
     }
