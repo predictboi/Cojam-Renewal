@@ -1,0 +1,9 @@
+/* Press, lift and ripple feedback. Pair with press.js. Uses tokens from tokens.css. */
+.btn, .chip, .card-link { transition: transform var(--dur-release) var(--ease-spring), box-shadow var(--dur-fast) var(--ease-out), background-color var(--dur-fast); -webkit-tap-highlight-color: transparent; }
+.btn.is-pressed, .chip.is-pressed { transform: scale(var(--press-scale)); transition-duration: var(--dur-press); }
+.card-link.is-pressed { transform: scale(var(--press-scale-card)); transition-duration: var(--dur-press); }
+@media (hover: hover) and (pointer: fine) { .card-link:hover { transform: translateY(var(--lift)); box-shadow: var(--shadow-lift); } }
+.btn-primary { position: relative; overflow: hidden; background: var(--brand); color: var(--on-brand); }
+.btn-primary .ripple { position: absolute; border-radius: 50%; pointer-events: none; background: rgba(255, 255, 255, 0.32); transform: scale(0); animation: ripple 520ms var(--ease-out) forwards; }
+@keyframes ripple { to { transform: scale(1); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .btn.is-pressed, .chip.is-pressed, .card-link.is-pressed { transform: none; } .btn-primary .ripple { display: none; } }

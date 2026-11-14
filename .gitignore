@@ -10,3 +10,4 @@ tools/video/out/
 tools/video/*.mp4
 tools/video/*.mp3
 __pycache__/
+dist/

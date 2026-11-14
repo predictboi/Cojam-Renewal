@@ -40,7 +40,7 @@ button { font: inherit; }
 :focus-visible { outline: 3px solid var(--coral-hot); outline-offset: 3px; }
 
 /* ---------- hero: sky gradient ---------- */
-.hero { position: relative; overflow: hidden; color: var(--snow); background: linear-gradient(180deg, var(--blue) 0%, var(--mid) 42%, var(--sky) 100%); padding-bottom: 40px; }
+.hero { position: relative; overflow: hidden; color: var(--snow); background: linear-gradient(180deg, var(--blue) 0%, var(--blue) 34%, var(--mid) 62%, var(--sky) 100%); padding-bottom: 40px; } /* blue holds behind the headline so the sky line keeps 4.7:1 */
 .hero::before { content: ""; position: absolute; inset: -30% -10% auto; height: 80%; background: radial-gradient(closest-side, rgba(255,255,255,0.22), transparent 70%); animation: drift 14s ease-in-out infinite alternate; pointer-events: none; }
 @keyframes drift { to { transform: translate(8%, 6%); } }
 .nav { position: relative; z-index: 2; display: flex; align-items: center; gap: 12px; min-height: 64px; }
