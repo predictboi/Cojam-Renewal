@@ -2,24 +2,27 @@
 pragma solidity 0.8.28;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
 /// @title Cojam Token (new CT on Kaia)
-/// @notice Plain fixed supply ERC-20 (KIP-7 compatible at the ERC-20 level).
-/// The whole supply is minted once, in this constructor, to `master` (the
-/// project's master wallet). The master then funds the migration contract by
-/// plain transfers. The token itself has no owner, no mint after deploy,
-/// no pause, no blacklist, no fee and no upgrade path.
-/// @dev ERC20Permit (EIP-2612) only adds signature based approvals for holders.
-contract CojamToken is ERC20, ERC20Permit {
-    /// @notice Fixed supply: exactly 2,000,000,000 CT. The swap converts old CT at 0.4
-    /// (set against the pre burn old supply of 5,000,000,000 CT), so this covers the whole
-    /// current old supply (4,083,262,533.9560001 CT x 0.4 = about 1,633,305,013.58 CT).
-    uint256 public constant TOTAL_SUPPLY = 2_000_000_000 * 10 ** 18;
+/// @notice The most basic fixed supply token: standard ERC-20 (KIP-7 compatible at the ERC-20 level) and nothing else.
+/// The whole supply, 2,000,000,000 CT with 9 decimals, is minted once in this constructor to `master` (the project's
+/// master wallet). After that no address can mint, burn, recall, pause, freeze, blacklist, upgrade or charge a fee:
+/// the contract has no owner and no function beyond the ERC-20 standard
+/// (name, symbol, decimals, totalSupply, balanceOf, transfer, allowance, approve, transferFrom).
+contract CojamToken is ERC20 {
+    /// @notice 9 decimals, as on a standard Solana SPL token.
+    uint8 public constant DECIMALS = 9;
 
-    /// @param master Receives the whole supply (the founder's master wallet or a Safe).
-    constructor(address master) ERC20("Cojam Token", "CT") ERC20Permit("Cojam Token") {
+    /// @notice 2,000,000,000 CT in base units (2,000,000,000 x 10^9).
+    uint256 public constant TOTAL_SUPPLY = 2_000_000_000 * 10 ** 9;
+
+    /// @param master Receives the whole supply.
+    constructor(address master) ERC20("Cojam Token", "CT") {
         // OpenZeppelin's _mint reverts with ERC20InvalidReceiver(address(0)) for the zero address.
         _mint(master, TOTAL_SUPPLY);
+    }
+
+    function decimals() public pure override returns (uint8) {
+        return DECIMALS;
     }
 }
