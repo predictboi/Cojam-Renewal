@@ -50,8 +50,8 @@ Note: the site is still the prototype with mock data. Connecting the site to the
 | --- | --- |
 | `CHAIN_ID` | `1001` (already in render.yaml) |
 | `KAIA_RPC_URL` | `https://public-en-kairos.node.kaia.io` |
-| `SWAP_CONTRACT_ADDRESS` | `0x12C3ED5EC87B42C4C36b77f2693D72657f7229B0` |
-| `SWAP_DEPLOY_BLOCK` | `233001353` |
+| `SWAP_CONTRACT_ADDRESS` | `0x4948D9DFaafC8CC0ee6464208659350F11931252` |
+| `SWAP_DEPLOY_BLOCK` | `233013908` |
 | `OLD_CT_ADDRESS` | `0x6E86699DE0182884E5ee627E43764c718832D5e8` (test old CT on Kairos) |
 | `FEE_PAYER_PRIVATE_KEY` | Private key of the fee payer wallet `0xB3CB…52da` (entered in the dashboard) |
 | `ALLOWED_ORIGINS` | `https://cojam.app,https://www.cojam.app` |

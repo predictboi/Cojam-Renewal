@@ -10,9 +10,9 @@
       explorer: "https://kairos.kaiascan.io",
       // contracts/deployments/kairos.json (old CT here is the test stand in MockOldCojam)
       oldToken: "0x6E86699DE0182884E5ee627E43764c718832D5e8",
-      newToken: "0x0220Ecd152517A8Cbc020490342cE668b29b8905",
-      swap: "0x12C3ED5EC87B42C4C36b77f2693D72657f7229B0",
-      deployBlock: 233001353,
+      newToken: "0xa8e540C5b5804D4BF2Dd2110a307a99E76C6Bd9E",
+      swap: "0x4948D9DFaafC8CC0ee6464208659350F11931252",
+      deployBlock: 233013908,
       gasApi: "https://api.cojam.app",
       nativeCurrency: { name: "KAIA", symbol: "KAIA", decimals: 18 }
     },

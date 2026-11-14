@@ -1,32 +1,21 @@
 {
   "network": "kairos",
   "chainId": 1001,
-  "note": "Rehearsal deploy with a throwaway test key. Old CT here is MockOldCojam, a test stand in with the exact old supply. All three contracts are verified on Sourcify (exact match).",
+  "note": "Rehearsal deploy with a throwaway test key. 2,000,000,000 new CT, swap rate 0.4 (10 old CT = 4 new CT). Old CT here is MockOldCojam (exact old supply). Verified on Sourcify.",
   "deployedAt": "2026-11-14",
   "deployer": "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
   "master": "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
   "oldToken": "0x6E86699DE0182884E5ee627E43764c718832D5e8",
-  "newToken": "0x0220Ecd152517A8Cbc020490342cE668b29b8905",
-  "migration": "0x12C3ED5EC87B42C4C36b77f2693D72657f7229B0",
-  "migrationDeployBlock": 233001353,
-  "windowStart": 1794645827,
-  "windowEnd": 1826181827,
+  "newToken": "0xa8e540C5b5804D4BF2Dd2110a307a99E76C6Bd9E",
+  "migration": "0x4948D9DFaafC8CC0ee6464208659350F11931252",
+  "migrationDeployBlock": 233013908,
+  "windowStart": 1794658382,
+  "windowEnd": 1826194382,
   "funded": "100000000 CT",
-  "fundTx": "0xbd9481e3fdd2bffbd43b4e6ce79af5641edc4ea35cfdf6b67c89f2b8b07a881d",
-  "rehearsal": {
-    "approveTx": "0x7946583a2a3f93d66f542af394fe560b4cc03ad8ffde310d6a6fe1efbfd43724",
-    "migrateTx": "0xacf7d443e28db14e8c2345da654e6173910aa3b4c8eb68895f275faf1281b8ab",
-    "migrate": "10,000 old CT: 1,000 new CT arrived at once, a 9,000 new CT lot unlocks 2026-11-21T08:44:03Z, gas 196,107",
-    "withdrawTx": "0xa081185ca858d012ee72bf7f158150eb8bd0de2d585be0404d6ace4640a1eded",
-    "withdraw": "master withdrew 1,000,000 CT; the 9,000 owed to the lot stayed"
-  },
-  "shortLockTest": {
-    "note": "CojamMigrationShortLock (test only, LOCK_PERIOD 1 minute, otherwise identical to CojamMigration) for live release tests",
-    "swap": "0x47b479D64A9dade1b965Fc546d6B2D8918F45ffD",
-    "deployBlock": 233001949,
-    "funded": "1000000 CT",
-    "holderB_selfClaim": "0xFb47a94802a7cF96D7c99eE0B88Ae7893A9D7Ce0 swapped 5,000: 500 at once, claim before unlock reverted, claimed 4,500 after unlock, balance 5,000",
-    "holderC_keeper": "0x281E1e1Ad25de7cdAa667319C85D5fC7516eBF7b swapped 2,000: 200 at once; the server keeper (server/src keeper mode) released 1,800 without any action by C, tx 0xcbe1b6d088121287a1a53de115835a8f3f3494775808a33d1889f0ae73e0c831, gas 75,225, fee 0.0021 KAIA; balance 2,000",
-    "holderA_keeper": "master/holder A lot of 9,000 also released by the keeper"
+  "fundTx": "0x2c1a79b4fd4fe69ea428ac7acdb025eadc0461989f1300473ff926867b323d0c",
+  "previous_1to1": {
+    "newToken": "0x0220Ecd152517A8Cbc020490342cE668b29b8905",
+    "migration": "0x12C3ED5EC87B42C4C36b77f2693D72657f7229B0",
+    "migrationDeployBlock": 233001353
   }
 }
