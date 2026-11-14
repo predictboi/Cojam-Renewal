@@ -79,8 +79,8 @@
     var ic = kind === "error" || kind === "warn" ? "warn" : "info";
     return '<div class="note note-' + kind + ' mg-note"' + (id ? ' id="' + id + '"' : "") + ">" + I(ic, 18) + '<div class="note-body">' + (/^<(p|div)/.test(msg) ? msg : "<p>" + msg + "</p>") + (fix ? '<div class="note-action mg-fixes">' + fix + "</div>" : "") + "</div></div>";
   }
-  // Reserve empty: no support channel exists before launch, so the fix is the docs answer for this case.
-  function reserveNote() { return note("error", withHelp(t("er.reserve"), "help.reserve"), '<a class="btn" href="' + DOCS + '#reserve">' + t("er.reserve.fix") + "</a>"); }
+  // The contract refused the swap for lack of reserve: a neutral note, the help popover explains where the reserve is.
+  function reserveNote() { return note("error", withHelp(t("er.reserve"), "help.reserve")); }
   // Returning holder: one note per lot the keeper released while they were away, until they dismiss it (kept in the ledger).
   function keeperNotes() {
     return led().lots.filter(function (l) { return l.releasedBy === "keeper" && l.releasedAt && !l.seenRelease; }).map(function (l) {
