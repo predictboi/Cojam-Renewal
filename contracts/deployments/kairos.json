@@ -1,0 +1,21 @@
+{
+  "network": "kairos",
+  "chainId": 1001,
+  "note": "Rehearsal deploy with a throwaway test key. 2,000,000,000 new CT, swap rate 0.4 (10 old CT = 4 new CT). Old CT here is MockOldCojam (exact old supply). Verified on Sourcify.",
+  "deployedAt": "2026-11-14",
+  "deployer": "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+  "master": "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+  "oldToken": "0x6E86699DE0182884E5ee627E43764c718832D5e8",
+  "newToken": "0xa8e540C5b5804D4BF2Dd2110a307a99E76C6Bd9E",
+  "migration": "0x4948D9DFaafC8CC0ee6464208659350F11931252",
+  "migrationDeployBlock": 233013908,
+  "windowStart": 1794658382,
+  "windowEnd": 1826194382,
+  "funded": "100000000 CT",
+  "fundTx": "0x2c1a79b4fd4fe69ea428ac7acdb025eadc0461989f1300473ff926867b323d0c",
+  "previous_1to1": {
+    "newToken": "0x0220Ecd152517A8Cbc020490342cE668b29b8905",
+    "migration": "0x12C3ED5EC87B42C4C36b77f2693D72657f7229B0",
+    "migrationDeployBlock": 233001353
+  }
+}

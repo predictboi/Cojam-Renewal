@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swap status: Cojam</title>
+<meta name="description" content="How much old CT has been swapped for new CT on Kaia, what was paid at once, what is locked, what is released and how long the swap window stays open.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="../assets/base.css?v=20261114d">
+<link rel="stylesheet" href="../assets/menu.css?v=20261114d">
+<link rel="stylesheet" href="../assets/wallet.css?v=20261114d">
+<link rel="stylesheet" href="../assets/pages/status.css?v=20261114d">
+</head>
+<body data-page="status" data-root="../" data-foot="compact">
+<div id="cj-top"></div>
+<script src="../assets/system.js?v=20261114d"></script>
+<script src="../assets/network.js?v=20261114d"></script>
+<script src="../assets/i18n/shell.js?v=20261114d"></script>
+<script src="../assets/menu.js?v=20261114d"></script>
+<script src="../assets/shell.js?v=20261114d"></script>
+<main id="main" class="st">
+  <div class="container">
+
+    <header class="st-head cj-band">
+      <div class="st-head-copy">
+        <h1 data-i18n="status.title">Swap status</h1>
+        <p class="muted" id="st-window"></p>
+      </div>
+      <div class="st-head-tools">
+        <p class="st-price" id="st-price" hidden></p>
+        <p class="st-live small" id="st-live"><span class="live-dot" id="st-live-dot" aria-hidden="true"></span><span id="st-live-text">Reading the Kaia chain</span></p>
+        <a class="btn btn-primary" href="../migrate/" data-i18n="status.cta">Swap CT</a>
+      </div>
+    </header>
+
+    <div class="note note-warn st-error" id="st-error" role="alert" hidden>
+      <span id="st-error-icon"></span>
+      <div class="note-body"><span id="st-error-text"></span>
+        <div class="note-action"><button type="button" class="btn" id="st-retry"><span id="st-retry-icon"></span><span data-i18n="status.error.retry">Retry</span></button></div>
+      </div>
+    </div>
+    <script>if (/[?&]state=error(&|$)/.test(location.search)) document.getElementById("st-error").hidden = false;</script>
+
+    <div class="note note-info st-sample" role="note">
+      <span id="st-sample-icon"></span>
+      <div class="note-body"><strong data-i18n="status.sample.title">Sample data.</strong> <span data-i18n="status.sample.body">Live figures come from the Kaia chain at launch.</span></div>
+    </div>
+
+    <section class="panel st-top" aria-labelledby="st-hero-label" aria-busy="false" id="st-top">
+      <div class="st-hero">
+        <h2 class="st-label" id="st-hero-label" tabindex="-1" data-i18n="status.fig.swapped">New CT credited by swaps</h2>
+        <p class="st-hero-value"><span id="st-swapped" class="st-hero-num"></span> <span class="st-unit" data-i18n="unit.new">new CT</span></p>
+        <p class="small muted" id="st-swapped-sub"></p>
+        <p class="small st-fees" id="st-fees"></p>
+        <div class="st-split">
+          <h3 class="st-split-title small" data-i18n="status.split.title">Where the new CT supply is</h3>
+          <div class="st-bar" id="st-bar" role="img"></div>
+          <ul class="st-legend" id="st-legend"></ul>
+        </div>
+      </div>
+      <dl class="st-figs" id="st-figs"></dl>
+    </section>
+
+    <div class="st-grid">
+      <section class="panel st-daily" aria-labelledby="st-daily-title">
+        <div class="st-panel-head">
+          <h2 class="st-h2" id="st-daily-title" data-i18n="status.daily.title">Old CT swapped per day</h2>
+          <p class="small muted" id="st-daily-sub"></p>
+        </div>
+        <div class="st-chart" id="st-chart" tabindex="0" role="group" data-i18n-attr="aria-label:status.daily.aria">
+          <div class="st-chart-svg" id="st-chart-svg"></div>
+          <div class="st-tip" id="st-tip" hidden></div>
+        </div>
+        <p class="sr-only" id="st-chart-live" aria-live="polite"></p>
+        <details class="st-table-toggle">
+          <summary><span data-i18n="status.daily.table">Show as a table</span></summary>
+          <div class="st-scroll">
+            <table class="table">
+              <thead><tr><th scope="col" data-i18n="status.daily.col.day">Day</th><th scope="col" class="r" data-i18n="status.daily.col.amount">Old CT swapped</th><th scope="col" class="r" data-i18n="status.daily.col.holders">Holders</th></tr></thead>
+              <tbody id="st-daily-rows"></tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+
+      <section class="panel st-unlock" aria-labelledby="st-unlock-title">
+        <div class="st-unlock-main">
+          <div class="st-panel-head">
+            <h2 class="st-h2" id="st-unlock-title" data-i18n="status.unlock.title">Every swap on one track</h2>
+            <p class="small muted" data-i18n="status.unlock.sub">The same track as each swap, for all of them together. Each tick is one day of the 7 day lock, and a taller tick holds more CT. Day 1 is the newest; day 7 unlocks next and is sent automatically.</p>
+          </div>
+          <div id="st-track" class="track track-lg track-agg"></div>
+        </div>
+        <div class="st-unlock-side">
+          <h3 class="st-cal-h small" data-i18n="status.unlock.list">Locked CT by lock day</h3>
+          <ol class="st-cal" id="st-cal"></ol>
+          <p class="small st-cal-total" id="st-cal-total"></p>
+        </div>
+      </section>
+    </div>
+
+    <section class="st-recent" aria-labelledby="st-recent-title">
+      <div class="st-recent-head">
+        <div>
+          <h2 class="st-h2" id="st-recent-title" data-i18n="status.recent.title">Recent swaps and releases</h2>
+          <p class="small muted" data-i18n="status.recent.sub">The latest activity on the swap contract, newest first.</p>
+        </div>
+        <div class="seg st-view" role="group" data-i18n-attr="aria-label:status.view.label">
+          <button type="button" class="seg-btn" data-view="table" aria-pressed="false" data-i18n="status.view.table">Table</button>
+          <button type="button" class="seg-btn" data-view="cards" aria-pressed="false" data-i18n="status.view.cards">Cards</button>
+        </div>
+      </div>
+      <div id="st-recent-body"></div>
+    </section>
+
+    <section class="panel st-contracts" id="contracts" aria-labelledby="st-contracts-title">
+      <h2 class="st-h2" id="st-contracts-title" data-i18n="status.contracts.title">Contracts on Kaia</h2>
+      <div class="st-addrs">
+        <div class="addr" data-addr="old"></div>
+        <div class="addr" data-addr="new"></div>
+        <div class="addr" data-addr="swap"></div>
+      </div>
+      <p class="small muted" id="st-contracts-note"></p>
+    </section>
+
+  </div>
+</main>
+<div id="cj-foot"></div>
+<script src="../assets/price.js?v=20261114d"></script>
+<script>CJ.price && CJ.price.mount(document.getElementById("st-price"));</script>
+<script src="../assets/motion.js?v=20261114d"></script>
+<script src="../assets/wallet.js?v=20261114d"></script>
+<script src="../assets/vendor/ethers-6.17.0.umd.min.js"></script>
+<script src="../assets/live-stats.js?v=20261114d"></script>
+<script src="../assets/i18n/status.js?v=20261114d"></script>
+<script src="../assets/pages/status.js?v=20261114d"></script>
+</body>
+</html>

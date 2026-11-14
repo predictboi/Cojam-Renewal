@@ -1,0 +1,370 @@
+/* Admin swap monitor layout. Components come from base.css; colours, sizes and radii from tokens.css. */
+/* Same --container as the header, footer and every other page, so the left edges line up. */
+.adm { position: relative; isolation: isolate; padding: 0; }
+.adm > .container > * + * { margin-top: var(--sp-stack); }
+/* The page head is the blue band (.cj-band in base.css). Card headings: Archivo wide capitals, as on the landing. */
+.adm h2 { font-family: var(--font-display); font-size: 22px; font-weight: 900; font-stretch: 112%; text-transform: uppercase; letter-spacing: -0.02em; line-height: 1.05; }
+:is(:lang(ko), :lang(ja)) .adm h2 { font-stretch: 100%; letter-spacing: -0.03em; line-height: 1.25; }
+.adm .panel { padding: var(--sp-panel); min-width: 0; }
+
+/* ---------- head ---------- */
+.adm-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-16); }
+.adm-title p { margin-top: var(--s-12); }
+.adm-live { display: flex; align-items: center; gap: var(--s-12); flex-wrap: wrap; }
+.adm-stamp { display: inline-flex; align-items: center; gap: var(--s-8); min-height: 36px; padding: 0 14px 0 12px; border-radius: var(--r-pill); background: rgba(11, 21, 48, 0.32); font-weight: var(--fw-semi); }
+.cj-band .adm-stamp.muted { color: var(--on-brand); }
+
+/* ---------- KPI row: one panel, tiles split by hairlines ---------- */
+.adm .adm-kpis { padding: 0; overflow: hidden; }
+.kpi-grid { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); }
+.kpi { background: var(--surface); padding: var(--s-16); display: grid; gap: var(--s-4); align-content: start; min-width: 0; }
+.kpi dt { font-size: var(--fs-14); font-weight: var(--fw-semi); color: var(--ink-2); }
+.kpi dd { margin: 0; display: grid; gap: var(--s-4); min-width: 0; }
+.kpi-v { font-size: var(--fs-20); font-weight: var(--fw-heavy); line-height: 1.2; letter-spacing: -0.015em; overflow-wrap: anywhere; }
+.kpi-u { font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--ink-2); white-space: nowrap; }
+.kpi-sub { font-size: var(--fs-13); color: var(--ink-2); line-height: 1.45; }
+/* amber only for time pressure: overdue releases, a short gas runway */
+.kpi.is-warn { background: var(--warn-tint); }
+.kpi.is-warn dt, .kpi.is-warn .kpi-v, .kpi.is-warn .kpi-u, .kpi.is-warn .kpi-sub { color: var(--warn); }
+
+/* ---------- gas wallet ---------- */
+.adm .adm-gas { padding: 0; overflow: hidden; }
+.adm-gas-head { padding: var(--s-16) var(--s-16) var(--s-12); border-bottom: var(--edge-ink); }
+.adm-gas-head p { margin-top: var(--s-4); max-width: 60em; }
+.adm-gas .kpi-grid { border-bottom: 1px solid var(--line); }
+.adm-gas-note { padding: var(--s-12) var(--s-16); color: var(--ink); }
+@media (min-width: 900px) { .adm-gas-head { padding: var(--s-24) var(--s-24) var(--s-16); } .adm-gas-note { padding: var(--s-12) var(--s-24); } }
+/* Notes toggle: phones only. */
+.kpi-more { display: none; }
+/* Phones: two compact tiles a row, label and figure; the notes open with one toggle per panel. Alert tiles keep theirs. */
+@media (max-width: 599px) {
+  .kpi { padding: var(--s-12); gap: 2px; }
+  .kpi dt { font-size: var(--fs-13); line-height: 1.35; }
+  .kpi-v { font-size: var(--fs-16); }
+  .kpi-u { font-size: var(--fs-13); }
+  .kpi-grid:not(.show-notes) .kpi:not(.is-warn) .kpi-sub { display: none; }
+  /* An alert tile (one per grid at most) takes the full row with its note; the last tile then closes the grid evenly. */
+  .kpi.is-warn, .kpi-grid:has(> .is-warn) > .kpi:last-child { grid-column: 1 / -1; }
+  .kpi-more {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--s-8); width: 100%; min-height: 44px; padding: 0 var(--s-12);
+    border: 0; border-top: 1px solid var(--line); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--fs-14); font-weight: var(--fw-bold); cursor: pointer;
+  }
+  .kpi-more svg { color: var(--ink-2); transform: rotate(90deg); transition: transform var(--dur) var(--ease); }
+  .kpi-more[aria-expanded="true"] svg { transform: rotate(-90deg); }
+  .adm-gas .kpi-grid { border-bottom: 0; }
+  .adm-gas .kpi-more { border-bottom: 1px solid var(--line); }
+}
+@media (min-width: 900px) {
+  .kpi-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .kpi { padding: var(--s-16) var(--s-24) var(--s-24); }
+  .kpi-v { font-size: var(--fs-24); }
+}
+
+/* ---------- panel heads and segmented controls ---------- */
+.adm-panel-head { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: var(--s-12) var(--s-16); }
+.adm-panel-head > div:first-child { min-width: 0; flex: 1 1 260px; }
+.adm-panel-head p { margin-top: var(--s-4); }
+/* .seg lives in base.css */
+
+/* ---------- charts ---------- */
+.adm-charts { display: grid; gap: var(--s-24); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1040px) { .adm-charts { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.adm-chart { display: grid; align-content: start; gap: var(--s-12); }
+.adm-soon { display: flex; gap: var(--s-8); align-items: flex-start; padding: 10px 14px; border-radius: var(--r-control); font-weight: var(--fw-semi); background: var(--inset); color: var(--ink); font-size: var(--fs-14); }
+.adm-soon svg { flex: none; margin-top: 2px; }
+.adm-soon.is-on { background: var(--warn-tint); color: var(--warn); }
+.adm-soon strong { font-weight: var(--fw-semi); }
+.adm-day-sum { color: var(--ink); min-height: 1.6em; }
+.chart { position: relative; border-radius: var(--r-control); min-height: 200px; }
+.chart:focus-visible { outline-offset: 4px; }
+.chart svg { display: block; width: 100%; height: auto; overflow: visible; touch-action: pan-y; }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .base { stroke: var(--line-strong); stroke-width: 1; }
+.chart .axis { fill: var(--ink-2); font-size: 12px; font-family: var(--font); font-variant-numeric: tabular-nums; }
+.chart .val { fill: var(--ink); font-size: 12px; font-weight: var(--fw-semi); font-family: var(--font); font-variant-numeric: tabular-nums; }
+.chart .band { fill: transparent; }
+.chart .band.is-on { fill: var(--inset); }
+.chart .bar { fill: var(--brand); pointer-events: none; }
+.chart .tip {
+  position: absolute; top: 0; z-index: 2; pointer-events: none; display: grid; gap: 2px; padding: var(--s-8) var(--s-12);
+  background: var(--ink); color: var(--surface); border-radius: 14px; font-size: var(--fs-13); line-height: 1.35; white-space: nowrap; box-shadow: 0 4px 0 var(--volt);
+}
+.chart .tip[hidden] { display: none; }
+.chart .tip strong { font-size: var(--fs-14); font-weight: var(--fw-heavy); }
+.adm-chart-foot { line-height: 1.5; }
+.adm-tableview > summary {
+  display: inline-flex; align-items: center; min-height: 44px; cursor: pointer; color: var(--ink); font-size: var(--fs-14); font-weight: var(--fw-bold);
+  text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 3px;
+}
+.adm-tableview > summary:hover { text-decoration-color: var(--ink); }
+.adm-tv-wrap { overflow: auto; max-height: 360px; min-width: 0; }
+.adm-tableview .adm-tv-wrap { border: 1.5px solid var(--ink); border-radius: var(--r-control); }
+.table.tv th, .table.tv td { height: 40px; padding: var(--s-8) var(--s-12); }
+.table.tv tbody th { color: var(--ink); font-weight: var(--fw-regular); }
+.table.tv thead th { position: sticky; top: 0; background: var(--surface); }
+
+/* ---------- swap requests ---------- */
+.lots-tools { display: flex; flex-wrap: wrap; align-items: flex-end; gap: var(--s-12) var(--s-24); margin-top: var(--s-24); }
+.lots-search { flex: 1 1 100%; min-width: 0; }
+.lots-search-box { max-width: 480px; }
+.lots-search-box { display: flex; align-items: center; gap: var(--s-8); min-height: 48px; padding: 0 var(--s-16); background: var(--surface); border: var(--edge-ink); border-radius: var(--r-pill); color: var(--ink-2); }
+.lots-search-box:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint); }
+.lots-search-box input { flex: 1; min-width: 0; min-height: 46px; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: var(--fs-16); outline: none; }
+.lots-search-box input::placeholder { color: var(--ink-2); }
+.lots-kbd { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border: 1.5px solid var(--ink); border-bottom-width: 3px; border-radius: 7px; background: var(--surface); color: var(--ink-2); font: inherit; font-size: var(--fs-13); }
+/* The "/" shortcut needs a keyboard: hidden on touch screens and at phone widths. */
+@media (hover: none), (pointer: coarse), (max-width: 759px) { .lots-kbd { display: none; } }
+.lots-filter { display: grid; gap: var(--s-4); min-width: 0; }
+.lots-count { margin-top: var(--s-16); color: var(--ink); font-weight: var(--fw-semi); }
+.lots-sort-m { display: none; }
+.lots-count .muted { margin-left: var(--s-8); }
+.lots-wrap { margin-top: var(--s-8); overflow-x: auto; border-top: 1px solid var(--line); }
+.lots-table { min-width: 980px; }
+.lots-table th { padding: 0 var(--s-8); height: 48px; }
+.lots-table td { padding: var(--s-4) var(--s-8); height: 56px; }
+.lots-table th:first-child, .lots-table td:first-child { padding-left: 0; }
+.lots-table th:last-child, .lots-table td:last-child { padding-right: 0; }
+.amt-u, .left-m { display: none; }
+.lots-table td { transition: background-color var(--dur-fast) var(--ease); }
+.lots-table tbody tr.row-open { cursor: pointer; }
+@media (hover: hover) and (pointer: fine) { .lots-table tbody tr:hover td { background: var(--inset); } }
+.lots-table tbody tr.row-open:active td { background: var(--inset); transition-duration: var(--dur-press); }
+.lots-table .c-tx { width: 44px; text-align: center; }
+.lots-table .c-wallet { width: 196px; }
+.lots-table .c-status { width: 112px; }
+.st-cell { display: inline-grid; justify-items: start; gap: 2px; }
+.st-cell .by { font-size: var(--fs-13); white-space: nowrap; }
+.sort-btn {
+  display: inline-flex; align-items: center; gap: var(--s-4); min-height: 44px; padding: 0 var(--s-4); margin: 0 calc(var(--s-4) * -1);
+  border: 0; border-radius: 6px; background: transparent; color: var(--ink-2); font: inherit; font-size: var(--fs-14); font-weight: var(--fw-medium); cursor: pointer; white-space: nowrap;
+}
+.sort-btn:hover { color: var(--ink); }
+.sort-btn svg path { opacity: 0.35; }
+.sort-btn.is-on { color: var(--ink); font-weight: var(--fw-heavy); }
+.sort-btn.is-asc svg .up, .sort-btn.is-desc svg .dn { opacity: 1; }
+th.r .sort-btn { flex-direction: row-reverse; text-align: right; }
+/* Headers put their unit on a second line ("Locked 90%" over "(CT)", admin.js), so the table fits --container at 1440. */
+.lots-table th .sort-btn { line-height: 1.25; }
+.lots-table th .sort-btn svg { flex: none; }
+.amt { font-weight: var(--fw-bold); }
+.dt { display: grid; line-height: 1.35; font-size: var(--fs-14); }
+.dt .muted { font-size: var(--fs-13); }
+.left-released { color: var(--ink-2); }
+.left-releasing { font-weight: var(--fw-bold); }
+.is-soon { color: var(--warn); font-weight: var(--fw-bold); }
+
+.w-cell { display: flex; align-items: center; gap: 2px; min-width: 0; }
+.w-tools { display: inline-flex; gap: 0; }
+.w-open {
+  display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--s-8); margin-left: calc(var(--s-8) * -1);
+  border: 0; border-radius: var(--r-pill); background: transparent; color: var(--ink); cursor: pointer;
+  font-family: var(--font-data); font-size: var(--fs-13); font-weight: var(--fw-semi); text-decoration: underline; text-decoration-color: var(--line-strong); text-underline-offset: 4px; white-space: nowrap;
+}
+.w-open:hover { background: var(--inset); text-decoration-color: var(--ink); }
+.icon-btn {
+  display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; flex: none;
+  border: 0; border-radius: 50%; background: transparent; color: var(--ink-2); cursor: pointer; text-decoration: none;
+}
+.icon-btn:hover { background: var(--inset); color: var(--ink); }
+
+.lots-empty { display: grid; justify-items: start; gap: var(--s-12); padding: var(--s-24) 0; }
+.lots-table tr.empty td { height: auto; }
+
+.pager { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-8); margin-top: var(--s-16); }
+.pg-btn { gap: var(--s-4); padding: 0 var(--s-12); font-size: var(--fs-14); }
+.pg-flip svg { transform: rotate(180deg); }
+.pg-nums { display: inline-flex; align-items: center; gap: 2px; }
+.pg-num {
+  min-width: 44px; height: 44px; padding: 0 var(--s-8); border: 1.5px solid transparent; border-radius: var(--r-pill); background: transparent;
+  color: var(--ink); font: inherit; font-size: var(--fs-14); font-weight: var(--fw-semi); font-variant-numeric: tabular-nums; cursor: pointer;
+}
+.pg-num:hover { background: var(--inset); }
+.pg-num[aria-current="page"] { background: var(--volt); color: var(--on-volt); border-color: var(--ink); font-weight: var(--fw-heavy); }
+.pg-gap { color: var(--ink-2); padding: 0 var(--s-4); }
+.pg-of { margin-left: auto; }
+.pg-of + .pg-btn { order: 0; }
+
+/* Stacked rows on small screens: a sort menu replaces the header, each request becomes a two column block. */
+@media (max-width: 759px) {
+  .lots-filter, .lots-filter .seg { width: 100%; }
+  .lots-filter .seg { flex-wrap: nowrap; }
+  .lots-filter .seg-btn { flex: 1 1 auto; padding: 0 var(--s-8); font-size: var(--fs-13); }
+  .lots-sort-m { display: grid; gap: var(--s-4); margin-top: var(--s-16); }
+  .lots-sort-box { display: flex; align-items: center; background: var(--surface); border: var(--edge-ink); border-radius: var(--r-control); }
+  .lots-sort-box:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint); }
+  .lots-sort-box select { flex: 1; min-width: 0; min-height: 44px; padding: 0 var(--s-12); border: 0; background: transparent; color: var(--ink); font: inherit; font-size: var(--fs-16); outline: none; }
+  .lots-count .muted { display: block; margin-left: 0; }
+  .lots-wrap { overflow: visible; }
+  .lots-table { min-width: 0; display: block; }
+  .lots-table thead { display: none; }
+  .lots-table tbody { display: block; }
+  /* Compact row, about 80 px: wallet and amount, then status and time left. The row opens the wallet sheet, which holds
+     the dates, the 10% and 90% parts, copy, explorer and tx links, so those stay off the row. */
+  .lots-table tbody tr {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 0 var(--s-12); padding: 2px 0 var(--s-12); border-bottom: 1px solid var(--line); align-items: center;
+    grid-template-areas: "wallet amount" "status left";
+  }
+  .lots-table td.c-instant, .lots-table td.c-locked, .lots-table td.c-requested, .lots-table td.c-unlocks, .lots-table td.c-tx, .lots-table .w-tools, .lots-table .st-cell .by { display: none; }
+  .lots-table td::before { display: none; }
+  .amt-u { display: inline; font-size: var(--fs-13); font-weight: var(--fw-medium); color: var(--ink-2); }
+  .left-d { display: none; }
+  .left-m { display: inline; }
+  .lots-table .dt { display: flex; flex-wrap: wrap; gap: 0 var(--s-8); }
+  .lots-table .dt .muted { font-size: var(--fs-14); }
+  .lots-table tbody tr:hover td, .lots-table tbody tr.row-open:active td { background: transparent; }
+  .lots-table tbody tr.row-open { transition: transform var(--dur-release) var(--ease-spring); }
+  .lots-table tbody tr.row-open:active { transform: scale(var(--press-scale-card)); transition-duration: var(--dur-press); transition-timing-function: var(--ease-out); }
+  .lots-table td { display: block; height: auto; padding: 0; border: 0; width: auto; min-width: 0; }
+  .lots-table td.c-wallet { grid-area: wallet; }
+  .lots-table td.c-amount { grid-area: amount; justify-self: end; text-align: right; white-space: nowrap; }
+  .lots-table td.c-left { grid-area: left; justify-self: end; text-align: right; font-size: var(--fs-14); }
+  .lots-table td.c-status { grid-area: status; justify-self: start; }
+  .lots-table td.c-amount .amt { font-size: var(--fs-16); font-weight: var(--fw-semi); }
+  .lots-table tr.empty { display: block; }
+  .lots-table tr.empty td::before { display: none; }
+  .pg-nums { display: none; }
+  .pg-of { margin-left: 0; flex: 1; text-align: center; }
+}
+
+/* ---------- top wallets and large swap watch ---------- */
+.adm-pair { display: grid; gap: var(--s-24); grid-template-columns: minmax(0, 1fr); }
+@media (min-width: 1040px) { .adm-pair { grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); } }
+.adm-pair .adm-tv-wrap { margin-top: var(--s-16); max-height: none; }
+.top-table th, .top-table td { padding: var(--s-4) var(--s-12); }
+.top-table th { height: 44px; }
+.top-table td { height: 52px; }
+.top-table .c-rank { width: 48px; padding-left: 0; }
+.share { display: inline-flex; align-items: center; gap: var(--s-8); }
+.share-bar { display: block; width: 88px; height: 10px; border-radius: var(--r-pill); background: var(--inset); box-shadow: inset 0 0 0 1px var(--line-strong); overflow: hidden; }
+.share-bar > span { display: block; height: 100%; border-radius: var(--r-pill); background: var(--brand); min-width: 2px; }
+.top-u { display: none; }
+@media (max-width: 599px) {
+  .top-table .share-bar, .top-table .c-lots { display: none; }
+  .top-table th, .top-table td { padding-left: var(--s-8); padding-right: var(--s-8); }
+}
+/* Phones: each wallet is one stacked row (rank, wallet, then amount over share), so no column is cut. The header stays for screen readers. */
+@media (max-width: 519px) {
+  .top-table, .top-table tbody { display: block; }
+  .top-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .top-table tr { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; grid-template-areas: "rank wallet amt" "rank wallet share"; align-items: center; gap: 0 var(--s-8); padding: var(--s-8) 0; border-bottom: 1px solid var(--line); }
+  .top-table tr:last-child { border-bottom: 0; }
+  .top-table td { display: block; height: auto; padding: 0; border: 0; }
+  .top-table .c-rank { grid-area: rank; width: auto; text-align: left; }
+  .top-table .c-wallet { grid-area: wallet; min-width: 0; }
+  .top-table .c-amt { grid-area: amt; font-weight: var(--fw-medium); }
+  .top-table .c-share { grid-area: share; justify-self: end; font-size: var(--fs-13); color: var(--ink-2); }
+  .top-u { display: inline; font-size: var(--fs-13); font-weight: var(--fw-medium); color: var(--ink-2); }
+}
+
+.big-th { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-8) var(--s-12); margin-top: var(--s-16); }
+.big-th-label { color: var(--ink); font-weight: var(--fw-bold); }
+.big-th-box { display: inline-flex; align-items: center; gap: var(--s-8); padding: 0 var(--s-12); background: var(--surface); border: var(--edge-ink); border-radius: var(--r-control); }
+.big-th-box:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint); }
+.big-th-box.is-error { border-color: var(--down); }
+.big-th-box input { width: 9.5em; min-height: 44px; border: 0; background: transparent; color: var(--ink); font: inherit; font-size: var(--fs-16); font-weight: var(--fw-medium); font-variant-numeric: tabular-nums; outline: none; text-align: right; }
+#big-msg.is-error { color: var(--down); }
+.adm-big-sum { margin-top: var(--s-12); color: var(--ink); }
+.big-list { list-style: none; margin: var(--s-8) 0 0; padding: 0; }
+.big-item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: var(--s-12); padding: var(--s-8) 0; border-top: 1px solid var(--line); min-height: 60px; }
+.big-ico { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; background: var(--ink); color: var(--snow); }
+.big-main { display: grid; min-width: 0; line-height: 1.35; }
+.big-amt { font-weight: var(--fw-heavy); }
+.big-side { display: flex; align-items: center; gap: var(--s-8); justify-content: flex-end; flex-wrap: wrap; }
+.big-more { padding: var(--s-12) 0 0; border-top: 1px solid var(--line); }
+/* Phones: two lines, amount and status, then time and wallet. */
+@media (max-width: 599px) {
+  .big-item { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "amt tag" "meta wallet"; gap: 0 var(--s-12); min-height: 0; padding: var(--s-8) 0 2px; }
+  .big-ico { display: none; }
+  .big-main, .big-side { display: contents; }
+  .big-amt { grid-area: amt; }
+  .big-meta { grid-area: meta; }
+  .big-side .tag { grid-area: tag; justify-self: end; }
+  .big-side .w-open { grid-area: wallet; justify-self: end; margin: 0 calc(var(--s-8) * -1) 0 0; }
+}
+
+/* ---------- wallet sheet ---------- */
+html:has(.sheet[open]) { overflow: hidden; }
+.sheet {
+  position: fixed; inset: 0 0 0 auto; margin: 0; padding: 0; width: min(560px, 100vw); height: 100dvh; max-width: 100vw; max-height: none;
+  border: 0; border-left: var(--edge-ink); background: var(--surface); color: var(--ink); box-shadow: none;
+}
+.sheet[open] { display: flex; flex-direction: column; animation: sheet-in var(--dur-slow) var(--ease-drawer); }
+.sheet::backdrop { background: color-mix(in srgb, var(--ink) 40%, transparent); }
+/* Slides in from the right edge and leaves the same way (exit runs where display and overlay can transition). */
+.sheet:not([open]) { opacity: 1; translate: 100% 0; scale: 1; }
+.sheet { transition: translate var(--dur-base) var(--ease-drawer), overlay var(--dur-base) allow-discrete, display var(--dur-base) allow-discrete; }
+@keyframes sheet-in { from { translate: 100% 0; } }
+.sheet-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); padding: var(--s-12) var(--s-12) var(--s-12) var(--s-24); border-bottom: var(--edge-ink); background: var(--brand); color: var(--on-brand); }
+.sheet-head h2 { font-family: var(--font-display); font-size: 22px; font-weight: 900; font-stretch: 112%; text-transform: uppercase; letter-spacing: -0.02em; }
+:is(:lang(ko), :lang(ja)) .sheet-head h2 { font-stretch: 100%; }
+.sheet-head .sheet-close { color: var(--on-brand); }
+.sheet-head .sheet-close:hover { background: rgba(255, 255, 255, 0.14); color: var(--on-brand); }
+.sheet-head :focus-visible { outline-color: var(--volt); }
+.sheet-close { width: 44px; padding: 0; }
+.sheet-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: var(--s-24); }
+.sheet-addr { display: flex; align-items: center; gap: var(--s-8); padding: var(--s-4) var(--s-4) var(--s-4) var(--s-16); background: var(--inset); border-radius: var(--r-pill); }
+.sheet-addr-v { flex: 1; min-width: 0; font-family: var(--font-data); font-size: var(--fs-13); overflow-wrap: anywhere; }
+.sheet-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-16) var(--s-24); margin: var(--s-24) 0; }
+.ss dt { font-size: var(--fs-13); color: var(--ink-2); }
+.ss dd { margin: 2px 0 0; font-size: var(--fs-16); font-weight: var(--fw-heavy); overflow-wrap: anywhere; }
+.ss:last-child { grid-column: 1 / -1; }
+.ss:last-child dd { font-weight: var(--fw-medium); }
+.sheet-h3 { font-size: var(--fs-16); padding-top: var(--s-16); border-top: var(--edge-ink); }
+.sheet-lots { list-style: none; margin: 0; padding: 0; }
+.sheet-lot { padding: var(--s-16) 0 var(--s-16); border-bottom: 1px solid var(--line); }
+.sheet-lot:last-child { border-bottom: 0; }
+.sheet-lot-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-8); margin-bottom: var(--s-12); }
+.sheet-lot-n { font-size: var(--fs-14); font-weight: var(--fw-heavy); }
+.sheet-lot-meta { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4) var(--s-12); margin-top: var(--s-8); }
+.sheet-txs { display: inline-flex; gap: var(--s-8); }
+.sheet-tx { display: inline-flex; align-items: center; color: var(--ink-2); }
+
+/* ---------- gas wallet: fee limits (configuration, CJ.config.sponsor) ---------- */
+.adm-limits { padding: var(--s-12) var(--s-16); border-bottom: 1px solid var(--line); display: grid; gap: var(--s-8); }
+.adm-limits-h { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-4) var(--s-8); }
+.adm-limits-t { font-size: var(--fs-14); font-weight: var(--fw-heavy); }
+.adm-limits-list { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-8) var(--s-16); min-height: 92px; }
+.adm-limits-list > div { min-width: 0; }
+.adm-limits-list dt { font-size: var(--fs-13); color: var(--ink-2); }
+.adm-limits-list dd { margin: 0; font-size: var(--fs-14); font-weight: var(--fw-bold); }
+/* A value may wrap inside its own column; it never runs into the next one. */
+@media (max-width: 599px) { .adm-limits-list { min-height: 117px; } }
+.adm-limits-list dd, .adm-limits-list dd * { white-space: normal; overflow-wrap: anywhere; }
+@media (min-width: 900px) {
+  .adm-limits { padding: var(--s-16) var(--s-24); }
+  .adm-limits-list { grid-template-columns: repeat(4, minmax(0, 1fr)); min-height: 42px; }
+}
+
+/* ---------- phones: top wallets and large swap watch open on request ---------- */
+.adm-coll-btn { display: none; }
+@media (max-width: 599px) {
+  .adm-coll-btn {
+    display: flex; align-items: center; justify-content: space-between; gap: var(--s-8); width: 100%; min-height: 44px; margin-top: var(--s-12); padding: 0 var(--s-12);
+    border: var(--edge-ink); border-radius: var(--r-pill); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--fs-14); font-weight: var(--fw-bold); cursor: pointer;
+  }
+  .adm-coll-btn svg { flex: none; color: var(--ink-2); transform: rotate(90deg); transition: transform var(--dur) var(--ease); }
+  .adm-coll-btn[aria-expanded="true"] svg { transform: rotate(-90deg); }
+  .adm-coll:not(.is-open) .adm-coll-body { display: none; }
+}
+@media (prefers-reduced-motion: reduce) { .adm-coll-btn svg { transition: none; } }
+
+/* ---------- reserved heights until admin.js has painted (CJ.ready) ---------- */
+html:not(.cj-ready) #kpi-grid { min-height: 294px; }
+html:not(.cj-ready) #gas-grid { min-height: 138px; }
+html:not(.cj-ready) .adm-charts { min-height: 515px; }
+@media (max-width: 1279px) { html:not(.cj-ready) #kpi-grid { min-height: 304px; } }
+@media (max-width: 1039px) { html:not(.cj-ready) .adm-charts { min-height: 909px; } }
+@media (max-width: 899px) { html:not(.cj-ready) #kpi-grid { min-height: 462px; } html:not(.cj-ready) #gas-grid { min-height: 212px; } html:not(.cj-ready) .adm-charts { min-height: 950px; } }
+@media (max-width: 767px) { html:not(.cj-ready) #kpi-grid { min-height: 499px; } html:not(.cj-ready) .adm-charts { min-height: 973px; } }
+@media (max-width: 599px) { html:not(.cj-ready) #kpi-grid { min-height: 254px; } html:not(.cj-ready) #gas-grid { min-height: 126px; } html:not(.cj-ready) .adm-charts { min-height: 1088px; } }
+@media (max-width: 374px) { html:not(.cj-ready) #kpi-grid { min-height: 271px; } }
+/* icon placeholders hold the size of the icon that replaces them */
+#adm-note-ico, #adm-refresh-ico, #lots-export-ico, #lots-search-ico { display: inline-block; flex: none; width: 18px; height: 18px; }
+#adm-note-ico { margin-top: 3px; }
+html:not(.cj-ready) #gas-note { min-height: 46px; }
+@media (max-width: 1023px) { html:not(.cj-ready) #gas-note { min-height: 69px; } }
+@media (max-width: 599px) {
+  html:not(.cj-ready) #gas-note { min-height: 91px; }
+  /* the "Show notes" toggle admin.js adds under each tile grid */
+  html:not(.cj-ready) #kpi-grid, html:not(.cj-ready) #gas-grid { margin-bottom: 44px; }
+}

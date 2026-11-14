@@ -1,0 +1,7 @@
+{
+  "name": "ui-ux-kit",
+  "version": "0.2.0",
+  "description": "UI and UX design craft skills for building and reviewing websites and app screens: Impeccable and Hallmark for design direction and polish, Vercel Web Interface Guidelines for review, redesign of existing projects, purposeful interface animation, motion design, and the ui-review-loop method with Playwright capture and audit scripts for mobile first QA.",
+  "author": { "name": "James Kim (packaged from open source skills, plus a review method from the Polyquest and Cojam builds)" },
+  "keywords": ["design", "ui", "ux", "review", "accessibility", "animation", "mobile", "qa"]
+}

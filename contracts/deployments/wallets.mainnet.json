@@ -1,0 +1,10 @@
+{
+  "chainId": 8217,
+  "note": "Addresses only. Keys never go in the repo. Master and pool keys stay in the founder's wallet apps; the fee payer key lives only in Render (FEE_PAYER_PRIVATE_KEY); the deployer key only in the Claude cloud environment (DEPLOYER_PRIVATE_KEY) for the deploy, removed afterwards.",
+  "recordedAt": "2026-11-14",
+  "master": "0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb",
+  "deployer": "0xB18149317Bf633F5Dc2a6044a11103D580cA4a33",
+  "feePayer": "0xB3CB36B4faE25a0661E2dDD5eca59e18B53152da",
+  "pool": "0x487939b5557B995C90f2e943104A31f900f3e0F2",
+  "checks": "2026-11-14: all four are EOAs (no code), all distinct, none is the old owner 0xeb1622d0377da1f9815bfc6eff61afe3257a0518. KAIA at check: master 7.998, deployer 2.0, feePayer 80.0, pool 10.0"
+}

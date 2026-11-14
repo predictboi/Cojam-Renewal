@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cojam: the OG prediction market is back</title>
+<meta name="description" content="Swap old CT for new CT on Kaia, 10 old CT for 4 new CT. 10% arrives at once, the other 90% is sent to your wallet automatically 7 days later.">
+<meta name="theme-color" content="#124CC4">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/pages/landing.css?v=20261114d">
+<link rel="stylesheet" href="assets/menu.css?v=20261114d">
+<!-- Scroll reveal is on only when scripts run and motion is welcome, so the page is never blank without them. -->
+<script>if (!matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.classList.add("rv-on");</script>
+</head>
+<body>
+<a class="skip" href="#main" data-i18n="nav.skip">Skip to content</a>
+
+<!-- Anti phishing note: one slim line above the header -->
+<div class="topbar" role="note">
+  <div class="wrap">
+    <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M12 3l7 3v5c0 4.5-3 8.3-7 10-4-1.7-7-5.5-7-10V6z"/><path d="M9 12l2 2 4-4"/></svg>
+    <span data-i18n="bar.text">Only on cojam.app. Cojam never asks for your seed phrase.</span>
+  </div>
+</div>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="./" data-i18n-attr="aria-label:nav.home" aria-label="Cojam home"><span class="chip"><img src="assets/cojam-mark.svg" alt="" width="26" height="26">Cojam</span><span class="tag">since 2019</span></a>
+    <nav class="pills" data-i18n-attr="aria-label:nav.main" aria-label="Main">
+      <a href="migrate/" data-i18n="nav.swap">Swap</a><a href="status/" data-i18n="nav.status">Status</a><a href="docs/" data-i18n="nav.docs">Docs</a>
+    </nav>
+    <div class="end">
+      <label class="lang">
+        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z"/></svg>
+        <span class="sr-only" data-i18n="nav.lang">Language</span>
+        <select id="lang-select"><option value="en">EN</option><option value="ko">한국어</option><option value="ja">日本語</option></select>
+      </label>
+      <a class="btn sm" href="migrate/" data-i18n="hd.connect">Connect</a>
+    </div>
+  </div>
+</header>
+<!-- Phones: the page links sit in a row under the header (not sticky), so only the header row stays on screen. -->
+<nav class="subnav" data-i18n-attr="aria-label:nav.main" aria-label="Main">
+  <div class="wrap"><a href="migrate/" data-i18n="nav.swap">Swap</a><a href="status/" data-i18n="nav.status">Status</a><a href="docs/" data-i18n="nav.docs">Docs</a></div>
+</nav>
+
+<main id="main">
+  <section class="hero" aria-labelledby="hero-h">
+    <div class="wrap">
+      <div class="hero-meta">
+        <span class="live" id="live"><i aria-hidden="true"></i><span id="live-text"></span></span>
+        <span class="price" id="hero-price" hidden></span>
+      </div>
+      <h1 class="h1 display" id="hero-h">
+        <span class="row"><span class="hash" aria-hidden="true">#</span><span data-i18n="hero.r1">The OG</span></span>
+        <span class="row" data-i18n="hero.r2">Prediction</span>
+        <span class="row out" data-i18n="hero.r3">Market</span>
+      </h1>
+      <div class="stage" aria-hidden="true">
+        <svg class="squiggle q1" viewBox="0 0 160 160"><path d="M20 30 C 90 0, 150 40, 110 80 S 40 110, 70 140 l 18 -26 M70 140 l -30 -8"/></svg>
+        <div class="sticker s1">
+          <div class="k" data-i18n="hero.st1">Example market</div>
+          <div class="v">YES 62%</div>
+          <div class="bar"><i></i></div>
+        </div>
+        <div class="sticker s2">
+          <div class="mk"><img src="assets/cojam-mark.svg" alt="" width="30" height="30"></div>
+          <div class="k" data-i18n="hero.st2">On swap</div>
+          <div class="v">+10%</div>
+        </div>
+        <div class="badge">
+          <svg class="ring" viewBox="0 0 132 132"><defs><path id="circ" d="M66,66 m-50,0 a50,50 0 1,1 100,0 a50,50 0 1,1 -100,0"/></defs><text textLength="312" lengthAdjust="spacing"><textPath href="#circ" data-i18n="hero.badge">RATE 0.4 ✦ OLD CT → NEW CT ✦ </textPath></text></svg>
+          <svg class="core" viewBox="0 0 60 60" fill="none" stroke="#0B1530" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 40 C 18 14, 30 12, 30 30 S 44 44, 46 18 M46 18 l -9 6 M46 18 l 3 10"/></svg>
+        </div>
+        <svg class="squiggle q2" viewBox="0 0 160 160"><path d="M20 30 C 90 0, 150 40, 110 80 S 40 110, 70 140 l 18 -26 M70 140 l -30 -8"/></svg>
+      </div>
+      <p class="lede" data-i18n-html="hero.lede">Cojam is back on Kaia. Swap old CT for new CT at a fixed rate, 10 old CT for 4 new CT: <b>10% lands at once</b>, the rest 7 days later.</p>
+      <div class="actions">
+        <a class="btn" href="migrate/"><span data-i18n="hero.cta">Swap CT</span><span class="arr" aria-hidden="true">→</span></a>
+        <a class="btn ghost" href="#how" data-i18n="hero.how">How it works</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="mq-clip" aria-hidden="true"><div class="marquee"><div class="mq">
+    <span data-i18n="tk.1">10 old CT = 4 new CT</span><span data-i18n="tk.2">10% now</span><span data-i18n="tk.3">90% in 7 days</span><span data-i18n="tk.4">No KAIA needed</span><span data-i18n="tk.5">0 extra mint</span><span data-i18n="tk.6">Locked 90%: untouchable</span>
+    <span data-i18n="tk.1">10 old CT = 4 new CT</span><span data-i18n="tk.2">10% now</span><span data-i18n="tk.3">90% in 7 days</span><span data-i18n="tk.4">No KAIA needed</span><span data-i18n="tk.5">0 extra mint</span><span data-i18n="tk.6">Locked 90%: untouchable</span>
+  </div></div></div>
+
+  <section class="light" id="how" aria-labelledby="how-h">
+    <div class="wrap">
+      <span class="eyebrow rv" data-i18n="how.eyebrow">How it works</span>
+      <h2 class="h2 display rv" id="how-h" data-i18n-html="how.title">Sign twice.<br><em>That's it.</em></h2>
+      <p class="sub rv" data-i18n="how.sub">Approve and swap in your own wallet. Everything after that happens on its own.</p>
+      <ol class="steps">
+        <li class="step rv"><span class="n" aria-hidden="true">01</span><h3 data-i18n="how.s1.t">Swap old CT</h3><p data-i18n="how.s1.b">Any amount, at a fixed rate: 10 old CT gives 4 new CT.</p></li>
+        <li class="step hot rv"><span class="n" aria-hidden="true">02</span><h3 data-i18n="how.s2.t">10% lands now</h3><p data-i18n="how.s2.b">In the same transaction, straight to your wallet.</p></li>
+        <li class="step blue rv"><span class="n" aria-hidden="true">03</span><h3 data-i18n="how.s3.t">90% in 7 days</h3><p data-i18n="how.s3.b">Locked for 7 days, then sent to you automatically.</p></li>
+      </ol>
+      <div class="track rv" id="track">
+        <div class="top"><span id="tk-ex"></span><b aria-hidden="true"><span id="tk-now"></span> → <span id="tk-all"></span> CT</b></div>
+        <div class="blocks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <p class="sr-only" id="tk-live" aria-live="polite"></p>
+        <div class="legend"><span data-i18n="how.track.now">10% now</span><span data-i18n="how.track.later">90% after 7 days</span></div>
+        <button class="btn sm" type="button" id="play" aria-pressed="false" aria-controls="track"><span data-i18n="how.track.ff">Fast forward 7 days</span><span class="arr" aria-hidden="true">»</span></button>
+      </div>
+      <p class="rate-note rv" data-i18n="how.rate">The rate is set against the original 5,000,000,000 supply before burns: 2,000,000,000 new CT for 5,000,000,000 old CT.</p>
+      <div class="fee rv">
+        <span class="fee-pill"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg><span data-i18n="how.fee">No KAIA needed with Kaia Wallet</span></span>
+        <span class="fee-note" data-i18n="how.fee.mm">Cojam pays the network fee. With MetaMask you pay a small KAIA fee yourself.</span>
+      </div>
+
+      <div class="nums" id="numbers">
+        <div class="stat rv"><b data-i18n="num.supply.v">2B</b><span data-i18n="num.supply.k">New CT supply, fixed</span></div>
+        <div class="stat rv"><b>0.4</b><span data-i18n="num.ratio.k">10 old CT become 4 new CT, with no fee</span></div>
+        <div class="stat rv"><b data-i18n="num.days.v">365</b><span data-i18n="num.days.k">Days to swap</span></div>
+        <div class="stat rv"><b>0</b><span data-i18n="num.token.k">Owner, pause or blacklist on the new CT token</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="ink" id="timeline" aria-labelledby="tl-h">
+    <div class="wrap">
+      <span class="eyebrow volt rv" data-i18n="tl.eyebrow">Timeline</span>
+      <h2 class="h2 display rv" id="tl-h" data-i18n-html="tl.title">One year<br><em>to swap</em></h2>
+      <p class="sub rv" data-i18n="tl.lede">Swaps are open for 1 year from launch. Locked remainders still release after that.</p>
+      <div class="progress rv" id="tl-progress" hidden>
+        <div class="progress-bar" aria-hidden="true"><i id="tl-fill"></i></div>
+        <span id="tl-day"></span>
+      </div>
+      <ol class="tl" id="tl-list">
+        <li class="tl-item rv"><span class="tl-state"></span><span class="tl-when" id="tl-open"></span><h3 data-i18n="tl.open.t">Window opens</h3><p data-i18n="tl.open.b">On launch, the day the swap contract is deployed. Open to every holder alike.</p></li>
+        <li class="tl-item rv"><span class="tl-state"></span><span class="tl-when" data-i18n="tl.each.when">On every swap</span><h3 data-i18n="tl.each.t">10% now, 90% 7 days later</h3><p data-i18n="tl.each.b">10% arrives in the swap itself. The 90% is sent to your wallet automatically 7 days later.</p></li>
+        <li class="tl-item rv"><span class="tl-state"></span><span class="tl-when" id="tl-close"></span><h3 data-i18n="tl.close.t">Window closes</h3><p data-i18n="tl.close.b">1 year after launch. No new swaps after this.</p></li>
+        <li class="tl-item rv"><span class="tl-state"></span><span class="tl-when" data-i18n="tl.after.when">After the window</span><h3 data-i18n="tl.after.t">Remainders still release</h3><p data-i18n="tl.after.b">The locked 90% of earlier swaps is still sent to its owners.</p></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="light contracts" id="contracts" aria-labelledby="ct-h">
+    <div class="wrap">
+      <span class="eyebrow rv" data-i18n="ct.eyebrow">Contracts</span>
+      <h2 class="h2 display rv" id="ct-h" data-i18n-html="ct.title">On Kaia,<br><em>in full</em></h2>
+      <p class="sub rv" data-i18n="ct.lede">Always check the full address. The ticker CT is also used by other tokens elsewhere.</p>
+      <div class="ct-grid">
+        <div class="addrs rv">
+          <div class="addr" data-addr="old"></div>
+          <div class="addr" data-addr="new"></div>
+          <div class="addr" data-addr="swap"></div>
+        </div>
+        <dl class="facts rv">
+          <div class="fact"><dt data-i18n="ct.supply.k">New CT supply</dt><dd id="ct-supply"></dd></div>
+          <div class="fact"><dt data-i18n="ct.rate.k">Swap rate</dt><dd data-i18n="ct.rate.v">10 old CT = 4 new CT (rate 0.4). The rate is set against the original 5,000,000,000 supply before burns: 2,000,000,000 new CT for 5,000,000,000 old CT.</dd></div>
+          <div class="fact"><dt data-i18n="ct.oldsupply.k">Old CT supply</dt><dd id="ct-oldsupply"></dd></div>
+          <div class="fact"><dt data-i18n="ct.token.k">New CT token</dt><dd data-i18n="ct.token.v">No owner, no mint, no pause, no blacklist.</dd></div>
+          <div class="fact"><dt data-i18n="ct.rules.k">Swap rules</dt><dd data-i18n="ct.rules.v">The 0.4 rate, the 10% at once, the 7 day lock and the 1 year window are fixed in code.</dd></div>
+          <div class="fact"><dt data-i18n="ct.reserve.k">Swap reserve</dt><dd><span data-i18n="ct.reserve.v">The swap reserve is held in the swap contract, so anyone can verify it on chain (Kaiascan).</span> <a class="inline" href="status/" data-i18n="ct.reserve.link">See it on the status page</a></dd></div>
+          <div class="fact"><dt data-i18n="ct.old.k">Old CT you swap in</dt><dd data-i18n="ct.old.v">Stays in the swap contract for good.</dd></div>
+          <div class="fact"><dt data-i18n="ct.audit.k">Audit</dt><dd><span class="audit" data-i18n="ct.audit.v">Audit in progress</span></dd></div>
+        </dl>
+      </div>
+    </div>
+  </section>
+
+  <section class="future" id="future" aria-labelledby="fu-h">
+    <img class="big-mark" src="assets/cojam-mark.svg" alt="" aria-hidden="true">
+    <div class="wrap">
+      <span class="eyebrow volt rv" data-i18n="fu.eyebrow">What's next</span>
+      <h2 class="h2 display rv" id="fu-h" data-i18n-html="fu.title">Built for<br><em>new CT</em></h2>
+      <p class="sub rv" data-i18n="fu.sub">Ideas for the platform new CT is made for.</p>
+      <span class="concept rv" data-i18n="fu.concept">Concept preview, not live</span>
+      <ul class="cards" id="cards">
+        <li class="card"><div class="card-top"><span class="ic" aria-hidden="true">01</span><span class="ctag" data-i18n="fu.tag">Concept</span></div><h3 data-i18n="fu.c1.t">Predict with CT</h3><p data-i18n="fu.c1.b">Stake CT on the outcome you expect.</p>
+          <div class="mini"><div class="row"><span data-i18n="fu.c1.q">Kaia daily tx record in March?</span></div><div class="yn"><span class="y">Yes 62%</span><span class="n">No 38%</span></div></div></li>
+        <li class="card"><div class="card-top"><span class="ic" aria-hidden="true">02</span><span class="ctag" data-i18n="fu.tag">Concept</span></div><h3 data-i18n="fu.c2.t">Outcome derivatives</h3><p data-i18n="fu.c2.b">Trade an outcome's price before the result.</p>
+          <div class="mini"><div class="row"><span data-i18n="fu.c2.price">Yes price</span><b>0.62 CT</b></div><div class="row"><span data-i18n="fu.c2.since">Since entry</span><b class="up">+12.4%</b></div></div></li>
+        <li class="card"><div class="card-top"><span class="ic" aria-hidden="true">03</span><span class="ctag" data-i18n="fu.tag">Concept</span></div><h3 data-i18n="fu.c3.t">Loans on positions</h3><p data-i18n="fu.c3.b">Borrow CT without closing your prediction.</p>
+          <div class="mini"><div class="row"><span data-i18n="fu.c3.ltv">Loan to value</span><b>40%</b></div><div class="meter"><i style="width:40%"></i></div></div></li>
+        <li class="card"><div class="card-top"><span class="ic" aria-hidden="true">04</span><span class="ctag" data-i18n="fu.tag">Concept</span></div><h3 data-i18n="fu.c4.t">Margin on predictions</h3><p data-i18n="fu.c4.b">More size for less CT, liquidation price first.</p>
+          <div class="mini"><div class="row"><span data-i18n="fu.c4.lev">Leverage</span><b>3×</b></div><div class="row"><span data-i18n="fu.c4.liq">Liquidation</span><b>0.41</b></div></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="light faq" id="faq" aria-labelledby="faq-h">
+    <div class="wrap faq-grid">
+      <div class="faq-head">
+        <span class="eyebrow rv" data-i18n="faq.eyebrow">FAQ</span>
+        <h2 class="h2 display rv" id="faq-h" data-i18n-html="faq.title">Got<br><em>questions?</em></h2>
+        <p class="sub rv" data-i18n="faq.lede">Short answers here. The docs cover every case step by step.</p>
+        <a class="btn ghost-ink rv" href="docs/"><span data-i18n="faq.docs">Read the swap docs</span><span class="arr" aria-hidden="true">→</span></a>
+        <aside class="safety rv" aria-labelledby="safe-h">
+          <span class="eyebrow volt" data-i18n="safe.eyebrow">Stay safe</span>
+          <h3 id="safe-h" data-i18n="safe.title">Three rules</h3>
+          <ol>
+            <li data-i18n="safe.1">Never share your seed phrase. No one from Cojam will ask for it or message you first.</li>
+            <li data-i18n="safe.2">The ticker CT is reused by other tokens. Always check the full contract address, not just the name.</li>
+            <li data-i18n="safe.3">Swap only on cojam.app. A swap never asks you to send CT to anyone.</li>
+          </ol>
+        </aside>
+      </div>
+      <div class="faq-list">
+        <details class="qa rv"><summary><span data-i18n="faq.q1">My CT is on an exchange. What do I do?</span><i aria-hidden="true"></i></summary><p data-i18n="faq.a1"></p></details>
+        <details class="qa rv"><summary><span data-i18n="faq.q2">My CT is in a Klayswap pool.</span><i aria-hidden="true"></i></summary><p data-i18n="faq.a2"></p></details>
+        <details class="qa rv"><summary><span data-i18n="faq.q3">Why is 90% locked for 7 days?</span><i aria-hidden="true"></i></summary><p data-i18n="faq.a3"></p></details>
+        <details class="qa rv"><summary><span data-i18n="faq.q4">Do I need to come back for the 90%?</span><i aria-hidden="true"></i></summary><p data-i18n="faq.a4"></p></details>
+        <details class="qa rv"><summary><span data-i18n="faq.q5">What if I miss the window?</span><i aria-hidden="true"></i></summary><p data-i18n="faq.a5"></p></details>
+        <details class="qa rv"><summary><span data-i18n="faq.q6">Is there a reward for swapping?</span><i aria-hidden="true"></i></summary><p data-i18n="faq.a6"></p></details>
+        <details class="qa rv"><summary><span data-i18n="faq.q7">Which wallets work?</span><i aria-hidden="true"></i></summary><p data-i18n="faq.a7"></p></details>
+        <details class="qa rv"><summary><span data-i18n="faq.q8">What does it cost?</span><i aria-hidden="true"></i></summary><p data-i18n="faq.a8"></p></details>
+        <details class="qa rv"><summary><span data-i18n="faq.q9">Is it safe?</span><i aria-hidden="true"></i></summary><p data-i18n="faq.a9"></p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="close" aria-labelledby="cta-h">
+    <svg class="squiggle" viewBox="0 0 160 160" aria-hidden="true"><path d="M20 30 C 90 0, 150 40, 110 80 S 40 110, 70 140 l 18 -26 M70 140 l -30 -8"/></svg>
+    <div class="wrap">
+      <h2 class="h2 display rv" id="cta-h" data-i18n-html="cta.title">Ready<br>to swap?</h2>
+      <p class="sub rv" data-i18n="cta.sub">10% at once, the rest 7 days later, automatically.</p>
+      <a class="btn rv" href="migrate/"><span data-i18n="cta.btn">Swap CT</span><span class="arr" aria-hidden="true">→</span></a>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <div class="wrap foot-grid">
+    <div class="foot-brand">
+      <a class="logo" href="./" data-i18n-attr="aria-label:nav.home" aria-label="Cojam home"><span class="chip"><img src="assets/cojam-mark.svg" alt="" width="26" height="26">Cojam</span></a>
+      <p data-i18n="foot.tagline">The OG prediction market, since 2019.</p>
+    </div>
+    <nav class="foot-links" data-i18n-attr="aria-label:foot.site" aria-label="Site">
+      <a href="migrate/" data-i18n="nav.swap">Swap</a><a href="status/" data-i18n="nav.status">Status</a><a href="docs/" data-i18n="nav.docs">Docs</a><a href="#contracts" data-i18n="ft.contracts">Contracts on Kaia</a>
+    </nav>
+    <div class="foot-addr"><div class="addr" data-addr="old"></div></div>
+  </div>
+  <div class="wrap foot-legal">
+    <p data-i18n="foot.safety">Cojam staff will never message you first, ask for your seed phrase or ask you to send tokens.</p>
+    <p class="dim" data-i18n="foot.legal">Nothing on this site is financial advice. Concept previews show ideas that are not live and may change.</p>
+    <p class="dim">© 2019–2026 Cojam</p>
+  </div>
+</footer>
+
+<script src="assets/system.js?v=20261114d"></script>
+<script src="assets/network.js?v=20261114d"></script>
+<script src="assets/i18n/shell.js?v=20261114d"></script>
+<script src="assets/i18n/landing.js?v=20261114d"></script>
+<script src="assets/price.js?v=20261114d"></script>
+<script src="assets/menu.js?v=20261114d"></script>
+<script src="assets/pages/landing.js?v=20261114d"></script>
+</body>
+</html>

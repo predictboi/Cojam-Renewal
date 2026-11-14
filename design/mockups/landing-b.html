@@ -1,0 +1,393 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cojam Direction B</title>
+<meta name="robots" content="noindex">
+<!-- Direction B "Signal": one loud colour (Cojam blue as the ground), two quiet ones (snow white, ink), plus one new key colour (volt lime) for stickers, arrows and the main action. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+:root {
+  --blue: #124CC4;      /* loud: the ground */
+  --blue-deep: #0D3A9C;
+  --snow: #FDFDFF;      /* quiet */
+  --ink: #0B1530;       /* quiet */
+  --volt: #D6FF3D;      /* new key colour: ink text on it 15.7:1, on blue 6.4:1 */
+  --sky: #97DBFF;
+  --line-on-blue: rgba(255, 255, 255, 0.14);
+  --glass: rgba(255, 255, 255, 0.16);
+  --display: "Archivo", "Pretendard Variable", system-ui, sans-serif;
+  --body: "Pretendard Variable", Pretendard, -apple-system, system-ui, "Apple SD Gothic Neo", sans-serif;
+  --ease: cubic-bezier(0.23, 1, 0.32, 1);
+  --spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --g: 16px;
+  color-scheme: light;
+}
+@media (min-width: 768px) { :root { --g: 32px; } }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--blue); color: var(--snow); font-family: var(--body); font-size: 16px; line-height: 1.5; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+a { color: inherit; }
+button { font: inherit; }
+.wrap { max-width: 1200px; margin: 0 auto; padding-inline: max(var(--g), env(safe-area-inset-left)) max(var(--g), env(safe-area-inset-right)); }
+.display { font-family: var(--display); font-weight: 900; font-stretch: 125%; text-transform: uppercase; letter-spacing: -0.035em; line-height: 0.86; }
+:lang(ko) body { word-break: keep-all; }
+:lang(ko) .display { font-stretch: 100%; letter-spacing: -0.05em; line-height: 1.0; }
+:lang(ko) .marquee span { letter-spacing: -0.02em; }
+
+/* ---------- nav ---------- */
+.nav { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--blue) 88%, transparent); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.nav .wrap { display: flex; align-items: center; gap: 12px; min-height: 64px; }
+.logo { display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+.logo .chip { display: inline-flex; align-items: center; gap: 6px; background: var(--snow); color: var(--ink); border-radius: 999px; padding: 4px 12px 4px 4px; font-weight: 800; font-size: 15px; }
+.logo .chip svg { width: 26px; height: 26px; }
+.logo .tag { background: var(--volt); color: var(--ink); border-radius: 999px; padding: 3px 10px; font-family: var(--display); font-weight: 900; font-stretch: 112%; font-size: 12px; text-transform: uppercase; transform: rotate(-6deg); }
+.pills { display: none; gap: 6px; margin-left: 16px; }
+.pills a { border: 1.5px solid rgba(255,255,255,0.5); border-radius: 999px; padding: 6px 14px; font-size: 13px; text-decoration: none; transition: background .16s, color .16s; }
+.pills a:hover { background: var(--snow); color: var(--blue); }
+@media (min-width: 900px) { .pills { display: flex; } }
+@media (max-width: 420px) { .logo .tag { display: none; } }
+.nav .end { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.lang { white-space: nowrap; border: 1.5px solid rgba(255,255,255,0.5); background: transparent; color: var(--snow); border-radius: 999px; min-height: 40px; min-width: 52px; padding: 0 12px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn { --bg: var(--volt); --fg: var(--ink); position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 48px; padding: 0 22px; border-radius: 999px; border: 0; background: var(--bg); color: var(--fg); font-weight: 800; font-size: 16px; text-decoration: none; cursor: pointer; transition: transform .18s var(--spring), box-shadow .18s var(--ease); box-shadow: 0 4px 0 var(--ink); }
+.btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 var(--ink); }
+.btn:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--ink); transition-duration: .08s; }
+.btn.ghost { --bg: transparent; --fg: var(--snow); border: 1.5px solid var(--snow); box-shadow: none; }
+.btn.ghost:hover { background: var(--snow); color: var(--blue); }
+.btn.sm { min-height: 40px; padding: 0 16px; font-size: 14px; }
+.btn .arr { display: inline-block; transition: transform .2s var(--spring); }
+.btn:hover .arr { transform: translateX(4px); }
+:focus-visible { outline: 3px solid var(--volt); outline-offset: 3px; }
+
+/* ---------- hero ---------- */
+.hero { position: relative; overflow: hidden; padding-block: 28px 56px; background-image: linear-gradient(var(--line-on-blue) 1px, transparent 1px), linear-gradient(90deg, var(--line-on-blue) 1px, transparent 1px); background-size: 44px 44px; background-position: -1px -1px; }
+.hero::after { content: ""; position: absolute; inset: auto -20% -40% -20%; height: 70%; background: radial-gradient(closest-side, rgba(151,219,255,0.35), transparent); pointer-events: none; }
+.hero .wrap { position: relative; z-index: 1; }
+.live { display: inline-flex; align-items: center; gap: 8px; background: rgba(11,21,48,0.28); border-radius: 999px; padding: 6px 14px 6px 10px; font-size: 13px; font-weight: 600; }
+.live i { width: 8px; height: 8px; border-radius: 50%; background: var(--volt); box-shadow: 0 0 0 0 rgba(214,255,61,0.7); animation: ping 2s infinite; }
+@keyframes ping { 70% { box-shadow: 0 0 0 10px rgba(214,255,61,0); } 100% { box-shadow: 0 0 0 0 rgba(214,255,61,0); } }
+.h1 { position: relative; margin: 22px 0 0; font-size: clamp(36px, 11.2vw, 140px); }
+.h1 .row { display: block; }
+.h1 .hash { color: var(--volt); font-style: italic; transform: rotate(-4deg); display: inline-block; margin-right: 0.04em; }
+.h1 .out { color: transparent; -webkit-text-stroke: 2px var(--snow); }
+:lang(ko) .h1 { font-size: clamp(56px, 17vw, 160px); margin-bottom: 0.14em; }
+/* Hangul outlines show overlapping contours, so in Korean the last line becomes a volt label instead of an outline */
+:lang(ko) .h1 .out { color: var(--ink); -webkit-text-stroke: 0; background: var(--volt); display: inline-block; padding: 0.02em 0.14em 0.06em; border-radius: 0.12em; transform: rotate(-3deg); margin-top: 0.08em; box-shadow: 0.06em 0.06em 0 var(--ink); }
+.lede { max-width: 30em; margin: 22px 0 0; font-size: 17px; color: rgba(253,253,255,0.9); }
+.lede b { color: var(--volt); font-weight: 700; white-space: nowrap; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+
+/* stickers floating over the headline */
+.stage { position: relative; height: 0; }
+.sticker { position: absolute; z-index: 2; border-radius: 22px; padding: 14px; width: 150px; background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.35); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); color: var(--snow); box-shadow: 0 18px 40px -12px rgba(5, 15, 50, 0.45); transition: transform .35s var(--spring); }
+.sticker:hover { transform: rotate(0deg) scale(1.05) !important; }
+.sticker .k { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; opacity: .85; }
+.sticker .v { font-family: var(--display); font-weight: 900; font-stretch: 110%; font-size: 30px; line-height: 1; margin-top: 4px; }
+.sticker .bar { height: 8px; border-radius: 99px; background: rgba(255,255,255,0.25); margin-top: 10px; overflow: hidden; }
+.sticker .bar i { display: block; height: 100%; width: 62%; background: var(--volt); border-radius: inherit; }
+.sticker .mk { width: 42px; height: 42px; border-radius: 50%; background: var(--snow); display: grid; place-items: center; margin-bottom: 8px; }
+.sticker .mk svg { width: 30px; height: 30px; }
+.s1 { right: 4%; top: -300px; transform: rotate(8deg); animation: bob 6s ease-in-out infinite; }
+.s2 { right: 22%; top: -110px; transform: rotate(-7deg); animation: bob 7s ease-in-out infinite -2s; }
+@keyframes bob { 50% { translate: 0 -8px; } }
+.badge { position: absolute; z-index: 2; right: 3%; top: 10px; width: 132px; height: 132px; border-radius: 50%; background: var(--volt); color: var(--ink); display: grid; place-items: center; box-shadow: 0 14px 30px -10px rgba(0,0,0,.4); }
+.badge svg.ring { position: absolute; inset: 0; width: 100%; height: 100%; animation: spin 16s linear infinite; }
+.badge svg.ring text { font-family: var(--display); font-weight: 900; font-stretch: 110%; font-size: 13.5px; letter-spacing: 1.6px; fill: var(--ink); }
+.badge .core { width: 54px; height: 54px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.squiggle { position: absolute; z-index: 1; pointer-events: none; fill: none; stroke: var(--volt); stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+.squiggle path { stroke-dasharray: 600; stroke-dashoffset: 600; animation: draw 1.2s .4s var(--ease) forwards; }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+.q1 { width: 130px; right: 17%; top: -380px; transform: rotate(10deg); }
+.q2 { width: 120px; left: 46%; top: -110px; transform: rotate(160deg); }
+/* phones: stickers move below the headline into a row, no overlap with text */
+@media (max-width: 899px) {
+  .stage { height: auto; display: flex; gap: 12px; align-items: center; margin-top: 26px; flex-wrap: nowrap; }
+  .sticker, .badge { position: relative; inset: auto; top: auto; right: auto; left: auto; }
+  .sticker { width: 118px; flex: none; padding: 12px; border-radius: 18px; }
+  .sticker .v { font-size: 22px; }
+  .s1 { transform: rotate(-5deg); } .s2 { transform: rotate(5deg); }
+  .badge { width: 92px; height: 92px; flex: none; margin-left: -4px; }
+  .badge svg.ring text { font-size: 13.5px; }
+  .badge .core { width: 40px; height: 40px; }
+  .q1 { display: none; }
+  .q2 { width: 70px; left: auto; right: 0; top: -54px; transform: rotate(200deg); }
+  /* the row fills the width evenly so nothing hangs to one side */
+  .stage { justify-content: space-between; gap: 10px; margin-top: 22px; }
+  .sticker { flex: 1 1 0; width: auto; max-width: 150px; min-width: 0; }
+  /* Korean: a bigger headline that spans the column, the label line swings to the right and the arrow points at it */
+  :lang(ko) .h1 { font-size: clamp(56px, 22vw, 160px); line-height: 1.04; }
+  :lang(ko) .h1 .row.out { display: block; width: fit-content; margin-left: auto; margin-right: 6px; }
+  :lang(ko) .q2 { width: 64px; left: 14px; right: auto; top: -132px; transform: rotate(-58deg) scaleX(-1); }
+}
+
+/* ---------- marquee ---------- */
+.mq-clip { overflow: hidden; padding-block: 14px; margin-block: -14px; position: relative; z-index: 3; }
+.marquee { background: var(--volt); color: var(--ink); border-block: 2px solid var(--ink); overflow: hidden; transform: rotate(-1.6deg) scaleX(1.02); position: relative; }
+.marquee .mq { display: flex; width: max-content; animation: slide 28s linear infinite; }
+.marquee span { font-family: var(--display); font-weight: 900; font-stretch: 118%; text-transform: uppercase; font-size: 20px; padding: 12px 18px; white-space: nowrap; }
+.marquee span::after { content: "✦"; margin-left: 36px; }
+@keyframes slide { to { transform: translateX(-50%); } }
+
+/* ---------- light section ---------- */
+.light { background: var(--snow); color: var(--ink); padding-block: 72px 64px; margin-top: -14px; }
+.eyebrow { display: inline-block; background: var(--ink); color: var(--volt); border-radius: 999px; padding: 4px 12px; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.h2 { font-size: clamp(36px, 8.4vw, 96px); margin: 14px 0 0; }
+.h2 em { font-style: normal; color: var(--blue); }
+.sub { max-width: 34em; color: #4A5672; margin: 14px 0 0; font-size: 17px; }
+.steps { display: grid; gap: 14px; margin-top: 32px; }
+@media (min-width: 900px) { .steps { grid-template-columns: repeat(3, 1fr); gap: 18px; } }
+.step { position: relative; border: 2px solid var(--ink); border-radius: 26px; padding: 20px; background: var(--snow); transition: transform .3s var(--spring), box-shadow .3s var(--ease); box-shadow: 0 0 0 var(--ink); }
+.step:hover { transform: translate(-4px, -4px); box-shadow: 6px 6px 0 var(--ink); }
+.step:active { transform: translate(0,0); box-shadow: 0 0 0 var(--ink); }
+.step .n { font-family: var(--display); font-weight: 900; font-stretch: 125%; font-size: 64px; line-height: .8; color: var(--blue); }
+.step h3 { margin: 14px 0 6px; font-size: 22px; font-weight: 800; letter-spacing: -0.01em; }
+.step p { margin: 0; color: #4A5672; }
+.step.hot { background: var(--volt); }
+.step.hot .n { color: var(--ink); }
+.step.hot p { color: var(--ink); }
+.step.blue { background: var(--blue); color: var(--snow); border-color: var(--blue); }
+.step.blue .n { color: var(--volt); }
+.step.blue p { color: rgba(253,253,255,.88); }
+@media (max-width: 899px) { .step { display: grid; grid-template-columns: 76px 1fr; column-gap: 12px; padding: 16px; border-radius: 20px; } .step .n { font-size: 40px; grid-row: span 2; align-self: start; padding-top: 2px; } .step h3 { margin: 0 0 2px; font-size: 19px; } }
+/* the swap track: ten blocks, 1 lit now, 9 after a 7 day lock */
+.track { margin-top: 28px; border-radius: 26px; background: var(--ink); color: var(--snow); padding: 20px; display: grid; gap: 14px; }
+.track .top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; font-size: 14px; color: #A9B4D0; }
+.track .top b { font-family: var(--display); font-weight: 900; font-stretch: 115%; font-size: 26px; color: var(--snow); }
+.blocks { display: grid; grid-template-columns: repeat(10, 1fr); gap: 6px; }
+.blocks i { height: 44px; border-radius: 10px; background: #1B2A55; position: relative; overflow: hidden; }
+.blocks i:first-child { background: var(--volt); }
+.blocks i:not(:first-child)::after { content: ""; position: absolute; inset: 0; background: var(--sky); transform: scaleX(0); transform-origin: left; transition: transform .5s var(--ease); }
+.track.go .blocks i:not(:first-child)::after { transform: scaleX(1); }
+.track.go .blocks i:nth-child(2)::after { transition-delay: .05s } .track.go .blocks i:nth-child(3)::after { transition-delay: .1s }
+.track.go .blocks i:nth-child(4)::after { transition-delay: .15s } .track.go .blocks i:nth-child(5)::after { transition-delay: .2s }
+.track.go .blocks i:nth-child(6)::after { transition-delay: .25s } .track.go .blocks i:nth-child(7)::after { transition-delay: .3s }
+.track.go .blocks i:nth-child(8)::after { transition-delay: .35s } .track.go .blocks i:nth-child(9)::after { transition-delay: .4s }
+.track.go .blocks i:nth-child(10)::after { transition-delay: .45s }
+.track .legend { display: flex; flex-wrap: wrap; gap: 10px 18px; font-size: 13px; color: #A9B4D0; }
+.track .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; background: var(--volt); }
+.track .legend span + span::before { background: var(--sky); }
+.track button { justify-self: start; }
+.fee { margin-top: 14px; display: inline-flex; gap: 8px; align-items: center; font-weight: 600; background: var(--sky); color: var(--ink); border-radius: 999px; padding: 8px 16px; font-size: 14px; }
+
+/* ---------- numbers ---------- */
+.nums { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 40px; }
+@media (min-width: 900px) { .nums { grid-template-columns: repeat(4, 1fr); } }
+.num { border-radius: 22px; background: #EEF2F9; padding: 18px; }
+.num b { display: block; font-family: var(--display); font-weight: 900; font-stretch: 120%; font-size: clamp(30px, 7vw, 52px); line-height: .95; color: var(--blue); letter-spacing: -0.03em; }
+.num span { display: block; margin-top: 8px; font-size: 14px; color: #4A5672; }
+
+/* ---------- future (on blue) ---------- */
+.future { padding-block: 72px; position: relative; overflow: hidden; }
+.future .h2 { color: var(--snow); }
+.future .h2 em { color: var(--volt); }
+.future .sub { color: rgba(253,253,255,.85); }
+.concept { display: inline-flex; align-items: center; gap: 6px; margin-top: 16px; border: 1.5px dashed var(--volt); color: var(--volt); border-radius: 999px; padding: 6px 14px; font-size: 13px; font-weight: 700; }
+.cards { display: grid; grid-auto-flow: column; grid-auto-columns: 78%; gap: 14px; overflow-x: auto; scroll-snap-type: x mandatory; margin-top: 28px; padding-bottom: 12px; scrollbar-width: none; }
+.cards::-webkit-scrollbar { display: none; }
+@media (min-width: 900px) { .cards { grid-auto-flow: row; grid-template-columns: repeat(4, 1fr); overflow: visible; } }
+.card { scroll-snap-align: start; border-radius: 26px; padding: 18px; background: var(--glass); border: 1px solid rgba(255,255,255,0.28); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); transition: transform .35s var(--spring), background .2s; min-height: 280px; display: flex; flex-direction: column; gap: 12px; }
+.card:nth-child(odd) { transform: rotate(-1.5deg); } .card:nth-child(even) { transform: rotate(1.5deg); }
+.card:hover { transform: rotate(0) translateY(-6px); background: rgba(255,255,255,0.22); }
+.card .ic { width: 46px; height: 46px; border-radius: 14px; background: var(--volt); color: var(--ink); display: grid; place-items: center; font-family: var(--display); font-weight: 900; font-size: 20px; }
+.card h3 { margin: 0; font-family: var(--display); font-weight: 900; font-stretch: 112%; text-transform: uppercase; font-size: 24px; line-height: .95; letter-spacing: -0.02em; }
+:lang(ko) .card h3 { font-stretch: 100%; }
+.card p { margin: 0; color: rgba(253,253,255,.85); font-size: 15px; }
+.card .mini { margin-top: auto; border-radius: 16px; background: rgba(11,21,48,.35); padding: 12px; font-size: 13px; display: grid; gap: 8px; }
+.card .mini .row { display: flex; justify-content: space-between; gap: 8px; }
+.card .mini .yn { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.card .mini .yn span { border-radius: 10px; padding: 8px; text-align: center; font-weight: 800; }
+.card .mini .yn .y { background: var(--volt); color: var(--ink); } .card .mini .yn .n { background: rgba(255,255,255,.14); }
+.card .mini .meter { height: 8px; border-radius: 99px; background: rgba(255,255,255,.2); overflow: hidden; } .card .mini .meter i { display: block; height: 100%; background: var(--sky); }
+.big-mark { position: absolute; right: -120px; bottom: -160px; width: 520px; opacity: .1; pointer-events: none; animation: spin 60s linear infinite; }
+
+/* ---------- closing band ---------- */
+.close { background: var(--volt); color: var(--ink); padding-block: 64px; position: relative; overflow: hidden; }
+.close .h2 { color: var(--ink); }
+.close .sub { color: var(--ink); }
+.close .btn { --bg: var(--ink); --fg: var(--volt); box-shadow: 0 4px 0 var(--blue); margin-top: 24px; }
+.close .btn:hover { box-shadow: 0 6px 0 var(--blue); }
+.close .squiggle { stroke: var(--blue); width: 160px; right: 6%; top: 30px; }
+@media (max-width: 899px) { .close .squiggle { width: 90px; right: 0; top: 18px; } }
+footer { padding-block: 32px calc(32px + env(safe-area-inset-bottom)); font-size: 13px; color: rgba(253,253,255,.8); }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; }
+footer code { font-family: ui-monospace, Menlo, monospace; font-size: 12px; word-break: break-all; }
+
+/* version switcher (review only) */
+.switch { position: fixed; z-index: 50; left: 50%; bottom: calc(14px + env(safe-area-inset-bottom)); transform: translateX(-50%); display: flex; gap: 4px; background: var(--ink); border-radius: 999px; padding: 4px; box-shadow: 0 10px 30px rgba(0,0,0,.35); }
+.switch a { min-height: 40px; min-width: 44px; padding: 0 14px; display: grid; place-items: center; border-radius: 999px; color: #fff; text-decoration: none; font-size: 13px; font-weight: 700; }
+.switch a[aria-current] { background: var(--volt); color: var(--ink); }
+
+/* reveal */
+.rv { opacity: 0; transform: translateY(18px); transition: opacity .6s var(--ease), transform .6s var(--ease); }
+.rv.in { opacity: 1; transform: none; }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+  .squiggle path { stroke-dashoffset: 0; }
+  .rv { opacity: 1; transform: none; }
+  .track .blocks i:not(:first-child)::after { transform: scaleX(1); }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="mark" viewBox="0 0 2048 2048">
+      <mask id="m-notch" maskUnits="userSpaceOnUse" x="0" y="0" width="2048" height="2048"><rect width="2048" height="2048" fill="#fff"/><rect x="1633.6" y="892.02" width="609.6" height="263.96" fill="#000"/><circle cx="1502.54" cy="1024" r="365.76" fill="#fff"/></mask>
+      <mask id="m-slot" maskUnits="userSpaceOnUse" x="0" y="0" width="2048" height="2048"><rect width="2048" height="2048" fill="#fff"/><rect x="1031.62" y="927.63" width="711.2" height="192.74" fill="#000"/></mask>
+      <circle cx="1024" cy="1024" r="1016" fill="#124CC4" mask="url(#m-notch)"/>
+      <path fill="#fff" fill-rule="evenodd" mask="url(#m-slot)" d="M 462.25 1024 a 569.37 569.37 0 1 0 1138.73 0 a 569.37 569.37 0 1 0 -1138.73 0 Z M 779.96 1024 a 251.66 251.66 0 1 0 503.33 0 a 251.66 251.66 0 1 0 -503.33 0 Z"/>
+    </symbol>
+  </defs>
+</svg>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="logo" href="#top" aria-label="Cojam home"><span class="chip"><svg aria-hidden="true"><use href="#mark"/></svg>Cojam</span><span class="tag">since 2019</span></a>
+    <nav class="pills" aria-label="Sections"><a href="#how" data-ko="교환 방법">How it works</a><a href="#numbers" data-ko="핵심 숫자">Numbers</a><a href="#future" data-ko="다음 단계">Future</a></nav>
+    <div class="end">
+      <button class="lang" type="button" id="lang" aria-label="Change language">한국어</button>
+      <a class="btn sm" href="#swap" data-ko="지갑 연결">Connect</a>
+    </div>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="wrap">
+      <span class="live"><i></i><span data-ko="교환 오픈 D-352">Swap open, 352 days left</span></span>
+      <h1 class="h1 display">
+        <span class="row"><span class="hash">#</span><span data-ko="원조">The OG</span></span>
+        <span class="row" data-ko="예측마켓">Prediction</span>
+        <span class="row out" data-ko="컴백">Market</span>
+      </h1>
+      <div class="stage" aria-hidden="true">
+        <svg class="squiggle q1" viewBox="0 0 160 160"><path d="M20 30 C 90 0, 150 40, 110 80 S 40 110, 70 140 l 18 -26 M70 140 l -30 -8"/></svg>
+        <div class="sticker s1">
+          <div class="k" data-ko="예측 예시">Example market</div>
+          <div class="v">YES 62%</div>
+          <div class="bar"><i></i></div>
+        </div>
+        <div class="sticker s2">
+          <div class="mk"><svg><use href="#mark"/></svg></div>
+          <div class="k" data-ko="교환하자마자">On swap</div>
+          <div class="v">+10%</div>
+        </div>
+        <div class="badge">
+          <svg class="ring" viewBox="0 0 132 132"><defs><path id="circ" d="M66,66 m-50,0 a50,50 0 1,1 100,0 a50,50 0 1,1 -100,0"/></defs><text><textPath href="#circ" data-ko="1:1 교환 ✦ 기존 CT → 새 CT ✦ ">SWAP 1:1 ✦ OLD CT → NEW CT ✦ </textPath></text></svg>
+          <svg class="core" viewBox="0 0 60 60" fill="none" stroke="#0B1530" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 40 C 18 14, 30 12, 30 30 S 44 44, 46 18 M46 18 l -9 6 M46 18 l 3 10"/></svg>
+        </div>
+        <svg class="squiggle q2" viewBox="0 0 160 160"><path d="M20 30 C 90 0, 150 40, 110 80 S 40 110, 70 140 l 18 -26 M70 140 l -30 -8"/></svg>
+      </div>
+      <p class="lede" data-ko="2019년의 원조 Cojam이 Kaia에서 다시 시작해요. 기존 CT를 새 CT로 1:1 교환하면 <b>10%는 즉시</b>, 나머지 90%는 7일 뒤 자동으로 들어와요.">Cojam is back on Kaia. Swap old CT for new CT, one for one: <b>10% lands at once</b>, the rest 7 days later.</p>
+      <div class="actions">
+        <a class="btn" href="#swap" id="swap"><span data-ko="CT 교환하기">Swap CT</span><span class="arr" aria-hidden="true">→</span></a>
+        <a class="btn ghost" href="#how" data-ko="교환 방법">How it works</a>
+      </div>
+    </div>
+  </section>
+
+  <div class="mq-clip"><div class="marquee" aria-hidden="true"><div class="mq">
+    <span data-ko="1:1 교환">1 old CT = 1 new CT</span><span data-ko="10% 즉시 지급">10% now</span><span data-ko="90%는 D+7">90% in 7 days</span><span data-ko="KAIA 없어도 OK">No KAIA needed</span><span data-ko="관리자 키 0개">No admin keys</span>
+    <span data-ko="1:1 교환">1 old CT = 1 new CT</span><span data-ko="10% 즉시 지급">10% now</span><span data-ko="90%는 D+7">90% in 7 days</span><span data-ko="KAIA 없어도 OK">No KAIA needed</span><span data-ko="관리자 키 0개">No admin keys</span>
+  </div></div></div>
+
+  <section class="light" id="how">
+    <div class="wrap">
+      <span class="eyebrow rv" data-ko="이렇게 바꿔요">How it works</span>
+      <h2 class="h2 display rv" data-ko="서명 두 번이면<br><em>끝!</em>">Sign twice.<br><em>That's it.</em></h2>
+      <p class="sub rv" data-ko="승인 한 번, 교환 한 번. 그다음은 Cojam이 알아서 해요.">Approve and swap in your own wallet. Everything after that happens on its own.</p>
+      <div class="steps">
+        <article class="step rv"><span class="n">01</span><h3 data-ko="기존 CT 교환">Swap old CT</h3><p data-ko="원하는 만큼, 1:1 그대로.">Any amount, one for one.</p></article>
+        <article class="step hot rv"><span class="n">02</span><h3 data-ko="10% 즉시 도착">10% lands now</h3><p data-ko="교환한 그 순간 지갑에 들어와요.">In the same transaction, straight to your wallet.</p></article>
+        <article class="step blue rv"><span class="n">03</span><h3 data-ko="90%는 D+7 자동 지급">90% in 7 days</h3><p data-ko="7일 락업이 끝나면 알아서 지갑으로 보내 드려요.">Locked for 7 days, then sent to you automatically.</p></article>
+      </div>
+      <div class="track rv" id="track">
+        <div class="top"><span data-ko="예시: 기존 CT 10,000개 교환">Example: 10,000 old CT</span><b><span id="tk-now">1,000</span> → <span id="tk-all">10,000</span> CT</b></div>
+        <div class="blocks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+        <div class="legend"><span data-ko="10% 즉시">10% now</span><span data-ko="90% D+7">90% after 7 days</span></div>
+        <button class="btn sm" type="button" id="play" data-ko="7일 뒤로 넘겨 보기">Fast forward 7 days</button>
+      </div>
+      <span class="fee rv" data-ko="⚡ Kaia Wallet이면 수수료 0원, Cojam이 대신 내요">⚡ No KAIA needed with Kaia Wallet</span>
+
+      <div class="nums" id="numbers">
+        <div class="num rv"><b data-ko="40.8억">4.08B</b><span data-ko="총발행량, 추가 발행 없음">New CT supply, fixed</span></div>
+        <div class="num rv"><b>1:1</b><span data-ko="보너스도 수수료도 없어요">No bonus, no fee</span></div>
+        <div class="num rv"><b data-ko="365일">365</b><span data-ko="교환 기간">Days to swap</span></div>
+        <div class="num rv"><b>0</b><span data-ko="관리자 키, 누구도 못 바꿔요">Admin keys</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="future" id="future">
+    <svg class="big-mark" aria-hidden="true"><use href="#mark"/></svg>
+    <div class="wrap">
+      <span class="eyebrow rv" style="background:var(--volt);color:var(--ink)" data-ko="그다음은?">What's next</span>
+      <h2 class="h2 display rv" data-ko="예측을<br><em>레벨업</em>">Built for<br><em>new CT</em></h2>
+      <p class="sub rv" data-ko="새 CT로 즐기게 될 Cojam 플랫폼을 미리 살짝 보여 드려요.">Ideas for the platform new CT is made for.</p>
+      <span class="concept rv" data-ko="콘셉트 시안, 아직 출시 전이에요">Concept preview, not live</span>
+      <div class="cards" role="list">
+        <article class="card" role="listitem"><span class="ic">01</span><h3 data-ko="CT로 예측">Predict with CT</h3><p data-ko="맞힐 것 같은 쪽에 CT를 걸어요.">Stake CT on the outcome you expect.</p>
+          <div class="mini"><div class="row"><span data-ko="3월에 Kaia 일일 트랜잭션 신기록?">Kaia daily tx record in March?</span></div><div class="yn"><span class="y">Yes 62%</span><span class="n">No 38%</span></div></div></article>
+        <article class="card" role="listitem"><span class="ic">02</span><h3 data-ko="예측 트레이딩">Outcome derivatives</h3><p data-ko="결과가 나오기 전에 가격을 사고팔아요.">Trade an outcome's price before the result.</p>
+          <div class="mini"><div class="row"><span data-ko="YES 가격">Yes price</span><b>0.62 CT</b></div><div class="row"><span data-ko="진입 대비">Since entry</span><b style="color:var(--volt)">+12.4%</b></div></div></article>
+        <article class="card" role="listitem"><span class="ic">03</span><h3 data-ko="포지션 담보 대출">Loans on positions</h3><p data-ko="예측은 그대로 두고 CT를 빌려요.">Borrow CT without closing your prediction.</p>
+          <div class="mini"><div class="row"><span data-ko="대출 비율">Loan to value</span><b>40%</b></div><div class="meter"><i style="width:40%"></i></div></div></article>
+        <article class="card" role="listitem"><span class="ic">04</span><h3 data-ko="마진 예측">Margin on predictions</h3><p data-ko="적은 CT로 크게. 청산가는 먼저 보여 드려요.">More size for less CT, liquidation price first.</p>
+          <div class="mini"><div class="row"><span data-ko="레버리지">Leverage</span><b>3×</b></div><div class="row"><span data-ko="청산가">Liquidation</span><b>0.41</b></div></div></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="close">
+    <svg class="squiggle" viewBox="0 0 160 160" aria-hidden="true"><path d="M20 30 C 90 0, 150 40, 110 80 S 40 110, 70 140 l 18 -26 M70 140 l -30 -8"/></svg>
+    <div class="wrap">
+      <h2 class="h2 display rv" data-ko="지금 바로<br>갈아타요">Ready<br>to swap?</h2>
+      <p class="sub rv" data-ko="10%는 즉시, 나머지 90%는 7일 뒤 자동으로 들어와요.">10% at once, the rest 7 days later, automatically.</p>
+      <a class="btn rv" href="#swap"><span data-ko="CT 교환하기">Swap CT</span><span class="arr" aria-hidden="true">→</span></a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2019–2026 Cojam</span>
+    <span><span data-ko="기존 CT">Old CT</span> <code>0x7f223b1607171b81ebd68d22f1ca79157fd4a44b</code></span>
+  </div>
+  <div style="height:64px"></div>
+</footer>
+
+<nav class="switch" aria-label="Design versions"><a href="home.html">A</a><a href="landing-b.html" aria-current="page">B</a><a href="landing-c.html">C</a></nav>
+
+<script>
+(() => {
+  // language toggle: English is the source; data-ko holds the Korean line
+  const els = [...document.querySelectorAll("[data-ko]")];
+  els.forEach(e => e.dataset.en = e.innerHTML);
+  const btn = document.getElementById("lang");
+  const set = (ko) => {
+    document.documentElement.lang = ko ? "ko" : "en";
+    els.forEach(e => e.innerHTML = ko ? e.dataset.ko : e.dataset.en);
+    btn.textContent = ko ? "EN" : "한국어";
+  };
+  btn.addEventListener("click", () => set(document.documentElement.lang !== "ko"));
+  if (new URLSearchParams(location.search).get("lang") === "ko") set(true);
+
+  // reveal on scroll
+  const io = new IntersectionObserver(es => es.forEach(e => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } }), { rootMargin: "0px 0px -8% 0px" });
+  document.querySelectorAll(".rv").forEach(e => io.observe(e));
+
+  // track: fast forward fills the locked 90%
+  const track = document.getElementById("track"), play = document.getElementById("play"), now = document.getElementById("tk-now");
+  play.addEventListener("click", () => {
+    const on = track.classList.toggle("go");
+    now.textContent = on ? "10,000" : "1,000";
+  });
+})();
+</script>
+</body>
+</html>

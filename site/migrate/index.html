@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Swap old CT for new CT: Cojam</title>
+<meta name="description" content="Swap old CT for new CT on Kaia, 10 old CT for 4 new CT. 10% arrives at once and 90% follows 7 days later, automatically. No KAIA needed with Kaia Wallet.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="../assets/base.css?v=20261114d">
+<link rel="stylesheet" href="../assets/menu.css?v=20261114d">
+<link rel="stylesheet" href="../assets/wallet.css?v=20261114d">
+<link rel="stylesheet" href="../assets/pages/migrate.css?v=20261114d">
+</head>
+<body data-page="swap" data-root="../">
+<div id="cj-top"></div>
+<script src="../assets/system.js?v=20261114d"></script>
+<script src="../assets/network.js?v=20261114d"></script>
+<script src="../assets/i18n/shell.js?v=20261114d"></script>
+<script src="../assets/menu.js?v=20261114d"></script>
+<script src="../assets/shell.js?v=20261114d"></script>
+<main id="main">
+  <div class="container mg">
+    <header class="mg-head cj-band" id="mg-head">
+      <h1 data-i18n="page.title">Swap old CT for new CT</h1>
+      <p class="mg-lede" id="mg-lede" data-i18n="page.lede">One old CT becomes one new CT on Kaia. 10% arrives in your wallet at once, and the other 90% follows 7 days later, automatically.</p>
+      <p class="mg-window small" id="mg-window"></p>
+    </header>
+
+    <div class="mg-grid">
+      <div class="mg-col">
+        <section class="panel mg-panel" id="mg-panel" aria-labelledby="mg-h"></section>
+        <p class="sr-only" id="mg-live" role="status" aria-live="polite"></p>
+        <button type="button" class="btn btn-ghost btn-sm mg-kbd-btn" id="mg-kbd-open"><span data-i18n="kb.open">Keyboard shortcuts</span> <kbd>?</kbd></button>
+      </div>
+      <section class="panel mg-hist" id="mg-hist" aria-labelledby="mg-hist-h"></section>
+    </div>
+
+    <details class="mg-proto" id="mg-proto" hidden>
+      <summary data-i18n="pr.title">Prototype controls</summary>
+      <div class="mg-proto-body">
+        <p class="small muted" data-i18n="pr.note">Mock data only. These buttons simulate what a real wallet or network could do.</p>
+        <div class="mg-proto-grid">
+          <label class="mg-check"><input type="checkbox" id="pr-reject"> <span data-i18n="pr.reject">Reject the next wallet request</span></label>
+          <button type="button" class="btn btn-sm" data-proto="rpc" data-i18n="pr.rpc">Fail the network read</button>
+          <button type="button" class="btn btn-sm" data-proto="gas" data-i18n="pr.gas">Set KAIA to 0.001</button>
+          <button type="button" class="btn btn-sm" data-proto="reserve" data-i18n="pr.reserve">Empty the reserve</button>
+          <button type="button" class="btn btn-sm" data-proto="closed" data-i18n="pr.closed">Jump past the window end</button>
+          <button type="button" class="btn btn-sm" data-proto="network" data-i18n="pr.network">Move wallet to another network</button>
+          <button type="button" class="btn btn-sm" data-proto="sponsor" data-i18n="pr.sponsor">Make the fee payer unavailable</button>
+          <button type="button" class="btn btn-sm" data-proto="reset" data-i18n="pr.reset">Reset everything</button>
+        </div>
+      </div>
+    </details>
+  </div>
+
+  <dialog class="mg-sheet" id="mg-kbd" aria-labelledby="mg-kbd-h">
+    <div class="mg-sheet-head">
+      <h2 id="mg-kbd-h" data-i18n="kb.title">Keyboard shortcuts</h2>
+      <button type="button" class="btn btn-ghost mg-icon-btn" data-close data-i18n-attr="aria-label:ch.close"></button>
+    </div>
+    <dl class="mg-kbd-list">
+      <div><dt><kbd>Enter</kbd></dt><dd data-i18n="kb.enter">Submit the current step</dd></div>
+      <div><dt><kbd>Esc</kbd></dt><dd data-i18n="kb.esc">Go back one step, or cancel the wallet wait</dd></div>
+      <div><dt><kbd>?</kbd></dt><dd data-i18n="kb.help">Show this list</dd></div>
+    </dl>
+  </dialog>
+
+  <dialog class="mg-sheet mg-confirm" id="mg-confirm" aria-labelledby="mg-cf-h"></dialog>
+
+  <div class="mg-menu" id="mg-menu" role="menu" hidden></div>
+</main>
+<div id="cj-foot"></div>
+<script src="../assets/price.js?v=20261114d"></script>
+<script src="../assets/motion.js?v=20261114d"></script>
+<script src="../assets/vendor/ethers-6.17.0.umd.min.js"></script>
+<script src="../assets/chain.js?v=20261114d"></script>
+<script src="../assets/wallet.js?v=20261114d"></script>
+<script src="../assets/i18n/migrate.js?v=20261114d"></script>
+<script src="../assets/pages/migrate.js?v=20261114d"></script>
+</body>
+</html>

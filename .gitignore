@@ -1,0 +1,13 @@
+node_modules/
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+# local captures and video work
+captures/
+tools/video/out/
+tools/video/*.mp4
+tools/video/*.mp3
+__pycache__/
+dist/

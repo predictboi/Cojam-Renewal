@@ -1,0 +1,22 @@
+{
+  "name": "cojam-gas-server",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Cojam swap gas sponsor: Kaia fee delegation API and claim keeper",
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --env-file=.env src/index.js",
+    "start:api": "node src/index.js api",
+    "start:keeper": "node src/index.js keeper",
+    "test": "node --test test/*.test.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@kaiachain/ethers-ext": "2.1.0",
+    "ethers": "6.15.0"
+  }
+}

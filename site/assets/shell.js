@@ -1,0 +1,87 @@
+// Shared shell: skip link, safety banner, header, mobile nav, footer. Every page has <body data-page="home|swap|status|docs" data-root="./|../">
+// (plus data-foot="compact" where the page has its own contract address section, see the footer below)
+// with <div id="cj-top"></div> before <main> and <div id="cj-foot"></div> after it.
+// Load order: system.js, i18n/shell.js and this file run synchronously right after <div id="cj-top"></div>, so the banner
+// and header are in the first paint and nothing below them moves when the page script runs. The page's own scripts
+// (motion.js, wallet.js, i18n/<page>.js, pages/<page>.js) stay at the end of <body>; CJ.dict re-applies data-i18n when a
+// page dictionary loads. The footer is rendered on DOMContentLoaded, below everything, so it cannot shift the page.
+(function () {
+  var b = document.body, page = b.dataset.page || "home", root = b.dataset.root || "./";
+  var I = CJ.icon;
+  var links = [
+    { id: "swap", href: root + "migrate/", key: "nav.swap" },
+    { id: "status", href: root + "status/", key: "nav.status" },
+    { id: "docs", href: root + "docs/", key: "nav.docs" }
+  ];
+  function nav(cls) {
+    return '<nav class="' + cls + '" data-i18n-attr="aria-label:nav.main">' + links.map(function (l) {
+      return '<a href="' + l.href + '"' + (l.id === page ? ' aria-current="page"' : "") + ' data-i18n="' + l.key + '"></a>';
+    }).join("") + "</nav>";
+  }
+  var top = document.getElementById("cj-top");
+  if (top) {
+    top.outerHTML =
+      '<a class="cj-skip" href="#main" data-i18n="nav.skip"></a>' +
+      '<div class="cj-banner" role="note"><div class="container">' + I("shield", 16) + '<span data-i18n="banner.text"></span></div></div>' +
+      '<header class="cj-header"><div class="container cj-header-row">' +
+        // Logo pill and the "since 2019" tag, as on the landing header.
+        '<a class="cj-brand" href="' + root + '" data-i18n-attr="aria-label:nav.home"><span class="cj-chip"><img src="' + root + 'assets/cojam-mark.svg" alt="" width="26" height="26"><span>Cojam</span></span><span class="cj-since" aria-hidden="true">since 2019</span></a>' +
+        nav("cj-nav") +
+        '<div class="cj-tools">' +
+          '<label class="cj-lang">' + I("globe", 18) + '<span class="sr-only" data-i18n="nav.lang"></span>' +
+            '<select id="cj-lang-select"><option value="en">EN</option><option value="ko">한국어</option><option value="ja">日本語</option></select></label>' +
+          (page === "swap" ? '<button type="button" class="btn btn-sm cj-wallet" id="cj-wallet"></button>'
+            : '<a class="btn btn-sm cj-wallet" href="' + root + 'migrate/" data-i18n="wallet.connect"></a>') +
+        "</div>" +
+      "</div></header>" +
+      // The mobile nav sits outside the sticky header, so only the 56 px top row stays on screen while scrolling.
+      '<div class="cj-subnav">' + nav("cj-nav-mobile container") + "</div>";
+    // Phones: a hamburger next to the wallet button holds the page links and the language (assets/menu.js).
+    if (CJ.menu) CJ.menu.init({ host: document.querySelector(".cj-header .cj-tools"), header: document.querySelector(".cj-header"), root: root, current: page });
+  }
+  function renderFoot() {
+    var foot = document.getElementById("cj-foot");
+    // <body data-foot="compact">: the page already shows the addresses in its own #contracts section, so the footer adds
+    // a "Contracts on Kaia" link to that section under the site links instead of listing the addresses a second time.
+    var compact = b.dataset.foot === "compact" ? "contracts" : null;
+    if (foot) {
+      foot.outerHTML =
+        '<footer class="cj-footer"><div class="container cj-foot-grid">' +
+          '<div class="cj-foot-brand"><a class="cj-brand" href="' + root + '" data-i18n-attr="aria-label:nav.home"><span class="cj-chip"><img src="' + root + 'assets/cojam-mark.svg" alt="" width="26" height="26"><span>Cojam</span></span></a>' +
+            '<p class="muted small" data-i18n="foot.tagline"></p></div>' +
+          '<div><h2 class="cj-foot-h" data-i18n="foot.site"></h2>' +
+            (compact ? nav("cj-foot-nav").replace("</nav>", '<a href="#' + compact + '" data-i18n="foot.contracts"></a></nav>') : nav("cj-foot-nav")) + "</div>" +
+          (compact ? "" : '<div class="cj-foot-addrs"><h2 class="cj-foot-h" data-i18n="foot.contracts"></h2><div class="addr" data-addr="old"></div><div class="addr" data-addr="new"></div><div class="addr" data-addr="swap"></div></div>') +
+        "</div>" +
+        '<div class="container cj-foot-legal"><p class="small" data-i18n="foot.safety"></p><p class="xs muted" data-i18n="foot.legal"></p><p class="xs muted" data-i18n="foot.copy"></p></div></footer>';
+      var f = document.querySelector(".cj-footer");
+      CJ.applyI18n(f); CJ.renderAddrs(f);
+    }
+  }
+
+  var sel = document.getElementById("cj-lang-select");
+  if (sel) { sel.value = CJ.lang(); sel.addEventListener("change", function () { CJ.setLang(sel.value); }); }
+
+  function paintWallet() {
+    var w = document.getElementById("cj-wallet"); if (!w) return;
+    var L = CJ.ledger.get();
+    // Long and short labels swap at 400 px in CSS, so the button never wraps. The address uses the data font:
+    // Pretendard's contextual alternates draw "0x" as a times sign.
+    var a = L.wallet.address;
+    if (L.wallet.connected) {
+      w.innerHTML = I("wallet", 16) + '<span class="cj-addr cj-wl-long">' + CJ.fmt.addr(a) + '</span><span class="cj-addr cj-wl-short" aria-hidden="true">' + a.slice(0, 4) + "\u2026" + a.slice(-4) + "</span>";
+      w.setAttribute("aria-label", CJ.t("wallet.connected", { addr: a }));
+    } else {
+      // The short label is English source only for now; KO and JA keep their full label (it fits) until translated.
+      var short = CJ.lang() === "en" ? CJ.t("wallet.connect.short") : CJ.t("wallet.connect");
+      w.innerHTML = I("wallet", 16) + '<span class="cj-wl-long">' + CJ.t("wallet.connect") + '</span><span class="cj-wl-short" aria-hidden="true">' + short + "</span>";
+      w.setAttribute("aria-label", CJ.t("wallet.connect"));
+    }
+  }
+  document.addEventListener("cj:ledger", paintWallet);
+  document.addEventListener("cj:lang", function () { paintWallet(); CJ.renderAddrs(); });
+
+  CJ.applyI18n();
+  paintWallet();
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", renderFoot); else renderFoot();
+})();

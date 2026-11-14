@@ -1,0 +1,544 @@
+/* Cojam shared components, direction B "Signal" (the same language as the landing). Pages add layout only; components live here.
+   Blue ground for the shell and page heads (.cj-band), snow for content, ink cards with a 2px edge, volt for the primary
+   action and the current selection. */
+@import url("tokens.css?v=20261114d");
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; overflow-x: clip; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font); font-size: var(--fs-16); line-height: 1.6; font-weight: var(--fw-regular);
+  font-variant-numeric: tabular-nums; -webkit-font-smoothing: antialiased;
+  min-height: 100vh; display: flex; flex-direction: column;
+}
+:lang(ja) h1, :lang(ja) h2, :lang(ja) h3 { word-break: auto-phrase; text-wrap: balance; }
+:lang(ko) body { word-break: keep-all; overflow-wrap: anywhere; }
+main { flex: 1; }
+img, svg { display: block; max-width: 100%; }
+h1, h2, h3, h4 { margin: 0; font-weight: var(--fw-heavy); line-height: 1.2; letter-spacing: -0.01em; overflow-wrap: break-word; min-width: 0; }
+/* Page titles: Archivo wide heavy capitals. Hangul and kana have no Archivo glyph and fall through to Pretendard, at normal width. */
+h1, .display { font-family: var(--font-display); font-weight: 900; font-stretch: 125%; text-transform: uppercase; letter-spacing: -0.03em; line-height: 0.92; }
+h1 { font-size: var(--fs-display); }
+:lang(ko) :is(h1, .display) { font-stretch: 100%; letter-spacing: -0.045em; line-height: 1.08; }
+:lang(ja) :is(h1, .display) { font-stretch: 100%; letter-spacing: -0.035em; line-height: 1.1; }
+h2 { font-size: var(--fs-32); letter-spacing: -0.02em; }
+h3 { font-size: var(--fs-20); }
+p { margin: 0; }
+a { color: var(--brand); text-underline-offset: 3px; }
+a:hover { color: var(--brand-hover); }
+:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+/* On the blue ground (header, page heads, footer) the focus ring is volt: 6.4:1 against blue. */
+:is(.cj-header, .cj-subnav, .cj-footer, .cj-band) :focus-visible { outline-color: var(--volt); }
+.night :focus-visible { outline-color: var(--sky); }
+.muted { color: var(--ink-2); }
+.small { font-size: var(--fs-14); }
+.xs { font-size: var(--fs-13); }
+.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+[hidden] { display: none !important; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.container { width: 100%; max-width: var(--container); margin: 0 auto; padding: 0 var(--gutter); }
+.stack > * + * { margin-top: var(--s-16); }
+
+/* ---------- buttons ----------
+   Pills with a 2px ink edge. .btn-primary is volt with ink text and a hard 4px ink drop that presses down (15.7:1). */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s-8);
+  min-height: 44px; padding: 0 18px; border-radius: var(--r-pill);
+  border: 2px solid var(--ink); background: var(--surface); color: var(--ink);
+  font: inherit; font-size: var(--fs-16); font-weight: var(--fw-bold); line-height: 1.1; text-decoration: none; cursor: pointer; white-space: nowrap;
+  position: relative; isolation: isolate; overflow: hidden; /* holds the press shade and the ripple, clipped to the button */
+  transition: transform var(--dur-release) var(--ease-spring), box-shadow var(--dur-release) var(--ease-out), background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.btn:hover { background: var(--inset); border-color: var(--ink); color: var(--ink); }
+.btn[disabled], .btn[aria-disabled="true"] { cursor: not-allowed; background: var(--inset); border-color: var(--line-strong); color: var(--ink-2); transform: none; box-shadow: none; }
+.btn-primary { background: var(--volt); border-color: var(--ink); color: var(--on-volt); font-weight: var(--fw-heavy); box-shadow: var(--shadow-hard); overflow: visible; }
+.btn-primary:hover { background: var(--volt); border-color: var(--ink); color: var(--on-volt); }
+@media (hover: hover) and (pointer: fine) { .btn-primary:not([disabled], [aria-disabled="true"]):hover { transform: translateY(-2px); box-shadow: var(--shadow-hard-up); } }
+.btn-primary::before { content: none; }
+.btn-primary:is([disabled], [aria-disabled="true"]) { background: var(--inset); border-color: var(--line-strong); color: var(--ink-2); box-shadow: none; }
+.btn-primary .spin { border-color: rgba(11, 21, 48, 0.25); border-top-color: var(--ink); }
+.ripple-clip { position: absolute; inset: 0; z-index: -1; border-radius: inherit; overflow: hidden; pointer-events: none; }
+.btn-ghost { background: transparent; border-color: transparent; color: var(--ink); }
+.btn-ghost:hover { background: var(--inset); border-color: transparent; }
+.btn-lg { min-height: 52px; padding: 0 var(--s-24); font-size: 17px; }
+.btn-sm { min-height: 44px; padding: 0 14px; font-size: var(--fs-14); }
+.btn-block { width: 100%; }
+.night .btn { background: transparent; color: var(--night-ink); border-color: var(--night-line); }
+.night .btn:hover { border-color: var(--night-ink-2); }
+
+/* ---------- panels ---------- */
+.panel { background: var(--surface); border: var(--edge-ink); border-radius: var(--r-panel); padding: var(--sp-panel); }
+.panel-flush { padding: 0; overflow: hidden; }
+.divider { height: 1px; background: var(--line); border: 0; margin: var(--s-16) 0; }
+
+/* ---------- fields ---------- */
+.field { display: block; }
+.field-label { display: flex; justify-content: space-between; gap: var(--s-8); font-size: var(--fs-14); color: var(--ink-2); margin-bottom: var(--s-8); }
+.field-box {
+  display: flex; align-items: center; gap: var(--s-8);
+  background: var(--surface); border: var(--edge-ink); border-radius: 18px; padding: 0 var(--s-8) 0 var(--s-16);
+  transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.field-box:focus-within { border-color: var(--brand); box-shadow: 0 0 0 3px var(--brand-tint); }
+.field-box.is-error { border-color: var(--down); }
+.field-box input {
+  flex: 1; min-width: 0; min-height: 52px; border: 0; background: transparent; color: var(--ink);
+  font: inherit; font-size: var(--fs-24); font-weight: var(--fw-bold); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; outline: none;
+}
+.field-unit { color: var(--ink-2); font-size: var(--fs-16); font-weight: var(--fw-semi); }
+.field-msg { font-size: var(--fs-14); margin-top: var(--s-8); color: var(--ink-2); }
+.field-msg.is-error { color: var(--down); }
+
+/* ---------- chips, tags ---------- */
+.chip {
+  display: inline-flex; align-items: center; min-height: 36px; padding: 0 14px; border-radius: var(--r-pill);
+  border: 1.5px solid var(--ink); background: var(--surface); color: var(--ink); font: inherit; font-size: var(--fs-14); font-weight: var(--fw-semi); cursor: pointer;
+  transition: transform var(--dur-release) var(--ease-spring), border-color var(--dur) var(--ease);
+}
+.chip:hover { background: var(--inset); }
+
+/* ---------- segmented control (one for the site) ----------
+   <div class="seg" role="group"><button class="seg-btn" aria-pressed="true">. Selected: volt with ink text and an ink ring (current selection). */
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 2px; border-radius: 26px; background: var(--surface); border: var(--edge-ink); }
+.seg-btn {
+  min-height: 44px; padding: 0 14px; border: 0; border-radius: var(--r-pill); background: transparent; color: var(--ink-2);
+  font: inherit; font-size: var(--fs-14); font-weight: var(--fw-semi); cursor: pointer; white-space: nowrap;
+  transition: transform var(--dur-release) var(--ease-spring), background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease);
+}
+.seg-btn:hover { color: var(--ink); background: var(--inset); }
+.seg-btn[aria-pressed="true"], .seg-btn[aria-selected="true"] { background: var(--volt); color: var(--on-volt); font-weight: var(--fw-heavy); box-shadow: inset 0 0 0 1.5px var(--ink); }
+
+/* ---------- live stamp dot (never green: green means gain) ---------- */
+.live-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--sky); box-shadow: 0 0 0 3px var(--sky-tint); flex: none; }
+.live-dot.is-stale { background: var(--ink-2); box-shadow: 0 0 0 3px var(--inset); }
+
+.tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--r-pill); font-size: var(--fs-13); font-weight: var(--fw-bold); line-height: 1.35; background: var(--inset); color: var(--ink-2); white-space: nowrap; }
+.tag-up { background: var(--up-tint); color: var(--up); }
+.tag-warn { background: var(--warn-tint); color: var(--warn); }
+.tag-down { background: var(--down-tint); color: var(--down); }
+.tag-sky { background: var(--sky-tint); color: var(--ink); }
+.tag svg { flex: none; }
+/* Lot status, the same on every page. Words: Locked, Being sent, Released. */
+.tag-sky { background: var(--sky); }
+.tag-locked { background: var(--ink); color: var(--snow); }
+.tag-sending { background: var(--sky); color: var(--ink); }
+.tag-released { background: transparent; color: var(--ink-2); box-shadow: inset 0 0 0 1.5px var(--line-strong); }
+/* dashed edge: something not final yet (audit in progress, concept, example), as the landing's concept tags */
+.tag-audit { background: transparent; color: var(--ink); box-shadow: none; outline: 1.5px dashed var(--ink); outline-offset: -1.5px; }
+
+/* ---------- notes and alerts ---------- */
+.note { display: flex; gap: var(--s-12); align-items: flex-start; padding: 14px var(--s-16); border-radius: 18px; background: var(--inset); font-size: var(--fs-14); color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px color-mix(in srgb, currentColor 22%, transparent); }
+.note svg { flex: none; margin-top: 3px; }
+.note-info { background: var(--inset); color: var(--ink); }
+.note-warn { background: var(--warn-tint); color: var(--warn); }
+.note-error { background: var(--down-tint); color: var(--down); }
+.note-ok { background: var(--up-tint); color: var(--up); }
+.note .note-body { flex: 1; min-width: 0; }
+.note .note-action { margin-top: var(--s-8); }
+
+/* ---------- tables ---------- */
+.table { width: 100%; border-collapse: collapse; font-size: var(--fs-14); }
+.table th { text-align: left; font-weight: var(--fw-bold); color: var(--ink-2); padding: var(--s-12) var(--s-16); border-bottom: var(--edge-ink); white-space: nowrap; }
+.table td { padding: var(--s-12) var(--s-16); border-bottom: 1px solid var(--line); vertical-align: middle; height: 56px; }
+.table tr:last-child td { border-bottom: 0; }
+.table .r { text-align: right; }
+
+/* ---------- address row ---------- */
+.addr { display: flex; align-items: center; gap: var(--s-8); flex-wrap: wrap; min-width: 0; }
+.addr-label { font-size: var(--fs-14); font-weight: var(--fw-bold); color: var(--ink); min-width: 7.5em; }
+.addr-value { font-family: var(--font-data); font-size: var(--fs-13); color: var(--ink); overflow-wrap: anywhere; min-width: 0; flex: 1; }
+.addr-tba { font-family: var(--font); font-size: var(--fs-14); color: var(--ink-2); }
+.addr-actions { display: flex; gap: var(--s-4); }
+.addr-actions .btn { min-width: 44px; min-height: 44px; padding: 0; border-width: 1.5px; }
+.addr-actions .btn:hover { background: var(--ink); color: var(--volt); }
+@media (max-width: 600px) { .addr-label { flex-basis: 100%; min-width: 0; } .cj-foot-addrs .addr-label { min-width: 0; } }
+
+/* ---------- help popover (details based, works without JS) ---------- */
+.help { position: relative; display: inline-block; vertical-align: middle; }
+.help > summary { position: relative; list-style: none; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; cursor: pointer; color: var(--ink-2); }
+.help > summary::-webkit-details-marker { display: none; }
+.help > summary::after { content: ""; position: absolute; inset: -10px; }
+.help > summary:hover { color: var(--ink); background: var(--inset); }
+.help-pop { position: absolute; z-index: 20; left: 50%; top: calc(100% + 6px); transform: translateX(-50%); transform-origin: top center; width: min(280px, 80vw); padding: var(--s-12) var(--s-16); background: var(--ink); color: var(--surface); border-radius: 16px; font-size: var(--fs-14); line-height: 1.5; box-shadow: 0 4px 0 var(--volt); text-align: left; font-weight: var(--fw-regular); white-space: normal; }
+/* Under 600 px the popover leaves its toggle and spans the nearest panel with 16 px side margins, so it never leaves the screen. */
+@media (max-width: 599px) {
+  .panel { position: relative; }
+  .help { position: static; }
+  .help-pop { left: var(--s-16); right: var(--s-16); top: auto; width: auto; max-width: none; margin-top: var(--s-8); transform: none; transform-origin: top left; }
+}
+
+/* ---------- toast ---------- */
+.toasts { position: fixed; z-index: 60; left: 50%; bottom: var(--s-24); transform: translateX(-50%); display: grid; gap: var(--s-8); width: min(420px, calc(100vw - 32px)); }
+.toast { display: flex; align-items: center; gap: var(--s-12); padding: var(--s-12) 18px; border-radius: 22px; background: var(--ink); color: var(--surface); font-size: var(--fs-14); font-weight: var(--fw-semi); box-shadow: 0 4px 0 var(--volt); }
+.toast:has(.btn) { padding-top: var(--s-4); padding-bottom: var(--s-4); padding-right: var(--s-4); }
+.toast .btn { min-height: 44px; background: transparent; color: var(--volt); border-color: transparent; padding: 0 var(--s-12); margin-left: auto; }
+.toast .btn:hover { background: rgba(255, 255, 255, 0.1); color: var(--volt); }
+
+/* ---------- skeleton ---------- */
+.skel { display: inline-block; min-width: 4em; height: 1em; border-radius: 4px; background: var(--inset); vertical-align: middle; animation: skel 1.2s ease-in-out infinite; }
+@keyframes skel { 50% { opacity: 0.55; } }
+
+/* ---------- spinner ---------- */
+.spin { width: 20px; height: 20px; border-radius: 50%; border: 2.5px solid var(--line-strong); border-top-color: var(--brand); animation: spin 0.8s linear infinite; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ---------- steps (1 Approve, 2 Swap) ---------- */
+.steps { display: flex; gap: var(--s-8); list-style: none; padding: 0; margin: 0; counter-reset: step; }
+.steps li { flex: 1; display: flex; align-items: center; gap: var(--s-8); font-size: var(--fs-14); font-weight: var(--fw-semi); color: var(--ink-2); padding: var(--s-8) 0; border-top: 3px solid var(--line); }
+.steps li::before { counter-increment: step; content: counter(step); display: inline-flex; align-items: center; justify-content: center; flex: none; width: 26px; height: 26px; border-radius: 50%; background: var(--inset); color: var(--ink-2); font-family: var(--font-display); font-size: var(--fs-13); font-weight: 900; }
+.steps li[aria-current="step"] { color: var(--ink); border-top-color: var(--ink); font-weight: var(--fw-heavy); }
+.steps li[aria-current="step"]::before { background: var(--volt); color: var(--on-volt); box-shadow: inset 0 0 0 2px var(--ink); }
+.steps li.is-done { color: var(--ink); border-top-color: var(--ink); }
+.steps li.is-done::before { content: "\2713"; background: var(--ink); color: var(--volt); }
+
+/* ---------- the swap track (signature) ----------
+   Top: old CT swapped (left), the 90% and its date (right). Rail: the 10% block paid at once, then one tick per lock day.
+   Foot: the 10% amount under its block (left), the lock state (right). The 10% block is sized to scale: 10 against 90. */
+.track { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-12) var(--s-16); align-items: end; }
+.track-end { display: grid; gap: 2px; min-width: 0; }
+.track-end.r { text-align: right; }
+.track-amt { font-size: var(--fs-20); font-weight: var(--fw-heavy); line-height: 1.2; letter-spacing: -0.01em; overflow-wrap: anywhere; }
+.track-unit { font-size: var(--fs-14); font-weight: var(--fw-semi); color: var(--ink-2); white-space: nowrap; }
+.track-cap { font-size: var(--fs-13); color: var(--ink-2); }
+.track-rail { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(18px, 0.78fr) repeat(7, minmax(0, 1fr)); gap: 4px; height: 10px; }
+/* The 10% block is volt with an ink edge, as on the landing's track: 10% now volt, the locked 90% sky. */
+.track-now { align-self: center; height: calc(100% + 8px); margin-right: 6px; border-radius: 6px; background: var(--volt); box-shadow: inset 0 0 0 2px var(--ink); }
+/* A day tick is an empty slot; its fill is ::before, scaled, so it can animate on transform alone. --part (0 to 1) is today's share. */
+.track-day { position: relative; overflow: hidden; border-radius: 4px; background: var(--inset); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.track-day::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--sky); transform: scaleX(0); transform-origin: left center; }
+.track-day.is-full::before { transform: none; }
+.track-day.is-today::before { transform: scaleX(var(--part, 0.5)); }
+.track-foot { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-8) var(--s-16); margin-top: -4px; min-width: 0; }
+.track-instant .track-amt { font-size: var(--fs-16); }
+.track-mid { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; font-size: var(--fs-13); font-weight: var(--fw-semi); color: var(--ink-2); text-align: right; }
+.track-mid svg { flex: none; }
+.track.is-ready .track-day::before { transform: none; }
+/* Released reads done and calm: a light sky fill (not live data, not empty); the check sits at the right end of the foot. */
+.track.is-released .track-day::before, .track.is-released .track-now { background: var(--sky-soft); }
+.track.is-released .track-now { box-shadow: inset 0 0 0 2px var(--line-strong); }
+.track.is-released .track-day::before { transform: none; }
+.track-lg .track-amt { font-size: var(--fs-24); }
+.track-lg .track-instant .track-amt { font-size: var(--fs-20); }
+@media (max-width: 480px) { .track-lg .track-amt { font-size: var(--fs-20); } .track-lg .track-instant .track-amt { font-size: var(--fs-16); } }
+.track-lg .track-rail { height: 14px; }
+.night .track-day { background: var(--night-surface); box-shadow: inset 0 0 0 1px var(--night-line); }
+.night .track-cap, .night .track-mid { color: var(--night-ink-2); }
+/* Aggregate track (status): the same parts, the ticks become levels. Tick 1 holds CT swapped in the last day, tick 7 unlocks next. */
+.track-agg .track-rail { height: 40px; align-items: end; }
+.track-agg .track-now { align-self: stretch; height: auto; }
+.track-agg .track-day { box-shadow: none; background: transparent; border-bottom: 2px solid var(--ink); border-radius: 0; }
+.track-agg .track-day::before { background: var(--sky); box-shadow: inset 0 0 0 1px rgba(11, 21, 48, 0.25); }
+.track-agg .track-day { height: 100%; }
+.track-agg .track-day::before { transform: scaleY(var(--lv, 0)); transform-origin: center bottom; border-radius: 2px; }
+.track-axis { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(18px, 0.78fr) repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: -8px; font-size: var(--fs-13); color: var(--ink-2); text-align: center; line-height: 1.3; white-space: nowrap; }
+.track-axis > :first-child { text-align: left; }
+.track-axis > :last-child { text-align: right; }
+
+/* ---------- section rhythm ---------- */
+.section { padding: var(--sp-section) 0; }
+.section-head { max-width: 640px; margin-bottom: var(--sp-head); }
+.section-head p { margin-top: var(--s-12); color: var(--ink-2); font-size: var(--fs-16); }
+@media (max-width: 599px) { .section-head p { margin-top: var(--s-8); } }
+.night { background: var(--night-bg); color: var(--night-ink); }
+.night .muted, .night .section-head p { color: var(--night-ink-2); }
+.night .panel { background: var(--night-surface); border-color: var(--night-line); }
+@media (min-width: 960px) { .section { padding: var(--s-96) 0; } }
+
+/* ---------- motion layer ----------
+   Tokens in tokens.css. Transform and opacity only; colour changes stay on --ease. motion.js adds the parts CSS cannot do:
+   .is-pressed for quick taps, the ripple, tilt and sheen, track fill on scroll, count up, reveal, CJ.celebrate. */
+
+/* 1. Press. Down fast with a quick shade, back on a spring. */
+:where(.btn, .chip, .seg-btn, .pg-num, .icon-btn, .w-open, .sort-btn, .cj-nav a, .cj-nav-mobile a, .cj-brand, .cj-foot-nav a, .help > summary, .press) {
+  transition: transform var(--dur-release) var(--ease-spring), background-color var(--dur) var(--ease), border-color var(--dur) var(--ease), color var(--dur) var(--ease);
+  -webkit-tap-highlight-color: transparent;
+}
+:is(.btn, .chip, .seg-btn, .pg-num, .icon-btn, .w-open, .sort-btn, .cj-nav a, .cj-nav-mobile a, .cj-brand, .cj-foot-nav a, .help > summary, .press):is(:active, .is-pressed):not([disabled], [aria-disabled="true"]) {
+  transform: scale(var(--press-scale));
+  transition-duration: var(--dur-press); transition-timing-function: var(--ease-out);
+}
+/* The volt button does not shrink: it presses down onto its ink drop, then springs back up. */
+.btn.btn-primary:is(:active, .is-pressed):not([disabled], [aria-disabled="true"]), .btn.cj-wallet:is(:active, .is-pressed):not([disabled]) {
+  transform: translateY(3px); box-shadow: var(--shadow-hard-down);
+}
+:where(.chip, .seg-btn, .pg-num, .icon-btn, .press) { position: relative; isolation: isolate; }
+:is(.btn, .chip, .seg-btn, .pg-num, .icon-btn, .press)::after {
+  content: ""; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: var(--press-shade);
+  opacity: 0; pointer-events: none; transition: opacity var(--dur-release) var(--ease-out);
+}
+:is(.btn, .chip, .seg-btn, .pg-num, .icon-btn, .press):is(:active, .is-pressed):not([disabled], [aria-disabled="true"])::after { opacity: 1; transition-duration: var(--dur-press); }
+.btn-primary::after { background: var(--press-shade-strong); }
+.night .btn::after { background: var(--press-shade-night); }
+
+/* 2. Ripple on the primary button, from the touch point. Clipped by .btn, never delays the action. */
+.ripple {
+  position: absolute; z-index: -1; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, var(--ripple), transparent);
+  transform: translate(-50%, -50%) scale(0.15); opacity: 0;
+  animation: cj-ripple var(--dur-reveal) var(--ease-out) forwards;
+}
+@keyframes cj-ripple { 0% { opacity: 1; } 100% { opacity: 0; transform: translate(-50%, -50%) scale(1); } }
+
+/* 3. Cards lift. .lift: a standalone card on the page ground. .lift-row: a row in a list (FAQ, history lots, large swaps).
+   The shadow is a pseudo element that fades, so nothing animates box-shadow. Hover only where a fine pointer can hover. */
+.lift { position: relative; transition: transform var(--dur-release) var(--ease-spring); }
+.lift::after {
+  content: ""; position: absolute; inset: -1px; border-radius: inherit; box-shadow: var(--shadow-lift);
+  opacity: 0; pointer-events: none; transition: opacity var(--dur-fast) var(--ease-out);
+}
+.night .lift::after { box-shadow: var(--shadow-lift-night), inset 0 0 0 1px var(--night-ink-2); }
+.lift-row, .mg-lot { position: relative; isolation: isolate; transition: transform var(--dur-release) var(--ease-spring); }
+.lift-row::before, .mg-lot::before {
+  content: ""; position: absolute; inset: 0 calc(var(--s-12) * -1); z-index: -1; border-radius: var(--r-control);
+  background: var(--surface); box-shadow: var(--shadow-lift); opacity: 0; pointer-events: none; transition: opacity var(--dur-fast) var(--ease-out);
+}
+.panel .lift-row::before, .panel .mg-lot::before { background: var(--bg); box-shadow: none; }
+/* The plate carries a gradient hairline (--edge), so the edge lights up as the plate fades in. */
+@media (hover: hover) and (pointer: fine) {
+  .lift-row::before, .mg-lot::before { border: 1px solid transparent; background: linear-gradient(var(--surface), var(--surface)) padding-box, var(--edge) border-box; }
+  .panel .lift-row::before, .panel .mg-lot::before { background: linear-gradient(var(--bg), var(--bg)) padding-box, var(--edge) border-box; }
+}
+@media (hover: hover) and (pointer: fine) {
+  .lift:hover, .lift-row:hover, .mg-lot:hover { transform: translateY(var(--lift)); }
+  .lift:hover::after, .lift-row:hover::before, .mg-lot:hover::before { opacity: 1; }
+}
+.lift:active, .lift-row:not(details):active, details.lift-row:has(> summary:active) {
+  transform: scale(var(--press-scale-card)); transition-duration: var(--dur-press); transition-timing-function: var(--ease-out);
+}
+/* Pointer follow tilt and sheen (motion.js, fine pointers only). */
+.tilt { transition: transform var(--dur-release) var(--ease-out); }
+.sheen-clip { position: absolute; inset: 0; border-radius: inherit; overflow: hidden; pointer-events: none; }
+.sheen {
+  position: absolute; left: 0; top: 0; width: 420px; height: 420px; margin: -210px 0 0 -210px; border-radius: 50%;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--sky) 16%, transparent), transparent);
+  opacity: 0; transition: opacity var(--dur-base) var(--ease-out);
+}
+.tilt.is-tilting .sheen { opacity: 1; }
+
+/* 4. Swap track: the 10% block pops, then the day ticks fill in order (motion.js adds .is-armed, then .is-filling). */
+.track.is-armed .track-now, .track.is-armed .track-day::before { opacity: 0; }
+.track.is-filling .track-now { animation: cj-pop var(--dur-slow) var(--ease-spring) both; }
+.track.is-filling .track-day::before { animation: cj-fill var(--dur-base) var(--ease-out) both; }
+.track-agg.is-filling .track-day::before { animation-name: cj-rise; }
+.track.is-filling .track-day:nth-child(2)::before { animation-delay: 160ms; }
+.track.is-filling .track-day:nth-child(3)::before { animation-delay: 210ms; }
+.track.is-filling .track-day:nth-child(4)::before { animation-delay: 260ms; }
+.track.is-filling .track-day:nth-child(5)::before { animation-delay: 310ms; }
+.track.is-filling .track-day:nth-child(6)::before { animation-delay: 360ms; }
+.track.is-filling .track-day:nth-child(7)::before { animation-delay: 410ms; }
+.track.is-filling .track-day:nth-child(8)::before { animation-delay: 460ms; }
+@keyframes cj-pop { from { opacity: 0; transform: scale(0.4); } }
+@keyframes cj-fill { from { transform: scaleX(0); } }
+@keyframes cj-rise { from { transform: scaleY(0); } }
+/* Lock ended, being sent: a gentle highlight sweeps the rail left to right. */
+.track.is-ready .track-day::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(90deg, transparent, var(--sheen), transparent);
+  transform: translateX(-100%); animation: cj-shimmer 2400ms var(--ease-in-out) infinite;
+}
+.track.is-ready .track-day:nth-child(3)::after { animation-delay: 50ms; }
+.track.is-ready .track-day:nth-child(4)::after { animation-delay: 100ms; }
+.track.is-ready .track-day:nth-child(5)::after { animation-delay: 150ms; }
+.track.is-ready .track-day:nth-child(6)::after { animation-delay: 200ms; }
+.track.is-ready .track-day:nth-child(7)::after { animation-delay: 250ms; }
+.track.is-ready .track-day:nth-child(8)::after { animation-delay: 300ms; }
+@keyframes cj-shimmer { 0% { transform: translateX(-100%); } 16%, 100% { transform: translateX(100%); } }
+
+/* 6. Scroll reveal, once per section, content visible without JS (motion.js arms only what is below the fold). */
+.rv-wait { opacity: 0; }
+.rv-in { animation: cj-reveal var(--dur-reveal) var(--ease-out) both; }
+/* translate and scale are separate properties, so these entries compose with any transform the element already has. */
+@keyframes cj-reveal { from { opacity: 0; translate: 0 8px; } }
+
+/* 7. Popovers, dialogs, FAQ. */
+.help[open] > .help-pop { animation: cj-pop-in var(--dur-fast) var(--ease-out); }
+@keyframes cj-pop-in { from { opacity: 0; translate: 0 -4px; scale: 0.97; } }
+dialog[open] { animation: cj-dialog-in var(--dur-base) var(--ease-out); }
+dialog[open]::backdrop { animation: cj-fade-in var(--dur-base) var(--ease-out); }
+/* Closing: fade and settle, where display and overlay can transition; elsewhere it closes at once. */
+dialog { transition: opacity var(--dur-fast) var(--ease-out), translate var(--dur-fast) var(--ease-out), scale var(--dur-fast) var(--ease-out), overlay var(--dur-fast) allow-discrete, display var(--dur-fast) allow-discrete; }
+dialog:not([open]) { opacity: 0; translate: 0 8px; scale: 0.98; }
+@keyframes cj-dialog-in { from { opacity: 0; translate: 0 8px; scale: 0.98; } }
+@keyframes cj-fade-in { from { opacity: 0; } }
+@supports (interpolate-size: allow-keywords) {
+  details.smooth { interpolate-size: allow-keywords; }
+  details.smooth::details-content { block-size: 0; overflow: hidden; transition: block-size var(--dur-base) var(--ease-out), content-visibility var(--dur-base) allow-discrete; }
+  details.smooth[open]::details-content { block-size: auto; }
+}
+details.smooth[open] > :not(summary) { animation: cj-reveal var(--dur-base) var(--ease-out) both; }
+
+/* Live stamp: one soft ring when fresh data lands. */
+.live-dot { position: relative; }
+.live-dot::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--sky); opacity: 0; pointer-events: none; }
+.live-dot.is-tick::after { animation: cj-ping var(--dur-reveal) var(--ease-out); }
+/* While live (not stale), a soft ring breathes out every few seconds so the stamp reads as current. */
+.live-dot::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: var(--sky); opacity: 0; pointer-events: none; }
+.live-dot:not(.is-stale)::before { animation: cj-live 2800ms var(--ease-out) 600ms infinite; }
+@keyframes cj-live { 0% { opacity: 0.6; transform: scale(1); } 60%, 100% { opacity: 0; transform: scale(2.8); } }
+@keyframes cj-ping { from { opacity: 0.7; transform: scale(1); } to { opacity: 0; transform: scale(2.6); } }
+
+/* 8. CJ.celebrate: a check that pops and a ring of sparks, once. Placed over the element, outside the layout. */
+.cj-cele { position: fixed; z-index: 70; width: 0; height: 0; pointer-events: none; }
+.cj-cele-check {
+  position: absolute; left: -28px; top: -28px; width: 56px; height: 56px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: var(--volt); color: var(--on-volt); box-shadow: inset 0 0 0 2px var(--ink), 0 4px 0 var(--ink); animation: cj-cele-pop var(--dur-slow) var(--ease-spring) both, cj-cele-out var(--dur-base) var(--ease-out) 900ms forwards;
+}
+.cj-cele-ring {
+  position: absolute; left: -28px; top: -28px; width: 56px; height: 56px; border-radius: 50%; box-shadow: inset 0 0 0 2px var(--brand);
+  animation: cj-cele-ring var(--dur-reveal) var(--ease-out) 60ms both;
+}
+.cj-cele-spark {
+  position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border-radius: 50%; background: var(--brand);
+  animation: cj-cele-spark var(--dur-reveal) var(--ease-out) 80ms both;
+}
+.cj-cele-spark:nth-child(even) { background: var(--volt); box-shadow: 0 0 0 1px var(--ink); width: 5px; height: 5px; left: -2.5px; top: -2.5px; }
+.cj-cele-check.is-still { animation: none; }
+@keyframes cj-cele-pop { from { opacity: 0; transform: scale(0.5); } }
+@keyframes cj-cele-out { to { opacity: 0; transform: scale(0.9); } }
+@keyframes cj-cele-ring { from { opacity: 0.9; transform: scale(0.9); } to { opacity: 0; transform: scale(1.9); } }
+@keyframes cj-cele-spark { from { opacity: 1; transform: rotate(var(--a)) translateY(-30px) scale(1); } to { opacity: 0; transform: rotate(var(--a)) translateY(-58px) scale(0.4); } }
+
+/* Ambient loops stop while their section is off screen (motion.js sets .fx-off on .fx-host and .live-dot). Removed, not paused:
+   Chrome still restyles paused animations on every scrolled frame. They restart from their first frame out of sight. */
+.fx-off .fx-loop, .fx-off .fx-loop::before, .fx-off .fx-loop::after, .fx-off.fx-host::before, .fx-off.fx-host::after, .live-dot.fx-off::before { animation: none; }
+
+/* ---------- reduced motion: no movement, instant states ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; animation-delay: 0ms !important; transition-duration: 0.01ms !important; transition-delay: 0ms !important; scroll-behavior: auto !important; }
+  :is(.btn, .chip, .seg-btn, .pg-num, .icon-btn, .w-open, .sort-btn, .cj-nav a, .cj-nav-mobile a, .cj-brand, .cj-foot-nav a, .help > summary, .press):is(:active, .is-pressed, :hover),
+  .lift:hover, .lift-row:hover, .mg-lot:hover, .lift:active, .lift-row:active, details.lift-row:has(> summary:active), .tilt { transform: none !important; }
+  .track.is-ready .track-day::after, .ripple, .sheen-clip, .cj-cele-ring, .cj-cele-spark, .live-dot::after, .live-dot::before { display: none; }
+  .fx-loop, .fx-loop::before, .fx-loop::after { animation: none !important; }
+  .cj-cele-check { animation: none !important; }
+  .rv-wait { opacity: 1; }
+}
+
+/* ---------- shell: banner, header, footer (the landing's header, on every app page) ---------- */
+/* Anything scrolled into view (anchors, focused headings, scrollIntoView) clears the sticky header (60 px mobile, 64 px desktop). */
+html { scroll-padding-top: 76px; }
+/* Skip link: first Tab stop on every page. */
+.cj-skip { position: absolute; z-index: 100; left: var(--s-16); top: var(--s-8); display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--s-16); border-radius: var(--r-pill); background: var(--volt); color: var(--on-volt); font-weight: var(--fw-heavy); box-shadow: var(--shadow-hard); text-decoration: none; }
+.cj-skip:not(:focus) { width: 1px; height: 1px; min-height: 0; padding: 0; overflow: hidden; clip-path: inset(50%); white-space: nowrap; box-shadow: none; }
+/* Anti phishing note: one slim ink line above the header, the shield in volt. */
+.cj-banner { background: var(--ink); color: var(--snow); font-size: var(--fs-13); line-height: 1.45; }
+.cj-banner .container { display: flex; gap: var(--s-8); align-items: flex-start; padding-top: var(--s-8); padding-bottom: var(--s-8); }
+.cj-banner svg { flex: none; margin-top: 1px; color: var(--volt); }
+.cj-header { position: sticky; top: 0; z-index: 40; background: var(--brand); color: var(--on-brand); }
+.cj-header-row { display: flex; align-items: center; gap: var(--s-12); min-height: 64px; }
+/* Logo pill (snow chip with the mark) and the volt "since 2019" tag, as on the landing. */
+.cj-brand { display: inline-flex; align-items: center; gap: var(--s-8); min-height: 44px; color: var(--ink); text-decoration: none; border-radius: var(--r-pill); flex: none; }
+.cj-brand:hover { color: var(--ink); }
+.cj-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 4px 12px 4px 4px; border-radius: var(--r-pill); background: var(--snow); color: var(--ink); font-size: 15px; font-weight: var(--fw-heavy); letter-spacing: -0.01em; line-height: 1; }
+.cj-chip img { width: 26px; height: 26px; }
+.cj-since { padding: 3px 10px; border-radius: var(--r-pill); background: var(--volt); color: var(--on-volt); font-family: "Archivo", var(--font); font-weight: 900; font-stretch: 112%; font-size: 12px; line-height: 1.35; text-transform: uppercase; white-space: nowrap; transform: rotate(-6deg); }
+@media (max-width: 420px) { .cj-header .cj-since { display: none; } }
+/* Pill links: white outline on blue; the current page is a snow pill with blue text. */
+.cj-nav { display: none; gap: 6px; margin-left: var(--s-12); }
+.cj-nav a, .cj-nav-mobile a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 var(--s-16); border: 1.5px solid rgba(255, 255, 255, 0.5); border-radius: var(--r-pill); color: var(--on-brand); font-size: var(--fs-14); font-weight: var(--fw-semi); text-decoration: none; white-space: nowrap; }
+.cj-nav a:hover, .cj-nav-mobile a:hover { background: rgba(255, 255, 255, 0.14); color: var(--on-brand); }
+.cj-nav a[aria-current="page"], .cj-nav-mobile a[aria-current="page"] { background: var(--snow); border-color: var(--snow); color: var(--brand); font-weight: var(--fw-heavy); }
+.cj-nav-mobile { display: flex; gap: var(--s-8); }
+/* Header wallet button: volt with the hard ink drop, one line, data font for the address, short label under 400 px.
+   Pretendard's contextual alternates draw "0x" as a times sign, so the address switches them off. */
+.cj-wallet { min-height: 44px; white-space: nowrap; flex: none; background: var(--volt); border-color: var(--ink); color: var(--on-volt); font-weight: var(--fw-heavy); box-shadow: var(--shadow-hard); overflow: visible; }
+.cj-wallet:hover { background: var(--volt); color: var(--on-volt); border-color: var(--ink); }
+@media (hover: hover) and (pointer: fine) { .cj-wallet:hover { transform: translateY(-2px); box-shadow: var(--shadow-hard-up); } }
+.cj-wallet::after { background: var(--press-shade-strong); }
+.cj-addr { font-family: var(--font-data); font-size: var(--fs-13); font-weight: var(--fw-bold); font-variant-ligatures: none; font-feature-settings: "calt" 0, "liga" 0; }
+.cj-wl-short { display: none; }
+.cj-tools { margin-left: auto; display: flex; align-items: center; gap: var(--s-8); }
+/* Language pill. */
+.cj-lang { position: relative; display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 0 0 var(--s-12); border-radius: var(--r-pill); box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.5); color: var(--on-brand); cursor: pointer; }
+.cj-lang:hover { background: rgba(255, 255, 255, 0.14); }
+.cj-lang select { field-sizing: content; appearance: none; -webkit-appearance: none; border: 0; background: transparent; color: var(--on-brand); font: inherit; font-size: var(--fs-13); font-weight: var(--fw-bold); min-height: 44px; padding: 0 var(--s-12) 0 0; border-radius: 0 var(--r-pill) var(--r-pill) 0; cursor: pointer; }
+.cj-lang select option { color: var(--ink); background: var(--snow); }
+.cj-lang select:focus-visible { outline: none; }
+.cj-lang:focus-within { outline: 3px solid var(--volt); outline-offset: 3px; }
+@media (min-width: 768px) {
+  .cj-nav { display: flex; }
+  .cj-nav-mobile { display: none; }
+}
+/* Mobile header: one 60 px sticky row; the pill row (.cj-subnav) sits below it on the same blue and scrolls away. */
+.cj-subnav { background: var(--brand); }
+.cj-subnav .cj-nav-mobile { padding-top: var(--s-4); padding-bottom: var(--s-12); overflow-x: auto; scrollbar-width: none; }
+.cj-subnav .cj-nav-mobile::-webkit-scrollbar { display: none; }
+@media (min-width: 768px) { .cj-subnav { display: none; } }
+@media (max-width: 767px) {
+  .cj-header-row { min-height: 60px; gap: var(--s-8); }
+  .cj-tools { gap: 6px; }
+}
+@media (max-width: 399px) {
+  .cj-wl-long { display: none; }
+  .cj-wl-short { display: inline; }
+  .cj-wallet { padding: 0 var(--s-12); }
+  .cj-lang { padding-left: 10px; }
+  .cj-lang select { padding-right: 10px; }
+  .cj-chip { font-size: 14px; }
+}
+/* iOS zooms into any focused field under 16 px: the language select included. */
+@media (hover: none) and (pointer: coarse) { .cj-lang select { font-size: var(--fs-16); } }
+
+/* ---------- page head band ----------
+   <header class="cj-band ..."> on each app page: the blue ground with the faint grid runs edge to edge behind the page
+   title, straight on from the header. The head spans its container, so the band can reach the viewport edges from it. */
+.cj-band { position: relative; isolation: isolate; color: var(--on-brand); padding-top: var(--s-32); padding-bottom: 36px; }
+.cj-band::before { content: ""; position: absolute; z-index: -1; top: 0; bottom: 0; left: calc(50% - 50vw); right: calc(50% - 50vw); background: var(--band); pointer-events: none; }
+.cj-band h1 { color: var(--on-brand); font-size: clamp(32px, 7.4vw, 64px); }
+:is(:lang(ko), :lang(ja)) .cj-band h1 { font-size: clamp(32px, 7.4vw, 56px); }
+.cj-band p, .cj-band .muted { color: var(--on-brand-2); }
+.cj-band a:not(.btn) { color: var(--on-brand); }
+.cj-band .skel { background: rgba(255, 255, 255, 0.22); }
+.cj-band .live-dot { background: var(--volt); box-shadow: 0 0 0 3px rgba(214, 255, 61, 0.28); }
+.cj-band .live-dot::before, .cj-band .live-dot::after { background: var(--volt); }
+.cj-band .live-dot.is-stale { background: var(--on-brand-2); box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.16); }
+/* plain buttons on blue: a snow pill with an ink edge; the volt primary keeps its ink drop */
+.cj-band .btn:not(.btn-primary):not(.btn-ghost) { background: var(--snow); }
+.cj-band .btn:not(.btn-primary):not(.btn-ghost):hover { background: var(--surface); }
+@media (min-width: 960px) { .cj-band { padding-top: 48px; padding-bottom: 48px; } }
+@media (max-width: 599px) { .cj-band { padding-top: var(--s-24); padding-bottom: 28px; } }
+
+/* ---------- footer: on the blue ground, as on the landing ---------- */
+.cj-footer { margin-top: var(--sp-section); background: var(--brand); color: var(--on-brand); padding: var(--sp-foot) 0 calc(var(--sp-head) + env(safe-area-inset-bottom)); font-size: var(--fs-14); }
+.cj-footer .muted, .cj-footer .addr-tba { color: var(--on-brand-2); }
+.cj-foot-grid { display: grid; gap: var(--sp-group); grid-template-columns: minmax(0, 1fr); }
+.cj-foot-brand p { margin-top: var(--s-12); max-width: 26em; }
+.cj-foot-h { font-size: var(--fs-13); font-weight: var(--fw-heavy); color: var(--on-brand-2); margin-bottom: var(--s-8); letter-spacing: 0.04em; text-transform: uppercase; }
+:is(:lang(ko), :lang(ja)) .cj-foot-h { letter-spacing: 0; }
+.cj-foot-nav { display: grid; }
+.cj-foot-nav a { display: inline-flex; align-items: center; width: fit-content; min-height: 44px; color: var(--on-brand); font-weight: var(--fw-semi); text-decoration: none; text-underline-offset: 3px; }
+.cj-foot-nav a:hover { color: var(--on-brand); text-decoration: underline; }
+.cj-foot-addrs { display: grid; gap: var(--s-8); min-width: 0; }
+.cj-footer .addr-label { color: var(--on-brand-2); font-weight: var(--fw-bold); }
+.cj-footer .addr-value { color: var(--on-brand); }
+.cj-footer .addr-actions .btn { background: transparent; border-color: rgba(255, 255, 255, 0.7); color: var(--on-brand); }
+.cj-footer .addr-actions .btn:hover { background: var(--snow); border-color: var(--snow); color: var(--brand); }
+.cj-footer .addr-actions .btn::after { background: rgba(255, 255, 255, 0.16); }
+.cj-foot-addrs .addr-label { min-width: 7.5em; }
+.cj-foot-legal { position: relative; margin-top: var(--sp-group); padding-top: var(--sp-panel); display: grid; gap: var(--s-8); }
+.cj-foot-legal .muted { color: var(--on-brand-2); }
+/* Phones: the site links sit two to a row (each still a 44 px target), so the footer is half as tall. */
+@media (max-width: 599px) { .cj-foot-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: var(--s-16); } .cj-foot-h { margin-bottom: 0; } }
+/* The rule sits inside the container padding, so it is exactly as wide as the text above it. */
+.cj-foot-legal::before { content: ""; position: absolute; top: 0; left: var(--gutter); right: var(--gutter); height: 1px; background: rgba(255, 255, 255, 0.22); }
+@media (min-width: 900px) {
+  .cj-foot-grid { grid-template-columns: 1fr 0.5fr 2.4fr; }
+  /* Compact footer (body[data-foot="compact"]): brand and site links only; the contracts link sits in the site list. */
+  [data-foot="compact"] .cj-foot-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
+}
+
+/* new CT price pill (assets/price.js), shown only once a pool price exists */
+.cj-price { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; min-height: 36px; padding: 4px 14px; border: 1.5px solid var(--ink); border-radius: var(--r-pill); background: var(--surface); color: var(--ink); font-size: var(--fs-14); font-weight: var(--fw-semi); text-decoration: none; }
+a.cj-price { min-height: 44px; }
+a.cj-price:hover { background: var(--inset); }
+.cj-price-k { color: var(--ink-2); }
+.cj-price .num { font-weight: var(--fw-heavy); }
+.cj-price-ch.is-up { color: var(--up); } .cj-price-ch.is-down { color: var(--down); }
+.cj-price .tag { background: var(--ink); color: var(--snow); }
+/* on the blue band: glass, as on the landing hero */
+.cj-band .cj-price { border-color: rgba(255, 255, 255, 0.4); background: rgba(255, 255, 255, 0.14); color: var(--on-brand); }
+.cj-band a.cj-price:hover { background: rgba(255, 255, 255, 0.24); }
+.cj-band .cj-price-k { color: var(--on-brand-2); }
+.cj-band .cj-price-ch.is-up { color: var(--volt); } .cj-band .cj-price-ch.is-down { color: #FFC2B8; }
+.hero-price, .st-price { margin: 0; }

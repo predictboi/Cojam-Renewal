@@ -1,0 +1,183 @@
+# Render Blueprint for the Cojam site.
+# Connect this repository in the Render dashboard (New, Blueprint) once the branch is merged to main.
+# Phase 1 is a static site served from ./site. When the app needs a server (wallet API, indexer),
+# add a second service here instead of changing this one.
+services:
+  - type: web
+    name: cojam-site
+    runtime: static
+    buildCommand: echo "static site, no build step"
+    staticPublishPath: ./site
+    autoDeployTrigger: commit
+    previews:
+      generation: automatic
+    buildFilter:
+      paths:
+        - site/**
+        - render.yaml
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000; includeSubDomains
+      # Assets keep their file names between releases, so browsers must revalidate them: a year long
+      # immutable cache would keep visitors on old CSS and JS. Vendor bundles carry their version in the name.
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=300, must-revalidate
+      - path: /assets/vendor/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable
+    routes:
+      - type: rewrite
+        source: /ko
+        destination: /index.html
+      - type: rewrite
+        source: /ja
+        destination: /index.html
+
+  # Gas sponsor API (Kaia fee delegation) and the claim keeper, one Node process.
+  # Why one service and not a separate worker: both use the same gas wallet, the admin page
+  # reads one set of counters (spend today, runway), and the keeper is light (one round a
+  # minute). The keeper is idempotent, so a restart or a deploy loses nothing. Keep exactly
+  # one instance and no preview environments: a second copy would run a second keeper with
+  # the same key. To split later, set RUN_MODE=api here and enable the worker below.
+  # The default paid instance type is required: a free web service sleeps when idle, which
+  # would stop the keeper.
+  - type: web
+    name: cojam-gas-api
+    runtime: node
+    rootDir: server
+    region: singapore
+    # Starter or above: a free instance sleeps when idle and would stop the keeper.
+    plan: starter
+    numInstances: 1
+    buildCommand: npm ci --omit=dev
+    startCommand: node src/index.js
+    healthCheckPath: /api/health
+    autoDeployTrigger: commit
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: RUN_MODE
+        value: all
+      # 1001 Kairos for the rehearsal, 8217 Kaia mainnet at launch.
+      - key: CHAIN_ID
+        value: "1001"
+      # Kairos rehearsal values (contracts/deployments/kairos.json). Public addresses, not secrets.
+      # At launch: CHAIN_ID 8217, a dedicated mainnet RPC, the mainnet swap and block, and delete OLD_CT_ADDRESS.
+      - key: KAIA_RPC_URL
+        value: https://public-en-kairos.node.kaia.io
+      - key: SWAP_CONTRACT_ADDRESS
+        value: "0x4948D9DFaafC8CC0ee6464208659350F11931252"
+      - key: SWAP_DEPLOY_BLOCK
+        value: "233013908"
+      # Only on Kairos (mainnet defaults to the real old CT 0x7f223b1607171b81ebd68d22f1ca79157fd4a44b).
+      - key: OLD_CT_ADDRESS
+        value: "0x6E86699DE0182884E5ee627E43764c718832D5e8"
+      - key: ALLOWED_ORIGINS
+        value: https://cojam.app,https://www.cojam.app
+      # The only secret: the gas wallet's private key (fee payer 0xB3CB36B4faE25a0661E2dDD5eca59e18B53152da).
+      # Entered in the Render dashboard when the Blueprint asks, never in the repo.
+      - key: FEE_PAYER_PRIVATE_KEY
+        sync: false
+      - key: MAX_GAS_PRICE_GKEI
+        value: "50"
+      - key: MAX_GAS_LIMIT_APPROVE
+        value: "120000"
+      - key: MAX_GAS_LIMIT_SWAP
+        value: "600000"
+      - key: MAX_CLAIM_LOTS
+        value: "50"
+      - key: SENDER_DAILY_TX_LIMIT
+        value: "10"
+      - key: IP_DAILY_TX_LIMIT
+        value: "40"
+      - key: DAILY_BUDGET_KAIA
+        value: "50"
+      - key: MIN_FEE_PAYER_BALANCE_KAIA
+        value: "5"
+      - key: MIN_SPONSORED_OLD_CT
+        value: "1"
+      - key: KEEPER_MIN_BALANCE_KAIA
+        value: "1"
+      - key: KEEPER_INTERVAL_SECONDS
+        value: "60"
+      - key: KEEPER_UNLOCK_DELAY_SECONDS
+        value: "120"
+
+  # Key jobs (mainnet rehearsal, launch deploy). A cron job so it never serves traffic and the keys stay out of the
+  # internet facing gas API. It only runs when someone presses "Trigger Run" in the dashboard (the schedule, once a
+  # year on 1 January, runs the harmless default task "check"). Pick the job with OPS_TASK and CONFIRM_MAINNET,
+  # see contracts/scripts/ops.js. Remove the two keys from the dashboard when the jobs are done.
+  - type: cron
+    name: cojam-ops
+    runtime: node
+    rootDir: contracts
+    region: singapore
+    plan: starter
+    schedule: "0 0 1 1 *"
+    buildCommand: npm ci && npx hardhat compile
+    startCommand: npx hardhat run scripts/ops.js --network kaia
+    buildFilter:
+      paths:
+        - contracts/**
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      # check | rehearse-mainnet | deploy-mainnet
+      - key: OPS_TASK
+        value: check
+      # Set to yes in the dashboard right before a run that sends real transactions, then back to no.
+      - key: CONFIRM_MAINNET
+        value: "no"
+      - key: REHEARSAL_AMOUNT
+        value: "100"
+      # Public Kaia mainnet RPC. Replace with a dedicated endpoint if it rate limits.
+      - key: KAIA_RPC_URL
+        value: https://public-en.node.kaia.io
+      # Secrets, entered in the dashboard only: the deployer wallet 0xB18149317Bf633F5Dc2a6044a11103D580cA4a33
+      # and the mainnet test wallet.
+      - key: DEPLOYER_PRIVATE_KEY
+        sync: false
+      - key: MAINNET_TEST_PRIVATE_KEY
+        sync: false
+
+  # Optional split, off for now: uncomment and set RUN_MODE=api on cojam-gas-api above.
+  # Counters are per process until the usage store moves to Redis (Render Key Value).
+  # - type: worker
+  #   name: cojam-keeper
+  #   runtime: node
+  #   rootDir: server
+  #   region: singapore
+  #   numInstances: 1
+  #   buildCommand: npm ci --omit=dev
+  #   startCommand: node src/index.js keeper
+  #   envVars:
+  #     - key: NODE_VERSION
+  #       value: "20"
+  #     - key: RUN_MODE
+  #       value: keeper
+  #     - key: CHAIN_ID
+  #       value: "1001"
+  #     - key: KAIA_RPC_URL
+  #       sync: false
+  #     - key: SWAP_CONTRACT_ADDRESS
+  #       sync: false
+  #     - key: SWAP_DEPLOY_BLOCK
+  #       sync: false
+  #     - key: OLD_CT_ADDRESS
+  #       sync: false
+  #     - key: FEE_PAYER_PRIVATE_KEY
+  #       sync: false
