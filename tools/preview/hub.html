@@ -76,7 +76,7 @@ footer { color: var(--ink-2); font-size: 13px; }
     <h2 id="h-flow">Try the full swap on your phone</h2>
     <p class="sub">Start inside Kaia Wallet (one tap connect, no fee), swap, then jump ahead in time to see the 90% released.</p>
     <ul class="list">
-      <li><a href="migrate/index.html?env=inapp-kaia&amp;reset=1"><strong>1. Swap as a Kaia Wallet user</strong><span class="d">Connect, enter an amount, approve, swap</span><span class="go" aria-hidden="true">&rsaquo;</span></a></li>
+      <li><a href="migrate/index.html?env=inapp-kaia&amp;reset=1&amp;price=demo"><strong>1. Swap as a Kaia Wallet user</strong><span class="d">Connect, see your wallet card, enter an amount, check the confirm sheet, approve, swap</span><span class="go" aria-hidden="true">&rsaquo;</span></a></li>
       <li><a href="migrate/index.html?env=inapp-kaia&amp;days=7.01"><strong>2. Come back after 7 days</strong><span class="d">The 90% is being sent; claim it yourself if you like</span><span class="go" aria-hidden="true">&rsaquo;</span></a></li>
       <li><a href="migrate/index.html?env=inapp-kaia&amp;days=8"><strong>3. Come back after 8 days</strong><span class="d">Released automatically by the keeper</span><span class="go" aria-hidden="true">&rsaquo;</span></a></li>
       <li><a href="migrate/index.html?env=mobile-browser&amp;reset=1"><strong>From a normal phone browser</strong><span class="d">Connect opens the wallet sheet: Kaia Wallet, MetaMask, WalletConnect</span><span class="go" aria-hidden="true">&rsaquo;</span></a></li>
@@ -89,8 +89,9 @@ footer { color: var(--ink-2); font-size: 13px; }
     <p class="sub">Each opens the app frozen in one state.</p>
     <div class="chips">
       <a href="migrate/index.html?state=disconnected&amp;reset=1">Not connected</a>
-      <a href="migrate/index.html?state=ready&amp;reset=1">Ready</a>
-      <a href="migrate/index.html?state=review&amp;reset=1">Large amount review</a>
+      <a href="migrate/index.html?state=ready&amp;reset=1&amp;price=demo">Ready (wallet card)</a>
+      <a href="migrate/index.html?state=confirm&amp;reset=1&amp;price=demo">Confirm sheet</a>
+      <a href="migrate/index.html?state=review&amp;reset=1&amp;price=demo">Confirm sheet, large amount</a>
       <a href="migrate/index.html?state=approve&amp;reset=1">Approve</a>
       <a href="migrate/index.html?state=wallet&amp;reset=1">Waiting for wallet</a>
       <a href="migrate/index.html?state=pending&amp;reset=1">Pending</a>
@@ -115,6 +116,8 @@ footer { color: var(--ink-2); font-size: 13px; }
     <div class="chips">
       <a href="home.html?lang=ko">Landing in Korean</a>
       <a href="home.html?lang=ja">Landing in Japanese</a>
+      <a href="home.html?price=demo">Landing with a sample price</a>
+      <a href="migrate/index.html?state=ready&amp;reset=1&amp;pool=0x0f0878e270a518af0c0ea51b643a7e0a7787be91">Live price read (another Kaia pool, as a test)</a>
       <a href="status/index.html?state=loading">Status loading</a>
       <a href="status/index.html?state=error">Status error</a>
       <a href="admin/index.html?keeper=late&amp;gas=low">Admin with alerts</a>

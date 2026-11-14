@@ -70,3 +70,18 @@ Most holders arrive on a phone. Every page and every swap state must work one ha
 ## Interaction and motion
 
 Not plain: every control answers touch. Press feedback (scale and shade on press), card lift on hover and press, a subtle ripple or glow from the touch point on primary buttons, animated swap track fill, count-up figures, smooth sheet transitions, success moment when a swap confirms. Rules: transform and opacity only, 120 to 240 ms for feedback, spring-like easing, never block input, full `prefers-reduced-motion` fallback, the accent keeps its two jobs.
+
+## Wallet card, confirm sheet and price (2026-11-14)
+
+- **Wallet card:** once connected, the swap form opens with a card: the wallet app, its address (tap to copy), the old CT balance in large type, new CT received, KAIA when the wallet pays its own fee, and the new CT price.
+- **Confirm sheet:** pressing Swap opens a sheet (bottom sheet on phones) before any wallet request. It shows:
+  - old CT sent and new CT received in total;
+  - the 10% that arrives now and the 90% with its date;
+  - dollar values when a price exists;
+  - the receiving wallet, the network fee and how many signatures follow.
+
+  Amounts over 1,000,000 add a check box. It replaces the separate large amount step. States: `?state=confirm`, `?state=review`.
+- **Price:** `site/assets/price.js` reads the new CT pool from GeckoTerminal's public API (CORS open), refreshes every 60 s and caches for 60 s.
+  - The pool is `CJ.config.pool.link` in `system.js`; paste the pool link there when it exists. Until then no price is shown, and the wallet card says it appears once the pool opens.
+  - Review switches: `?price=demo` (sample price, labelled) and `?pool=<link>` (reads any pool, labelled as a sample, ignored once a pool is configured).
+  - Shown on the landing hero, the status head, the wallet card and the confirm sheet.

@@ -468,3 +468,11 @@ html { scroll-padding-top: 72px; }
   /* Compact footer (body[data-foot="compact"]): brand and site links only; the contracts link sits in the site list. */
   [data-foot="compact"] .cj-foot-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr); }
 }
+
+/* new CT price pill (assets/price.js), shown only once a pool price exists */
+.cj-price { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 4px 6px; min-height: 36px; padding: 4px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink); font-size: var(--fs-14); text-decoration: none; }
+a.cj-price:hover { border-color: var(--line-strong); }
+.cj-price-k { color: var(--ink-2); }
+.cj-price .num { font-weight: var(--fw-semi); }
+.cj-price-ch.is-up { color: var(--up); } .cj-price-ch.is-down { color: var(--down); }
+.hero-price, .st-price { margin: 0; }

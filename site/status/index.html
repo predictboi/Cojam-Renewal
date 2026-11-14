@@ -26,6 +26,7 @@
         <p class="muted" id="st-window"></p>
       </div>
       <div class="st-head-tools">
+        <p class="st-price" id="st-price" hidden></p>
         <p class="st-live small" id="st-live"><span class="live-dot" id="st-live-dot" aria-hidden="true"></span><span id="st-live-text">Reading the Kaia chain</span></p>
         <a class="btn btn-primary" href="../migrate/" data-i18n="status.cta">Swap CT</a>
       </div>
@@ -124,6 +125,8 @@
   </div>
 </main>
 <div id="cj-foot"></div>
+<script src="../assets/price.js"></script>
+<script>CJ.price && CJ.price.mount(document.getElementById("st-price"));</script>
 <script src="../assets/motion.js"></script>
 <script src="../assets/wallet.js"></script>
 <script src="../assets/i18n/status.js"></script>

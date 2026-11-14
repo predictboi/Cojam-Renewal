@@ -46,6 +46,7 @@
         <div class="hero-status">
           <p class="hero-live"><span class="live-dot" id="hero-dot" aria-hidden="true"></span><strong id="hero-live"></strong></p>
           <p class="small muted" id="hero-window"></p>
+          <p class="hero-price" id="hero-price" hidden></p>
         </div>
         <div class="hero-card-head">
           <span class="tag tag-sky" data-i18n="hero.card.tag">1 old CT = 1 new CT</span>
@@ -307,6 +308,8 @@
 
 </main>
 <div id="cj-foot"></div>
+<script src="assets/price.js"></script>
+<script>CJ.price && CJ.price.mount(document.getElementById("hero-price"));</script>
 <script src="assets/motion.js"></script>
 <script src="assets/wallet.js"></script>
 <script src="assets/i18n/landing.js"></script>

@@ -120,6 +120,75 @@
       row(t("f.later", { date: md(unlockAt()) }) + help("help.lock"), num(t("f.later.v", { amount: A(p.locked) })), ids ? "mg-later" : null, t("f.later.sub"));
   }
 
+  // ---------- wallet card ----------
+  // Shown on top of the swap form once a wallet is connected: which wallet, its address (tap to copy), the old CT balance
+  // in large type, new CT already received, KAIA when the wallet pays its own fee, and the new CT pool price when one exists.
+  function priceRow() {
+    var P = CJ.price, st = P ? P.status() : "none", p = P && P.get();
+    if (st === "ok" && p) {
+      var ch = p.change24h, chs = ch == null ? "" : ' <span class="mg-chg ' + (ch >= 0 ? "is-up" : "is-down") + '">' + (ch >= 0 ? "+" : "\u2212") + Math.abs(ch).toFixed(1) + "%</span>";
+      var url = P.poolUrl(), v = '<span class="num">' + P.usd(p.usd) + "</span>" + chs + (p.sample ? ' <span class="tag">' + t("wc.sample") + "</span>" : "");
+      return '<div class="mg-wc-row"><dt>' + t("wc.price") + "</dt><dd>" + (url ? '<a class="mg-wc-pool" href="' + esc(url) + '" target="_blank" rel="noopener">' + v + I("external", 14) + "</a>" : v) + "</dd></div>";
+    }
+    return '<div class="mg-wc-row"><dt>' + t("wc.price") + '</dt><dd class="muted">' + t(st === "loading" ? "wc.price.loading" : st === "error" ? "wc.price.error" : "wc.price.none") + "</dd></div>";
+  }
+  function approxUsd(ct) { var v = ct > 0 && CJ.price && CJ.price.value(ct); return v == null || v === false ? "" : ' <span class="mg-usd">\u2248 ' + CJ.price.usd(v) + "</span>"; }
+  function walletCard() {
+    var Ld = led(), w = Ld.wallet, rpc = ui.error === "rpc";
+    return '<div class="mg-wcard" id="mg-wcard">' +
+      '<div class="mg-wc-top"><span class="mg-wc-app">' + I("wallet", 16) + "<span>" + esc(walletName()) + "</span></span>" +
+      '<button type="button" class="mg-wc-addr" data-act="copy-addr" aria-label="' + esc(t("wc.copy.aria", { addr: w.address })) + '"><span class="cj-addr">' + F.addr(w.address) + "</span>" + I("copy", 16) + "</button></div>" +
+      '<p class="mg-wc-k">' + t("wc.old") + "</p>" +
+      '<p class="mg-wc-bal"><span class="num">' + (rpc ? "\u2013" : A(Ld.oldCT)) + "</span> <span class=\"mg-wc-unit\">" + t("unit.old") + "</span></p>" +
+      '<dl class="mg-wc-rows">' +
+      '<div class="mg-wc-row"><dt>' + t("wc.new") + '</dt><dd><span class="num">' + A(Ld.newCT) + "</span>" + approxUsd(Ld.newCT) + "</dd></div>" +
+      (selfPay() ? '<div class="mg-wc-row"><dt>' + t("wc.kaia") + '</dt><dd class="num">' + gas(w.kaia) + " KAIA</dd></div>" : "") +
+      priceRow() + "</dl></div>";
+  }
+
+  // ---------- confirm sheet ----------
+  // Pressing Swap opens a sheet with the whole outcome before any wallet request: old CT sent, new CT in total, the 10%
+  // now, the 90% and its date, the receiving wallet, the fee and how many signatures follow. Large amounts add a check.
+  var confirmD = $("mg-confirm");
+  function confirmHtml() {
+    var amt = ui.amount, p = sp(amt), Ld = led(), big = amt > BIG, approved = Ld.allowance >= amt;
+    var fee = sponsored() ? num(t("f.gas.free")) : num(t("f.gas.v", { amount: gas(approved ? GAS.swap : GAS.approve + GAS.swap) }));
+    var pr = CJ.price && CJ.price.status() === "ok" && CJ.price.get();
+    return '<div class="mg-sheet-head"><h2 id="mg-cf-h">' + t("cf.title") + '</h2><button type="button" class="btn btn-ghost mg-icon-btn" data-close aria-label="' + esc(t("ch.close")) + '">' + I("x", 20) + "</button></div>" +
+      '<div class="mg-cf-flow">' +
+        '<div class="mg-cf-side"><span class="mg-cf-k">' + t("cf.send") + '</span><span class="mg-cf-v num">' + A(amt) + '</span><span class="mg-cf-u">' + t("unit.old") + "</span></div>" +
+        '<span class="mg-cf-arrow" aria-hidden="true">' + I("arrow", 20) + "</span>" +
+        '<div class="mg-cf-side is-new"><span class="mg-cf-k">' + t("cf.get") + '</span><span class="mg-cf-v num">' + A(amt) + '</span><span class="mg-cf-u">' + t("unit.new") + approxUsd(amt) + "</span></div>" +
+      "</div>" +
+      '<div class="mg-cf-bar" aria-hidden="true"><i class="is-now"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>' +
+      '<dl class="mg-rows">' +
+        row(t("cf.now"), num(t("f.now.v", { amount: A(p.instant) })) + approxUsd(p.instant)) +
+        row(t("cf.later", { date: md(unlockAt()) }), num(t("f.later.v", { amount: A(p.locked) })) + approxUsd(p.locked), null, t("f.later.sub")) +
+        row(t("cf.to"), '<span class="cj-addr">' + F.addr(Ld.wallet.address) + "</span>") +
+        row(t("gas.k"), fee) +
+        row(t("cf.sign"), t(approved ? "cf.sign.one" : "cf.sign.two")) +
+      "</dl>" +
+      (pr ? '<p class="small muted mg-cf-note">' + t(pr.sample ? "cf.price.sample" : "cf.price", { price: CJ.price.usd(pr.usd) }) + "</p>" : "") +
+      (big ? '<label class="mg-check mg-check-lg"><input type="checkbox" id="mg-cf-check"> <span>' + t("cf.check", { locked: A(p.locked), days: C.lockDays }) + "</span></label>" : "") +
+      '<div class="mg-cf-actions">' +
+        '<button type="button" class="btn btn-primary btn-lg btn-block" data-cf="go"' + (big ? " disabled" : "") + ">" + t("cf.cta", { amount: A(amt) }) + "</button>" +
+        '<button type="button" class="btn btn-ghost btn-block" data-close>' + t("cf.cancel") + "</button>" +
+      "</div>";
+  }
+  function openConfirm(from) {
+    confirmD.innerHTML = confirmHtml();
+    openSheet(confirmD, from);
+    var go = confirmD.querySelector('[data-cf="go"]'); if (go && !go.disabled) go.focus();
+  }
+  confirmD.addEventListener("click", function (e) {
+    if (e.target === confirmD || e.target.closest("[data-close]")) { confirmD.close(); return; }
+    var g = e.target.closest('[data-cf="go"]'); if (!g || g.disabled) return;
+    opener = null; confirmD.close();
+    ui.reviewed = true; ui.frozen = false; ui.phase = led().allowance >= ui.amount ? "swap" : "approve"; render(true);
+  });
+  confirmD.addEventListener("change", function (e) { if (e.target.id === "mg-cf-check") confirmD.querySelector('[data-cf="go"]').disabled = !e.target.checked; });
+  confirmD.addEventListener("close", function () { if (opener && document.contains(opener)) opener.focus(); });
+
   // ---------- views ----------
   var V = {};
   V.disconnected = function () {
@@ -150,7 +219,7 @@
     var Ld = led(), rpc = ui.error === "rpc", ready = lots("releasing");
     if (ui.text == null) ui.text = plain(Ld.oldCT);
     var bal = rpc ? (ui.loading ? '<span class="skel"></span>' : t("f.balance.unknown")) : t("f.balance", { amount: A(Ld.oldCT) });
-    var h = head(t("f.title")) + keeperNotes();
+    var h = walletCard() + head(t("f.title")) + keeperNotes();
     if (ready.length && !isClosed()) h += note("info", t("f.claimnote", { amount: A(sumL(ready)) }), '<button type="button" class="btn" data-act="to-claim">' + t("f.claimnote.btn") + "</button>");
     h += '<form id="mg-form" novalidate><div class="field">' +
       '<div class="field-label"><label for="mg-amt">' + t("f.label") + '</label><span id="mg-bal" class="num">' + bal + "</span></div>" +
@@ -172,12 +241,6 @@
     h += '<div class="mg-actions"><button type="submit" class="btn btn-primary btn-lg btn-block" id="mg-go" data-primary></button></div>' +
       '<p class="mg-hint small muted" id="mg-hint"></p></form>';
     return h;
-  };
-  V.review = function () {
-    return head(t("rv.title"), { back: true }) + '<p class="mg-lead">' + t("rv.body", { amount: A(ui.amount), instant: A(sp(ui.amount).instant), locked: A(sp(ui.amount).locked), days: C.lockDays }) + "</p>" +
-      '<div class="mg-trackbox"><div data-track-demo="' + ui.amount + '"></div></div>' +
-      '<label class="mg-check mg-check-lg"><input type="checkbox" id="mg-rv-check"> <span>' + t("rv.check") + "</span></label>" +
-      '<div class="mg-actions">' + primary(t("rv.cta", { amount: A(ui.amount) }), "review-ok", ' id="mg-rv-go" disabled') + "</div>";
   };
   V.approve = function () {
     return head(t("ap.title"), { back: true }) + steps(1) +
@@ -283,7 +346,7 @@
     if (Ld.wallet.network !== "kaia") return "wrong-network";
     if (ph === "success") return "locked";
     if (ph === "claimed") return "claimed";
-    if (ph === "review" || ph === "approve" || ph === "swap") return ph;
+    if (ph === "approve" || ph === "swap") return ph;
     if (ui.error === "rpc") return "form";
     if (isClosed()) return "closed";
     if (lots("releasing").length && ui.mode !== "swap") return "claim";
@@ -324,9 +387,7 @@
     var s = formState(), Ld = led();
     if (!s.ok || Ld.contract.reserveEmpty || gasShort(gasNeed(s.value))) return;
     ui.amount = s.value; ui.error = null;
-    if (ui.amount > BIG && !ui.reviewed) ui.phase = "review";
-    else ui.phase = Ld.allowance >= ui.amount ? "swap" : "approve";
-    render(true);
+    openConfirm($("mg-go"));
   }
 
   // ---------- flows ----------
@@ -457,7 +518,7 @@
   function back() {
     var p = ui.phase;
     if (p === "wallet") return cancelWallet();
-    if (p === "review" || p === "approve" || p === "swap") { ui.phase = "form"; ui.error = null; ui.reviewed = false; if (p === "swap") ui.partialOff = true; return render(true); }
+    if (p === "approve" || p === "swap") { ui.phase = "form"; ui.error = null; ui.reviewed = false; if (p === "swap") ui.partialOff = true; return render(true); }
     if (p === "success" || p === "claimed") return done();
     if (ui.view === "form" && ui.mode === "swap" && lots("releasing").length) { ui.mode = null; render(true); }
   }
@@ -629,7 +690,7 @@
       case "network": doNetwork(); break;
       case "max": ui.text = plain(led().oldCT); var i = $("mg-amt"); if (i) { i.value = ui.text; updateForm(); i.focus(); } break;
       case "back": back(); break;
-      case "review-ok": ui.reviewed = true; ui.phase = led().allowance >= ui.amount ? "swap" : "approve"; render(true); break;
+      case "copy-addr": CJ.copy(led().wallet.address); break;
       case "approve": doApprove(); break;
       case "swap": doSwap(); break;
       case "cancel": cancelWallet(); break;
@@ -652,9 +713,7 @@
   panel.addEventListener("submit", function (e) { e.preventDefault(); submitForm(); });
   panel.addEventListener("input", function (e) {
     if (e.target.id === "mg-amt") { ui.text = e.target.value; updateForm(); }
-    if (e.target.id === "mg-rv-check") $("mg-rv-go").disabled = !e.target.checked;
   });
-  panel.addEventListener("change", function (e) { if (e.target.id === "mg-rv-check") $("mg-rv-go").disabled = !e.target.checked; });
 
   // Wallet chooser: CJ.wallet (assets/wallet.js) picks by environment. In a wallet's own browser it connects in one
   // tap; in a mobile browser it offers "Open in Kaia Wallet", "Open in MetaMask" and WalletConnect; on desktop the
@@ -768,7 +827,8 @@
     switch (name) {
       case "wrong-network": Ld.wallet.network = "ethereum"; break;
       case "empty": Ld.oldCT = 0; break;
-      case "review": Ld.oldCT = 2500000; ui.amount = 2500000; ui.text = "2,500,000"; ui.phase = "review"; break;
+      case "review": Ld.oldCT = 2500000; ui.amount = 2500000; ui.text = "2,500,000"; ui.confirm = true; break;
+      case "confirm": ui.amount = 125000; ui.text = "125,000"; ui.confirm = true; break;
       case "approve": ui.amount = 125000; ui.phase = "approve"; break;
       case "wallet": ui.amount = 125000; ui.phase = "wallet"; ui.wait = { kind: "approve", amount: 125000, prev: "approve" }; break;
       case "pending": ui.amount = 125000; Ld.allowance = 125000; ui.phase = "pending"; ui.wait = { kind: "swap", amount: 125000, prev: "swap", tx: CJ.fakeTx(), started: Date.now() - 12000 }; break;
@@ -788,12 +848,18 @@
     credit();
     L.save();
   }
-  var STATES = ["disconnected", "wrong-network", "empty", "ready", "review", "approve", "wallet", "pending", "locked", "releasing", "released", "claimable", "claimed",
+  var STATES = ["disconnected", "wrong-network", "empty", "ready", "confirm", "review", "approve", "wallet", "pending", "locked", "releasing", "released", "claimable", "claimed",
     "rejected", "no-gas", "sponsor", "closed", "reserve", "rpc", "partial", "history"];
   window.CJMigrate = { states: STATES, setState: function (s) { setState(s); render(false); }, ui: function () { return ui; } };
 
   paintSheets();
   if (CJ.state && STATES.indexOf(CJ.state) > -1) setState(CJ.state);
   render(false);
+  if (ui.confirm) { ui.confirm = false; openConfirm(); }
+  // A new price repaints the wallet card and an open confirm sheet in place (never the field being typed in).
+  document.addEventListener("cj:price", function () {
+    var wc = $("mg-wcard"); if (wc) wc.outerHTML = walletCard();
+    if (confirmD.open) { var chk = $("mg-cf-check"), on = chk && chk.checked; confirmD.innerHTML = confirmHtml(); if (on) { $("mg-cf-check").checked = true; confirmD.querySelector('[data-cf="go"]').disabled = false; } }
+  });
   CJ.ready();
 })();

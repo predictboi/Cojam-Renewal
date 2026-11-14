@@ -251,3 +251,51 @@ html[data-wallet="on"]:not(.cj-ready) #mg-panel { min-height: 482px; }
   .mg-vhead:has(> .mg-badge) > .mg-back { grid-column: 1 / -1; }
 }
 @media (prefers-reduced-motion: reduce) { .mg-burst-clip { display: none; } }
+
+/* ---------- wallet card (top of the swap form) ---------- */
+.mg-wcard { margin-bottom: var(--sp-stack); padding: var(--s-16); border-radius: var(--r-panel); background: linear-gradient(150deg, var(--night-surface), var(--night-bg)); color: var(--night-ink); box-shadow: var(--shadow-lift); position: relative; overflow: hidden; }
+.mg-wcard::after { content: ""; position: absolute; right: -60px; top: -60px; width: 180px; height: 180px; border-radius: 50%; background: radial-gradient(closest-side, rgba(151, 219, 255, 0.35), transparent); pointer-events: none; }
+.mg-wc-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-8); }
+.mg-wc-app { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fs-14); font-weight: var(--fw-medium); }
+.mg-wc-addr { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 var(--s-12); margin-right: calc(var(--s-8) * -1); border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 999px; background: rgba(255, 255, 255, 0.12); color: inherit; font-size: var(--fs-13); cursor: pointer; transition: background var(--dur-fast); }
+.mg-wc-addr:hover { background: rgba(255, 255, 255, 0.22); }
+.mg-wc-addr .cj-addr { font-family: var(--font-data); }
+.mg-wc-k { margin: var(--s-12) 0 0; font-size: var(--fs-13); color: rgba(255, 255, 255, 0.86); }
+.mg-wc-bal { margin: 2px 0 0; font-size: var(--fs-32); font-weight: var(--fw-semi); letter-spacing: -0.02em; line-height: 1.15; overflow-wrap: anywhere; }
+.mg-wc-unit { font-size: var(--fs-16); font-weight: var(--fw-medium); }
+.mg-wc-rows { margin: var(--s-12) 0 0; padding-top: var(--s-12); border-top: 1px solid rgba(255, 255, 255, 0.22); display: grid; gap: 6px; }
+.mg-wc-row { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-12); font-size: var(--fs-14); }
+.mg-wc-row dt { color: rgba(255, 255, 255, 0.86); }
+.mg-wc-row dd { margin: 0; text-align: right; }
+.mg-wc-row dd.muted { color: rgba(255, 255, 255, 0.86); }
+.mg-wc-pool { color: inherit; display: inline-flex; align-items: center; gap: 4px; text-decoration: underline; text-underline-offset: 3px; }
+.mg-wcard .tag { background: rgba(255, 255, 255, 0.2); color: inherit; }
+.mg-chg { font-size: var(--fs-13); font-weight: var(--fw-medium); }
+.mg-wcard .mg-chg.is-up { color: #B8F5D3; } .mg-wcard .mg-chg.is-down { color: #FFD1CB; }
+.mg-wcard .mg-usd { color: rgba(255, 255, 255, 0.86); }
+.mg-usd { color: var(--ink-2); font-weight: var(--fw-regular); font-size: var(--fs-13); white-space: nowrap; }
+
+/* ---------- confirm sheet ---------- */
+.mg-confirm { width: min(460px, calc(100vw - 32px)); max-height: min(92vh, 760px); overflow-y: auto; overscroll-behavior: contain; }
+.mg-confirm[open] { animation: cf-in var(--dur-slow) var(--ease-drawer); }
+@keyframes cf-in { from { opacity: 0; transform: translateY(16px); } }
+.mg-cf-flow { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch; gap: var(--s-8); }
+.mg-cf-side { display: grid; gap: 2px; padding: var(--s-12); border-radius: var(--r-control); background: var(--inset); min-width: 0; }
+.mg-cf-side.is-new { background: var(--sky-tint); box-shadow: inset 0 0 0 1px var(--sky); }
+.mg-cf-k { font-size: var(--fs-13); color: var(--ink-2); }
+.mg-cf-v { font-size: var(--fs-20); font-weight: var(--fw-semi); overflow-wrap: anywhere; line-height: 1.2; }
+.mg-cf-u { font-size: var(--fs-13); color: var(--ink-2); display: flex; flex-wrap: wrap; gap: 0 6px; }
+.mg-cf-arrow { align-self: center; color: var(--ink-2); display: grid; }
+.mg-cf-bar { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin: var(--s-16) 0 var(--s-4); }
+.mg-cf-bar i { height: 10px; border-radius: 3px; background: var(--inset); box-shadow: inset 0 0 0 1px var(--line); }
+.mg-cf-bar i.is-now { background: var(--sky); box-shadow: 0 0 10px var(--glow-sky); }
+.mg-cf-note { margin: var(--s-8) 0 0; }
+.mg-confirm .mg-check-lg { margin-top: var(--s-12); }
+.mg-cf-actions { display: grid; gap: var(--s-8); margin-top: var(--s-16); }
+@media (max-width: 480px) {
+  .mg-confirm { width: 100vw; max-width: 100vw; max-height: 92dvh; }
+  .mg-confirm[open] { animation-name: cf-up; }
+  @keyframes cf-up { from { transform: translateY(100%); } }
+  .mg-cf-actions { position: sticky; bottom: calc(var(--s-32) * -1); margin-inline: calc(var(--s-24) * -1); padding: var(--s-12) var(--s-24) calc(var(--s-12) + env(safe-area-inset-bottom)); background: var(--surface); border-top: 1px solid var(--line); }
+}
+@media (prefers-reduced-motion: reduce) { .mg-confirm[open] { animation: none; } }

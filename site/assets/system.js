@@ -16,6 +16,10 @@
     // Exact supply, checked on chain: 4083262533956000100000000000 base units. Use supplyText wherever the figure is shown.
     newToken: { name: "Cojam Token", symbol: "CT", decimals: 18, address: null, supply: 4083262533.9560001, supplyText: "4,083,262,533.9560001" },
     swapContract: { address: null },
+    // New CT price source: the DEX pool, read through GeckoTerminal (CORS open, about 30 requests a minute per visitor).
+    // Paste the pool link or its address when the pool exists, e.g. "https://www.geckoterminal.com/kaia/pools/0x...".
+    // Until then no price is shown anywhere. ?price=demo shows a labelled sample price for review.
+    pool: { network: "kaia", link: null },
     ratio: 1,
     instantPercent: 10, // paid in the swap transaction; the rest is locked
     lockDays: 7,
@@ -240,6 +244,7 @@
     lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
     unlock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.5-2"/>',
     arrow: '<path d="M5 12h14"/><path d="M13 6l6 6-6 6"/>',
+    external: '<path d="M14 4h6v6"/><path d="M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
     swap: '<path d="M4 8h13"/><path d="M14 4l4 4-4 4"/><path d="M20 16H7"/><path d="M10 12l-4 4 4 4"/>',
     wallet: '<path d="M4 7a2 2 0 0 1 2-2h12v4"/><path d="M4 7v10a2 2 0 0 0 2 2h14V9H6a2 2 0 0 1-2-2z"/><path d="M16 14h.01"/>',
     warn: '<path d="M12 4l9 16H3z"/><path d="M12 10v4"/><path d="M12 17v.01"/>',
