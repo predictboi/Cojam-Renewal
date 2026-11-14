@@ -19,5 +19,14 @@
     "migrate": "10,000 old CT: 1,000 new CT arrived at once, a 9,000 new CT lot unlocks 2026-11-21T08:44:03Z, gas 196,107",
     "withdrawTx": "0xa081185ca858d012ee72bf7f158150eb8bd0de2d585be0404d6ace4640a1eded",
     "withdraw": "master withdrew 1,000,000 CT; the 9,000 owed to the lot stayed"
+  },
+  "shortLockTest": {
+    "note": "CojamMigrationShortLock (test only, LOCK_PERIOD 1 minute, otherwise identical to CojamMigration) for live release tests",
+    "swap": "0x47b479D64A9dade1b965Fc546d6B2D8918F45ffD",
+    "deployBlock": 233001949,
+    "funded": "1000000 CT",
+    "holderB_selfClaim": "0xFb47a94802a7cF96D7c99eE0B88Ae7893A9D7Ce0 swapped 5,000: 500 at once, claim before unlock reverted, claimed 4,500 after unlock, balance 5,000",
+    "holderC_keeper": "0x281E1e1Ad25de7cdAa667319C85D5fC7516eBF7b swapped 2,000: 200 at once; the server keeper (server/src keeper mode) released 1,800 without any action by C, tx 0xcbe1b6d088121287a1a53de115835a8f3f3494775808a33d1889f0ae73e0c831, gas 75,225, fee 0.0021 KAIA; balance 2,000",
+    "holderA_keeper": "master/holder A lot of 9,000 also released by the keeper"
   }
 }
