@@ -1,5 +1,5 @@
-// Phone menu: a hamburger next to the Connect button opens a panel with the page links and the language choice.
-// Shared by the landing (its own header) and the app pages (shell.js header). Desktop keeps the inline nav.
+// Site menu: a hamburger next to the Connect button opens a panel with the page links and the language choice.
+// Shared by the landing (its own header) and the app pages (shell.js header). Used on every width.
 //   CJ.menu.init({ host: <element the button goes into>, header: <header element>, root: "../", current: "swap" })
 (function () {
   var CJ = window.CJ; if (!CJ) return;
@@ -34,7 +34,11 @@
           LANGS.map(function (l) { return '<button type="button" data-lang="' + l[0] + '" aria-pressed="' + (l[0] === cur) + '" lang="' + l[0] + '">' + l[1] + "</button>"; }).join("") +
         "</div>";
     }
-    function place() { var r = header ? header.getBoundingClientRect() : { bottom: 64 }; panel.style.top = Math.max(8, Math.round(r.bottom) + 8) + "px"; }
+    function place() {
+      var r = header ? header.getBoundingClientRect() : { bottom: 64 }; panel.style.top = Math.max(8, Math.round(r.bottom) + 8) + "px";
+      // Wide screens: line the panel's right edge up with the button. Phones keep the CSS gutters.
+      panel.style.right = window.innerWidth >= 900 ? Math.max(12, Math.round(window.innerWidth - btn.getBoundingClientRect().right)) + "px" : "";
+    }
     function open() { place(); panel.hidden = false; btn.setAttribute("aria-expanded", "true"); document.documentElement.classList.add("cj-menu-open"); paint(); var a = panel.querySelector("a,button"); if (a) a.focus({ preventScroll: true }); }
     function close(focus) { if (panel.hidden) return; panel.hidden = true; btn.setAttribute("aria-expanded", "false"); document.documentElement.classList.remove("cj-menu-open"); paint(); if (focus) btn.focus(); }
     btn.addEventListener("click", function (e) { e.stopPropagation(); panel.hidden ? open() : close(true); });

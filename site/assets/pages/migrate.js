@@ -142,8 +142,8 @@
   // "You get now: X new CT (10%)" and "On <date>: Y new CT (90%)", shared by the form, approve and swap views.
   function splitRows(amt, ids) {
     var p = sp(amt, amt && amt === ui.amount ? ui.amountWei : null);
-    return row(t("f.now") + help("help.split"), num(t("f.now.v", { amount: A(p.instant) })), ids ? "mg-now" : null) +
-      row(t("f.later", { date: md(unlockAt()) }) + help("help.lock"), num(t("f.later.v", { amount: A(p.locked) })), ids ? "mg-later" : null, t("f.later.sub"));
+    return row(t("f.now") + help("help.split"), num(t("f.now.v", { amount: A(p.instant) })) + worth(p.instant), ids ? "mg-now" : null) +
+      row(t("f.later", { date: md(unlockAt()) }) + help("help.lock"), num(t("f.later.v", { amount: A(p.locked) })) + worth(p.locked), ids ? "mg-later" : null, t("f.later.sub"));
   }
 
   // ---------- wallet card ----------
@@ -158,6 +158,8 @@
     }
     return '<div class="mg-wc-row"><dt>' + t("wc.price") + '</dt><dd class="muted">' + t(st === "loading" ? "wc.price.loading" : st === "error" ? "wc.price.error" : "wc.price.none") + "</dd></div>";
   }
+  // Value at the current pool price in its own slot, so the live form can refresh it without touching the amount.
+  function worth(ct) { return '<span class="mg-usdw">' + approxUsd(ct) + "</span>"; }
   function approxUsd(ct) { var v = ct > 0 && CJ.price && CJ.price.value(ct); return v == null || v === false ? "" : ' <span class="mg-usd">\u2248 ' + CJ.price.usd(v) + "</span>"; }
   function walletCard() {
     var Ld = led(), w = Ld.wallet, rpc = ui.error === "rpc";
@@ -166,6 +168,7 @@
       '<button type="button" class="mg-wc-addr" data-act="copy-addr" aria-label="' + esc(t("wc.copy.aria", { addr: w.address })) + '"><span class="cj-addr">' + F.addr(w.address) + "</span>" + I("copy", 16) + "</button></div>" +
       '<p class="mg-wc-k">' + t("wc.old") + "</p>" +
       '<p class="mg-wc-bal"><span class="num">' + (rpc ? "\u2013" : A(Ld.oldCT)) + "</span> <span class=\"mg-wc-unit\">" + t("unit.old") + "</span></p>" +
+      (!rpc && Ld.oldCT > 0 && CJ.price && CJ.price.value(sp(Ld.oldCT).credit) != null ? '<p class="mg-wc-worth">' + t("wc.worth", { amount: A(sp(Ld.oldCT).credit), value: CJ.price.usd(CJ.price.value(sp(Ld.oldCT).credit)) }) + "</p>" : "") +
       '<dl class="mg-wc-rows">' +
       '<div class="mg-wc-row"><dt>' + t("wc.new") + '</dt><dd><span class="num">' + A(Ld.newCT) + "</span>" + approxUsd(Ld.newCT) + "</dd></div>" +
       (selfPay() ? '<div class="mg-wc-row"><dt>' + t("wc.kaia") + '</dt><dd class="num">' + gas(w.kaia) + " KAIA</dd></div>" : "") +
@@ -424,8 +427,9 @@
     msg.innerHTML = s.msg ? '<span class="mg-msg-t">' + I("warn", 16) + "<span>" + esc(s.msg) + "</span></span>" + (s.over ? '<button type="button" class="btn mg-fix" data-act="max">' + t("f.usemax") + "</button>" : "") : "";
     // No valid amount: a muted dash in both split rows (never "0 new CT"); the button reads "Enter an amount".
     var p = sp(v, s.ok ? s.wei : null), none = '<span class="mg-ph" aria-hidden="true">\u2013</span><span class="sr-only">' + t("f.none") + "</span>";
-    $("mg-now").innerHTML = num(s.ok ? t("f.now.v", { amount: A(p.instant) }) : none);
+    $("mg-now").innerHTML = num(s.ok ? t("f.now.v", { amount: A(p.instant) }) : none) + worth(s.ok ? p.instant : 0);
     $("mg-later").firstChild.innerHTML = s.ok ? t("f.later.v", { amount: A(p.locked) }) : none;
+    var lw = $("mg-later").querySelector(".mg-usdw"); if (lw) lw.innerHTML = approxUsd(s.ok ? p.locked : 0);
     var fr = $("mg-feerow"), nf = feeRow(need);
     if (fr && fr.outerHTML !== nf) { if (!fr.querySelector("details[open]")) fr.outerHTML = nf; }
     var short = gasShort(need);
@@ -1112,6 +1116,7 @@
   // A new price repaints the wallet card and an open confirm sheet in place (never the field being typed in).
   document.addEventListener("cj:price", function () {
     var wc = $("mg-wcard"); if (wc) wc.outerHTML = walletCard();
+    if ($("mg-now")) updateForm();
     if (confirmD.open) { var chk = $("mg-cf-check"), on = chk && chk.checked; confirmD.innerHTML = confirmHtml(); if (on) { $("mg-cf-check").checked = true; confirmD.querySelector('[data-cf="go"]').disabled = false; } }
   });
   if (!LIVE) CJ.ready();

@@ -2,6 +2,7 @@
 CJ.dict({
   en: {
     "wc.old": "Old CT in this wallet",
+    "wc.worth": "Swaps to {amount} new CT, about {value} now",
     "wc.new": "New CT received",
     "wc.kaia": "KAIA for fees",
     "wc.price": "New CT price",
@@ -258,6 +259,7 @@ CJ.dict({
   },
   ko: {
     "wc.old": "내 기존 CT",
+    "wc.worth": "교환하면 새 CT {amount}개, 지금 시세로 약 {value}",
     "wc.new": "받은 새 CT",
     "wc.kaia": "수수료용 KAIA",
     "wc.price": "새 CT 가격",
@@ -495,6 +497,7 @@ CJ.dict({
   },
   ja: {
     "wc.old": "このウォレットの旧CT",
+    "wc.worth": "交換で新CT {amount}枚、現在の相場で約{value}",
     "wc.new": "受け取った新CT",
     "wc.kaia": "手数料用のKAIA",
     "wc.price": "新CTの価格",

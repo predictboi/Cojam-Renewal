@@ -304,3 +304,8 @@ html[data-wallet="on"]:not(.cj-ready) #mg-panel { min-height: 482px; }
   .mg-cf-actions { position: sticky; bottom: calc(var(--s-32) * -1); margin-inline: calc(var(--s-24) * -1); padding: var(--s-12) var(--s-24) calc(var(--s-12) + env(safe-area-inset-bottom)); background: var(--surface); border-top: var(--edge-ink); }
 }
 @media (prefers-reduced-motion: reduce) { .mg-confirm[open] { animation: none; } }
+
+/* Current price value next to the amounts and under the old CT balance. */
+.mg-usdw:empty { display: none; }
+.mg-usdw .mg-usd { margin-left: 6px; }
+.mg-wc-worth { margin: 4px 0 0; font-size: var(--fs-14); color: var(--ink-soft); font-variant-numeric: tabular-nums; }
