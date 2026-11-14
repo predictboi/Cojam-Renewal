@@ -78,7 +78,7 @@ button { font: inherit; }
 /* Hangul outlines show overlapping contours, so in Korean the last line becomes a volt label instead of an outline */
 :lang(ko) .h1 .out { color: var(--ink); -webkit-text-stroke: 0; background: var(--volt); display: inline-block; padding: 0.02em 0.14em 0.06em; border-radius: 0.12em; transform: rotate(-3deg); margin-top: 0.08em; box-shadow: 0.06em 0.06em 0 var(--ink); }
 .lede { max-width: 30em; margin: 22px 0 0; font-size: 17px; color: rgba(253,253,255,0.9); }
-.lede b { color: var(--volt); font-weight: 700; }
+.lede b { color: var(--volt); font-weight: 700; white-space: nowrap; }
 .actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
 
 /* stickers floating over the headline */
@@ -116,6 +116,13 @@ button { font: inherit; }
   .badge .core { width: 40px; height: 40px; }
   .q1 { display: none; }
   .q2 { width: 70px; left: auto; right: 0; top: -54px; transform: rotate(200deg); }
+  /* the row fills the width evenly so nothing hangs to one side */
+  .stage { justify-content: space-between; gap: 10px; margin-top: 22px; }
+  .sticker { flex: 1 1 0; width: auto; max-width: 150px; min-width: 0; }
+  /* Korean: a bigger headline that spans the column, the label line swings to the right and the arrow points at it */
+  :lang(ko) .h1 { font-size: clamp(56px, 22vw, 160px); line-height: 1.04; }
+  :lang(ko) .h1 .row.out { display: block; width: fit-content; margin-left: auto; margin-right: 6px; }
+  :lang(ko) .q2 { width: 64px; left: 14px; right: auto; top: -132px; transform: rotate(-58deg) scaleX(-1); }
 }
 
 /* ---------- marquee ---------- */
