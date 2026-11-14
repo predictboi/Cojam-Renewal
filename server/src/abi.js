@@ -16,6 +16,7 @@ const swapAbi = new Interface([
   'function claim(uint256 maxLots) returns (uint256 amount)',
   'function claimFor(address user, uint256 maxLots) returns (uint256 amount)',
   'function claimForMany(address[] users, uint256 maxLotsEach) returns (uint256 total)',
+  'function sweep() returns (uint256 amount)',
   'function OLD_TOKEN() view returns (address)',
   'function NEW_TOKEN() view returns (address)',
   'function LOCK_PERIOD() view returns (uint256)',
@@ -28,7 +29,8 @@ const swapAbi = new Interface([
   'error ZeroAmount()',
   'error WindowClosed()',
   'error InsufficientReserve(uint256 available, uint256 needed)',
-  'error EnforcedPause()',
+  'error SweepNotOpen()',
+  'error NothingToSweep()',
   'error NothingReceived()',
   'error ReceivedMoreThanSent()',
 ]);
@@ -41,16 +43,14 @@ const SELECTORS = {
   claimForMany: swapAbi.getFunction('claimForMany').selector,
 };
 
-// Owner only functions of CojamMigration (Ownable2Step). Listed so tests can prove the
-// policy never sponsors them; the policy itself is an allowlist and needs no denylist.
-const ownerAbi = new Interface([
+// Functions that do not exist on CojamMigration (it has no owner) or that a fee payer
+// has no reason to pay for. Listed only so tests can prove the allowlist refuses them.
+const notSponsoredAbi = new Interface([
+  'function sweep() returns (uint256 amount)',
   'function pauseMigrate()',
-  'function unpauseMigrate()',
   'function withdrawReserve(address to, uint256 amount)',
   'function recoverERC20(address token, address to, uint256 amount)',
   'function transferOwnership(address newOwner)',
-  'function acceptOwnership()',
-  'function renounceOwnership()',
 ]);
 
 const TOPICS = {
@@ -58,4 +58,4 @@ const TOPICS = {
   Claimed: swapAbi.getEvent('Claimed').topicHash,
 };
 
-module.exports = { oldCtAbi, swapAbi, ownerAbi, SELECTORS, TOPICS };
+module.exports = { oldCtAbi, swapAbi, notSponsoredAbi, SELECTORS, TOPICS };

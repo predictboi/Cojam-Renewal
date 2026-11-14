@@ -7,7 +7,7 @@ const { parseTransaction, KlaytnTxFactory, TxType } = require('@kaiachain/js-ext
 const { createFeePayerService } = require('../src/feePayer');
 const { MemoryUsageStore } = require('../src/store');
 const { silentLogger } = require('../src/log');
-const { oldCtAbi, ownerAbi } = require('../src/abi');
+const { oldCtAbi, notSponsoredAbi } = require('../src/abi');
 const h = require('./helpers');
 
 function setup({ env = {}, chain: chainOpts = {} } = {}) {
@@ -99,16 +99,14 @@ test('rejects claimForMany with no users, too many users, a zero user or a bad m
   }
 });
 
-test('never sponsors the swap owner functions, even when the owner signs', async () => {
+test('never sponsors sweep or any admin style selector', async () => {
   const { svc, holder, chain } = setup();
   const calls = [
-    ownerAbi.encodeFunctionData('pauseMigrate', []),
-    ownerAbi.encodeFunctionData('unpauseMigrate', []),
-    ownerAbi.encodeFunctionData('withdrawReserve', [holder.address, parseUnits('1', 18)]),
-    ownerAbi.encodeFunctionData('recoverERC20', [h.OLD_CT, holder.address, 1n]),
-    ownerAbi.encodeFunctionData('transferOwnership', [holder.address]),
-    ownerAbi.encodeFunctionData('acceptOwnership', []),
-    ownerAbi.encodeFunctionData('renounceOwnership', []),
+    notSponsoredAbi.encodeFunctionData('sweep', []),
+    notSponsoredAbi.encodeFunctionData('pauseMigrate', []),
+    notSponsoredAbi.encodeFunctionData('withdrawReserve', [holder.address, parseUnits('1', 18)]),
+    notSponsoredAbi.encodeFunctionData('recoverERC20', [h.OLD_CT, holder.address, 1n]),
+    notSponsoredAbi.encodeFunctionData('transferOwnership', [holder.address]),
   ];
   for (const [i, data] of calls.entries()) {
     await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.SWAP, data, nonce: i })), 'SELECTOR_NOT_ALLOWED');
@@ -173,8 +171,8 @@ test('rejects unknown selectors on both contracts', async () => {
   const { svc, holder } = setup();
   const transfer = '0xa9059cbb' + '00'.repeat(12) + h.SWAP.slice(2).toLowerCase() + '00'.repeat(31) + '01';
   await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.OLD_CT, data: transfer })), 'SELECTOR_NOT_ALLOWED');
-  const removedSweep = '0x35faa416'; // sweep() of the earlier design: no longer exists, never sponsored
-  await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.SWAP, data: removedSweep, nonce: 2 })), 'SELECTOR_NOT_ALLOWED');
+  const sweep = '0x35faa416'; // sweep(): permissionless, never sponsored
+  await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.SWAP, data: sweep, nonce: 2 })), 'SELECTOR_NOT_ALLOWED');
   const allowanceRead = oldCtAbi.encodeFunctionData('allowance', [holder.address, h.SWAP]);
   await expectCode(svc.sponsor(await h.senderSign(holder, { to: h.OLD_CT, data: allowanceRead, nonce: 3 })), 'SELECTOR_NOT_ALLOWED');
 });

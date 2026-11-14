@@ -105,7 +105,7 @@ describe("fork: real old CT on Kaia mainnet", function () {
       await credit(holder.address, 0n);
       await newToken.connect(master).transfer(m, SUPPLY);
       expect(await migration.availableReserve()).to.equal(SUPPLY);
-      expect(await migration.owner()).to.equal(master.address);
+      expect(await migration.MASTER()).to.equal(master.address);
     });
 
     it("migrates real old CT 1:1 (no transfer fee): 10% at once, 90% released by a keeper after 7 days", async function () {
@@ -138,18 +138,6 @@ describe("fork: real old CT on Kaia mainnet", function () {
 
       await old.connect(owner).unPause();
       await expect(migration.connect(other).migrate(10n * E18)).to.emit(migration, "Migrated");
-    });
-
-    it("the swap owner's pauseMigrate stops real old CT swaps but not releases", async function () {
-      await credit(holder.address, 50n * E18);
-      await old.connect(holder).approve(await migration.getAddress(), 50n * E18);
-      await migration.connect(holder).migrate(20n * E18);
-      await time.increase(LOCK);
-      await migration.connect(master).pauseMigrate();
-      await expect(migration.connect(holder).migrate(10n * E18)).to.be.revertedWithCustomError(migration, "EnforcedPause");
-      await expect(migration.connect(keeper).claimFor(holder.address, 10)).to.changeTokenBalance(newToken, holder, 18n * E18);
-      await migration.connect(master).unpauseMigrate();
-      await expect(migration.connect(holder).migrate(10n * E18)).to.emit(migration, "Migrated");
     });
 
     it("real freeze(): a frozen holder cannot migrate; freezing the swap contract does not block migrate or claim", async function () {

@@ -1,13 +1,15 @@
 // Deploys the Cojam migration to the Kairos testnet (chain id 1001).
 //   npx hardhat run scripts/deploy-kairos.js --network kairos
-// Reads PRIVATE_KEY, KAIROS_RPC_URL, MASTER_ADDRESS, OWNER_ADDRESS, OLD_TOKEN_ADDRESS
-// and FUND_AMOUNT from the environment (see .env.example).
+// Reads PRIVATE_KEY, KAIROS_RPC_URL, MASTER_ADDRESS, OLD_TOKEN_ADDRESS and FUND_AMOUNT
+// from the environment (see .env.example).
 //
 // Order: (mock old CT if OLD_TOKEN_ADDRESS is empty), CojamToken(master), then
-// CojamMigration(old, new, owner). The whole new supply is minted to MASTER_ADDRESS.
+// CojamMigration(old, new, master). The whole new supply is minted to MASTER_ADDRESS.
 // The swap starts empty: the master funds it with plain transfers of new CT. If the
 // deployer is the master and FUND_AMOUNT is set, this script does that transfer.
-// The migration window opens in the swap's deploy block and lasts 365 days.
+// The migration window opens in the swap's deploy block and lasts 365 days; from
+// WINDOW_END + 30 days anyone can sweep the unowed remainder back to the master.
+// Neither contract has an owner or any admin function.
 // Mainnet is refused on purpose: a mainnet deploy is a separate, reviewed step.
 const { ethers, network } = require("hardhat");
 
@@ -38,7 +40,6 @@ async function main() {
   const masterRaw = process.env.MASTER_ADDRESS || (network.name === "hardhat" ? deployer.address : "");
   if (!masterRaw) throw new Error("Set MASTER_ADDRESS: the wallet that receives the whole new CT supply.");
   const master = readAddress("MASTER_ADDRESS", masterRaw);
-  const owner = readAddress("OWNER_ADDRESS", process.env.OWNER_ADDRESS || master);
   const deployerIsMaster = master === deployer.address;
 
   const fundRaw = (process.env.FUND_AMOUNT || "").trim();
@@ -68,7 +69,7 @@ async function main() {
   await token.waitForDeployment();
   const tokenAddress = await token.getAddress();
 
-  const migration = await (await ethers.getContractFactory("CojamMigration")).deploy(oldAddress, tokenAddress, owner);
+  const migration = await (await ethers.getContractFactory("CojamMigration")).deploy(oldAddress, tokenAddress, master);
   await migration.waitForDeployment();
   const migrationAddress = await migration.getAddress();
   const deployReceipt = await migration.deploymentTransaction().wait();
@@ -90,13 +91,11 @@ async function main() {
   if (!deployerIsMaster && deployerBalance !== 0n) throw new Error("Deployer holds new CT");
   if ((await migration.NEW_TOKEN()) !== tokenAddress) throw new Error("Swap points at another new token");
   if ((await migration.OLD_TOKEN()).toLowerCase() !== oldAddress.toLowerCase()) throw new Error("Swap points at another old token");
-  if ((await migration.owner()) !== owner) throw new Error("Swap owner is not OWNER_ADDRESS");
+  if ((await migration.MASTER()) !== master) throw new Error("Swap MASTER is not MASTER_ADDRESS");
   if ((await migration.availableReserve()) !== fund) throw new Error("availableReserve differs from the funded amount");
 
-  for (const [name, addr] of [["MASTER_ADDRESS", master], ["OWNER_ADDRESS", owner]]) {
-    if ((await ethers.provider.getCode(addr)) === "0x") {
-      console.warn(`NOTE: ${name} ${addr} has no code (an EOA). On mainnet a Safe multisig is recommended.`);
-    }
+  if ((await ethers.provider.getCode(master)) === "0x") {
+    console.warn(`NOTE: MASTER_ADDRESS ${master} has no code (an EOA). On mainnet a Safe multisig is recommended.`);
   }
 
   console.log(JSON.stringify({
@@ -108,9 +107,9 @@ async function main() {
     migration: migrationAddress,
     migrationDeployBlock: deployReceipt.blockNumber,
     master,
-    owner,
     windowStart: (await migration.WINDOW_START()).toString(),
     windowEnd: (await migration.WINDOW_END()).toString(),
+    sweepOpensAt: (await migration.SWEEP_OPENS_AT()).toString(),
     totalSupply: supply.toString(),
     funded: fund.toString(),
     fundTx,
@@ -118,7 +117,7 @@ async function main() {
     availableReserve: (await migration.availableReserve()).toString(),
   }, null, 2));
   console.log("Verify both contracts on Kaiascan (Kairos). CojamToken constructor arg = master;");
-  console.log("CojamMigration constructor args = old token, new token, owner.");
+  console.log("CojamMigration constructor args = old token, new token, master.");
   if (fund === 0n) console.log("The swap holds no new CT yet: migrate reverts InsufficientReserve until the master funds it.");
 }
 

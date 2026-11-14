@@ -10,9 +10,9 @@
 //   3. swap    claim(1 <= maxLots <= MAX_CLAIM_LOTS)
 //   4. swap    claimFor(user != 0, 1 <= maxLots <= MAX_CLAIM_LOTS)
 //   5. swap    claimForMany(1 <= users <= MAX_CLAIM_USERS, no zero user, 1 <= maxLotsEach <= MAX_CLAIM_LOTS)
-// Anything else is rejected with a code. Nothing else is ever signed: in particular the
-// swap owner's functions (pauseMigrate, unpauseMigrate, withdrawReserve, recoverERC20,
-// transferOwnership, acceptOwnership, renounceOwnership) are never sponsored.
+// Anything else is rejected with a code. Nothing else is ever signed: in particular
+// sweep() (permissionless housekeeping after the window, anyone pays their own gas) is
+// never sponsored.
 
 const { keccak256, recoverAddress, getAddress, isHexString, ZeroAddress, Signature } = require('ethers');
 const { parseTransaction, KlaytnTxFactory, TxType } = require('@kaiachain/js-ext-core');
@@ -215,7 +215,7 @@ function checkStatic(tx, cfg) {
       action = 'claimForMany';
       args = { users: users.map((u) => getAddress(u)), maxLotsEach: Number(maxLotsEach) };
     } else {
-      reject('SELECTOR_NOT_ALLOWED', 'Only migrate, claim, claimFor and claimForMany are sponsored on the swap contract');
+      reject('SELECTOR_NOT_ALLOWED', 'Only migrate, claim, claimFor and claimForMany are sponsored on the swap contract (sweep is not)');
     }
     gasCap = pol.maxGasLimitSwap;
   } else {

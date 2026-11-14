@@ -10,7 +10,7 @@
     "test:fuzz": "FUZZ_RUNS=24 FUZZ_STEPS=200 hardhat test test/fuzz.test.js",
     "gas": "REPORT_GAS=true SKIP_FORK=1 hardhat test test/CojamMigration.test.js",
     "deploy:kairos": "hardhat run scripts/deploy-kairos.js --network kairos",
-    "deploy:local": "MASTER_ADDRESS= OWNER_ADDRESS= OLD_TOKEN_ADDRESS= FUND_AMOUNT=1000000 hardhat run scripts/deploy-kairos.js"
+    "deploy:local": "MASTER_ADDRESS= OLD_TOKEN_ADDRESS= FUND_AMOUNT=1000000 hardhat run scripts/deploy-kairos.js"
   },
   "author": "",
   "license": "MIT",

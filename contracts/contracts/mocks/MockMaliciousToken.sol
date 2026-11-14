@@ -6,8 +6,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 interface IMigration {
     function migrate(uint256 amount) external returns (uint256);
     function claim(uint256 maxLots) external returns (uint256);
-    function withdrawReserve(address to, uint256 amount) external;
-    function recoverERC20(address token, address to, uint256 amount) external;
+    function sweep() external returns (uint256);
     function claimFor(address user, uint256 maxLots) external returns (uint256);
     function claimForMany(address[] calldata users, uint256 maxLotsEach) external returns (uint256);
 }
@@ -17,13 +16,12 @@ interface IMigration {
 ///   0 honest
 ///   1 re-enter migrate and bubble the revert
 ///   2 re-enter claim and bubble the revert
-///   3 re-enter withdrawReserve and bubble the revert (the test makes this token the owner)
+///   3 re-enter sweep and bubble the revert
 ///   4 re-enter migrate inside try/catch and record whether it succeeded
 ///   5 credit the recipient more than `value` (inflating transfer)
 ///   6 move nothing but return true (lying transfer)
 ///   7 re-enter claimFor and bubble the revert
 ///   8 re-enter claimForMany and bubble the revert
-///   9 re-enter recoverERC20 and bubble the revert (the test makes this token the owner)
 contract MockMaliciousToken is ERC20 {
     uint8 public mode;
     IMigration public target;
@@ -50,7 +48,7 @@ contract MockMaliciousToken is ERC20 {
         } else if (mode == 2) {
             target.claim(1);
         } else if (mode == 3) {
-            target.withdrawReserve(address(this), 1);
+            target.sweep();
         } else if (mode == 4) {
             reentryAttempted = true;
             try target.migrate(1) {
@@ -69,8 +67,6 @@ contract MockMaliciousToken is ERC20 {
             address[] memory users = new address[](1);
             users[0] = from;
             target.claimForMany(users, 1);
-        } else if (mode == 9) {
-            target.recoverERC20(address(1), address(this), 1);
         }
         return super.transferFrom(from, to, value);
     }
