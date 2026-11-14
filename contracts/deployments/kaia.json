@@ -1,0 +1,24 @@
+{
+  "network": "kaia",
+  "chainId": 8217,
+  "note": "Kaia mainnet. The new CT token is live. The swap contract is deployed on launch day (it starts the 1 year window).",
+  "deployer": "0xB18149317Bf633F5Dc2a6044a11103D580cA4a33",
+  "master": "0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb",
+  "oldToken": "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b",
+  "newToken": "0x91cb3B346C80ff965a9667ba6228834dbedD71a2",
+  "token": {
+    "name": "Cojam Token",
+    "symbol": "CT",
+    "decimals": 18,
+    "totalSupply": "2000000000",
+    "tx": "0x6a32eda13a0d46d9df6fd7e7964e9ce5b15373051948f5b9a07ef6f49924a1c0",
+    "block": 232473494,
+    "deployedAt": "2026-11-14T17:35:40Z",
+    "gasUsed": "561116",
+    "runBy": "Render cojam-ops, OPS_TASK=deploy-token",
+    "verified": "Sourcify exact_match, 2026-11-14",
+    "checkedOnChain": "2026-11-14: name Cojam Token, symbol CT, 18 decimals, supply 2,000,000,000, master holds 2,000,000,000, deployer holds 0"
+  },
+  "migration": null,
+  "migrationDeployBlock": null
+}

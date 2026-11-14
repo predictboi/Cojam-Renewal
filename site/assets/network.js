@@ -21,7 +21,7 @@
       rpc: "https://public-en.node.kaia.io",
       explorer: "https://kaiascan.io",
       oldToken: "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b",
-      newToken: null, // set at launch
+      newToken: "0x91cb3B346C80ff965a9667ba6228834dbedD71a2", // live since 2026-11-14 (contracts/deployments/kaia.json)
       swap: null, // set at launch
       deployBlock: null, // set at launch
       gasApi: "https://api.cojam.app",

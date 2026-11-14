@@ -1,4 +1,4 @@
-// Kaia mainnet deploy of CojamToken and CojamMigration. Nothing else: no funding (the master funds the swap itself
+// Kaia mainnet deploy of CojamMigration (and CojamToken only if deployments/kaia.json records none). Nothing else: no funding (the master funds the swap itself
 // from its own wallet app, in steps), no other transactions.
 //   DEPLOYER_PRIVATE_KEY=0x.. CONFIRM_MAINNET=yes npx hardhat run scripts/deploy-mainnet.js --network kaia
 // Dry run against a local fork of mainnet (no key, nothing broadcast):
@@ -44,10 +44,23 @@ async function main() {
   if (bal < ethers.parseEther("0.3")) fail(`deployer has ${ethers.formatEther(bal)} KAIA; keep at least 0.3`);
   console.log(`${dry ? "DRY RUN on a mainnet fork" : "MAINNET"} | deployer ${deployer.address} (${ethers.formatEther(bal)} KAIA) | master ${master} | old CT supply ${ethers.formatUnits(oldSupply, 18)}`);
 
-  const token = await (await ethers.getContractFactory("CojamToken", deployer)).deploy(master);
-  const tRc = await token.deploymentTransaction().wait();
-  const tokenAddr = await token.getAddress();
-  console.log("CojamToken", tokenAddr, "tx", tRc.hash, "block", tRc.blockNumber);
+  // The token already exists on mainnet (deployments/kaia.json, deployed 2026-11-14 by OPS_TASK=deploy-token): reuse it
+  // and deploy only the swap. Without a recorded token the script deploys both, as before.
+  const KJ = path.join(__dirname, "..", "deployments", "kaia.json");
+  const known = fs.existsSync(KJ) ? JSON.parse(fs.readFileSync(KJ, "utf8")) : {};
+  let token, tRc = null, tokenAddr;
+  if (known.newToken) {
+    tokenAddr = ethers.getAddress(known.newToken);
+    if ((await ethers.provider.getCode(tokenAddr)) === "0x") fail(`recorded new CT ${tokenAddr} has no code`);
+    token = await ethers.getContractAt("CojamToken", tokenAddr, deployer);
+    if ((await token.name()) !== "Cojam Token" || (await token.symbol()) !== "CT" || (await token.decimals()) !== 18n) fail("recorded token is not Cojam Token (CT), 18 decimals");
+    console.log("CojamToken (existing)", tokenAddr);
+  } else {
+    token = await (await ethers.getContractFactory("CojamToken", deployer)).deploy(master);
+    tRc = await token.deploymentTransaction().wait();
+    tokenAddr = await token.getAddress();
+    console.log("CojamToken", tokenAddr, "tx", tRc.hash, "block", tRc.blockNumber);
+  }
   const mig = await (await ethers.getContractFactory("CojamMigration", deployer)).deploy(OLD_CT, tokenAddr, master);
   const mRc = await mig.deploymentTransaction().wait();
   const migAddr = await mig.getAddress();
@@ -55,7 +68,8 @@ async function main() {
 
   // post deploy checks
   if ((await token.totalSupply()) !== SUPPLY) fail("supply");
-  if ((await token.balanceOf(master)) !== SUPPLY) fail("master does not hold the whole supply");
+  // a fresh token must sit entirely with the master; an existing one may already have moved (pool, funding)
+  if (tRc && (await token.balanceOf(master)) !== SUPPLY) fail("master does not hold the whole supply");
   if ((await token.balanceOf(deployer.address)) !== 0n) fail("deployer holds new CT");
   if ((await mig.MASTER()).toLowerCase() !== master.toLowerCase()) fail("swap MASTER");
   if ((await mig.OLD_TOKEN()).toLowerCase() !== OLD_CT) fail("swap OLD_TOKEN");
@@ -65,13 +79,14 @@ async function main() {
   const out = {
     network: dry ? "kaia-fork-dry-run" : "kaia", chainId: 8217, deployedAt: new Date().toISOString(),
     deployer: deployer.address, master, oldToken: OLD_CT, newToken: tokenAddr, migration: migAddr,
-    migrationDeployBlock: mRc.blockNumber, tokenTx: tRc.hash, migrationTx: mRc.hash,
+    migrationDeployBlock: mRc.blockNumber, tokenTx: tRc ? tRc.hash : (known.token && known.token.tx) || null, migrationTx: mRc.hash,
     windowStart: (await mig.WINDOW_START()).toString(), windowEnd: (await mig.WINDOW_END()).toString(),
-    gasUsed: { token: tRc.gasUsed.toString(), migration: mRc.gasUsed.toString() },
+    gasUsed: { token: tRc ? tRc.gasUsed.toString() : null, migration: mRc.gasUsed.toString() },
   };
+  if (known.token) out.token = known.token; // keep the recorded token details
   console.log(JSON.stringify(out, null, 2));
   if (!dry) {
-    fs.writeFileSync(path.join(__dirname, "..", "deployments", "kaia.json"), JSON.stringify(out, null, 2) + "\n");
+    fs.writeFileSync(KJ, JSON.stringify(Object.assign({}, known, out), null, 2) + "\n");
     console.log("Saved deployments/kaia.json. Next: node scripts/verify-sourcify.js 8217", tokenAddr, "CojamToken", migAddr, "CojamMigration");
   }
 }
