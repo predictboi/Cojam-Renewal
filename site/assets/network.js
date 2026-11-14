@@ -28,7 +28,18 @@
       nativeCurrency: { name: "KAIA", symbol: "KAIA", decimals: 18 }
     }
   };
+  // Private mainnet test (founder only, not linked anywhere): the real swap code with a 1 minute lock, deployed by the
+  // deployer with OPS_TASK=deploy-test-swap, against the live new CT. Opened with ?net=kaia-test. No fee delegation here
+  // (the gas API serves Kairos), so the test wallet pays its own small KAIA fee.
+  NETS["kaia-test"] = Object.assign({}, NETS.kaia, {
+    key: "kaia-test", mainnetTest: true,
+    swap: "0x197e08ba085Ee1171AfD2fd7263cF14Db403FBbD",
+    deployBlock: 232473494, // the new CT deploy block, just before the test swap
+    gasApi: null
+  });
   var CJ = window.CJ || (window.CJ = {});
+  var q = new URLSearchParams(location.search).get("net");
+  if (q && NETS[q]) ACTIVE = q;
   var net = NETS[ACTIVE];
   CJ.net = net;
   CJ.nets = NETS;

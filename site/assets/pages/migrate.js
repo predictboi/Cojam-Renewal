@@ -57,7 +57,8 @@
   function kind() { var w = led().wallet; return w.kind || w.app || ui.walletKey || "kaia"; }
   // WalletConnect pays its own fee until Kaia Wallet fee delegated signing over WalletConnect is verified (see wallet.js).
   function selfPay() { var k = kind(); return k === "mm" || k === "web3" || k === "wc"; }
-  function sponsored() { return !selfPay() && !ui.payOwn; }
+  // No fee payer on a network without a gas API (the private mainnet test): every wallet pays its own fee there.
+  function sponsored() { return !selfPay() && !ui.payOwn && !(window.CJ && CJ.live && CJ.net && !CJ.net.gasApi); }
   function feeRow(need) {
     var r = sponsored()
       ? row(t("gas.k") + help("help.sponsor"), num(t("f.gas.free")), null, t("f.gas.free.sub"))
@@ -1057,13 +1058,14 @@
   // A small, clear notice while the page runs on a testnet, under the page title.
   function paintNet() {
     var el = $("mg-net");
-    if (!LIVE || !N.testnet) { if (el) el.remove(); return; }
+    if (!LIVE || !(N.testnet || N.mainnetTest)) { if (el) el.remove(); return; }
     if (!el) {
       el = document.createElement("p"); el.id = "mg-net"; el.className = "small mg-net";
       el.style.cssText = "display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin-top:8px";
       var h1 = document.querySelector("#mg-head h1"); if (h1) h1.after(el); else $("mg-head").appendChild(el);
     }
-    el.innerHTML = '<span class="tag tag-warn">' + I("warn", 14) + "<span>" + esc(t("net.test.tag")) + '</span></span><span class="muted">' + esc(t("net.test.body", { name: N.name || "" })) + "</span>";
+    var k = N.mainnetTest ? "net.mtest" : "net.test";
+    el.innerHTML = '<span class="tag tag-warn">' + I("warn", 14) + "<span>" + esc(t(k + ".tag")) + '</span></span><span class="muted">' + esc(t(k + ".body", { name: N.name || "" })) + "</span>";
   }
   if (LIVE) {
     paintNet();

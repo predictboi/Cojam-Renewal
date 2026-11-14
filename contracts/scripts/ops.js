@@ -9,6 +9,7 @@
 //                     deployer (as the keeper would), checks the total equals the credit, then withdraws the rest of the reserve. The swapped old CT stays in the
 //                     rehearsal contract forever. Needs CONFIRM_MAINNET=yes.
 //   deploy-token      new CT token only (2,000,000,000 CT, 18 decimals, all to the master). Needs CONFIRM_MAINNET=yes.
+//   deploy-test-swap  a 1 minute lock test swap on mainnet against the live new CT. Needs CONFIRM_MAINNET=yes.
 //   deploy-mainnet    the real launch deploy (scripts/deploy-mainnet.js). Needs CONFIRM_MAINNET=yes. Launch day only.
 // Local dry run on a fork of mainnet, nothing broadcast (impersonates the test address, or a fresh one):
 //   OPS_TASK=rehearse-mainnet OPS_TEST_ADDRESS=0x.. npx hardhat run scripts/ops.js
@@ -108,6 +109,7 @@ async function main() {
     if (chainId !== 8217n) throw new Error(`ops runs on Kaia mainnet (8217); connected to ${chainId}`);
   }
   if (task === "deploy-token") return require("./deploy-token-mainnet.js");
+  if (task === "deploy-test-swap") return require("./deploy-test-swap-mainnet.js");
   if (task === "deploy-mainnet") return require("./deploy-mainnet.js");
   const w = await wallets(fork);
   if (task === "check") return check(w);

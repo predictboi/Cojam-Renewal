@@ -27,7 +27,7 @@
   var E = window.ethers, net = CJ.net, C = CJ.config;
   var params = new URLSearchParams(location.search);
   var LOCAL = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
-  var GAS_API = (LOCAL && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(params.get("gasapi") || "") ? params.get("gasapi") : net.gasApi).replace(/\/$/, "");
+  var GAS_API = (LOCAL && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(params.get("gasapi") || "") ? params.get("gasapi") : (net.gasApi || "")).replace(/\/$/, "");
   var ROOT = (document.body && document.body.dataset.root) || "../";
   var LAST_KEY = "cj.wallet.last";
   // Server caps (server/.env.example): gas limit 120,000 for approve and 600,000 for swap calls, gas price 50 gkei.

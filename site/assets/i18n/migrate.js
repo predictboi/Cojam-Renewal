@@ -233,6 +233,8 @@ CJ.dict({
     "f.none": "No amount yet",
     // live wallet and chain (assets/chain.js)
     "net.test.tag": "Kairos testnet",
+    "net.mtest.tag": "Mainnet test",
+    "net.mtest.body": "Private test contract on Kaia mainnet with a 1 minute lock, not the launch swap. Old CT sent here stays in this test contract, and you pay a small KAIA fee yourself.",
     "net.test.body": "This page runs on {name} with test tokens that have no value. The real swap opens on Kaia mainnet.",
     "wn.title.test": "Switch your wallet to Kairos",
     "wn.body.test": "Your wallet is on another network. This test runs on {name}, chain id {id}.",
@@ -468,6 +470,8 @@ CJ.dict({
     "f.none": "아직 입력한 수량이 없어요",
     // live wallet and chain (assets/chain.js)
     "net.test.tag": "Kairos 테스트넷",
+    "net.mtest.tag": "메인넷 테스트",
+    "net.mtest.body": "Kaia 메인넷의 비공개 테스트 컨트랙트예요. 락업은 1분이고 정식 교환이 아니에요. 여기 넣은 기존 CT는 테스트 컨트랙트에 남고, 수수료는 KAIA로 직접 내요.",
     "net.test.body": "이 페이지는 {name}에서 가치가 없는 테스트 토큰으로 동작해요. 실제 교환은 Kaia 메인넷에서 열려요.",
     "wn.title.test": "지갑 네트워크를 Kairos로 바꿔 주세요",
     "wn.body.test": "지갑이 다른 네트워크에 연결돼 있어요. 이 테스트는 {name}(체인 ID {id})에서 진행돼요.",
@@ -722,6 +726,8 @@ CJ.dict({
     "f.none": "数量が未入力です",
     // live wallet and chain (assets/chain.js)
     "net.test.tag": "Kairosテストネット",
+    "net.mtest.tag": "メインネットテスト",
+    "net.mtest.body": "Kaiaメインネット上の非公開テスト用コントラクトです。ロックは1分で、本番の交換ではありません。ここに送った旧CTはテスト用コントラクトに残り、手数料はKAIAでご自身で支払います。",
     "net.test.body": "このページは{name}上で、価値のないテスト用トークンで動いています。本番の交換はKaiaメインネットで始まります。",
     "wn.title.test": "ウォレットをKairosに切り替えてください",
     "wn.body.test": "ウォレットが別のネットワークに接続されています。このテストは{name}(チェーンID {id})で行います。",
