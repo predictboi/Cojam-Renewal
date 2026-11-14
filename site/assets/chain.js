@@ -86,12 +86,31 @@
   // Every other EVM wallet keeps its own slot, keyed by its EIP-6963 rdns (OKX, Phantom, Rabby, Coinbase...), so the
   // chooser lists each by name and connecting one never opens another. Kind "x:<rdns>".
   var extra = {};
+  // Other wallets copy MetaMask's flag (OKX sets isMetaMask for compatibility, and can also inject a Kaia provider), so
+  // a provider only counts as MetaMask or Kaia Wallet when no other wallet's own flag is on it.
+  function imposter(p) {
+    return !!(p && (p.isOkxWallet || p.isOKExWallet || p.isPhantom || p.isRabby || p.isCoinbaseWallet || p.isBraveWallet ||
+      p.isTrust || p.isTrustWallet || p.isBitKeep || p.isBitget || p.isTokenPocket || p.isZerion || p.isFrame || p.isExodus));
+  }
   function kindOf(info, p) {
     var s = ((info && info.rdns) || "") + " " + ((info && info.name) || "");
+    if (/okx|okex|phantom|rabby|coinbase|bitget|trust|brave/i.test(s) || imposter(p)) return "web3";
     if (/kaia|kaikas|klutch/i.test(s) || (p && p.isKaikas)) return "kaia";
     if (/^io\.metamask/i.test((info && info.rdns) || "") || (p && p.isMetaMask && !p.isKaikas && !(info && info.rdns))) return "mm";
     return "web3";
   }
+  // Wallets that also expose a named global: listed even when they skip EIP-6963 or answer late.
+  var GLOBALS = [["okxwallet", "com.okex.wallet", "OKX Wallet"], ["bitkeep.ethereum", "com.bitget.web3", "Bitget Wallet"],
+    ["phantom.ethereum", "app.phantom", "Phantom"], ["rabby", "io.rabby", "Rabby Wallet"]];
+  function addGlobals() {
+    GLOBALS.forEach(function (g) {
+      var pv = g[0].split(".").reduce(function (o, k) { return o && o[k]; }, window);
+      if (!pv || typeof pv.request !== "function") return;
+      var known = Object.keys(extra).some(function (id) { return extra[id].provider === pv || id === g[1]; });
+      if (!known) extra[g[1]] = { provider: pv, info: { name: g[2], rdns: g[1] } };
+    });
+  }
+  function rescan() { try { window.dispatchEvent(new Event("eip6963:requestProvider")); } catch (e) {} addGlobals(); }
   window.addEventListener("eip6963:announceProvider", function (e) {
     var d = e.detail; if (!d || !d.provider) return;
     var k = kindOf(d.info, d.provider);
@@ -101,27 +120,32 @@
     }
     if (!found[k]) found[k] = { provider: d.provider, info: d.info || {} };
   });
-  try { window.dispatchEvent(new Event("eip6963:requestProvider")); } catch (e) {}
+  rescan();
   function providerFor(kind) {
     var eth = window.ethereum;
     if (kind && kind.indexOf("x:") === 0) { var x = extra[kind.slice(2)]; return x ? x.provider : null; }
-    if (kind === "kaia") return window.klaytn || window.kaia || (found.kaia && found.kaia.provider) || null;
+    if (kind === "kaia") {
+      // window.klaytn counts only with Kaia Wallet's own isKaikas flag: OKX and others inject a klaytn object too.
+      var kp = [window.klaytn && window.klaytn.isKaikas ? window.klaytn : null, window.kaia].filter(function (x) { return x && !imposter(x); })[0];
+      return kp || (found.kaia && found.kaia.provider) || null;
+    }
     if (kind === "mm") {
       if (found.mm) return found.mm.provider;
-      if (eth && eth.providers && eth.providers.length) { var m = eth.providers.filter(function (p) { return p.isMetaMask && !p.isKaikas; })[0]; if (m) return m; }
-      return eth && eth.isMetaMask && !eth.isKaikas ? eth : null;
+      if (eth && eth.providers && eth.providers.length) { var m = eth.providers.filter(function (p) { return p.isMetaMask && !p.isKaikas && !imposter(p); })[0]; if (m) return m; }
+      return eth && eth.isMetaMask && !eth.isKaikas && !imposter(eth) ? eth : null;
     }
     return (found.web3 && found.web3.provider) || eth || null;
   }
   // Kinds this browser offers, for the chooser (wallet.js).
   function available() {
+    addGlobals();
     var out = [], eth = window.ethereum;
     if (providerFor("kaia")) out.push("kaia");
     if (providerFor("mm")) out.push("mm");
     var ids = Object.keys(extra);
     ids.forEach(function (id) { out.push("x:" + id); });
     // Wallets that inject window.ethereum but do not announce themselves: one generic slot.
-    if (!ids.length && eth && !eth.isMetaMask && !eth.isKaikas && eth !== window.klaytn) out.push("web3");
+    if (!ids.length && eth && (imposter(eth) || (!eth.isMetaMask && !eth.isKaikas)) && eth !== window.klaytn) out.push("web3");
     return out;
   }
   // Display name of a wallet kind for the chooser and the wallet card ("OKX Wallet", "Phantom"), or null.
@@ -595,7 +619,7 @@
 
   CJ.chain = {
     net: net, gasApi: GAS_API, provider: rp, interfaces: { erc20: ERC20, swap: SWAP },
-    available: available, providerFor: providerFor, remembered: remembered, label: label,
+    available: available, providerFor: providerFor, remembered: remembered, label: label, rescan: rescan,
     connect: connect, restore: restore, disconnect: disconnect, switchNetwork: switchNetwork,
     refresh: refresh, contractInfo: contractInfo, readWallet: readWallet,
     write: write, watchAsset: watchAsset, previewSwap: previewSwap, classify: classify, toWei: toWei, on: on,

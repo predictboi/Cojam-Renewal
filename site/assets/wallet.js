@@ -76,12 +76,18 @@
   var ua = navigator.userAgent || "";
   var os = /iPhone|iPad|iPod/i.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) ? "ios" : /Android/i.test(ua) ? "android" : null;
   var uaMobile = !!os || (navigator.userAgentData && navigator.userAgentData.mobile) || /Mobi/i.test(ua);
+  // Which wallet's own browser this page runs in. Other wallets copy MetaMask's flag or inject a klaytn object
+  // (OKX does both), so Kaia Wallet needs its own isKaikas flag and MetaMask needs no other wallet's flag.
+  function imposter(p) {
+    return !!(p && (p.isOkxWallet || p.isOKExWallet || p.isPhantom || p.isRabby || p.isCoinbaseWallet || p.isBraveWallet ||
+      p.isTrust || p.isTrustWallet || p.isBitKeep || p.isBitget || p.isTokenPocket || p.isZerion || p.isFrame || p.isExodus));
+  }
   function provider() {
-    var k = window.klaytn || window.kaia;
-    if (k) return "kaia";
+    var k = (window.klaytn && window.klaytn.isKaikas && !imposter(window.klaytn)) ? window.klaytn : (window.kaia && !imposter(window.kaia) ? window.kaia : null);
+    if (k && !window.okxwallet) return "kaia";
     var e = window.ethereum;
-    if (e && e.isMetaMask && !e.isKaikas) return "mm";
-    if (e) return "web3";
+    if (e && e.isMetaMask && !e.isKaikas && !imposter(e)) return "mm";
+    if (e || window.okxwallet) return "web3";
     return null;
   }
   var forced = MODES.indexOf(CJ.params.get("env")) > -1 ? CJ.params.get("env") : null;
@@ -97,8 +103,8 @@
     var exts = [];
     if (live()) exts = CJ.chain.available();
     else {
-      if (window.klaytn || window.kaia) exts.push("kaia");
-      if (window.ethereum && window.ethereum.isMetaMask && !window.ethereum.isKaikas) exts.push("mm");
+      if ((window.klaytn && window.klaytn.isKaikas) || window.kaia) exts.push("kaia");
+      if (window.ethereum && window.ethereum.isMetaMask && !window.ethereum.isKaikas && !imposter(window.ethereum)) exts.push("mm");
       else if (window.ethereum && !exts.length) exts.push("web3");
     }
     return { mode: exts.length ? "desktop-ext" : "desktop-none", inapp: false, kind: null, mobile: false, exts: exts };
@@ -270,6 +276,7 @@
 
   // open({from, onPick(kind)}): in a wallet's own browser it connects at once (no chooser); elsewhere it shows the sheet.
   function open(opts) {
+    if (CJ.chain && CJ.chain.rescan) CJ.chain.rescan(); // wallets that loaded late get listed too
     opts = opts || {};
     var e = env();
     if (e.inapp && !opts.force) { if (opts.onPick) opts.onPick(e.kind); return; }
