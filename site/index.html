@@ -130,7 +130,7 @@
           <span class="tl-dot" aria-hidden="true"></span><span class="tl-state"></span>
           <span class="tl-when num" id="tl-close"></span>
           <h3 data-i18n="tl.close.title">Window closes</h3>
-          <p class="muted small" data-i18n="tl.close.body">1 year after launch. No new swaps. Unswapped new CT goes to the new treasury multisig.</p>
+          <p class="muted small" data-i18n="tl.close.body">1 year after launch. No new swaps. 30 days later, the unswapped remainder returns to Cojam's master wallet.</p>
         </li>
         <li class="tl-item">
           <span class="tl-dot" aria-hidden="true"></span><span class="tl-state"></span>
@@ -161,7 +161,7 @@
           </div>
           <div class="fact">
             <dt data-i18n="ct.admin.label">Admin powers</dt>
-            <dd data-i18n="ct.admin.value">None: no pause, no mint, no blacklist</dd>
+            <dd data-i18n="ct.admin.value">None on the token or the swap: no mint, no pause, no blacklist, no withdrawal</dd>
           </div>
           <div class="fact">
             <dt data-i18n="ct.audit.label">Audit</dt>
@@ -283,7 +283,7 @@
         <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q2">My CT is in a Klayswap pool.</span></summary><p data-i18n="faq.a2">Remove your liquidity first so the CT is back in your wallet, then swap it here.</p></details>
         <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q5">Why is 90% locked for 7 days?</span></summary><p data-i18n="faq.a5">It deters swap abuse and favours real holders. Only 10% is free at once, so swapping just to sell straight away does not pay. The rule is the same for every holder and every amount.</p></details>
         <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q9">Do I need to come back for the 90%?</span></summary><p data-i18n="faq.a9">No. After 7 days Cojam sends it to your wallet automatically. You can also claim it yourself any time after the unlock, for example if you do not want to wait. Either way it goes only to the wallet that swapped.</p></details>
-        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q3">What if I miss the window?</span></summary><p data-i18n="faq.a3">After the window closes, 1 year after launch, no new swaps are possible. New CT that was not swapped goes to the new Cojam treasury multisig, whose address is published at launch. The locked 90% of swaps you already made is still sent to you.</p></details>
+        <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q3">What if I miss the window?</span></summary><p data-i18n="faq.a3">After the window closes, 1 year after launch, no new swaps are possible. 30 days later anyone can trigger a sweep that returns the unswapped new CT in the swap contract to Cojam's master wallet, an address fixed at deploy. The sweep never takes new CT owed to locked swaps: the locked 90% of swaps you already made is still sent to you.</p></details>
         <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q4">Is there a reward for swapping?</span></summary><p data-i18n="faq.a4">No. It is one for one: 1 old CT gives 1 new CT, with no bonus and no fee from Cojam.</p></details>
         <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q6">Which wallets work?</span></summary><p data-i18n="faq.a6">Kaia Wallet, MetaMask with the Kaia network added, and wallets that connect through WalletConnect.</p></details>
         <details class="faq-item lift-row smooth"><summary><span data-i18n="faq.q7">What does it cost?</span></summary><p data-i18n="faq.a7">Nothing with Kaia Wallet: Cojam pays the network fee for the approval, the swap and the release through Kaia fee delegation. MetaMask cannot sign fee delegated transactions, so with MetaMask you pay a small fee in KAIA yourself. Cojam charges no swap fee.</p></details>

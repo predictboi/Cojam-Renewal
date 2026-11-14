@@ -26,8 +26,8 @@ CJ.dict({
     "status.fig.holders": "Holders swapped",
     "status.fig.holders_value": "{n} wallets",
     "status.fig.holders_sub": "{pct} of about {n} old CT holders",
-    "status.fig.reserve": "Reserve left",
-    "status.fig.reserve_sub": "Goes to the new treasury multisig after the window closes",
+    "status.fig.reserve": "Not swapped yet",
+    "status.fig.reserve_sub": "In the swap reserve or Cojam's master wallet",
     "status.fig.time": "Time left to swap",
     "status.fig.time_value": "{n} days",
     "status.fig.time_value_one": "1 day",
@@ -39,7 +39,7 @@ CJ.dict({
     "status.split.wallets": "In holders' wallets",
     "status.split.locked": "Locked (90%)",
     "status.split.reserve": "Not swapped yet",
-    "status.split.aria": "New CT supply: in holders' wallets {a}, locked {b}, not swapped yet {c}.",
+    "status.split.aria": "New CT supply: in holders' wallets {a}, locked {b}, not swapped yet, in the swap reserve and the master wallet, {c}.",
     "status.split.item": "{amount} CT, {pct}",
 
     "status.daily.title": "Old CT swapped per day",
@@ -98,14 +98,14 @@ CJ.dict({
     "status.help.instant": "On every swap, 10% of the new CT is paid in the swap transaction itself, so it is in the holder's wallet at once.",
     "status.help.locked": "The other 90% of each swap is locked in the swap contract for 7 days. No one can move it during the lock, not even Cojam.",
     "status.help.released": "When a lock ends, its 90% is being sent: the Cojam keeper sends it to the wallet that swapped within about 30 minutes and pays the gas, unless the holder claims it first. Once it arrives it counts as released.",
-    "status.help.reserve": "New CT that is not swapped yet. The swap contract holds the full new supply as a reserve and pays every swap from it. What is left when the window closes goes to the new treasury multisig.",
+    "status.help.reserve": "New CT that is not swapped yet. The whole new supply was minted to Cojam's master wallet, which funds the swap contract's reserve with transfers and tops it up as swaps come in. Every swap is paid from that reserve. This figure counts both. 30 days after the window closes, anyone can return the unswapped remainder in the swap contract to the master wallet; new CT owed to locked 90% never leaves with it.",
     "status.act.swap": "Swapped",
     "status.act.release": "Released",
     "status.tx.view": "View",
     "status.tx.aria": "View transaction {hash} in Kaiascan",
 
     "status.contracts.title": "Contracts on Kaia",
-    "status.contracts.note": "New CT has a fixed supply of {supply} CT, all of it in the swap reserve at launch. It is a plain token with no pause, mint or blacklist. Audit in progress."
+    "status.contracts.note": "New CT has a fixed supply of {supply} CT, minted once to Cojam's master wallet, which funds the swap reserve. The token has no owner, pause, mint or blacklist, and the swap contract has no owner or admin functions. Audit in progress."
   },
   ko: {
     "status.title": "교환 현황",
@@ -132,8 +132,8 @@ CJ.dict({
     "status.fig.holders": "교환한 보유자",
     "status.fig.holders_value": "지갑 {n}개",
     "status.fig.holders_sub": "기존 CT 보유자 약 {n}명 중 {pct}",
-    "status.fig.reserve": "남은 준비금",
-    "status.fig.reserve_sub": "마감 후 새로 만든 트레저리 멀티시그로 이동",
+    "status.fig.reserve": "아직 교환 전",
+    "status.fig.reserve_sub": "교환 준비금이나 Cojam 마스터 지갑에 보관",
     "status.fig.time": "남은 교환 기간",
     "status.fig.time_value": "{n}일",
     "status.fig.time_value_one": "1일",
@@ -144,7 +144,7 @@ CJ.dict({
     "status.split.wallets": "보유자 지갑",
     "status.split.locked": "락업 (90%)",
     "status.split.reserve": "교환 전",
-    "status.split.aria": "새 CT 공급량: 보유자 지갑 {a}, 락업 {b}, 교환 전 {c}.",
+    "status.split.aria": "새 CT 공급량: 보유자 지갑 {a}, 락업 {b}, 교환 전 준비금과 마스터 지갑 {c}.",
     "status.split.item": "{amount} CT, {pct}",
     "status.daily.title": "일별 기존 CT 교환량",
     "status.daily.sub": "{date} 교환 시작부터 집계해요. 오늘은 지금까지의 수치예요.",
@@ -200,13 +200,13 @@ CJ.dict({
     "status.help.instant": "교환할 때마다 새 CT의 10%는 교환 트랜잭션에서 바로 지급돼요. 그래서 보유자 지갑에 곧장 들어가요.",
     "status.help.locked": "교환마다 나머지 90%는 교환 컨트랙트에 7일 동안 락업돼요. 락업 중에는 Cojam을 포함해 누구도 옮길 수 없어요.",
     "status.help.released": "락업이 끝나면 90%는 지급 중 상태가 돼요. 보유자가 먼저 직접 받지 않으면 Cojam 자동 지급 봇이 30분쯤 안에 교환한 지갑으로 보내고 가스비도 내요. 지갑에 들어오면 지급 완료로 집계돼요.",
-    "status.help.reserve": "아직 교환되지 않은 새 CT예요. 교환 컨트랙트가 새 CT 전체 공급량을 준비금으로 갖고 있고, 모든 교환은 여기서 지급돼요. 교환 기간이 끝났을 때 남은 수량은 새로 만든 트레저리 멀티시그로 옮겨요.",
+    "status.help.reserve": "아직 교환되지 않은 새 CT예요. 새 CT 전량은 Cojam 마스터 지갑에 발행됐고, 마스터 지갑이 전송으로 교환 컨트랙트의 준비금을 채우며 교환이 늘면 다시 채워요. 모든 교환은 이 준비금에서 지급돼요. 이 수치는 두 곳을 합친 양이에요. 교환 기간이 끝나고 30일이 지나면 누구나 교환 컨트랙트에 남은 물량을 마스터 지갑으로 회수할 수 있어요. 락업 중인 90%로 지급할 새 CT는 회수되지 않아요.",
     "status.act.swap": "교환",
     "status.act.release": "지급",
     "status.tx.view": "보기",
     "status.tx.aria": "Kaiascan에서 트랜잭션 {hash} 보기",
     "status.contracts.title": "Kaia 컨트랙트",
-    "status.contracts.note": "새 CT 공급량은 {supply} CT로 고정돼 있고, 출시 시점에는 전량이 교환 준비금에 있어요. 일시 정지, 추가 발행, 블랙리스트 기능이 없는 일반 토큰이에요. 보안 감사가 진행 중이에요."
+    "status.contracts.note": "새 CT 공급량은 {supply} CT로 고정돼 있고, 전량을 Cojam 마스터 지갑에 발행해 교환 준비금을 채워요. 토큰에는 소유자, 일시 정지, 추가 발행, 블랙리스트 기능이 없고, 교환 컨트랙트에도 소유자나 관리자 기능이 없어요. 보안 감사가 진행 중이에요."
   },
   ja: {
     "status.title": "交換状況",
@@ -234,8 +234,8 @@ CJ.dict({
     "status.fig.holders": "交換した保有者",
     "status.fig.holders_value": "{n}ウォレット",
     "status.fig.holders_sub": "旧CT保有者約{n}人中{pct}",
-    "status.fig.reserve": "リザーブ残高",
-    "status.fig.reserve_sub": "期間終了後、新マルチシグへ移動",
+    "status.fig.reserve": "未交換",
+    "status.fig.reserve_sub": "交換リザーブかCojamのマスターウォレットに保管",
     "status.fig.time": "交換期間の残り",
     "status.fig.time_value": "{n}日",
     "status.fig.time_value_one": "1日",
@@ -247,7 +247,7 @@ CJ.dict({
     "status.split.wallets": "保有者のウォレット",
     "status.split.locked": "ロック中(90%)",
     "status.split.reserve": "未交換",
-    "status.split.aria": "新CT供給量: 保有者のウォレット{a}、ロック中{b}、未交換{c}。",
+    "status.split.aria": "新CT供給量: 保有者のウォレット{a}、ロック中{b}、未交換でリザーブとマスターウォレットにある分{c}。",
     "status.split.item": "{amount} CT、{pct}",
 
     "status.daily.title": "旧CTの日別交換量",
@@ -306,13 +306,13 @@ CJ.dict({
     "status.help.instant": "交換のたびに新CTの10%が交換トランザクションの中で支払われるため、保有者のウォレットにすぐ届きます。",
     "status.help.locked": "各交換の残り90%は、交換コントラクトで7日間ロックされます。ロック中はCojamを含め誰も動かせません。",
     "status.help.released": "ロックが終わると、90%は送付中になります。保有者が先に受け取らない限り、Cojamの自動送付ボットが約30分以内に交換したウォレットへ送り、ガス代も負担します。届いた時点で送付済みとして集計されます。",
-    "status.help.reserve": "まだ交換されていない新CTです。交換コントラクトが新CTの全供給量をリザーブとして保有し、すべての交換をそこから支払います。交換期間の終了時に残った分は、新しいトレジャリーマルチシグに移ります。",
+    "status.help.reserve": "まだ交換されていない新CTです。新CTの全量はCojamのマスターウォレットに発行され、マスターウォレットが送金で交換コントラクトのリザーブに入金し、交換の進み具合に応じて補充します。すべての交換はこのリザーブから支払われます。この数値は両方の合計です。交換期間の終了から30日後には、誰でも交換コントラクトに残った未交換分をマスターウォレットに回収できます。ロック中の90%に充てる新CTは回収されません。",
     "status.act.swap": "交換",
     "status.act.release": "送付",
     "status.tx.view": "表示",
     "status.tx.aria": "Kaiascanでトランザクション{hash}を表示",
 
     "status.contracts.title": "Kaia上のコントラクト",
-    "status.contracts.note": "新CTの供給量は{supply} CTで固定されており、ローンチ時点ではすべて交換リザーブにあります。一時停止、発行、ブラックリストの機能を持たないシンプルなトークンです。監査は現在進行中です。"
+    "status.contracts.note": "新CTの供給量は{supply} CTで固定されており、全量をCojamのマスターウォレットに発行して交換リザーブに入金します。トークンにはオーナー、一時停止、発行、ブラックリストの機能がなく、交換コントラクトにもオーナーや管理者機能はありません。監査は現在進行中です。"
   }
 });

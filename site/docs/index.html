@@ -133,7 +133,7 @@
           <li><span data-i18n="docs.lock.claim">You can also claim it yourself at any time after the unlock, for example if the keeper is late. There is no deadline.</span></li>
           <li><span data-i18n="docs.lock.why">Why the lock: it deters swap abuse and favours real holders. Only 10% is free at once, so swapping just to sell straight away does not pay.</span></li>
           <li><span id="dc-window"></span></li>
-          <li><span data-i18n="docs.lock.reserve">New CT that is not swapped by the end of the window goes to the new Cojam treasury multisig, whose address is published at launch.</span></li>
+          <li><span data-i18n="docs.lock.reserve">New CT that is not swapped stays in the swap contract until 30 days after the window closes. Then anyone can trigger a sweep that returns the unswapped remainder to Cojam's master wallet, an address fixed at deploy. The sweep can never take new CT owed to locked 90% remainders.</span></li>
         </ul>
       </section>
       <section class="dc-sec" id="special" aria-labelledby="special-h">
@@ -161,7 +161,7 @@
           </details></li>
           <li><details class="dc-case smooth" id="reserve" open>
             <summary class="dc-case-s"><span class="dc-row-ico" data-ico="warn" aria-hidden="true"></span><span class="dc-h3" data-i18n="docs.sp.reserve.t">The app says the reserve is empty</span></summary>
-            <p class="dc-row-b" data-i18n="docs.sp.reserve.b">This should not happen: the reserve holds the full new supply. If it does, new swaps pause and nothing leaves your wallet, so your old CT stays where it is. Do not send CT to anyone who offers to swap it for you. Check the Status page and try again later.</p>
+            <p class="dc-row-b" data-i18n="docs.sp.reserve.b">Cojam's master wallet funds the swap reserve in steps and tops it up as swaps come in, so it can run low between top ups. If a swap is refused because the reserve is low, nothing leaves your wallet: your old CT stays where it is. Swaps you already made are not affected, because the new CT owed to your locked 90% is always kept aside. Wait a little: the team tops the reserve up, and the official announcements say when it is done. Do not send CT to anyone who offers to swap it for you.</p>
           </details></li>
         </ul>
         <script>
@@ -209,7 +209,7 @@
         </div>
         <ul class="dc-list">
           <li><span id="dc-supply"></span></li>
-          <li><span data-i18n="docs.c.plain">New CT is a plain KIP-7 token (ERC-20 compatible, 18 decimals) with no pause, no mint, no blacklist and no owner powers.</span></li>
+          <li><span data-i18n="docs.c.plain">New CT is a plain KIP-7 token (ERC-20 compatible, 18 decimals) with no owner, no mint, no pause and no blacklist. The swap contract has no owner either: no one can pause it, withdraw from it or change its rules.</span></li>
           <li class="dc-audit"><span class="tag tag-audit" data-i18n="docs.c.audit">Audit in progress</span> <span data-i18n="docs.c.audit_b">The report will be linked here when it is published.</span></li>
         </ul>
       </section>
