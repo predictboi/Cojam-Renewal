@@ -316,7 +316,11 @@
       // One countdown: the track's own "Unlocks in 7 days" (round 1 fix 4). No data-count here: motion.js counts those up.
       '<div class="mg-trackbox"><div data-track="' + lot.id + '" data-large></div></div>' +
       '<p class="small">' + txLink(lot.txSwap, t("h.tx.swap")) + "</p>" + addRow() +
-      '<div class="mg-actions">' + primary(t("ok.done"), "done") + "</div>";
+      // Unlocked while this screen is open: the 90% can be claimed right here, and Done stays as the way out.
+      (L.lotStatus(lot) === "releasing"
+        ? '<div class="mg-actions">' + primary(t("cl.cta", { amount: A(lot.locked) }), "claim", ' data-ids="' + lot.id + '"') +
+          '<button type="button" class="btn btn-ghost btn-block" data-act="done">' + t("ok.done") + "</button></div>"
+        : '<div class="mg-actions">' + primary(t("ok.done"), "done") + "</div>");
   };
   // Success views: "Add new CT to wallet" sits inline above the one primary, "Done", which sticks within thumb reach on a phone.
   function addRow() { return '<div class="mg-addrow"><button type="button" class="btn btn-ghost" data-act="add">' + I("plus", 18) + "<span>" + t("ok.add") + "</span></button></div>"; }
@@ -1014,6 +1018,11 @@
   });
 
   document.addEventListener("cj:ledger", function () { render(false); });
+  // A lot just unlocked while the page was open: re-read and redraw, so the claim button (or "being sent") shows at once.
+  document.addEventListener("cj:unlocked", function () {
+    if (document.activeElement && document.activeElement.id === "mg-amt") return;
+    if (CJ.live && CJ.chain && CJ.chain.refresh) { CJ.chain.refresh(); } else { render(false); renderHist(); }
+  });
   document.addEventListener("cj:lang", function () { paintSheets(); menu.setAttribute("aria-label", t("menu.label")); if (!menu.hidden) paintMenu(); lastLive = ""; render(false); });
 
   // ---------- ?state= presets for captures and review ----------

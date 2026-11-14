@@ -371,7 +371,9 @@
     var total = lot ? lot.amount : (opts.amount || 0);
     var sp = lot && lot.instant != null ? { instant: lot.instant, locked: lot.locked } : split(total);
     var done = status === "releasing" || status === "released";
-    var elapsed = lot ? Math.max(0, Math.min(days, (now() - lot.swappedAt) / DAY)) : (opts.demoDays || 0);
+    // Progress over the lot's own lock (7 days at launch, 1 minute on the mainnet test swap), drawn on the 7 day rail.
+    var lockMs = lot ? Math.max(1, (lot.unlockAt - lot.swappedAt) || days * DAY) : days * DAY;
+    var elapsed = lot ? Math.max(0, Math.min(days, (now() - lot.swappedAt) / lockMs * days)) : (opts.demoDays || 0);
     for (var i = 0; i < days; i++) {
       var cls = "track-day";
       if (done || elapsed >= i + 1) cls += " is-full";
@@ -387,7 +389,7 @@
       : status === "releasing" ? t("track.sending")
       : t("track.released", { date: date(lot.releasedAt) });
     var mid = status === "demo" ? t("track.mid", { days: days })
-      : status === "locked" ? t("track.left_days", { rel: rel(lot.unlockAt) })
+      : status === "locked" ? t("track.left_days", { rel: rel(lot.unlockAt) }) // refreshed every second by the ticker below
       : status === "releasing" ? t("track.mid_ready") : t(by);
     var a = amount(total), ai = amount(sp.instant), al = amount(sp.locked);
     el.className = "track" + (opts.large ? " track-lg" : "") + (status === "releasing" ? " is-ready" : "") + (status === "released" ? " is-released" : "");
@@ -399,7 +401,21 @@
       '<div class="track-rail"><span class="track-now"></span>' + html + "</div>" +
       '<div class="track-foot"><span class="track-end track-instant"><span class="track-cap">' + nowCap + '</span><span class="track-amt"><span class="num">' + ai + '</span> <span class="track-unit">' + t("unit.new") + "</span></span></span>" +
       '<span class="track-mid">' + icon(status === "released" ? "check" : done ? "unlock" : "lock", 14) + "<span>" + mid + "</span></span></div>";
+    // Locked lots count down live: the track redraws every second while it is on the page, and the moment it unlocks
+    // a "cj:unlocked" event tells the page to move on (claim, or the keeper's release).
+    if (lot && status === "locked") { liveTracks = liveTracks.filter(function (x) { return x.el !== el; }); liveTracks.push({ el: el, lot: lot, opts: opts }); }
   }
+  var liveTracks = [];
+  setInterval(function () {
+    if (!liveTracks.length || document.hidden) return;
+    var list = liveTracks; liveTracks = [];
+    list.forEach(function (x) {
+      if (!document.contains(x.el)) return;
+      var wasLocked = x.lot.unlockAt > now() - 1000;
+      (window.CJ && CJ.track || track)(x.el, x.lot, x.opts);
+      if (wasLocked && now() >= x.lot.unlockAt && !x.fired) { x.fired = true; document.dispatchEvent(new CustomEvent("cj:unlocked", { detail: x.lot })); }
+    });
+  }, 1000);
 
   // ---------- sample data: one seeded set for status and admin ----------
   // Stands in for the swap contract's Migrated(user, lotId, ...) and Claimed(user, lotId, amount, caller) events until launch.
