@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Cojam: the OG prediction market is back</title>
-<meta name="description" content="Swap old CT for new CT one for one on Kaia. 10% arrives at once, the other 90% is sent to your wallet automatically 7 days later.">
+<meta name="description" content="Swap old CT for new CT on Kaia, 10 old CT for 4 new CT. 10% arrives at once, the other 90% is sent to your wallet automatically 7 days later.">
 <meta name="theme-color" content="#124CC4">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,8 +12,8 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
-<link rel="stylesheet" href="assets/pages/landing.css?v=20261114b">
-<link rel="stylesheet" href="assets/menu.css?v=20261114b">
+<link rel="stylesheet" href="assets/pages/landing.css?v=20261114c">
+<link rel="stylesheet" href="assets/menu.css?v=20261114c">
 <!-- Scroll reveal is on only when scripts run and motion is welcome, so the page is never blank without them. -->
 <script>if (!matchMedia("(prefers-reduced-motion: reduce)").matches) document.documentElement.classList.add("rv-on");</script>
 </head>
@@ -74,12 +74,12 @@
           <div class="v">+10%</div>
         </div>
         <div class="badge">
-          <svg class="ring" viewBox="0 0 132 132"><defs><path id="circ" d="M66,66 m-50,0 a50,50 0 1,1 100,0 a50,50 0 1,1 -100,0"/></defs><text textLength="312" lengthAdjust="spacing"><textPath href="#circ" data-i18n="hero.badge">SWAP 1:1 ✦ OLD CT → NEW CT ✦ </textPath></text></svg>
+          <svg class="ring" viewBox="0 0 132 132"><defs><path id="circ" d="M66,66 m-50,0 a50,50 0 1,1 100,0 a50,50 0 1,1 -100,0"/></defs><text textLength="312" lengthAdjust="spacing"><textPath href="#circ" data-i18n="hero.badge">RATE 0.4 ✦ OLD CT → NEW CT ✦ </textPath></text></svg>
           <svg class="core" viewBox="0 0 60 60" fill="none" stroke="#0B1530" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M14 40 C 18 14, 30 12, 30 30 S 44 44, 46 18 M46 18 l -9 6 M46 18 l 3 10"/></svg>
         </div>
         <svg class="squiggle q2" viewBox="0 0 160 160"><path d="M20 30 C 90 0, 150 40, 110 80 S 40 110, 70 140 l 18 -26 M70 140 l -30 -8"/></svg>
       </div>
-      <p class="lede" data-i18n-html="hero.lede">Cojam is back on Kaia. Swap old CT for new CT, one for one: <b>10% lands at once</b>, the rest 7 days later.</p>
+      <p class="lede" data-i18n-html="hero.lede">Cojam is back on Kaia. Swap old CT for new CT at a fixed rate, 10 old CT for 4 new CT: <b>10% lands at once</b>, the rest 7 days later.</p>
       <div class="actions">
         <a class="btn" href="migrate/"><span data-i18n="hero.cta">Swap CT</span><span class="arr" aria-hidden="true">→</span></a>
         <a class="btn ghost" href="#how" data-i18n="hero.how">How it works</a>
@@ -88,8 +88,8 @@
   </section>
 
   <div class="mq-clip" aria-hidden="true"><div class="marquee"><div class="mq">
-    <span data-i18n="tk.1">1 old CT = 1 new CT</span><span data-i18n="tk.2">10% now</span><span data-i18n="tk.3">90% in 7 days</span><span data-i18n="tk.4">No KAIA needed</span><span data-i18n="tk.5">0 extra mint</span><span data-i18n="tk.6">Locked 90%: untouchable</span>
-    <span data-i18n="tk.1">1 old CT = 1 new CT</span><span data-i18n="tk.2">10% now</span><span data-i18n="tk.3">90% in 7 days</span><span data-i18n="tk.4">No KAIA needed</span><span data-i18n="tk.5">0 extra mint</span><span data-i18n="tk.6">Locked 90%: untouchable</span>
+    <span data-i18n="tk.1">10 old CT = 4 new CT</span><span data-i18n="tk.2">10% now</span><span data-i18n="tk.3">90% in 7 days</span><span data-i18n="tk.4">No KAIA needed</span><span data-i18n="tk.5">0 extra mint</span><span data-i18n="tk.6">Locked 90%: untouchable</span>
+    <span data-i18n="tk.1">10 old CT = 4 new CT</span><span data-i18n="tk.2">10% now</span><span data-i18n="tk.3">90% in 7 days</span><span data-i18n="tk.4">No KAIA needed</span><span data-i18n="tk.5">0 extra mint</span><span data-i18n="tk.6">Locked 90%: untouchable</span>
   </div></div></div>
 
   <section class="light" id="how" aria-labelledby="how-h">
@@ -98,7 +98,7 @@
       <h2 class="h2 display rv" id="how-h" data-i18n-html="how.title">Sign twice.<br><em>That's it.</em></h2>
       <p class="sub rv" data-i18n="how.sub">Approve and swap in your own wallet. Everything after that happens on its own.</p>
       <ol class="steps">
-        <li class="step rv"><span class="n" aria-hidden="true">01</span><h3 data-i18n="how.s1.t">Swap old CT</h3><p data-i18n="how.s1.b">Any amount, one for one.</p></li>
+        <li class="step rv"><span class="n" aria-hidden="true">01</span><h3 data-i18n="how.s1.t">Swap old CT</h3><p data-i18n="how.s1.b">Any amount, at a fixed rate: 10 old CT gives 4 new CT.</p></li>
         <li class="step hot rv"><span class="n" aria-hidden="true">02</span><h3 data-i18n="how.s2.t">10% lands now</h3><p data-i18n="how.s2.b">In the same transaction, straight to your wallet.</p></li>
         <li class="step blue rv"><span class="n" aria-hidden="true">03</span><h3 data-i18n="how.s3.t">90% in 7 days</h3><p data-i18n="how.s3.b">Locked for 7 days, then sent to you automatically.</p></li>
       </ol>
@@ -109,14 +109,15 @@
         <div class="legend"><span data-i18n="how.track.now">10% now</span><span data-i18n="how.track.later">90% after 7 days</span></div>
         <button class="btn sm" type="button" id="play" aria-pressed="false" aria-controls="track"><span data-i18n="how.track.ff">Fast forward 7 days</span><span class="arr" aria-hidden="true">»</span></button>
       </div>
+      <p class="rate-note rv" data-i18n="how.rate">The rate is set against the original 5,000,000,000 supply before burns: 2,000,000,000 new CT for 5,000,000,000 old CT.</p>
       <div class="fee rv">
         <span class="fee-pill"><svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg><span data-i18n="how.fee">No KAIA needed with Kaia Wallet</span></span>
         <span class="fee-note" data-i18n="how.fee.mm">Cojam pays the network fee. With MetaMask you pay a small KAIA fee yourself.</span>
       </div>
 
       <div class="nums" id="numbers">
-        <div class="stat rv"><b data-i18n="num.supply.v">4.08B</b><span data-i18n="num.supply.k">New CT supply, fixed</span></div>
-        <div class="stat rv"><b>1:1</b><span data-i18n="num.ratio.k">No bonus, no fee</span></div>
+        <div class="stat rv"><b data-i18n="num.supply.v">2B</b><span data-i18n="num.supply.k">New CT supply, fixed</span></div>
+        <div class="stat rv"><b>0.4</b><span data-i18n="num.ratio.k">10 old CT become 4 new CT, with no fee</span></div>
         <div class="stat rv"><b data-i18n="num.days.v">365</b><span data-i18n="num.days.k">Days to swap</span></div>
         <div class="stat rv"><b>0</b><span data-i18n="num.token.k">Owner, pause or blacklist on the new CT token</span></div>
       </div>
@@ -154,8 +155,10 @@
         </div>
         <dl class="facts rv">
           <div class="fact"><dt data-i18n="ct.supply.k">New CT supply</dt><dd id="ct-supply"></dd></div>
+          <div class="fact"><dt data-i18n="ct.rate.k">Swap rate</dt><dd data-i18n="ct.rate.v">10 old CT = 4 new CT (rate 0.4). The rate is set against the original 5,000,000,000 supply before burns: 2,000,000,000 new CT for 5,000,000,000 old CT.</dd></div>
+          <div class="fact"><dt data-i18n="ct.oldsupply.k">Old CT supply</dt><dd id="ct-oldsupply"></dd></div>
           <div class="fact"><dt data-i18n="ct.token.k">New CT token</dt><dd data-i18n="ct.token.v">No owner, no mint, no pause, no blacklist.</dd></div>
-          <div class="fact"><dt data-i18n="ct.rules.k">Swap rules</dt><dd data-i18n="ct.rules.v">The 1:1 rate, the 10% at once, the 7 day lock and the 1 year window are fixed in code.</dd></div>
+          <div class="fact"><dt data-i18n="ct.rules.k">Swap rules</dt><dd data-i18n="ct.rules.v">The 0.4 rate, the 10% at once, the 7 day lock and the 1 year window are fixed in code.</dd></div>
           <div class="fact"><dt data-i18n="ct.reserve.k">Swap reserve</dt><dd><span data-i18n="ct.reserve.v">The swap reserve is held in the swap contract, so anyone can verify it on chain (Kaiascan).</span> <a class="inline" href="status/" data-i18n="ct.reserve.link">See it on the status page</a></dd></div>
           <div class="fact"><dt data-i18n="ct.old.k">Old CT you swap in</dt><dd data-i18n="ct.old.v">Stays in the swap contract for good.</dd></div>
           <div class="fact"><dt data-i18n="ct.audit.k">Audit</dt><dd><span class="audit" data-i18n="ct.audit.v">Audit in progress</span></dd></div>
@@ -243,12 +246,12 @@
   </div>
 </footer>
 
-<script src="assets/system.js?v=20261114b"></script>
-<script src="assets/network.js?v=20261114b"></script>
-<script src="assets/i18n/shell.js?v=20261114b"></script>
-<script src="assets/i18n/landing.js?v=20261114b"></script>
-<script src="assets/price.js?v=20261114b"></script>
-<script src="assets/menu.js?v=20261114b"></script>
-<script src="assets/pages/landing.js?v=20261114b"></script>
+<script src="assets/system.js?v=20261114c"></script>
+<script src="assets/network.js?v=20261114c"></script>
+<script src="assets/i18n/shell.js?v=20261114c"></script>
+<script src="assets/i18n/landing.js?v=20261114c"></script>
+<script src="assets/price.js?v=20261114c"></script>
+<script src="assets/menu.js?v=20261114c"></script>
+<script src="assets/pages/landing.js?v=20261114c"></script>
 </body>
 </html>

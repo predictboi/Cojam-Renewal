@@ -30,6 +30,7 @@
   function lots(status) { return led().lots.filter(function (l) { return !status || L.lotStatus(l) === status; }); }
   function sum(arr) { return arr.reduce(function (a, l) { return a + l.amount; }, 0); }
   function sumL(arr) { return arr.reduce(function (a, l) { return a + l.locked; }, 0); }
+  // What a swap of v old CT gives at the 0.4 rate: {credit (new CT in total), instant (10%), locked (90%)}.
   function sp(v) { return CJ.split(v); }
   // month and day, short enough to sit beside the amount at 390 px; the full date is in the help and on the track
   function md(ts) { return new Intl.DateTimeFormat({ en: "en-US", ko: "ko-KR", ja: "ja-JP" }[CJ.lang()], { month: "short", day: "numeric", timeZone: "UTC" }).format(ts); }
@@ -172,7 +173,7 @@
       '<div class="mg-cf-flow">' +
         '<div class="mg-cf-side"><span class="mg-cf-k">' + t("cf.send") + '</span><span class="mg-cf-v num">' + A(amt) + '</span><span class="mg-cf-u">' + t("unit.old") + "</span></div>" +
         '<span class="mg-cf-arrow" aria-hidden="true">' + I("arrow", 20) + "</span>" +
-        '<div class="mg-cf-side is-new"><span class="mg-cf-k">' + t("cf.get") + '</span><span class="mg-cf-v num">' + A(amt) + '</span><span class="mg-cf-u">' + t("unit.new") + approxUsd(amt) + "</span></div>" +
+        '<div class="mg-cf-side is-new"><span class="mg-cf-k">' + t("cf.get") + '</span><span class="mg-cf-v num">' + A(p.credit) + '</span><span class="mg-cf-u">' + t("unit.new") + approxUsd(p.credit) + "</span></div>" +
       "</div>" +
       '<div class="mg-cf-bar" aria-hidden="true"><i class="is-now"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>' +
       '<dl class="mg-rows">' +
@@ -558,7 +559,7 @@
     ui.wait = null; ui.errKind = kind; ui.error = null; ui.failKey = null; ui.sponsorCode = null;
     if (k === "rejected") ui.error = "rejected";
     else if (k === "sponsor") { ui.error = "sponsor"; ui.sponsorCode = e && e.code; }
-    else if (k === "reserve") { var Ld = led(); Ld.contract.reserveEmpty = true; Ld.contract.reserveNeed = ui.amountWei; }
+    else if (k === "reserve") { var Ld = led(); Ld.contract.reserveEmpty = true; Ld.contract.reserveNeed = ui.amountWei ? CJ.toNewWei(ui.amountWei).toString() : null; } // the new CT this swap needs
     else if (k === "closed") ui.closed = true;
     else if (k === "network") { /* chain.js has published the wallet's chain: the wrong network view takes over */ }
     else if (k === "nothing") { refreshThen(function () { ui.phase = "form"; }); return; }
@@ -715,7 +716,7 @@
       var got = (ui.claimIds || []).map(byId).filter(Boolean);
       CJ.track(ct, {
         id: got.length === 1 ? got[0].id : null, // one lot: the same lot, so its caption matches its history entry
-        amount: sum(got), instant: got.reduce(function (a, l) { return a + l.instant; }, 0), locked: sumL(got),
+        amount: sum(got), newAmount: got.reduce(function (a, l) { return a + l.instant + l.locked; }, 0), instant: got.reduce(function (a, l) { return a + l.instant; }, 0), locked: sumL(got),
         swappedAt: Math.min.apply(null, got.map(function (l) { return l.swappedAt; })),
         unlockAt: Math.max.apply(null, got.map(function (l) { return l.unlockAt; })), releasedAt: got[0].releasedAt, releasedBy: got[0].releasedBy
       }, { large: true });
@@ -1011,7 +1012,7 @@
     // rel: {by: "you" | "keeper", daysAgo}. Without it, the mock keeper releases the lot lazily once it is due.
     function mk(amount, daysAgo, rel) {
       var s = n - daysAgo * DAY, p = CJ.split(amount);
-      return { id: "S" + (seq++) + Math.round(s).toString(36), amount: amount, instant: p.instant, locked: p.locked, swappedAt: s, unlockAt: s + C.lockDays * DAY,
+      return { id: "S" + (seq++) + Math.round(s).toString(36), amount: amount, newAmount: p.credit, instant: p.instant, locked: p.locked, swappedAt: s, unlockAt: s + C.lockDays * DAY,
         releasedAt: rel ? n - rel.daysAgo * DAY : null, releasedBy: rel ? rel.by : null, txSwap: CJ.fakeTx(), txRelease: rel ? CJ.fakeTx() : null };
     }
     function credit() { Ld.newCT = Ld.lots.reduce(function (a, l) { return a + l.instant + (l.releasedAt ? l.locked : 0); }, 0); }

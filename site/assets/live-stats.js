@@ -4,6 +4,8 @@
 //
 // CJ.liveStats.load({ gas, health }) resolves to the same shape as CJ.sample.state(), so the pages render it unchanged:
 //   { now, lots, wallets, walletList, tot (with tot.u in micro CT), gas, holders: null, chain, supply, supplyText, health }
+// Lots and totals carry both sides of the 0.4 rate: amount and tot.swapped in old CT; newAmount, instant, locked and
+// tot.credit in new CT. Migrated(user, lotId, oldAmount, newAmount, instantAmount, lockedAmount, unlockAt) has both.
 // Events are scanned from CJ.net.deployBlock in block ranges (the public node may refuse a large range, so a refused
 // range is halved and retried), cached in sessionStorage and read incrementally on every refresh. Counters are read at
 // the same block as the last scanned event, so the sums of the events and the contract counters always agree.
@@ -56,11 +58,14 @@
     "function totalOwed() view returns (uint256)", "function totalClaimed() view returns (uint256)",
     "function availableReserve() view returns (uint256)",
     "function WINDOW_START() view returns (uint256)", "function WINDOW_END() view returns (uint256)",
-    "event Migrated(address indexed user, uint256 indexed lotId, uint256 oldAmount, uint256 instantAmount, uint256 lockedAmount, uint256 unlockAt)",
+    // newAmount = oldAmount * 2 / 5 rounded down (rate 0.4); instantAmount + lockedAmount = newAmount
+    "event Migrated(address indexed user, uint256 indexed lotId, uint256 oldAmount, uint256 newAmount, uint256 instantAmount, uint256 lockedAmount, uint256 unlockAt)",
     "event Claimed(address indexed user, uint256 indexed lotId, uint256 amount, address indexed caller)"
   ];
   var ERC20_ABI = ["function totalSupply() view returns (uint256)", "function balanceOf(address) view returns (uint256)"];
-  var provider = null, swap, oldT, newT, iface, topics;
+  // The first Kairos rehearsal contracts swapped 1:1 and emitted Migrated without newAmount: still read, as newAmount = oldAmount.
+  var LEGACY_ABI = ["event Migrated(address indexed user, uint256 indexed lotId, uint256 oldAmount, uint256 instantAmount, uint256 lockedAmount, uint256 unlockAt)"];
+  var provider = null, swap, oldT, newT, iface, legacy, topics;
   function setup() {
     if (provider) return;
     var E = window.ethers;
@@ -70,13 +75,14 @@
     oldT = new E.Contract(net.oldToken, ERC20_ABI, provider);
     newT = new E.Contract(net.newToken, ERC20_ABI, provider);
     iface = swap.interface;
-    topics = [iface.getEvent("Migrated").topicHash, iface.getEvent("Claimed").topicHash];
+    legacy = new E.Interface(LEGACY_ABI);
+    topics = [iface.getEvent("Migrated").topicHash, legacy.getEvent("Migrated").topicHash, iface.getEvent("Claimed").topicHash];
   }
   // wei (bigint) to micro CT (a safe integer: the whole supply is about 4.1e15 micro CT, under 2^53)
   function micro(wei) { return Number(BigInt(wei) / 1000000000000n); }
 
   // ---------- event cache (sessionStorage) ----------
-  var KEY = "cj.live.v1." + net.chainId + "." + String(net.swap).toLowerCase();
+  var KEY = "cj.live.v2." + net.chainId + "." + String(net.swap).toLowerCase();
   function emptyCache() { return { scanned: net.deployBlock - 1, mig: [], clm: [], ts: {} }; }
   function readCache() {
     try { var c = JSON.parse(sessionStorage.getItem(KEY) || "null"); if (c && c.mig && c.clm && typeof c.scanned === "number") return c; } catch (e) {}
@@ -119,10 +125,13 @@
     logs.forEach(function (raw) {
       var li = parseInt(raw.logIndex, 16), b = parseInt(raw.blockNumber, 16), tx = String(raw.transactionHash).toLowerCase();
       if (seen[tx + ":" + li]) return;
-      var ev; try { ev = iface.parseLog({ topics: raw.topics, data: raw.data }); } catch (e) { return; }
+      var ev = null, v1 = false, lg = { topics: raw.topics, data: raw.data };
+      try { ev = iface.parseLog(lg); } catch (e) {}
+      if (!ev) { try { ev = legacy.parseLog(lg); v1 = true; } catch (e) {} }
       if (!ev) return;
       var a = ev.args;
-      if (ev.name === "Migrated") cache.mig.push({ b: b, li: li, tx: tx, user: String(a[0]).toLowerCase(), lot: Number(a[1]), old: a[2].toString(), inst: a[3].toString(), lock: a[4].toString(), unlock: Number(a[5]) });
+      if (ev.name === "Migrated" && v1) cache.mig.push({ b: b, li: li, tx: tx, user: String(a[0]).toLowerCase(), lot: Number(a[1]), old: a[2].toString(), nw: a[2].toString(), inst: a[3].toString(), lock: a[4].toString(), unlock: Number(a[5]) });
+      else if (ev.name === "Migrated") cache.mig.push({ b: b, li: li, tx: tx, user: String(a[0]).toLowerCase(), lot: Number(a[1]), old: a[2].toString(), nw: a[3].toString(), inst: a[4].toString(), lock: a[5].toString(), unlock: Number(a[6]) });
       else if (ev.name === "Claimed") cache.clm.push({ b: b, li: li, tx: tx, user: String(a[0]).toLowerCase(), lot: Number(a[1]), amt: a[2].toString(), caller: String(a[3]).toLowerCase() });
       seen[tx + ":" + li] = 1;
     });
@@ -167,7 +176,7 @@
   }
   function build(chain, gas, health) {
     var n = now(), lots = [], wallets = {}, perWallet = {}, byKey = {};
-    var U = { swapped: 0, instant: 0, locked: 0, releasing: 0, released: 0, overdue: 0 };
+    var U = { swapped: 0, credit: 0, instant: 0, locked: 0, releasing: 0, released: 0, overdue: 0 };
     var tot = { nLocked: 0, nReleasing: 0, nReleased: 0, byKeeper: 0, byHolder: 0, nOverdue: 0 };
     var claims = {};
     cache.clm.forEach(function (c) { claims[c.user + ":" + c.lot] = c; });
@@ -176,7 +185,7 @@
       perWallet[m.user] = (perWallet[m.user] || 0) + 1;
       var l = {
         id: i + 1, n: m.lot + 1, lotId: m.lot, wallet: m.user, kind: null,
-        amount: micro(m.old) / 1e6, instant: micro(m.inst) / 1e6, locked: micro(m.lock) / 1e6,
+        amount: micro(m.old) / 1e6, newAmount: micro(m.nw) / 1e6, instant: micro(m.inst) / 1e6, locked: micro(m.lock) / 1e6,
         swappedAt: swappedAt, unlockAt: unlockAt,
         releasedAt: c ? (cache.ts[c.b] != null ? cache.ts[c.b] * 1000 : Math.max(unlockAt, n)) : null,
         // the caller of Claimed: the owner itself is a holder claim, anyone else (the keeper) released it for the owner
@@ -187,21 +196,23 @@
       l.status = c ? "released" : (n >= unlockAt ? "releasing" : "locked");
       l.overdue = l.status === "releasing" && n - unlockAt > HOUR;
       lots.push(l); byKey[m.user + ":" + m.lot] = l;
-      var w = wallets[l.wallet] || (wallets[l.wallet] = { addr: l.wallet, total: 0, lots: [], instant: 0, locked: 0, releasing: 0, released: 0, u: { total: 0, instant: 0, locked: 0, releasing: 0, released: 0 } });
+      var w = wallets[l.wallet] || (wallets[l.wallet] = { addr: l.wallet, total: 0, credit: 0, lots: [], instant: 0, locked: 0, releasing: 0, released: 0, u: { total: 0, credit: 0, instant: 0, locked: 0, releasing: 0, released: 0 } });
       var ul = micro(m.lock);
-      w.u.total += micro(m.old); w.u.instant += micro(m.inst); w.u[l.status] += ul; w.lots.push(l);
+      w.u.total += micro(m.old); w.u.credit += micro(m.inst) + ul; w.u.instant += micro(m.inst); w.u[l.status] += ul; w.lots.push(l);
       tot["n" + l.status.charAt(0).toUpperCase() + l.status.slice(1)]++;
       if (l.releasedBy === "keeper") tot.byKeeper++; else if (l.releasedBy === "holder") tot.byHolder++;
       if (l.status === "releasing") U.releasing += ul;
       if (l.overdue) { U.overdue += ul; tot.nOverdue++; }
     });
     // Headline sums come from the contract counters (read at the scanned block), the split of the owed part from the events.
+    // totalMigrated counts old CT received; totalInstant, totalOwed and totalClaimed count new CT.
     U.swapped = micro(chain.totalMigrated); U.instant = micro(chain.totalInstant); U.released = micro(chain.totalClaimed);
     U.locked = Math.max(0, micro(chain.totalOwed) - U.releasing);
+    U.credit = U.instant + micro(chain.totalOwed) + U.released;
     Object.keys(U).forEach(function (k) { tot[k] = U[k] / 1e6; });
     tot.u = U;
     var walletList = Object.keys(wallets).map(function (k) {
-      var w = wallets[k]; ["total", "instant", "locked", "releasing", "released"].forEach(function (x) { w[x] = w.u[x] / 1e6; }); return w;
+      var w = wallets[k]; ["total", "credit", "instant", "locked", "releasing", "released"].forEach(function (x) { w[x] = w.u[x] / 1e6; }); return w;
     });
     return {
       live: true, now: n, lots: lots, wallets: wallets, walletList: walletList, tot: tot, holders: null,

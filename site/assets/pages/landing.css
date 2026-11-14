@@ -222,6 +222,7 @@ a.cj-price:hover { background: rgba(255, 255, 255, 0.24); }
 .track .legend span + span::before { background: var(--sky); }
 .track .btn { justify-self: start; }
 .track .btn[aria-pressed="true"] { --bg: var(--sky); }
+.rate-note { margin: 12px 0 0; font-size: 14px; line-height: 1.5; color: var(--ink-2); max-width: 40em; }
 .fee { margin-top: 16px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; }
 .fee-pill { display: inline-flex; gap: 8px; align-items: center; font-weight: 700; background: var(--sky); color: var(--ink); border-radius: 999px; padding: 8px 16px; font-size: 14px; }
 .fee-pill svg { flex: none; fill: var(--ink); }

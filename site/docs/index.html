@@ -11,18 +11,18 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
-<link rel="stylesheet" href="../assets/base.css?v=20261114b">
-<link rel="stylesheet" href="../assets/menu.css?v=20261114b">
-<link rel="stylesheet" href="../assets/wallet.css?v=20261114b">
-<link rel="stylesheet" href="../assets/pages/docs.css?v=20261114b">
+<link rel="stylesheet" href="../assets/base.css?v=20261114c">
+<link rel="stylesheet" href="../assets/menu.css?v=20261114c">
+<link rel="stylesheet" href="../assets/wallet.css?v=20261114c">
+<link rel="stylesheet" href="../assets/pages/docs.css?v=20261114c">
 </head>
 <body data-page="docs" data-root="../" data-foot="compact">
 <div id="cj-top"></div>
-<script src="../assets/system.js?v=20261114b"></script>
-<script src="../assets/network.js?v=20261114b"></script>
-<script src="../assets/i18n/shell.js?v=20261114b"></script>
-<script src="../assets/menu.js?v=20261114b"></script>
-<script src="../assets/shell.js?v=20261114b"></script>
+<script src="../assets/system.js?v=20261114c"></script>
+<script src="../assets/network.js?v=20261114c"></script>
+<script src="../assets/i18n/shell.js?v=20261114c"></script>
+<script src="../assets/menu.js?v=20261114c"></script>
+<script src="../assets/shell.js?v=20261114c"></script>
 <main id="main" class="dc">
   <div class="container dc-layout">
 
@@ -111,7 +111,7 @@
           </li>
           <li class="dc-step">
             <h3 class="dc-h3" data-i18n="docs.step3.t">Swap</h3>
-            <p data-i18n="docs.step3.b">Enter an amount (your full balance is filled in) and confirm. Your old CT goes to the swap contract, and in the same transaction 10% of the new CT arrives in your wallet. The other 90% is locked for 7 days.</p>
+            <p data-i18n="docs.step3.b">Enter an amount (your full balance is filled in) and confirm. Your old CT goes to the swap contract at the fixed rate of 10 old CT = 4 new CT, and in the same transaction 10% of the new CT arrives in your wallet. The other 90% is locked for 7 days.</p>
           </li>
           <li class="dc-step">
             <h3 class="dc-h3" data-i18n="docs.step4.t">Wait 7 days</h3>
@@ -133,7 +133,7 @@
         <figure class="panel dc-trackbox"><span class="tag" data-i18n="docs.example">Example</span><div id="dc-track" class="track"></div></figure>
         <ul class="dc-list">
           <li><span data-i18n="docs.lock.lot">Each swap is its own lot. 10% of it arrives at once, and the other 90% has its own 7 day lock. Swap twice and you get two lots with two unlock dates.</span></li>
-          <li><span data-i18n="docs.lock.split">The 10% is rounded down to the smallest unit of CT and the locked part is the rest, so the two always add up to exactly what you swapped.</span></li>
+          <li><span data-i18n="docs.lock.split">Your old CT is converted at the 0.4 rate first, rounded down to the smallest unit. Of that new CT, the 10% is rounded down too and the locked part is the rest, so the two always add up to exactly the new CT your swap gives.</span></li>
           <li><span data-i18n="docs.lock.time">The lock starts when the swap is confirmed on chain and ends exactly 7 days later.</span></li>
           <li><span data-i18n="docs.lock.keeper">After the unlock, anyone can trigger the release, but it always pays the wallet that swapped. Cojam runs a keeper that sends it shortly after the unlock and pays the gas. No one can redirect it.</span></li>
           <li><span data-i18n="docs.lock.claim">You can also claim it yourself at any time after the unlock, for example if the keeper is late. There is no deadline.</span></li>
@@ -147,7 +147,7 @@
         <ul class="dc-rows dc-cases">
           <li><details class="dc-case smooth" id="exchange" open>
             <summary class="dc-case-s"><span class="dc-row-ico" data-ico="globe" aria-hidden="true"></span><span class="dc-h3" data-i18n="docs.sp.exchange.t">CT on an exchange</span></summary>
-            <p class="dc-row-b" data-i18n="docs.sp.exchange.b">The exchange handles the swap for CT it holds for you. The list of exchanges is to be announced. Follow your exchange's own notice.</p>
+            <p class="dc-row-b" data-i18n="docs.sp.exchange.b">Withdraw your CT from the exchange to your own wallet (Kaia Wallet, or MetaMask on Kaia), then swap it yourself on cojam.app. It must be old CT on the Kaia network, so check the full contract address before you withdraw. The exchange's own withdrawal fee and rules apply.</p>
           </details></li>
           <li><details class="dc-case smooth" id="pool" open>
             <summary class="dc-case-s"><span class="dc-row-ico" data-ico="swap" aria-hidden="true"></span><span class="dc-h3" data-i18n="docs.sp.pool.t">CT in a Klayswap pool</span></summary>
@@ -174,7 +174,7 @@
       </section>
       <section class="dc-sec" id="fees" aria-labelledby="fees-h">
         <h2 class="dc-h2" id="fees-h" data-i18n="docs.s.fees">Fees</h2>
-        <p data-i18n="docs.fees.b">The swap charges no fee and the rate is always 1 old CT to 1 new CT. The only cost is the Kaia network fee, and with Kaia Wallet Cojam pays it for you.</p>
+        <p data-i18n="docs.fees.b">The swap charges no fee and the rate is always 0.4: 10 old CT gives 4 new CT. The only cost is the Kaia network fee, and with Kaia Wallet Cojam pays it for you.</p>
         <ul class="dc-list dc-fees">
           <li><span data-i18n-html="docs.fees.kaia"><strong>Kaia Wallet: free.</strong> Kaia supports fee delegation: you sign the transaction in your wallet, and Cojam's fee payer co-signs it and pays the fee. You need no KAIA to approve, swap or claim. Over WalletConnect, plan on a small KAIA fee for now.</span></li>
           <li><span data-i18n-html="docs.fees.mm"><strong>MetaMask: a small fee in KAIA.</strong> MetaMask cannot sign Kaia fee delegated transactions, so you pay the network fee yourself for each approval, swap and claim. Your wallet shows the exact fee before you confirm.</span></li>
@@ -211,7 +211,7 @@
         </div>
         <ul class="dc-list">
           <li><span id="dc-supply"></span></li>
-          <li><span data-i18n="docs.c.plain">New CT is a plain KIP-7 token (ERC-20 compatible, 18 decimals) with no owner, no mint, no pause and no blacklist. The swap contract has no owner and no pause either, and no one can change the 1:1 rate, the 10%, the 7 day lock, the window or any swap already made. Its reserve is visible on chain, and the new CT owed to locked 90% is set aside so no one can move it. Old CT received by the swap contract stays there forever.</span></li>
+          <li><span data-i18n="docs.c.plain">New CT is a plain KIP-7 token (ERC-20 compatible, 18 decimals) with no owner, no mint, no pause and no blacklist. The swap contract has no owner and no pause either, and no one can change the 0.4 rate, the 10%, the 7 day lock, the window or any swap already made. Its reserve is visible on chain, and the new CT owed to locked 90% is set aside so no one can move it. Old CT received by the swap contract stays there forever.</span></li>
           <li class="dc-audit"><span class="tag tag-audit" data-i18n="docs.c.audit">Audit in progress</span> <span data-i18n="docs.c.audit_b">The report will be linked here when it is published.</span></li>
         </ul>
       </section>
@@ -225,9 +225,9 @@
   </div>
 </main>
 <div id="cj-foot"></div>
-<script src="../assets/motion.js?v=20261114b"></script>
-<script src="../assets/wallet.js?v=20261114b"></script>
-<script src="../assets/i18n/docs.js?v=20261114b"></script>
-<script src="../assets/pages/docs.js?v=20261114b"></script>
+<script src="../assets/motion.js?v=20261114c"></script>
+<script src="../assets/wallet.js?v=20261114c"></script>
+<script src="../assets/i18n/docs.js?v=20261114c"></script>
+<script src="../assets/pages/docs.js?v=20261114c"></script>
 </body>
 </html>

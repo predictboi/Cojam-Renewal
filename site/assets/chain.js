@@ -55,20 +55,24 @@
     "function migrate(uint256 amount) returns (uint256 lotId)",
     "function claim(uint256 maxLots) returns (uint256 amount)",
     "function lotCount(address user) view returns (uint256)",
+    // amount: the lot's locked 90%, in new CT
     "function lotOf(address user, uint256 lotId) view returns (uint256 amount, uint256 unlockAt, bool claimed)",
     "function nextClaimIndex(address user) view returns (uint256)",
     "function availableReserve() view returns (uint256)",
     "function WINDOW_START() view returns (uint256)",
     "function WINDOW_END() view returns (uint256)",
     "function LOCK_PERIOD() view returns (uint256)",
-    "event Migrated(address indexed user, uint256 indexed lotId, uint256 oldAmount, uint256 instantAmount, uint256 lockedAmount, uint256 unlockAt)",
+    // newAmount = oldAmount * 2 / 5 rounded down; instantAmount + lockedAmount = newAmount (10% now, 90% locked)
+    "event Migrated(address indexed user, uint256 indexed lotId, uint256 oldAmount, uint256 newAmount, uint256 instantAmount, uint256 lockedAmount, uint256 unlockAt)",
     "event Claimed(address indexed user, uint256 indexed lotId, uint256 amount, address indexed caller)",
     "error ZeroAmount()", "error WindowClosed()", "error InsufficientReserve(uint256 available, uint256 needed)",
     "error NothingReceived()", "error ReceivedMoreThanSent()", "error NothingToClaim()", "error NotMaster()"
   ]);
   var rp = new E.JsonRpcProvider(net.rpc, net.chainId, { staticNetwork: true, batchMaxCount: 20 });
   var oldC = new E.Contract(net.oldToken, ERC20, rp), newC = new E.Contract(net.newToken, ERC20, rp), swapC = new E.Contract(net.swap, SWAP, rp);
-  var T_MIGRATED = SWAP.getEvent("Migrated").topicHash, T_CLAIMED = SWAP.getEvent("Claimed").topicHash;
+  // The first Kairos rehearsal contracts swapped 1:1 and emitted Migrated without newAmount: still read, as newAmount = oldAmount.
+  var LEGACY = new E.Interface(["event Migrated(address indexed user, uint256 indexed lotId, uint256 oldAmount, uint256 instantAmount, uint256 lockedAmount, uint256 unlockAt)"]);
+  var T_MIGRATED = SWAP.getEvent("Migrated").topicHash, T_MIGRATED_V1 = LEGACY.getEvent("Migrated").topicHash, T_CLAIMED = SWAP.getEvent("Claimed").topicHash;
 
   function num(wei) { return Number(E.formatUnits(wei, 18)); }
   function store(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
@@ -174,18 +178,24 @@
   }
 
   // ---------- history from chain events (cached per address: tx hashes never change) ----------
-  function evKey(a) { return "cj.live.ev." + net.chainId + "." + net.swap.toLowerCase() + "." + a.toLowerCase(); }
+  function evKey(a) { return "cj.live.ev2." + net.chainId + "." + net.swap.toLowerCase() + "." + a.toLowerCase(); }
   function userTopic(a) { return E.zeroPadValue(a.toLowerCase(), 32); }
   function logs(from, to, topic0, user, lotId) {
-    var topics = [topic0, userTopic(user)]; if (lotId != null) topics.push(E.toBeHex(lotId, 32));
+    var topics = [topic0 === T_MIGRATED ? [T_MIGRATED, T_MIGRATED_V1] : topic0, userTopic(user)]; if (lotId != null) topics.push(E.toBeHex(lotId, 32));
     return rp.getLogs({ address: net.swap, fromBlock: from, toBlock: to, topics: topics });
   }
   function eat(cache, list) {
     var blocks = {};
     list.forEach(function (l) {
-      var ev; try { ev = SWAP.parseLog(l); } catch (e) { return; }
+      var ev = null, v1 = false;
+      try { ev = SWAP.parseLog(l); } catch (e) {}
+      if (!ev) { try { ev = LEGACY.parseLog(l); v1 = true; } catch (e) {} }
+      if (!ev) return;
       var id = String(ev.args.lotId);
-      if (ev.name === "Migrated") cache.m[id] = { tx: l.transactionHash, old: ev.args.oldAmount.toString(), inst: ev.args.instantAmount.toString() };
+      if (ev.name === "Migrated") {
+        var a = ev.args;
+        cache.m[id] = { tx: l.transactionHash, old: a.oldAmount.toString(), nw: (v1 ? a.oldAmount : a.newAmount).toString(), inst: a.instantAmount.toString() };
+      }
       else { cache.c[id] = { tx: l.transactionHash, by: ev.args.caller.toLowerCase() === ev.args.user.toLowerCase() ? "you" : "keeper", block: l.blockNumber }; blocks[l.blockNumber] = 1; }
     });
     return Promise.all(Object.keys(blocks).map(function (b) {
@@ -201,7 +211,7 @@
     var from = Math.max(net.deployBlock, (cache.scanned || 0) + 1);
     var need = lotsRaw.some(function (l) { return !cache.m[l.id] || (l.claimed && !cache.c[l.id]); });
     if (!need || from > latest.number) return Promise.resolve(cache);
-    return rp.getLogs({ address: net.swap, fromBlock: from, toBlock: latest.number, topics: [[T_MIGRATED, T_CLAIMED], userTopic(addr)] })
+    return rp.getLogs({ address: net.swap, fromBlock: from, toBlock: latest.number, topics: [[T_MIGRATED, T_MIGRATED_V1, T_CLAIMED], userTopic(addr)] })
       .then(function (list) { return eat(cache, list).then(function () { cache.scanned = latest.number; }); }, function () { return narrow(addr, cache, lotsRaw, latest); })
       .then(function () { store(evKey(addr), cache); return cache; }, function () { return cache; });
   }
@@ -266,11 +276,14 @@
   function toLots(d) {
     return d.lots.map(function (l) {
       var m = d.ev.m[l.id], c = d.ev.c[l.id];
-      // Without the event, rebuild the split from the locked part: locked = received - floor(received / 10).
+      // lotOf gives the locked new CT. Without the event, rebuild the split from it (locked = credit - floor(credit / 10))
+      // and the old CT from the rate (credit = floor(old * 2 / 5), so this is the smallest old amount that gives it).
       var inst = m ? BigInt(m.inst) : (l.locked * 10n + 8n) / 9n - l.locked;
+      var credit = m && m.nw ? BigInt(m.nw) : inst + l.locked;
+      var old = m ? BigInt(m.old) : (credit * BigInt(C.ratioDen) + BigInt(C.ratioNum) - 1n) / BigInt(C.ratioNum);
       var unlockAt = l.unlockSec * 1000;
       return {
-        id: l.id, amount: num(m ? BigInt(m.old) : inst + l.locked), instant: num(inst), locked: num(l.locked),
+        id: l.id, amount: num(old), newAmount: num(credit), instant: num(inst), locked: num(l.locked),
         swappedAt: unlockAt - info.lock * 1000, unlockAt: unlockAt,
         releasedAt: l.claimed ? (c && c.at ? c.at : unlockAt) : null, releasedBy: l.claimed ? (c ? c.by : "keeper") : null,
         txSwap: m ? m.tx : null, txRelease: l.claimed && c ? c.tx : null

@@ -126,13 +126,14 @@
     } else if (ws === "closed") win = kpi(t("kpi.window"), t("kpi.window_closed"), "", t("kpi.window_closed_sub", { date: dOnly(C.windowEnd) }));
     else win = kpi(t("kpi.window"), t("kpi.window_upcoming"), "", t("kpi.window_sub", { date: dOnly(C.windowEnd), start: dOnly(C.windowStart) }));
     var od = T.nOverdue > 0;
-    // whole CT parts that add up: instant + locked + released = swapped, exactly as on the status page
+    // whole new CT parts that add up: instant + locked + released = swapped (new CT at the 0.4 rate), exactly as on the
+    // status page. U.swapped is the old CT swapped in. Shares of supply are of the 2,000,000,000 new CT supply.
     var U = T.u, W = CJ.sample.wholeParts([U.instant, U.locked + U.releasing, U.released]), sw = W[0] + W[1] + W[2];
     var reserve = Math.round(SUP - sw);
     // Urgency first: overdue releases lead the grid while there are any; otherwise the tile closes it.
     var overdue = kpi(t("kpi.overdue"), amt0(T.overdue), ct, od ? t("kpi.overdue_sub", { n: pl("n.req", T.nOverdue) }) : t("kpi.overdue_none"), od ? "is-warn" : "");
     $("kpi-grid").innerHTML = (od ? overdue : "") +
-      kpi(t("kpi.swapped"), amt0(sw), ct, t("kpi.swapped_sub", { pct: pctMin(sw / SUP, 2), supply: D.supplyText || C.newToken.supplyText, n: amt0(D.lots.length) }), "", sw, "swapped") +
+      kpi(t("kpi.swapped"), amt0(sw), ct, t("kpi.swapped_sub", { pct: pctMin(sw / SUP, 2), supply: D.supplyText || C.newToken.supplyText, old: amt0(Math.round(U.swapped / 1e6)), n: amt0(D.lots.length) }), "", sw, "swapped") +
       // The chain has no holder count for old CT: live shows the unique wallets without a share of holders.
       kpi(t("kpi.wallets"), amt0(nW), t("unit.wallets"), D.live ? t("kpi.wallets_sub_live") : t("kpi.wallets_sub", { n: amt0(HOLDERS), pct: F.pct(nW / HOLDERS, 1) }), "", nW, "wallets") +
       kpi(t("kpi.reserve"), amt0(reserve), ct, D.chain ? t("kpi.reserve_sub_live", { pct: pctMin(reserve / SUP, 2), n: amt0(D.chain.availableReserve) }) : t("kpi.reserve_sub", { pct: F.pct(reserve / SUP, 2) }), "", reserve, "reserve") +
@@ -316,7 +317,7 @@
     soon.className = "adm-soon" + (soonN ? " is-on" : "");
     soon.innerHTML = I("clock", 18) + "<span>" + (soonN ? t("unl.soon", { amount: '<strong class="num">' + amt0(soonAmt) + "</strong>", req: pl("n.req", soonN) }) : t("unl.soon_none")) + "</span>";
     var data = days.map(function (d, i) {
-      return { v: d.v, label: dShort(d.start), tip1: amt0(d.v) + " CT", tip2: dOnly(d.start) + (i === 0 ? ", " + t("unl.today") : "") + ", " + pl("n.req", d.c) };
+      return { v: d.v, label: dShort(d.start), tip1: amt0(d.v) + " " + t("unit.new"), tip2: dOnly(d.start) + (i === 0 ? ", " + t("unl.today") : "") + ", " + pl("n.req", d.c) };
     });
     barChart($("unl-chart"), data, { label: t("unl.chart") });
     var lastUnlock = 0; D.lots.forEach(function (l) { if (l.status === "locked" && l.unlockAt > lastUnlock) lastUnlock = l.unlockAt; });
@@ -339,7 +340,7 @@
     $("day-sum").textContent = measure === "ct" ? t("day.sum_ct", { amount: amt0(tot), day: dShort(best.start), max: amt0(best.v) }) : t("day.sum_count", { n: amt0(tot), day: dShort(best.start), max: amt0(best.c) });
     var data = days.map(function (d, i) {
       var last = i === len - 1;
-      return { v: d[key], partial: last, label: dShort(d.start), tip1: measure === "ct" ? amt0(d.v) + " CT" : pl("n.req", d.c), tip2: dOnly(d.start) + (last ? ", " + t("day.so_far") : "") + (measure === "ct" ? ", " + pl("n.req", d.c) : ", " + amt0(d.v) + " CT") };
+      return { v: d[key], partial: last, label: dShort(d.start), tip1: measure === "ct" ? amt0(d.v) + " " + t("unit.old") : pl("n.req", d.c), tip2: dOnly(d.start) + (last ? ", " + t("day.so_far") : "") + (measure === "ct" ? ", " + pl("n.req", d.c) : ", " + amt0(d.v) + " " + t("unit.old")) };
     });
     barChart($("day-chart"), data, { label: t(measure === "ct" ? "day.chart_ct" : "day.chart_count") });
     $("day-foot").textContent = t("day.foot", { time: tOnly(n) + " UTC" });
@@ -486,7 +487,7 @@
     var shown = rows.slice(0, 8);
     $("big-list").innerHTML = shown.map(function (l) {
       return '<li class="big-item lift-row"><span class="big-ico">' + I("swap", 16) + '</span>' +
-        '<div class="big-main"><span class="big-amt"><span class="num">' + amt0(l.amount) + '</span> <span class="kpi-u">CT</span></span>' +
+        '<div class="big-main"><span class="big-amt"><span class="num">' + amt0(l.amount) + '</span> <span class="kpi-u">' + t("unit.old") + "</span></span>" +
         '<span class="big-meta small muted"><span class="num">' + dt(l.swappedAt) + "</span></span></div>" +
         '<div class="big-side">' + walletBtn(l.wallet) + statusTag(l.status) + "</div></li>";
     }).join("") + (rows.length > shown.length ? '<li class="big-more small muted">' + t("big.more", { n: amt0(rows.length - shown.length) }) + "</li>" : "");
@@ -509,9 +510,9 @@
     $("sheet-body").innerHTML =
       '<div class="sheet-addr"><span class="sheet-addr-v">' + w.addr + '</span><span class="w-tools">' + walletTools(w.addr) + "</span></div>" +
       '<dl class="sheet-stats">' +
-        stat("sheet.total", amt(w.total), "CT") + stat("sheet.lots", w.lots.length) +
-        stat("sheet.instant", amt(w.instant), "CT") + stat("sheet.locked", amt(w.locked + w.releasing), "CT") +
-        stat("sheet.released", amt(w.released), "CT") + stat("sheet.share", pctMin(w.total / (D.tot.swapped || 1), 2)) +
+        stat("sheet.total", amt(w.total), t("unit.old")) + stat("sheet.lots", w.lots.length) +
+        stat("sheet.instant", amt(w.instant), t("unit.new")) + stat("sheet.locked", amt(w.locked + w.releasing), t("unit.new")) +
+        stat("sheet.released", amt(w.released), t("unit.new")) + stat("sheet.share", pctMin(w.total / (D.tot.swapped || 1), 2)) +
         stat("sheet.first", dt(first)) +
       "</dl>" +
       '<h3 class="sheet-h3">' + t("sheet.lots_h") + "</h3>" +

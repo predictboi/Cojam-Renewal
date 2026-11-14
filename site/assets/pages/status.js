@@ -32,9 +32,10 @@
   // ---------- model: everything the page shows, from the shared sample ----------
   function model() {
     var S = LIVE ? LIVE_S : CJ.sample.state(), U = S.tot.u, n = S.now, supply = S.supply || SUPPLY;
-    // headline parts: instant + locked (still locked or being sent) + released = swapped, in whole CT
+    // headline parts, in whole new CT: instant + locked (still locked or being sent) + released = swapped (the new CT the
+    // swaps gave, at the 0.4 rate). swappedOld: the old CT swapped in. Shares of supply are of the new supply.
     var W = CJ.sample.wholeParts([U.instant, U.locked + U.releasing, U.released]);
-    var swapped = W[0] + W[1] + W[2], reserve = Math.round(supply - swapped);
+    var swapped = W[0] + W[1] + W[2], reserve = Math.round(supply - swapped), swappedOld = Math.round(U.swapped / 1e6);
     // the aggregate track: tick 1 = swapped in the last 24 hours, tick 7 = unlocks in the next 24 hours
     var ticksU = [0, 0, 0, 0, 0, 0, 0];
     S.lots.forEach(function (l) {
@@ -64,7 +65,7 @@
     events.sort(function (a, b) { return b.at - a.at; });
     var shares = CJ.sample.shares([W[0] + W[2], W[1], Math.max(0, reserve)], 1);
     return {
-      now: n, swapped: swapped, instant: W[0], locked: W[1], released: W[2], reserve: reserve,
+      now: n, swapped: swapped, swappedOld: swappedOld, instant: W[0], locked: W[1], released: W[2], reserve: reserve,
       ticks: lockParts.slice(0, 7), sending: lockParts[7], holders: S.walletList.length, oldHolders: S.holders,
       days: days, events: events.slice(0, 8), gas: S.gas, shares: shares,
       supply: supply, supplyText: S.supplyText || SUPPLY_TEXT, chain: S.chain || null
@@ -136,7 +137,7 @@
     var m = M, ct = t("unit.ct");
     $("st-top").setAttribute("aria-busy", "false");
     $("st-swapped").innerHTML = '<span data-count="' + m.swapped + '" data-count-key="st-swapped">' + whole(m.swapped) + "</span>";
-    $("st-swapped-sub").textContent = t("status.fig.swapped_sub", { pct: pctMin(m.swapped / m.supply, 1), supply: m.supplyText + " " + ct });
+    $("st-swapped-sub").textContent = t("status.fig.swapped_sub", { pct: pctMin(m.swapped / m.supply, 1), supply: m.supplyText + " " + ct, old: whole(m.swappedOld) });
     // Live fees come from the gas server, whose counters restart on each deploy: say since when. Hidden when it is unreachable.
     var fees = $("st-fees");
     fees.hidden = !m.gas;
@@ -185,11 +186,11 @@
     var mid = t("status.track.mid", { n: whole(m.released) }) + (m.sending ? t("status.track.mid_sending", { n: whole(m.sending) }) : "");
     var dayList = m.ticks.map(function (v, i) { return t("status.track.aria_day", { d: i + 1, n: whole(v) }); }).join(", ");
     CJ.trackAggregate(el, {
-      swapped: whole(m.swapped), instant: whole(m.instant), locked: whole(m.locked), days: m.ticks,
+      swapped: whole(m.swappedOld), instant: whole(m.instant), locked: whole(m.locked), days: m.ticks,
       labels: {
         left: t("status.track.left"), right: t("status.track.right"), now: t("status.track.now"), mid: mid,
         axisStart: t("status.track.day1"), axisEnd: t("status.track.day7"),
-        aria: t("status.track.aria", { swapped: whole(m.swapped), instant: whole(m.instant), locked: whole(m.locked), days: dayList, released: whole(m.released) })
+        aria: t("status.track.aria", { swapped: whole(m.swappedOld), instant: whole(m.instant), locked: whole(m.locked), days: dayList, released: whole(m.released) })
       }
     });
     // Readable levels: one large day would leave the others as empty boxes on a linear scale, so the height grows with the
@@ -252,7 +253,7 @@
     host._geo = { pad: pad, band: band, n: n, y: y, W: W };
     $("st-daily-sub").textContent = t("status.daily.sub", { date: F.date(C.windowStart) });
     $("st-daily-rows").innerHTML = m.days.slice().reverse().map(function (d) {
-      return "<tr><td>" + dayLong(d) + '</td><td class="r num">' + whole(d.vol) + " " + t("unit.ct") + '</td><td class="r num">' + whole(d.holders) + "</td></tr>";
+      return "<tr><td>" + dayLong(d) + '</td><td class="r num">' + whole(d.vol) + " " + t("unit.old") + '</td><td class="r num">' + whole(d.holders) + "</td></tr>";
     }).join("");
     if (active > -1) showTip(active, false);
   }

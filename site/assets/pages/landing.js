@@ -3,7 +3,7 @@
 // i18n/landing.js and price.js.
 (function () {
   var c = CJ.config, f = CJ.fmt;
-  var EXAMPLE = 10000; // the track example: swap 10,000 old CT
+  var EXAMPLE = 10000; // the track example: swap 10,000 old CT, which gives 4,000 new CT at the 0.4 rate
   function $(id) { return document.getElementById(id); }
   function set(id, text) { var el = $(id); if (el) el.textContent = text; }
 
@@ -26,11 +26,12 @@
   // ---------- swap track demo ----------
   var track = $("track"), play = $("play"), on = false;
   function paintTrack() {
-    var got = on ? EXAMPLE : EXAMPLE * c.instantPercent / 100;
-    set("tk-ex", CJ.t("how.track.ex", { n: f.amount(EXAMPLE, 0) }));
+    // the rate first, then 10% now and 90% after the lock: 10,000 old CT -> 4,000 new CT -> 400 now, 3,600 later
+    var sp = CJ.split(EXAMPLE), got = on ? sp.credit : sp.instant;
+    set("tk-ex", CJ.t("how.track.ex", { n: f.amount(EXAMPLE, 0), m: f.amount(sp.credit, 0) }));
     set("tk-now", f.amount(got, 0));
-    set("tk-all", f.amount(EXAMPLE, 0));
-    set("tk-live", CJ.t("how.track.aria", { got: f.amount(got, 0), all: f.amount(EXAMPLE, 0) }));
+    set("tk-all", f.amount(sp.credit, 0));
+    set("tk-live", CJ.t("how.track.aria", { got: f.amount(got, 0), all: f.amount(sp.credit, 0) }));
   }
   if (play && track) play.addEventListener("click", function () {
     on = !on;
@@ -79,6 +80,8 @@
     // Contract facts: the exact supply, never rounded.
     var sup = $("ct-supply");
     if (sup) sup.innerHTML = CJ.t("ct.supply.v", { n: '<span class="num-full">' + c.newToken.supplyText + "</span>" });
+    var osup = $("ct-oldsupply");
+    if (osup) osup.innerHTML = CJ.t("ct.oldsupply.v", { n: '<span class="num-full">' + c.oldToken.supplyText + "</span>", orig: '<span class="num-full">' + c.oldToken.originalSupplyText + "</span>" });
 
     // The concept row scrolls sideways on phones: give it a name so keyboard users know what they reached.
     var cards = $("cards");

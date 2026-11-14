@@ -13,15 +13,21 @@
     chainName: "Kaia",
     gasSymbol: "KAIA",
     explorer: "https://kaiascan.io",
-    oldToken: { name: "Cojam", symbol: "CT", decimals: 18, address: "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b" },
-    // Exact supply, checked on chain: 4083262533956000100000000000 base units. Use supplyText wherever the figure is shown.
-    newToken: { name: "Cojam Token", symbol: "CT", decimals: 18, address: null, supply: 4083262533.9560001, supplyText: "4,083,262,533.9560001" },
+    // Old CT supply after burns, checked on chain: 4083262533956000100000000000 base units. originalSupply: before burns.
+    oldToken: { name: "Cojam", symbol: "CT", decimals: 18, address: "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b",
+      supply: 4083262533.9560001, supplyText: "4,083,262,533.9560001", originalSupply: 5000000000, originalSupplyText: "5,000,000,000" },
+    // Fixed new supply. Use supplyText wherever the figure is shown.
+    newToken: { name: "Cojam Token", symbol: "CT", decimals: 18, address: null, supply: 2000000000, supplyText: "2,000,000,000" },
     swapContract: { address: null },
     // New CT price source: the DEX pool, read through GeckoTerminal (CORS open, about 30 requests a minute per visitor).
     // Paste the pool link or its address when the pool exists, e.g. "https://www.geckoterminal.com/kaia/pools/0x...".
     // Until then no price is shown anywhere. ?price=demo shows a labelled sample price for review.
     pool: { network: "kaia", link: null },
-    ratio: 1,
+    // Swap rate 0.4: 2,000,000,000 new CT for the original 5,000,000,000 old CT (before burns), so 10 old CT = 4 new CT.
+    // Same rule as the contract: new = old * ratioNum / ratioDen, rounded down to the smallest unit, then split 10 / 90.
+    ratioNum: 2,
+    ratioDen: 5,
+    ratio: 0.4,
     instantPercent: 10, // paid in the swap transaction; the rest is locked
     lockDays: 7,
     keeperDelayMin: 30, // mock keeper sends an unlocked lot this long after unlock
@@ -163,17 +169,27 @@
     return { ok: true, value: v };
   }
 
-  // ---------- 10% now, 90% after the lock ----------
-  // Same rule as the contract: instant = 10% rounded down to the smallest unit, locked = the rest, so nothing is lost.
-  // The mock works in micro units (6 decimals); the contract does the same in wei.
-  function split(amt) {
-    var u = Math.round((+amt || 0) * 1e6), i = Math.floor(u * config.instantPercent / 100);
-    return { instant: i / 1e6, locked: (u - i) / 1e6 };
+  // ---------- the rate, then 10% now and 90% after the lock ----------
+  // Same rule as the contract: new CT = old CT * 2 / 5 rounded down to the smallest unit; of that, instant = 10% rounded
+  // down, locked = the rest, so instant + locked is exactly the new CT the swap gives. The mock works in micro units
+  // (6 decimals); the contract does the same in wei (toNewWei).
+  function toNewMicro(u) { return Math.floor(u * config.ratioNum / config.ratioDen); }
+  function toNew(oldAmt) { return toNewMicro(Math.round((+oldAmt || 0) * 1e6)) / 1e6; }
+  // Exact form for wei amounts (BigInt or a decimal string). Returns a BigInt.
+  function toNewWei(wei) { return BigInt(wei) * BigInt(config.ratioNum) / BigInt(config.ratioDen); }
+  // splitNew(newAmt): the 10 / 90 split of a new CT amount.
+  function splitNewMicro(n) { var i = Math.floor(n * config.instantPercent / 100); return { credit: n / 1e6, instant: i / 1e6, locked: (n - i) / 1e6 }; }
+  function splitNew(newAmt) { return splitNewMicro(Math.round((+newAmt || 0) * 1e6)); }
+  // split(oldAmt): what a swap of oldAmt old CT gives: {old, credit (new CT in total), instant (10%), locked (90%)}.
+  function split(oldAmt) {
+    var u = Math.round((+oldAmt || 0) * 1e6), r = splitNewMicro(toNewMicro(u));
+    r.old = u / 1e6; return r;
   }
 
   // ---------- mock ledger ----------
-  // v2: lots carry instant and locked parts and a release (keeper or holder). v1 ledgers are ignored.
-  var KEY = "cj.ledger.v2";
+  // v3: lots carry the old CT swapped (amount), the new CT it gave (newAmount = instant + locked at the 0.4 rate) and a
+  // release (keeper or holder). v1 and v2 (1:1) ledgers are ignored.
+  var KEY = "cj.ledger.v3";
   var KEEPER_MS = config.keeperDelayMin * 60000;
   function freshLedger() {
     return {
@@ -182,7 +198,7 @@
       oldCT: 125000,
       newCT: 0,
       allowance: 0,
-      lots: [], // {id, amount, instant, locked, swappedAt, unlockAt, releasedAt, releasedBy, txSwap, txRelease}
+      lots: [], // {id, amount (old CT), newAmount, instant, locked (new CT), swappedAt, unlockAt, releasedAt, releasedBy, txSwap, txRelease}
       contract: { paused: false, reserveEmpty: false, sponsorDown: false }
     };
   }
@@ -264,7 +280,7 @@
     // Called only once the mock chain confirms the swap: the 10% lands in the wallet in the same transaction.
     swap: function (amt) {
       var t0 = now(), sp = split(amt);
-      var lot = { id: "L" + t0.toString(36), amount: amt, instant: sp.instant, locked: sp.locked, swappedAt: t0, unlockAt: t0 + config.lockDays * DAY,
+      var lot = { id: "L" + t0.toString(36), amount: amt, newAmount: sp.credit, instant: sp.instant, locked: sp.locked, swappedAt: t0, unlockAt: t0 + config.lockDays * DAY,
         releasedAt: null, releasedBy: null, txSwap: fakeTx(), txRelease: null };
       ledger.oldCT = Math.max(0, +(ledger.oldCT - amt).toFixed(6));
       ledger.newCT = +(ledger.newCT + sp.instant).toFixed(6);
@@ -339,8 +355,8 @@
 
   // ---------- swap track ----------
   // Reads left to right: old CT swapped, the 10% block paid at once, the 7 day rail for the 90%, the 90% at the right end.
-  // lot: {amount, instant, locked, swappedAt, unlockAt, releasedAt, releasedBy} or null for the explainer version,
-  // which takes opts.amount (number) and opts.demoDays.
+  // lot: {amount (old CT), instant, locked (new CT), swappedAt, unlockAt, releasedAt, releasedBy} or null for the explainer
+  // version, which takes opts.amount (old CT, a number) and opts.demoDays. New CT parts follow the rate (split).
   function track(el, lot, opts) {
     opts = opts || {};
     var status = lot ? lotStatus(lot) : "demo";
@@ -381,10 +397,12 @@
   // ---------- sample data: one seeded set for status and admin ----------
   // Stands in for the swap contract's Migrated(user, lotId, ...) and Claimed(user, lotId, amount, caller) events until launch.
   // CJ.sample.lots(): every generated lot through the end of the mock day, oldest first, stable across reloads:
-  //   {id, n (the wallet's nth request), wallet, kind (kaia | wc | mm), amount, instant, locked, swappedAt, unlockAt, releaseAt,
+  //   {id, n (the wallet's nth request), wallet, kind (kaia | wc | mm), amount (old CT), newAmount, instant, locked (new CT),
+  //    swappedAt, unlockAt, releaseAt,
   //    releasedBy (keeper | holder), txSwap, txRelease}
   // CJ.sample.state(): the chain as it reads at CJ.now(). Lots gain status (locked | releasing | released), releasedAt and overdue.
   //   tot holds every sum twice: in CT (tot.swapped ...) and in micro CT integers (tot.u.swapped ...), so parts always add up.
+  //   tot.swapped is old CT swapped in; tot.credit, instant, locked, releasing, released are new CT (credit = the other four).
   //   ?keeper=late stalls the keeper for lots unlocked in the last 6 hours; ?gas=low shortens the gas runway.
   var sampleCache = null;
   function hash32(str) { var h = 2166136261 >>> 0; for (var i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
@@ -422,7 +440,7 @@
         var r = R(), by = r < 0.09 ? "holder" : "keeper";
         var delay = by === "holder" ? (2 + R() * 20) * 60000 : r > 0.975 ? (70 + R() * 230) * 60000 : (4 + R() * 24) * 60000;
         var unlock = at + config.lockDays * DAY, sp = split(amt), kind = R() < 0.78 ? (R() < 0.85 ? "kaia" : "wc") : "mm";
-        day.push({ wallet: wallet, amount: amt, instant: sp.instant, locked: sp.locked, kind: kind, swappedAt: at, unlockAt: unlock,
+        day.push({ wallet: wallet, amount: amt, newAmount: sp.credit, instant: sp.instant, locked: sp.locked, kind: kind, swappedAt: at, unlockAt: unlock,
           releaseAt: unlock + delay, releasedBy: by, txSwap: seededHex(R, 64), txRelease: seededHex(R, 64) });
       }
       day.sort(function (a, b) { return a.swappedAt - b.swappedAt; });
@@ -438,20 +456,20 @@
     var keeperLate = opts.keeperLate != null ? opts.keeperLate : params.get("keeper") === "late";
     var gasLow = opts.gasLow != null ? opts.gasLow : params.get("gas") === "low";
     var n = now(), HOUR = 3600000, lots = [], wallets = {};
-    var U = { swapped: 0, instant: 0, locked: 0, releasing: 0, released: 0, overdue: 0 };
+    var U = { swapped: 0, credit: 0, instant: 0, locked: 0, releasing: 0, released: 0, overdue: 0 };
     var tot = { nLocked: 0, nReleasing: 0, nReleased: 0, byKeeper: 0, byHolder: 0, nOverdue: 0 };
     sampleLots().forEach(function (r) {
       if (r.swappedAt > n) return;
       var due = keeperLate && r.releasedBy === "keeper" && r.unlockAt > n - 6 * HOUR ? Infinity : r.releaseAt;
       var rel = due <= n;
-      var l = { id: r.id, n: r.n, wallet: r.wallet, kind: r.kind, amount: r.amount, instant: r.instant, locked: r.locked, swappedAt: r.swappedAt, unlockAt: r.unlockAt,
+      var l = { id: r.id, n: r.n, wallet: r.wallet, kind: r.kind, amount: r.amount, newAmount: r.newAmount, instant: r.instant, locked: r.locked, swappedAt: r.swappedAt, unlockAt: r.unlockAt,
         releasedAt: rel ? r.releaseAt : null, releasedBy: rel ? r.releasedBy : null, txSwap: r.txSwap, txRelease: rel ? r.txRelease : null };
       l.status = rel ? "released" : (n >= l.unlockAt ? "releasing" : "locked");
       l.overdue = l.status === "releasing" && n - l.unlockAt > HOUR;
       lots.push(l);
-      var w = wallets[l.wallet] || (wallets[l.wallet] = { addr: l.wallet, total: 0, lots: [], instant: 0, locked: 0, releasing: 0, released: 0, u: { total: 0, instant: 0, locked: 0, releasing: 0, released: 0 } });
-      w.u.total += micro(l.amount); w.u.instant += micro(l.instant); w.u[l.status] += micro(l.locked); w.lots.push(l);
-      U.swapped += micro(l.amount); U.instant += micro(l.instant); U[l.status] += micro(l.locked);
+      var w = wallets[l.wallet] || (wallets[l.wallet] = { addr: l.wallet, total: 0, credit: 0, lots: [], instant: 0, locked: 0, releasing: 0, released: 0, u: { total: 0, credit: 0, instant: 0, locked: 0, releasing: 0, released: 0 } });
+      w.u.total += micro(l.amount); w.u.credit += micro(l.instant) + micro(l.locked); w.u.instant += micro(l.instant); w.u[l.status] += micro(l.locked); w.lots.push(l);
+      U.swapped += micro(l.amount); U.credit += micro(l.instant) + micro(l.locked); U.instant += micro(l.instant); U[l.status] += micro(l.locked);
       tot["n" + l.status.charAt(0).toUpperCase() + l.status.slice(1)]++;
       if (l.releasedBy === "keeper") tot.byKeeper++; else if (l.releasedBy === "holder") tot.byHolder++;
       if (l.overdue) { U.overdue += micro(l.locked); tot.nOverdue++; }
@@ -459,7 +477,7 @@
     Object.keys(U).forEach(function (k) { tot[k] = U[k] / 1e6; });
     tot.u = U;
     var walletList = Object.keys(wallets).map(function (k) {
-      var w = wallets[k]; ["total", "instant", "locked", "releasing", "released"].forEach(function (f) { w[f] = w.u[f] / 1e6; }); return w;
+      var w = wallets[k]; ["total", "credit", "instant", "locked", "releasing", "released"].forEach(function (f) { w[f] = w.u[f] / 1e6; }); return w;
     });
     return { now: n, lots: lots, wallets: wallets, walletList: walletList, tot: tot, gas: gasWallet(lots, n, gasLow), holders: config.oldHolders };
   }
@@ -586,7 +604,7 @@
     config: config, params: params, DAY: DAY, now: now,
     dict: dict, t: t, lang: function () { return lang; }, setLang: setLang, applyI18n: applyI18n,
     fmt: { amount: amount, compact: compact, pct: pct, date: date, dateTime: dateTime, lotTime: lotTime, swapWhen: swapWhen, rel: rel, addr: shortAddr },
-    parseAmount: parseAmount, split: split, ledger: ledgerApi, windowState: windowState, daysLeft: daysLeft,
+    parseAmount: parseAmount, split: split, splitNew: splitNew, toNew: toNew, toNewWei: toNewWei, ledger: ledgerApi, windowState: windowState, daysLeft: daysLeft,
     icon: icon, track: track, trackAggregate: trackAggregate, toast: toast, copy: copy, renderAddrs: renderAddrs, fakeTx: fakeTx,
     sample: { lots: sampleLots, state: sampleState, wholeParts: wholeParts, shares: shares },
     state: params.get("state"),
