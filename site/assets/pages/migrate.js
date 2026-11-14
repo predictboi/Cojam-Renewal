@@ -592,7 +592,6 @@
     return CJ.chain.refresh(until ? { until: until } : null).then(function () { fn(); render(true); }, function () { fn(); render(true); });
   }
   function liveConnect(key) {
-    if (key === "wc") { CJ.toast(t("wl.wc.soon")); return; }
     ui.walletKey = key;
     var id = liveWait("connect", 0);
     CJ.chain.connect(key).then(function (r) {

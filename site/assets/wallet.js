@@ -168,10 +168,10 @@
       '<span class="cj-opt-sub">' + sub + "</span>" + (badge ? '<span class="tag tag-sky cj-opt-tag">' + badge + "</span>" : "") + "</span>" + ic(trail || "chevron", 18) + "</" + tag + ">";
   }
   // WalletConnect row: live it is not wired yet, so it reads "Coming soon" and cannot be picked.
+  // WalletConnect row: live it opens WalletConnect's own window (a QR code on a computer, wallet apps on a phone).
   function wcRow(attrs, sub) {
     if (!live()) return opt("button", attrs, "logo:wc", t("wl.wc"), sub);
-    return opt("button", 'type="button" disabled aria-disabled="true" style="opacity:.62;cursor:default"', "logo:wc", t("wl.wc"),
-      tt("wl.wc.soon.sub", "Use Kaia Wallet or MetaMask for now."), tt("wl.wc.soon", "Coming soon"), "clock");
+    return opt("button", 'type="button" data-pick="wc"', "logo:wc", t("wl.wc"), sub);
   }
   function back() { return '<button type="button" class="btn btn-ghost cj-sheet-back" data-view="list">' + I("chevron", 18) + "<span>" + t("wl.back") + "</span></button>"; }
   function paint() {

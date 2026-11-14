@@ -421,8 +421,57 @@
   // connect(kind, {silent}): asks the wallet for its account (silent: only if this site is already authorised), reads the
   // chain id and the balances, and remembers the wallet for the next visit. Resolves {address, chainId, readError} or null
   // when silent and not authorised.
+  // ---------- WalletConnect (Reown): QR on desktop, wallet app links on phones. Loaded only when picked. ----------
+  var WC = { p: null, loading: null };
+  var WC_SRC = ROOT + "assets/vendor/walletconnect-ethereum-provider-2.21.8.min.js";
+  function loadScript(src) {
+    return new Promise(function (res, rej) { var s = document.createElement("script"); s.src = src; s.async = true; s.onload = res; s.onerror = function () { rej(err("failed", "WC_LOAD")); }; document.head.appendChild(s); });
+  }
+  function wcProvider() {
+    if (WC.p) return Promise.resolve(WC.p);
+    if (WC.loading) return WC.loading;
+    if (!net.wcProjectId) return Promise.reject(err("noprovider"));
+    WC.loading = (window.CJWalletConnect ? Promise.resolve() : loadScript(WC_SRC)).then(function () {
+      var rpc = {}; rpc[net.chainId] = net.rpc;
+      return window.CJWalletConnect.EthereumProvider.init({
+        projectId: net.wcProjectId, chains: [net.chainId], rpcMap: rpc, showQrModal: true,
+        methods: ["eth_sendTransaction", "personal_sign", "eth_signTypedData_v4", "wallet_switchEthereumChain", "wallet_addEthereumChain"],
+        qrModalOptions: { themeMode: "light", themeVariables: { "--wcm-z-index": "2000", "--wcm-accent-color": "#124CC4" } },
+        metadata: { name: "Cojam", description: "Swap old CT for new CT on Kaia", url: location.origin, icons: [location.origin + "/assets/cojam-mark.svg"] }
+      });
+    }).then(function (p) {
+      WC.p = p;
+      p.on("disconnect", function () { if (S.kind === "wc") disconnect(); });
+      return p;
+    }, function (e) { WC.loading = null; throw e; });
+    return WC.loading;
+  }
+  function connectWc(opts) {
+    return wcProvider().then(function (p) {
+      if (p.session && p.accounts && p.accounts.length) return p;
+      if (opts.silent) return null; // a page reload with no live WalletConnect session: stay disconnected
+      return p.enable().then(function () { return p; });
+    }).then(function (p) {
+      if (!p) return null;
+      var a = p.accounts || [];
+      if (!a.length) throw err("failed", "NO_ACCOUNT");
+      return p.request({ method: "eth_chainId" }).then(function (id) {
+        id = Number(id);
+        S.kind = "wc"; S.p = p; S.address = E.getAddress(a[0]); S.chainId = id;
+        attach(p); store(LAST_KEY, "wc");
+        publish(base());
+        if (id !== net.chainId) return { address: S.address, chainId: id };
+        return refresh().then(function () { return { address: S.address, chainId: id }; }, function (e) { return { address: S.address, chainId: id, readError: e }; });
+      });
+    }, function (e) {
+      if (opts.silent) return null;
+      if (/reject|closed|user/i.test(String(e && (e.message || e)))) throw err("rejected", "WC_CLOSED");
+      throw e;
+    });
+  }
   function connect(kind, opts) {
     opts = opts || {};
+    if (kind === "wc") return connectWc(opts);
     var p = providerFor(kind);
     if (!p) return opts.silent ? Promise.resolve(null) : Promise.reject(err("noprovider"));
     return accounts(p, kind, opts.silent).then(function (a) {
@@ -438,10 +487,12 @@
   }
   function restore() {
     var kind = load(LAST_KEY);
+    if (kind === "wc") return connect("wc", { silent: true }).catch(function () { return null; });
     if (!kind || !providerFor(kind)) return Promise.resolve(null);
     return connect(kind, { silent: true }).catch(function () { return null; });
   }
   function disconnect() {
+    if (S.kind === "wc" && WC.p && WC.p.session) { try { WC.p.disconnect(); } catch (e) {} }
     detach();
     S.kind = S.p = S.address = S.chainId = null;
     store(LAST_KEY, null);

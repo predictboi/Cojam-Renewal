@@ -37,6 +37,9 @@
     deployBlock: 232473494, // the new CT deploy block, just before the test swap
     gasApi: null
   });
+  // WalletConnect (Reown) project, allowlisted for https://cojam.app. Public value, not a secret.
+  var WC_PROJECT_ID = "a7f7f3dd4438032e51b2202fd5966b5c";
+  Object.keys(NETS).forEach(function (k) { NETS[k].wcProjectId = WC_PROJECT_ID; });
   var CJ = window.CJ || (window.CJ = {});
   // ?net=kaia-test is remembered in this browser, so a wallet reopening the page, a language switch or a link inside the
   // site keeps the test. ?net=kairos (or ?net=default) forgets it and returns to the normal network.
