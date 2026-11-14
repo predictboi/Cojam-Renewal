@@ -22,7 +22,7 @@
     // New CT price source: the DEX pool, read through GeckoTerminal (CORS open, about 30 requests a minute per visitor).
     // Paste the pool link or its address when the pool exists, e.g. "https://www.geckoterminal.com/kaia/pools/0x...".
     // Until then no price is shown anywhere. ?price=demo shows a labelled sample price for review.
-    pool: { network: "kaia", link: null },
+    pool: { network: "kaia", link: "https://dgswap.io/pools/v3/0x969e56b6c8bdcac45027a71485f528687845e48d/" }, // DGSwap v3 CT / KAIA 0.1%, created 2026-11-14
     // Swap rate 0.4: 2,000,000,000 new CT for the original 5,000,000,000 old CT (before burns), so 10 old CT = 4 new CT.
     // Same rule as the contract: new = old * ratioNum / ratioDen, rounded down to the smallest unit, then split 10 / 90.
     ratioNum: 2,
