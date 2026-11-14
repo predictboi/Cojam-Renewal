@@ -1,0 +1,33 @@
+/* Phone menu (assets/menu.js). Direction B colours inline so it reads the same on the landing and the app pages. */
+.cj-burger { display: none; position: relative; width: 48px; height: 48px; flex: none; border-radius: 999px; border: 1.5px solid rgba(255, 255, 255, 0.6); background: transparent; color: #FDFDFF; cursor: pointer; place-items: center; -webkit-tap-highlight-color: transparent; }
+.cj-burger:hover { background: rgba(255, 255, 255, 0.14); }
+.cj-burger:focus-visible { outline: 3px solid #D6FF3D; outline-offset: 3px; }
+.cj-burger-lines { position: relative; width: 20px; height: 14px; display: block; }
+.cj-burger-lines i { position: absolute; left: 0; right: 0; height: 2px; border-radius: 2px; background: currentColor; transition: transform .22s cubic-bezier(0.23, 1, 0.32, 1), opacity .16s; }
+.cj-burger-lines i:nth-child(1) { top: 0; } .cj-burger-lines i:nth-child(2) { top: 6px; } .cj-burger-lines i:nth-child(3) { top: 12px; }
+.cj-burger[aria-expanded="true"] { background: #FDFDFF; color: #0B1530; border-color: #FDFDFF; }
+.cj-burger[aria-expanded="true"] .cj-burger-lines i:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+.cj-burger[aria-expanded="true"] .cj-burger-lines i:nth-child(2) { opacity: 0; }
+.cj-burger[aria-expanded="true"] .cj-burger-lines i:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+.cj-menu { position: fixed; z-index: 80; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); padding: 12px; border-radius: 24px; background: #0B1530; color: #FDFDFF; border: 2px solid #0B1530; box-shadow: 6px 6px 0 #D6FF3D, 0 24px 48px -12px rgba(5, 15, 50, 0.55); font-family: "Pretendard Variable", Pretendard, -apple-system, system-ui, sans-serif; animation: cj-menu-in .22s cubic-bezier(0.23, 1, 0.32, 1); }
+.cj-menu[hidden] { display: none; }
+@keyframes cj-menu-in { from { opacity: 0; transform: translateY(-8px); } }
+.cj-menu-links { display: grid; gap: 4px; }
+.cj-menu-links a { display: flex; align-items: center; min-height: 52px; padding: 0 16px; border-radius: 14px; color: #FDFDFF; text-decoration: none; font-size: 18px; font-weight: 700; }
+.cj-menu-links a:hover { background: rgba(255, 255, 255, 0.08); }
+.cj-menu-links a[aria-current="page"] { background: #D6FF3D; color: #0B1530; }
+.cj-menu-links a:focus-visible, .cj-menu-lang button:focus-visible { outline: 3px solid #D6FF3D; outline-offset: 2px; }
+.cj-menu-k { margin: 12px 4px 6px; font-size: 13px; font-weight: 600; color: #A9B4D0; }
+.cj-menu-lang { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.cj-menu-lang button { min-height: 48px; border-radius: 999px; border: 1.5px solid rgba(255, 255, 255, 0.35); background: transparent; color: #FDFDFF; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+.cj-menu-lang button[aria-pressed="true"] { background: #D6FF3D; border-color: #D6FF3D; color: #0B1530; }
+.cj-menu .sr-only, .cj-burger .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* Phones: the hamburger replaces the page links and the language pill; the Connect button stays. */
+@media (max-width: 899px) {
+  .cj-burger { display: inline-grid; }
+  .nav .pills, .nav .end .lang, .subnav,
+  .cj-header .cj-nav, .cj-header .cj-lang, .cj-subnav { display: none !important; }
+}
+@media (prefers-reduced-motion: reduce) { .cj-menu { animation: none; } .cj-burger-lines i { transition: none; } }

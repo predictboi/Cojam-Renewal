@@ -3,6 +3,9 @@ CJ.dict({
   en: {
     "banner.text": "Check the address bar before you connect. We never ask for your seed phrase, and a swap never asks you to send CT to anyone.",
     "nav.home": "Cojam home",
+    "nav.homeShort": "Home",
+    "nav.menu": "Open menu",
+    "nav.menu.close": "Close menu",
     "nav.swap": "Swap",
     "nav.status": "Status",
     "nav.docs": "Docs",
@@ -95,6 +98,9 @@ CJ.dict({
   ko: {
     "banner.text": "지갑을 연결하기 전에 주소창부터 확인하세요. Cojam은 시드 문구를 묻지 않고, 교환할 때 누구에게 CT를 보내라고 하지도 않아요.",
     "nav.home": "Cojam 홈",
+    "nav.homeShort": "홈",
+    "nav.menu": "메뉴 열기",
+    "nav.menu.close": "메뉴 닫기",
     "nav.swap": "교환",
     "nav.status": "현황",
     "nav.docs": "가이드",
@@ -187,6 +193,9 @@ CJ.dict({
   ja: {
     "banner.text": "ウォレットを接続する前にアドレスバーを確認してください。シードフレーズを求めることはなく、交換の際にCTを誰かに送るよう求めることもありません。",
     "nav.home": "Cojam ホーム",
+    "nav.homeShort": "ホーム",
+    "nav.menu": "メニューを開く",
+    "nav.menu.close": "メニューを閉じる",
     "nav.swap": "交換",
     "nav.status": "状況",
     "nav.docs": "ガイド",

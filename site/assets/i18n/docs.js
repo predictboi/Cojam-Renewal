@@ -15,7 +15,7 @@ CJ.dict({
     "docs.s.contracts": "Contracts and audit",
     "docs.s.contact": "Contact",
 
-    "docs.before.site": "<strong>Check the site.</strong> The official web address is announced at launch. Type it yourself or use a bookmark, and check the address bar before you connect a wallet.",
+    "docs.before.site": "<strong>Check the site.</strong> The only official site is cojam.app. Type it yourself or use a bookmark, and check the address bar before you connect a wallet.",
     "docs.before.wallet": "<strong>Use a wallet that works on Kaia.</strong> Kaia Wallet, MetaMask with the Kaia network added (chain ID 8217), or any wallet that connects through WalletConnect.",
 
     "docs.step1.t": "Connect",
@@ -104,7 +104,7 @@ CJ.dict({
     "docs.s.safety": "보안 수칙",
     "docs.s.contracts": "컨트랙트와 보안 감사",
     "docs.s.contact": "문의",
-    "docs.before.site": "<strong>사이트 주소부터 확인하세요.</strong> 공식 주소는 출시 때 알려 드려요. 주소를 직접 입력하거나 즐겨찾기로 들어오고, 지갑을 연결하기 전에 주소창을 꼭 확인하세요.",
+    "docs.before.site": "<strong>사이트부터 확인하세요.</strong> 공식 사이트는 cojam.app 하나뿐이에요. 직접 입력하거나 즐겨찾기로 들어오고, 지갑을 연결하기 전에 주소창을 꼭 확인하세요.",
     "docs.before.wallet": "<strong>Kaia를 지원하는 지갑이 필요해요.</strong> Kaia Wallet, Kaia 네트워크(체인 ID 8217)를 추가한 MetaMask, WalletConnect로 연결하는 지갑 중 하나면 돼요.",
     "docs.step1.t": "지갑 연결",
     "docs.step1.b": "교환 페이지에서 지갑 연결을 누르고 사용하는 지갑을 고르세요. 지갑이 다른 네트워크에 있으면 Kaia로 바꾸는 버튼이 나와요.",
@@ -187,7 +187,7 @@ CJ.dict({
     "docs.s.contracts": "コントラクトと監査",
     "docs.s.contact": "お問い合わせ",
 
-    "docs.before.site": "<strong>サイトを確認してください。</strong>公式URLはローンチ時にお知らせします。自分で入力するかブックマークを使い、ウォレットを接続する前にアドレスバーを確認してください。",
+    "docs.before.site": "<strong>サイトを確認してください。</strong>公式サイトはcojam.appだけです。自分で入力するかブックマークを使い、ウォレットを接続する前にアドレスバーを確認してください。",
     "docs.before.wallet": "<strong>Kaiaに対応したウォレットを使ってください。</strong>Kaia Wallet、Kaiaネットワーク(チェーンID 8217)を追加したMetaMask、またはWalletConnectで接続できるウォレットが使えます。",
 
     "docs.step1.t": "接続",

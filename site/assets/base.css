@@ -1,7 +1,7 @@
 /* Cojam shared components, direction B "Signal" (the same language as the landing). Pages add layout only; components live here.
    Blue ground for the shell and page heads (.cj-band), snow for content, ink cards with a 2px edge, volt for the primary
    action and the current selection. */
-@import url("tokens.css");
+@import url("tokens.css?v=20261114b");
 
 *, *::before, *::after { box-sizing: border-box; }
 html, body { margin: 0; overflow-x: clip; }

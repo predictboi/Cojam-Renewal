@@ -90,7 +90,8 @@
   var mq = window.matchMedia("(max-width: 899px)");
   if (mq.addEventListener) mq.addEventListener("change", paint); else if (mq.addListener) mq.addListener(paint);
   document.addEventListener("cj:lang", paint);
-  document.addEventListener("cj:window", paint); // live window dates read from the swap contract (system.js)
+  document.addEventListener("cj:window", paint);
+  if (CJ.menu) CJ.menu.init({ host: document.querySelector(".nav .end"), header: document.querySelector("header.nav"), root: "", current: "home" }); // live window dates read from the swap contract (system.js)
   paint();
   CJ.ready();
 

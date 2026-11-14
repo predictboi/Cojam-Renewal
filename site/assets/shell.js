@@ -30,11 +30,14 @@
         '<div class="cj-tools">' +
           '<label class="cj-lang">' + I("globe", 18) + '<span class="sr-only" data-i18n="nav.lang"></span>' +
             '<select id="cj-lang-select"><option value="en">EN</option><option value="ko">한국어</option><option value="ja">日本語</option></select></label>' +
-          (page === "swap" ? '<button type="button" class="btn btn-sm cj-wallet" id="cj-wallet"></button>' : "") +
+          (page === "swap" ? '<button type="button" class="btn btn-sm cj-wallet" id="cj-wallet"></button>'
+            : '<a class="btn btn-sm cj-wallet" href="' + root + 'migrate/" data-i18n="wallet.connect"></a>') +
         "</div>" +
       "</div></header>" +
       // The mobile nav sits outside the sticky header, so only the 56 px top row stays on screen while scrolling.
       '<div class="cj-subnav">' + nav("cj-nav-mobile container") + "</div>";
+    // Phones: a hamburger next to the wallet button holds the page links and the language (assets/menu.js).
+    if (CJ.menu) CJ.menu.init({ host: document.querySelector(".cj-header .cj-tools"), header: document.querySelector(".cj-header"), root: root, current: page });
   }
   function renderFoot() {
     var foot = document.getElementById("cj-foot");
