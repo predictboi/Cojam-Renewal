@@ -13,7 +13,7 @@
 (function () {
   var CJ = window.CJ; if (!CJ) return;
   var API = "https://api.geckoterminal.com/api/v2/networks/";
-  var KEY = "cj-price-v1", TTL = 60000, EVERY = 60000;
+  var KEY = "cj-price-v2", TTL = 60000, EVERY = 60000;
   var cfg = CJ.config.pool || {}, demo = CJ.params.get("price") === "demo";
   // ?pool=<link or address> tries a pool before it is written into the config (review and launch day checks).
   // Ignored once a pool is configured, and a price read this way is always labelled as a sample.
@@ -35,9 +35,11 @@
     var base = ((rel.base_token || {}).data || {}).id || "", quote = ((rel.quote_token || {}).data || {}).id || "";
     var isQuote = me ? quote.toLowerCase().indexOf(me) > -1 : /^[^/]*\/\s*CT\b/.test(a.name || "") && !/^\s*CT\b/.test(a.name || "");
     var usd = parseFloat(isQuote ? a.quote_token_price_usd : a.base_token_price_usd);
+    var otherUsd = parseFloat(isQuote ? a.base_token_price_usd : a.quote_token_price_usd);
     var ch = a.price_change_percentage && !isQuote ? parseFloat(a.price_change_percentage.h24) : null; // the 24 h change is for the base side
     return { usd: usd, change24h: isFinite(ch) ? ch : null, liquidityUsd: parseFloat(a.reserve_in_usd) || null,
-      volume24hUsd: a.volume_usd ? parseFloat(a.volume_usd.h24) || null : null, pair: addr, link: link, at: Date.now(), sample: trial };
+      volume24hUsd: a.volume_usd ? parseFloat(a.volume_usd.h24) || null : null, pair: addr, link: link, at: Date.now(), sample: trial,
+      otherPerCt: usd > 0 && otherUsd > 0 ? usd / otherUsd : null };
   }
   // Fallback when the indexer has no price yet (a new pool before its first trade): read the pool's current price on
   // chain (Uniswap v3 slot0, or v2 getReserves) and value the other side with its USD price from GeckoTerminal.
@@ -69,9 +71,24 @@
         .then(function (r) { return r.json(); }).then(function (j) {
           var ou = parseFloat(j.data && j.data.attributes && j.data.attributes.price_usd);
           if (!(ou > 0) || !(x.otherPerCt > 0)) throw new Error("no price");
-          return { usd: x.otherPerCt * ou, change24h: null, liquidityUsd: null, volume24hUsd: null, pair: addr, link: link, at: Date.now(), sample: trial, source: "pool" };
+          return { usd: x.otherPerCt * ou, otherPerCt: x.otherPerCt, change24h: null, liquidityUsd: null, volume24hUsd: null, pair: addr, link: link, at: Date.now(), sample: trial, source: "pool" };
         });
     });
+  }
+  // Won for Korean screens: KAIA per CT (from the pool) x Upbit's KRW-KAIA price, the market Korean holders watch.
+  // Fallback: the USD price x the USD/KRW rate. Both refresh with the price; a failure keeps the last good rate.
+  var krwPerUsd = null;
+  function loadKrw(p) {
+    var up = fetch("https://api.upbit.com/v1/ticker?markets=KRW-KAIA").then(function (r) { return r.json(); }).then(function (j) {
+      var k = j && j[0] && parseFloat(j[0].trade_price);
+      if (!(k > 0) || !(p.otherPerCt > 0)) throw new Error("no upbit");
+      return (p.otherPerCt * k) / p.usd;
+    });
+    return up.catch(function () {
+      return fetch("https://open.er-api.com/v6/latest/USD").then(function (r) { return r.json(); }).then(function (j) {
+        var k = j && j.rates && parseFloat(j.rates.KRW); if (!(k > 0)) throw new Error("no fx"); return k;
+      });
+    }).then(function (k) { krwPerUsd = k; p.krwPerUsd = k; return p; }, function () { if (krwPerUsd) p.krwPerUsd = krwPerUsd; return p; });
   }
   function load() {
     if (document.hidden) return;
@@ -79,6 +96,7 @@
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (j) { var p = pick(j.data); if (!(p.usd > 0)) throw new Error("no price"); return p; })
       .catch(function () { return onChain(); })
+      .then(loadKrw)
       .then(function (p) { last = p; state = "ok"; toCache(p); emit(); })
       .catch(function () { state = last ? "ok" : "error"; if (last) last.stale = true; emit(); });
   }
@@ -91,8 +109,14 @@
     document.addEventListener("visibilitychange", function () { if (!document.hidden && (!last || Date.now() - last.at > TTL)) load(); });
   }
 
+  // Money text for a USD amount: won on Korean screens once a KRW rate is known, dollars everywhere else.
   function usd(v) {
     if (v == null || !isFinite(v)) return "";
+    var rate = (last && last.krwPerUsd) || krwPerUsd;
+    if (CJ.lang && CJ.lang() === "ko" && rate > 0) {
+      var w = v * rate, wd = w >= 100 ? 0 : w >= 1 ? 1 : 2;
+      return "₩" + new Intl.NumberFormat("ko-KR", { minimumFractionDigits: wd, maximumFractionDigits: wd }).format(w);
+    }
     var d = v >= 100 ? 0 : v >= 1 ? 2 : v >= 0.01 ? 4 : 6;
     return "$" + new Intl.NumberFormat("en-US", { minimumFractionDigits: d, maximumFractionDigits: d }).format(v);
   }
