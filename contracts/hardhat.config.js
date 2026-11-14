@@ -27,10 +27,12 @@ module.exports = {
       chainId: 1001,
       accounts,
     },
+    // Mainnet uses only the deployer key from DEPLOYER_PRIVATE_KEY (the Claude cloud environment or the founder's
+    // machine), never the Kairos test key in PRIVATE_KEY.
     kaia: {
       url: KAIA_RPC_URL || "https://public-en.node.kaia.io",
       chainId: 8217,
-      accounts,
+      accounts: process.env.DEPLOYER_PRIVATE_KEY ? [process.env.DEPLOYER_PRIVATE_KEY] : [],
     },
   },
   // Source verification through Sourcify, which supports Kaia (8217) and Kairos (1001); Kaiascan reads it.

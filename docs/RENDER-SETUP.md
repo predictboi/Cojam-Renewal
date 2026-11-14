@@ -17,6 +17,17 @@ Rules:
 - **Never paste a seed phrase or private key into a chat**, including with Claude. Claude only ever needs wallet addresses.
 - The master cannot be the old Cojam owner `0xeb1622d0377da1f9815bfc6eff61afe3257a0518`: the swap contract refuses it.
 
+Recorded mainnet addresses (`contracts/deployments/wallets.mainnet.json`):
+
+| Wallet | Address |
+| --- | --- |
+| Master | `0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb` |
+| Deployer | `0xB18149317Bf633F5Dc2a6044a11103D580cA4a33` |
+| Fee payer (gas wallet) | `0xB3CB36B4faE25a0661E2dDD5eca59e18B53152da` |
+| Pool | `0x487939b5557B995C90f2e943104A31f900f3e0F2` |
+
+The mainnet fee payer is for launch. For the Kairos rehearsal on Render, use a separate testnet gas wallet.
+
 ## 2. Render: create the services from the Blueprint
 
 1. Render dashboard: **New**, then **Blueprint**. Connect the GitHub repository `predictboi/cojam-renewal`.
@@ -80,4 +91,9 @@ Then add these records at the domain registrar (Render shows the same values on 
 
 ## 5. Mainnet deploy (later, on the founder's computer)
 
-The founder runs it, so the deployer key never leaves their machine. Claude prepares the mainnet script after the Kairos rehearsal (the current script refuses mainnet on purpose). Inputs: `PRIVATE_KEY` (deployer), `MASTER_ADDRESS` (an address only). Order: deploy token, deploy swap, verify both, fund the swap from the master in steps, then announce.
+Script: `contracts/scripts/deploy-mainnet.js`. It reads the deployer key from `DEPLOYER_PRIVATE_KEY` (set in the Claude cloud environment, or on the founder's machine) and every address from `deployments/wallets.mainnet.json`, checks everything before sending, deploys the token and the swap, checks the result and writes `deployments/kaia.json`. It never funds the swap.
+
+- Dry run on a local fork of mainnet, nothing broadcast: `FORK_DRY_RUN=1 npx hardhat run scripts/deploy-mainnet.js` (passed on 2026-11-14 with the recorded deployer: about 2.17M gas, about 0.06 KAIA).
+- Real deploy: `CONFIRM_MAINNET=yes npx hardhat run scripts/deploy-mainnet.js --network kaia`, then `node scripts/verify-sourcify.js 8217 <token> CojamToken <swap> CojamMigration`.
+- The 1 year window starts in the deploy block, so deploy on launch day, after the audit.
+- Order: deploy token, deploy swap, verify both, fund the swap from the master wallet app in steps, update the site and gas API addresses, then announce. Remove `DEPLOYER_PRIVATE_KEY` from the environment afterwards.
