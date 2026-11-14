@@ -14,6 +14,7 @@
       swap: "0x4948D9DFaafC8CC0ee6464208659350F11931252",
       deployBlock: 233013908,
       gasApi: "https://api.cojam.app",
+      master: "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1", // Kairos rehearsal master (throwaway test wallet)
       nativeCurrency: { name: "KAIA", symbol: "KAIA", decimals: 18 }
     },
     kaia: {
@@ -25,6 +26,7 @@
       swap: "0x8a5356f0207f374D1E04BB03Dedac87A43246060", // launch swap, 7 day lock
       deployBlock: 232475505, // launch swap deploy block (tx 0xb485c325…431a)
       gasApi: "https://api.cojam.app",
+      master: "0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb", // the only wallet that can open the admin page and withdraw
       nativeCurrency: { name: "KAIA", symbol: "KAIA", decimals: 18 }
     }
   };
@@ -53,6 +55,10 @@
   else if (q !== "kairos" && q !== "default" && kept && NETS[kept]) ACTIVE = kept;
   var net = NETS[ACTIVE];
   CJ.net = net;
+  // True when this browser last connected the master wallet (set by chain.js): only then is the Admin link shown.
+  CJ.masterOn = function () {
+    try { var a = localStorage.getItem("cj.master"); return !!(a && net.master && a.toLowerCase() === net.master.toLowerCase()); } catch (e) { return false; }
+  };
   // Every page shows the active network's addresses (landing contracts list, footers), not only the live scripts.
   if (CJ.config) {
     if (CJ.config.oldToken) CJ.config.oldToken.address = net.oldToken;

@@ -59,6 +59,9 @@
     "function lotOf(address user, uint256 lotId) view returns (uint256 amount, uint256 unlockAt, bool claimed)",
     "function nextClaimIndex(address user) view returns (uint256)",
     "function availableReserve() view returns (uint256)",
+    "function totalOwed() view returns (uint256)",
+    "function MASTER() view returns (address)",
+    "function withdraw(uint256 amount)",
     // exact result for oldAmount arriving: credit = oldAmount * 2 / 5, instant = credit * 10 / 100, locked = the rest
     "function previewSwap(uint256 oldAmount) view returns (uint256 credit, uint256 instant, uint256 locked)",
     "function WINDOW_START() view returns (uint256)",
@@ -67,7 +70,7 @@
     // newAmount = oldAmount * 2 / 5 rounded down; instantAmount + lockedAmount = newAmount (10% now, 90% locked)
     "event Migrated(address indexed user, uint256 indexed lotId, uint256 oldAmount, uint256 newAmount, uint256 instantAmount, uint256 lockedAmount, uint256 unlockAt)",
     "event Claimed(address indexed user, uint256 indexed lotId, uint256 amount, address indexed caller)",
-    "error ZeroAmount()", "error AmountTooSmall()", "error WindowClosed()", "error InsufficientReserve(uint256 available, uint256 needed)",
+    "error ZeroAmount()", "error NotMaster()", "error AmountTooSmall()", "error WindowClosed()", "error InsufficientReserve(uint256 available, uint256 needed)",
     "error NothingReceived()", "error ReceivedMoreThanSent()", "error NothingToClaim()", "error NotMaster()"
   ]);
   var rp = new E.JsonRpcProvider(net.rpc, net.chainId, { staticNetwork: true, batchMaxCount: 20 });
@@ -303,7 +306,32 @@
     }
     return L;
   }
-  function publish(L) { CJ.ledger.setLive(L); }
+  // Remember in this browser whether the connected wallet is the master, so the Admin link shows in the menu on every page.
+  function isMaster(addr) { return !!(addr && net.master && addr.toLowerCase() === net.master.toLowerCase()); }
+  function markMaster() {
+    try { if (isMaster(S.address)) localStorage.setItem("cj.master", S.address); else localStorage.removeItem("cj.master"); } catch (e) {}
+    try { document.dispatchEvent(new CustomEvent("cj:master", { detail: isMaster(S.address) })); } catch (e) {}
+  }
+  function publish(L) { CJ.ledger.setLive(L); markMaster(); }
+  // Sign in: personal_sign of a plain message (no transaction, no fee), checked here against the master address.
+  function signIn() {
+    var p = S.p, a = S.address;
+    if (!p || !a) return Promise.reject(err("noprovider"));
+    if (!isMaster(a)) return Promise.reject(err("failed", "NOT_MASTER"));
+    var msg = "Cojam admin sign in\nWallet: " + a + "\nSite: " + location.host + "\nTime: " + new Date().toISOString();
+    var hex = E.hexlify(E.toUtf8Bytes(msg));
+    var ask = S.kind === "kaia" ? req(p, "personal_sign", [hex, a]).then(null, function () { return req(p, "klay_sign", [a, hex]); }) : req(p, "personal_sign", [hex, a]);
+    return ask.then(function (sig) {
+      var who = E.verifyMessage(msg, sig);
+      if (!isMaster(who)) throw err("failed", "BAD_SIGNATURE");
+      return { address: who, message: msg };
+    }, function (e) { if (isRejected(e)) throw err("rejected"); throw e; });
+  }
+  function adminInfo() {
+    return Promise.all([swapC.availableReserve(), swapC.totalOwed(), newC.balanceOf(net.swap), oldC.balanceOf(net.swap)]).then(function (r) {
+      return { available: r[0], owed: r[1], held: r[2], oldHeld: r[3] };
+    });
+  }
 
   // Read everything the swap page shows for addr.
   function readWallet(addr) {
@@ -549,6 +577,8 @@
     if (action === "approve") return { to: net.oldToken, data: ERC20.encodeFunctionData("approve", [net.swap, args.amount]), cap: CAP.approve };
     if (action === "migrate") return { to: net.swap, data: SWAP.encodeFunctionData("migrate", [args.amount]), cap: CAP.swap };
     if (action === "claim") return { to: net.swap, data: SWAP.encodeFunctionData("claim", [args.maxLots]), cap: CAP.swap };
+    // master only, never sponsored: the master wallet pays its own fee
+    if (action === "withdraw") return { to: net.swap, data: SWAP.encodeFunctionData("withdraw", [args.amount]), cap: CAP.swap };
     throw err("failed", "UNKNOWN_ACTION");
   }
   // Ask the gas server to co-sign and send. Every error code of docs/FEE-DELEGATION.md section 3 lands on a page word.
@@ -679,6 +709,7 @@
     connect: connect, restore: restore, disconnect: disconnect, switchNetwork: switchNetwork,
     refresh: refresh, contractInfo: contractInfo, readWallet: readWallet,
     write: write, watchAsset: watchAsset, previewSwap: previewSwap, classify: classify, toWei: toWei, on: on,
-    state: function () { return { kind: S.kind, address: S.address, chainId: S.chainId }; }
+    state: function () { return { kind: S.kind, address: S.address, chainId: S.chainId }; },
+    isMaster: isMaster, signIn: signIn, adminInfo: adminInfo
   };
 })();

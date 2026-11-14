@@ -94,6 +94,8 @@
   if (mq.addEventListener) mq.addEventListener("change", paint); else if (mq.addListener) mq.addListener(paint);
   document.addEventListener("cj:lang", paint);
   document.addEventListener("cj:window", paint);
+  // Admin link: only for the master wallet (set when it connects on the swap or admin page)
+  (function () { var on = !!(CJ.masterOn && CJ.masterOn()); document.querySelectorAll("[data-master-link]").forEach(function (a) { a.hidden = !on; }); })();
   if (CJ.menu) CJ.menu.init({ host: document.querySelector(".nav .end"), header: document.querySelector("header.nav"), root: "", current: "home" }); // live window dates read from the swap contract (system.js)
   paint();
   CJ.ready();

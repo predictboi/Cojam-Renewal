@@ -25,7 +25,7 @@
       panel.innerHTML =
         '<nav class="cj-menu-links" aria-label="' + esc(CJ.t("nav.main")) + '">' +
           '<a href="' + root + '"' + (o.current === "home" ? ' aria-current="page"' : "") + "><span>" + esc(CJ.t("nav.homeShort")) + "</span></a>" +
-          PAGES.map(function (p) {
+          PAGES.concat(CJ.masterOn && CJ.masterOn() ? [["admin", "admin/", "nav.admin"]] : []).map(function (p) {
             return '<a href="' + root + p[1] + '"' + (o.current === p[0] ? ' aria-current="page"' : "") + "><span>" + esc(CJ.t(p[2])) + "</span></a>";
           }).join("") +
         "</nav>" +
@@ -52,6 +52,7 @@
     window.addEventListener("resize", function () { if (!panel.hidden) place(); });
     window.addEventListener("scroll", function () { if (!panel.hidden) place(); }, { passive: true });
     document.addEventListener("cj:lang", paint);
+    document.addEventListener("cj:master", paint);
     paint();
   }
   CJ.menu = { init: init };

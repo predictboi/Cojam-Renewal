@@ -11,11 +11,13 @@
   var links = [
     { id: "swap", href: root + "migrate/", key: "nav.swap" },
     { id: "status", href: root + "status/", key: "nav.status" },
-    { id: "docs", href: root + "docs/", key: "nav.docs" }
+    { id: "docs", href: root + "docs/", key: "nav.docs" },
+    // shown only while the master wallet is the connected wallet in this browser (CJ.masterOn, set by chain.js)
+    { id: "admin", href: root + "admin/", key: "nav.admin", master: true }
   ];
   function nav(cls) {
     return '<nav class="' + cls + '" data-i18n-attr="aria-label:nav.main">' + links.map(function (l) {
-      return '<a href="' + l.href + '"' + (l.id === page ? ' aria-current="page"' : "") + ' data-i18n="' + l.key + '"></a>';
+      return '<a href="' + l.href + '"' + (l.id === page ? ' aria-current="page"' : "") + (l.master ? ' data-master-link' + (CJ.masterOn && CJ.masterOn() ? "" : " hidden") : "") + ' data-i18n="' + l.key + '"></a>';
     }).join("") + "</nav>";
   }
   var top = document.getElementById("cj-top");
@@ -84,4 +86,8 @@
   CJ.applyI18n();
   paintWallet();
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", renderFoot); else renderFoot();
+  // The Admin link follows the connected wallet: it appears when the master connects and hides when it leaves.
+  function paintMasterLinks() { var on = !!(CJ.masterOn && CJ.masterOn()); document.querySelectorAll("[data-master-link]").forEach(function (a) { a.hidden = !on; }); }
+  document.addEventListener("cj:master", paintMasterLinks);
+  window.addEventListener("storage", function (e) { if (e.key === "cj.master") paintMasterLinks(); });
 })();

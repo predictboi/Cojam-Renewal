@@ -368,3 +368,20 @@ html:not(.cj-ready) #gas-note { min-height: 46px; }
   /* the "Show notes" toggle admin.js adds under each tile grid */
   html:not(.cj-ready) #kpi-grid, html:not(.cj-ready) #gas-grid { margin-bottom: 44px; }
 }
+
+/* ---------- master wallet gate and reserve withdraw (assets/pages/admin-gate.js) ---------- */
+.adm-locked #main > .container > :not(#adm-gate) { display: none !important; }
+.adm-gate { max-width: 560px; margin: var(--sp-page) auto; display: grid; gap: var(--s-16); }
+.adm-gate[hidden], .adm-wd[hidden] { display: none; }
+.adm-gate-h { display: flex; align-items: center; gap: 10px; margin: 0; font-family: var(--font-display, inherit); }
+.adm-gate-msg { margin: 0; }
+.adm-gate-act { display: flex; flex-wrap: wrap; gap: var(--s-8); }
+.adm-wd { margin: var(--sp-stack) 0; display: grid; gap: var(--s-12); }
+.adm-wd-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); }
+.adm-wd-head h2 { margin: 0; }
+.adm-wd-rows { margin: 0; display: grid; gap: 6px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.adm-wd-row { padding: var(--s-12); border-radius: var(--r-control); background: var(--inset); }
+.adm-wd-row dt { font-size: var(--fs-13); color: var(--ink-2); }
+.adm-wd-row dd { margin: 4px 0 0; font-weight: var(--fw-semi); }
+.adm-wd-big { font-size: var(--fs-20); }
+.adm-wd-act { max-width: 420px; }
