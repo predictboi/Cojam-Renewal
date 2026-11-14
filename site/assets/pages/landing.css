@@ -130,7 +130,7 @@ a.cj-price:hover { background: rgba(255, 255, 255, 0.24); }
 
 /* stickers floating over the headline */
 .stage { position: relative; height: 0; }
-.sticker { position: absolute; z-index: 2; border-radius: 22px; padding: 14px; width: 150px; background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.35); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); color: var(--snow); box-shadow: 0 18px 40px -12px rgba(5, 15, 50, 0.45); transition: transform .35s var(--spring); }
+.sticker { position: absolute; z-index: 2; border-radius: 22px; padding: 14px; width: auto; min-width: 150px; background: rgba(255, 255, 255, 0.18); border: 1px solid rgba(255, 255, 255, 0.35); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); color: var(--snow); box-shadow: 0 18px 40px -12px rgba(5, 15, 50, 0.45); transition: transform .35s var(--spring); }
 .sticker .k { font-size: 11px; font-weight: 700; letter-spacing: .04em; line-height: 1.25; }
 .sticker .v { font-family: var(--display); font-weight: 900; font-stretch: 110%; font-size: 30px; line-height: 1; margin-top: 4px; white-space: nowrap; }
 .sticker .bar { height: 8px; border-radius: 99px; background: rgba(255, 255, 255, 0.25); margin-top: 10px; overflow: hidden; }
