@@ -1,7 +1,7 @@
 {
   "network": "kaia",
   "chainId": 8217,
-  "note": "Kaia mainnet. The new CT token is live. The swap contract is deployed on launch day (it starts the 1 year window).",
+  "note": "Kaia mainnet. Launched 2026-11-14: new CT live, launch swap live (7 day lock), window open until 2027-11-14T18:09:12Z.",
   "deployer": "0xB18149317Bf633F5Dc2a6044a11103D580cA4a33",
   "master": "0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb",
   "oldToken": "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b",
@@ -19,8 +19,8 @@
     "verified": "Sourcify exact_match, 2026-11-14",
     "checkedOnChain": "2026-11-14: name Cojam Token, symbol CT, 18 decimals, supply 2,000,000,000, master holds 2,000,000,000, deployer holds 0"
   },
-  "migration": null,
-  "migrationDeployBlock": null,
+  "migration": "0x8a5356f0207f374D1E04BB03Dedac87A43246060",
+  "migrationDeployBlock": 232475505,
   "testSwap": {
     "address": "0x197e08ba085Ee1171AfD2fd7263cF14Db403FBbD",
     "contract": "CojamMigrationShortLock (real swap code, 1 minute lock)",
@@ -29,5 +29,18 @@
     "deployedBy": "Render cojam-ops, OPS_TASK=deploy-test-swap (deployer nonce 1)",
     "sitePage": "https://cojam.app/migrate/?net=kaia-test (remembered in the browser; ?net=kairos to leave)",
     "note": "Not the launch swap. Old CT swapped into it stays there forever."
+  },
+  "migrationTx": "0xb485c32513eabb558fe708159120296434c349bc5f7b2356ba4c72fb300a431a",
+  "windowStart": "2026-11-14T18:09:12Z",
+  "windowEnd": "2027-11-14T18:09:12Z",
+  "swap": {
+    "lockDays": 7,
+    "ratio": "2/5 (0.4)",
+    "instantPercent": 10,
+    "master": "0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb",
+    "gasUsed": "1223810",
+    "runBy": "Render cojam-ops, OPS_TASK=deploy-mainnet (deployer nonce 2)",
+    "verified": "Sourcify exact_match, 2026-11-14",
+    "checkedOnChain": "2026-11-14: lock 7 days, master, old CT, new CT, ratio 2/5, 10% instant, reserve 0 until funded"
   }
 }

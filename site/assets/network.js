@@ -2,7 +2,7 @@
 // Switch to mainnet at launch by setting ACTIVE to "kaia" and filling newToken, swap and deployBlock from
 // contracts/deployments/kaia.json. Everything that reads or writes the chain takes its values from CJ.net.
 (function () {
-  var ACTIVE = "kairos";
+  var ACTIVE = "kaia"; // live on Kaia mainnet since the launch swap deploy (contracts/deployments/kaia.json)
   var NETS = {
     kairos: {
       key: "kairos", chainId: 1001, chainHex: "0x3e9", name: "Kaia Kairos Testnet", testnet: true,
@@ -22,8 +22,8 @@
       explorer: "https://kaiascan.io",
       oldToken: "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b",
       newToken: "0x91cb3B346C80ff965a9667ba6228834dbedD71a2", // live since 2026-11-14 (contracts/deployments/kaia.json)
-      swap: null, // set at launch
-      deployBlock: null, // set at launch
+      swap: "0x8a5356f0207f374D1E04BB03Dedac87A43246060", // launch swap, 7 day lock
+      deployBlock: 232475505, // launch swap deploy block (tx 0xb485c325…431a)
       gasApi: "https://api.cojam.app",
       nativeCurrency: { name: "KAIA", symbol: "KAIA", decimals: 18 }
     }
@@ -50,6 +50,12 @@
   else if (q !== "kairos" && q !== "default" && kept && NETS[kept]) ACTIVE = kept;
   var net = NETS[ACTIVE];
   CJ.net = net;
+  // Every page shows the active network's addresses (landing contracts list, footers), not only the live scripts.
+  if (CJ.config) {
+    if (CJ.config.oldToken) CJ.config.oldToken.address = net.oldToken;
+    if (CJ.config.newToken) CJ.config.newToken.address = net.newToken;
+    if (CJ.config.swapContract) CJ.config.swapContract.address = net.swap;
+  }
   CJ.nets = NETS;
   // Live means the active network has a deployed swap. ?mock=1 or a ?state= preset keeps the mock ledger for design review.
   var p = new URLSearchParams(location.search);

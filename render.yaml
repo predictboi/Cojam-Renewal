@@ -72,20 +72,20 @@ services:
         value: "20"
       - key: RUN_MODE
         value: all
-      # 1001 Kairos for the rehearsal, 8217 Kaia mainnet at launch.
+      # Kaia mainnet since launch (Kairos rehearsal values are in git history).
       - key: CHAIN_ID
-        value: "1001"
-      # Kairos rehearsal values (contracts/deployments/kairos.json). Public addresses, not secrets.
-      # At launch: CHAIN_ID 8217, a dedicated mainnet RPC, the mainnet swap and block, and delete OLD_CT_ADDRESS.
+        value: "8217"
+      # Kaia mainnet launch values (contracts/deployments/kaia.json). Public addresses, not secrets.
+      # Replace KAIA_RPC_URL with a dedicated mainnet RPC if the public node rate limits.
       - key: KAIA_RPC_URL
-        value: https://public-en-kairos.node.kaia.io
+        value: https://public-en.node.kaia.io
       - key: SWAP_CONTRACT_ADDRESS
-        value: "0x4948D9DFaafC8CC0ee6464208659350F11931252"
+        value: "0x8a5356f0207f374D1E04BB03Dedac87A43246060"
       - key: SWAP_DEPLOY_BLOCK
-        value: "233013908"
+        value: "232475505"
       # Only on Kairos (mainnet defaults to the real old CT 0x7f223b1607171b81ebd68d22f1ca79157fd4a44b).
       - key: OLD_CT_ADDRESS
-        value: "0x6E86699DE0182884E5ee627E43764c718832D5e8"
+        value: "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b"
       - key: ALLOWED_ORIGINS
         value: https://cojam.app,https://www.cojam.app
       # The only secret: the gas wallet's private key (fee payer 0xB3CB36B4faE25a0661E2dDD5eca59e18B53152da).
