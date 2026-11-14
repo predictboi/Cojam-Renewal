@@ -102,15 +102,33 @@
     if (/^io\.metamask/i.test((info && info.rdns) || "") || (p && p.isMetaMask && !p.isKaikas && !(info && info.rdns))) return "mm";
     return "web3";
   }
+  // Other wallets the chooser lists: only ones that work on Kaia (chain 8217), each with its logo bundled in
+  // assets/wallets/. A detected wallet that matches none of these (Phantom, Backpack and other wallets without Kaia) is
+  // left out of the chooser. Source: the WalletConnect registry entries that list eip155:8217, kept to the main ones.
+  var SUPPORTED = [
+    ["okx", /okx|okex/i, "OKX Wallet"], ["bitget", /bitget|bitkeep/i, "Bitget Wallet"], ["rabby", /rabby/i, "Rabby Wallet"],
+    ["trust", /trust/i, "Trust Wallet"], ["binance", /binance/i, "Binance Wallet"], ["tokenpocket", /tokenpocket/i, "TokenPocket"],
+    ["safepal", /safepal/i, "SafePal"], ["coinbase", /coinbase|com\.base\b/i, "Coinbase Wallet"], ["cryptocom", /crypto\.com|com\.crypto\.wallet|defi wallet/i, "Crypto.com Onchain"],
+    ["onekey", /onekey/i, "OneKey"]];
+  var FLAGS = { okx: ["isOkxWallet", "isOKExWallet"], bitget: ["isBitKeep", "isBitget"], rabby: ["isRabby"], trust: ["isTrust", "isTrustWallet"],
+    binance: ["isBinance"], tokenpocket: ["isTokenPocket"], safepal: ["isSafePal"], coinbase: ["isCoinbaseWallet"], onekey: ["isOneKey"] };
+  // The SUPPORTED id of a wallet from what it says about itself (rdns, name, provider flags), or null.
+  function supportedId(info, p) {
+    var s = ((info && info.rdns) || "") + " " + ((info && info.name) || "");
+    for (var i = 0; i < SUPPORTED.length; i++) if (SUPPORTED[i][1].test(s)) return SUPPORTED[i][0];
+    if (p) for (var k in FLAGS) if (FLAGS[k].some(function (f) { return p[f]; })) return k;
+    return null;
+  }
+  function unsupported(p) { return !!(p && (p.isPhantom || p.isBackpack || p.isSolflare || p.isGlow)); }
   // Wallets that also expose a named global: listed even when they skip EIP-6963 or answer late.
   var GLOBALS = [["okxwallet", "com.okex.wallet", "OKX Wallet"], ["bitkeep.ethereum", "com.bitget.web3", "Bitget Wallet"],
-    ["phantom.ethereum", "app.phantom", "Phantom"], ["rabby", "io.rabby", "Rabby Wallet"]];
+    ["rabby", "io.rabby", "Rabby Wallet"], ["trustwallet", "com.trustwallet.app", "Trust Wallet"]];
   function addGlobals() {
     GLOBALS.forEach(function (g) {
       var pv = g[0].split(".").reduce(function (o, k) { return o && o[k]; }, window);
       if (!pv || typeof pv.request !== "function") return;
       var known = Object.keys(extra).some(function (id) { return extra[id].provider === pv || id === g[1]; });
-      if (!known) extra[g[1]] = { provider: pv, info: { name: g[2], rdns: g[1] } };
+      if (!known && !unsupported(pv)) extra[g[1]] = { provider: pv, info: { name: g[2], rdns: g[1] }, sid: supportedId({ rdns: g[1] }, pv) };
     });
   }
   function rescan() { try { window.dispatchEvent(new Event("eip6963:requestProvider")); } catch (e) {} addGlobals(); }
@@ -118,8 +136,10 @@
     var d = e.detail; if (!d || !d.provider) return;
     var k = kindOf(d.info, d.provider);
     if (k === "web3") {
+      var sid = unsupported(d.provider) ? null : supportedId(d.info, d.provider);
+      if (!sid) return; // no Kaia support: not offered
       var id = String((d.info && (d.info.rdns || d.info.name)) || "wallet").replace(/[^\w.\-]/g, "");
-      if (!extra[id]) extra[id] = { provider: d.provider, info: d.info || {} };
+      if (!extra[id]) extra[id] = { provider: d.provider, info: d.info || {}, sid: sid };
     }
     if (!found[k]) found[k] = { provider: d.provider, info: d.info || {} };
   });
@@ -148,7 +168,7 @@
     var ids = Object.keys(extra);
     ids.forEach(function (id) { out.push("x:" + id); });
     // Wallets that inject window.ethereum but do not announce themselves: one generic slot.
-    if (!ids.length && eth && (imposter(eth) || (!eth.isMetaMask && !eth.isKaikas)) && eth !== window.klaytn) out.push("web3");
+    if (!ids.length && eth && !unsupported(eth) && (imposter(eth) || (!eth.isMetaMask && !eth.isKaikas)) && eth !== window.klaytn) out.push("web3");
     return out;
   }
   // The icon a wallet announced about itself (EIP-6963 info.icon, a data URI), for the chooser; null when none.
@@ -156,6 +176,8 @@
     var x = kind && kind.indexOf("x:") === 0 ? extra[kind.slice(2)] : kind === "kaia" ? found.kaia : kind === "mm" ? found.mm : null;
     return x && x.info && x.info.icon ? String(x.info.icon) : null;
   }
+  // The bundled logo id of a wallet kind ("okx", "rabby"...), or null.
+  function logoId(kind) { var x = kind && kind.indexOf("x:") === 0 ? extra[kind.slice(2)] : null; return x ? x.sid || null : null; }
   // Display name of a wallet kind for the chooser and the wallet card ("OKX Wallet", "Phantom"), or null.
   function label(kind) {
     if (kind && kind.indexOf("x:") === 0) { var x = extra[kind.slice(2)]; return x && x.info && x.info.name ? String(x.info.name) : null; }
@@ -705,7 +727,7 @@
 
   CJ.chain = {
     net: net, gasApi: GAS_API, provider: rp, interfaces: { erc20: ERC20, swap: SWAP },
-    available: available, providerFor: providerFor, remembered: remembered, label: label, rescan: rescan, iconOf: iconOf,
+    available: available, providerFor: providerFor, remembered: remembered, label: label, rescan: rescan, iconOf: iconOf, logoId: logoId,
     connect: connect, restore: restore, disconnect: disconnect, switchNetwork: switchNetwork,
     refresh: refresh, contractInfo: contractInfo, readWallet: readWallet,
     write: write, watchAsset: watchAsset, previewSwap: previewSwap, classify: classify, toWei: toWei, on: on,

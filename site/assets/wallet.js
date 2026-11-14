@@ -153,6 +153,9 @@
   var LOGOS = { kaia: LOGO_DIR + "kaia-wallet.png", mm: LOGO_DIR + "metamask.svg", wc: LOGO_DIR + "walletconnect.svg" };
   function logoFor(kind) {
     if (LOGOS[kind]) return LOGOS[kind];
+    // other Kaia wallets: the bundled official mark first, so the chooser never depends on what an extension announces
+    var id = CJ.chain && CJ.chain.logoId && CJ.chain.logoId(kind);
+    if (id) return LOGO_DIR + id + ".png";
     var u = CJ.chain && CJ.chain.iconOf && CJ.chain.iconOf(kind);
     // only image data URIs or https images, so an announced icon can never inject markup
     return u && /^(data:image\/(png|svg\+xml|jpeg|webp|gif)[;,]|https:\/\/)/i.test(u) ? u : null;
