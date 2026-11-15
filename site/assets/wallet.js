@@ -86,7 +86,9 @@
     var k = (window.klaytn && window.klaytn.isKaikas && !imposter(window.klaytn)) ? window.klaytn : (window.kaia && !imposter(window.kaia) ? window.kaia : null);
     if (k && !window.okxwallet) return "kaia";
     var e = window.ethereum;
-    if (e && e.isMetaMask && !e.isKaikas && !imposter(e)) return "mm";
+    // OKX, Bitget and Trust expose their own globals even when window.ethereum only says isMetaMask
+    var other = window.okxwallet || window.bitkeep || window.trustwallet || window.tokenpocket;
+    if (e && e.isMetaMask && !e.isKaikas && !imposter(e) && !other) return "mm";
     if (e || window.okxwallet) return "web3";
     return null;
   }
@@ -140,7 +142,9 @@
   // Label for a one tap connect button (in-app) or the generic one.
   function ctaLabel() {
     var e = env();
-    return e.inapp ? t("wl.connect.in", { wallet: t("wl.name." + e.kind) }) : t("wallet.connect");
+    // One label everywhere: wallet apps copy each other's flags (OKX's browser looks like MetaMask), so naming the
+    // wallet on the button can be wrong. The sheet and the wallet card name it once it is connected.
+    return t("wallet.connect");
   }
 
   // ---------- sheet ----------
