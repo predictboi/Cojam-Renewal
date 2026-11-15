@@ -13,7 +13,8 @@
     chainName: "Kaia",
     gasSymbol: "KAIA",
     explorer: "https://kaiascan.io",
-    // Old CT supply after burns, checked on chain: 4083262533956000100000000000 base units. originalSupply: before burns.
+    // Old CT supply after burns, checked on chain: 4083262533956000100000000000 base units. originalSupply: before burns
+    // (a historical fact shown on the landing and docs pages; it has nothing to do with the rate).
     oldToken: { name: "Cojam", symbol: "CT", decimals: 18, address: "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b",
       supply: 4083262533.9560001, supplyText: "4,083,262,533.9560001", originalSupply: 5000000000, originalSupplyText: "5,000,000,000" },
     // Fixed new supply. Use supplyText wherever the figure is shown.
@@ -23,11 +24,11 @@
     // Paste the pool link or its address when the pool exists, e.g. "https://www.geckoterminal.com/kaia/pools/0x...".
     // Until then no price is shown anywhere. ?price=demo shows a labelled sample price for review.
     pool: { network: "kaia", link: "https://dgswap.io/pools/v3/0x969e56b6c8bdcac45027a71485f528687845e48d/" }, // DGSwap v3 CT / KAIA 0.1%, created 2026-11-14
-    // Swap rate 0.4: 2,000,000,000 new CT for the original 5,000,000,000 old CT (before burns), so 10 old CT = 4 new CT.
+    // Swap rate 0.2: 5 old CT = 1 new CT. The whole old supply after burns needs about 816,652,506.79 of the 2,000,000,000 new CT.
     // Same rule as the contract: new = old * ratioNum / ratioDen, rounded down to the smallest unit, then split 10 / 90.
-    ratioNum: 2,
+    ratioNum: 1,
     ratioDen: 5,
-    ratio: 0.4,
+    ratio: 0.2,
     instantPercent: 10, // paid in the swap transaction; the rest is locked
     lockDays: 7,
     keeperDelayMin: 30, // mock keeper sends an unlocked lot this long after unlock
@@ -39,6 +40,9 @@
     officialUrl: "https://cojam.app",
     since: 2019
   };
+  // The smallest old CT amount, in base units, that credits any new CT (ceil(ratioDen / ratioNum): 5 at 1 / 5). Below it
+  // the contract reverts AmountTooSmall; parseAmount (here) and the live form (pages/migrate.js) both refuse it.
+  config.minOldUnits = Math.ceil(config.ratioDen / config.ratioNum);
 
   // ---------- live window: WINDOW_START and WINDOW_END from the swap contract ----------
   // Any page that loads assets/network.js after this file runs live (CJ.live): CJ.now() is the real clock, and the window
@@ -166,13 +170,14 @@
     if (dec.length > 18) return { ok: false, reason: "parse.decimals" };
     var v = parseFloat(s);
     if (!(v > 0)) return { ok: false, reason: "parse.zero" };
-    // The contract credits old * 2 / 5 rounded down, so 1 or 2 base units would credit 0 and revert (AmountTooSmall).
-    if (!/[1-9]/.test(s.split(".")[0]) && +(dec + "000000000000000000").slice(0, 18) < 3) return { ok: false, reason: "parse.small" };
+    // The contract credits old * 1 / 5 rounded down, so 1 to 4 base units would credit 0 and revert (AmountTooSmall):
+    // the smallest amount that swaps is config.minOldUnits (5) base units.
+    if (!/[1-9]/.test(s.split(".")[0]) && +(dec + "000000000000000000").slice(0, 18) < config.minOldUnits) return { ok: false, reason: "parse.small" };
     return { ok: true, value: v };
   }
 
   // ---------- the rate, then 10% now and 90% after the lock ----------
-  // Same rule as the contract: new CT = old CT * 2 / 5 rounded down to the smallest unit; of that, instant = 10% rounded
+  // Same rule as the contract: new CT = old CT * 1 / 5 rounded down to the smallest unit; of that, instant = 10% rounded
   // down, locked = the rest, so instant + locked is exactly the new CT the swap gives. The mock works in micro units
   // (6 decimals); the contract does the same in wei (toNewWei).
   function toNewMicro(u) { return Math.floor(u * config.ratioNum / config.ratioDen); }
@@ -194,7 +199,7 @@
   }
 
   // ---------- mock ledger ----------
-  // v3: lots carry the old CT swapped (amount), the new CT it gave (newAmount = instant + locked at the 0.4 rate) and a
+  // v3: lots carry the old CT swapped (amount), the new CT it gave (newAmount = instant + locked at the 0.2 rate) and a
   // release (keeper or holder). v1 and v2 (1:1) ledgers are ignored.
   var KEY = "cj.ledger.v3";
   var KEEPER_MS = config.keeperDelayMin * 60000;

@@ -87,7 +87,7 @@ The server signs only what is on this list. Everything else is refused with a co
 | Allowed call | Target | Extra checks |
 | --- | --- | --- |
 | `approve(spender, amount)` | old CT (`OLD_CT_ADDRESS`) | `spender` must equal `SWAP_CONTRACT_ADDRESS`; any amount; the holder must hold at least `MIN_SPONSORED_OLD_CT` old CT |
-| `migrate(amount)` | swap | `amount >= MIN_SPONSORED_OLD_CT` (default 1 old CT, which credits 0.4 new CT at the 0.4 ratio) |
+| `migrate(amount)` | swap | `amount >= MIN_SPONSORED_OLD_CT` (default 1 old CT, which credits 0.2 new CT at the 0.2 ratio) |
 | `claim(maxLots)` | swap | `1 <= maxLots <= MAX_CLAIM_LOTS` (50) |
 | `claimFor(user, maxLots)` | swap | `user` not zero, same `maxLots` bound |
 | `claimForMany(users, maxLotsEach)` | swap | 1 to `MAX_CLAIM_USERS` (10) users, none zero, same `maxLots` bound on `maxLotsEach` |
@@ -125,7 +125,7 @@ The limits live in an in memory store behind an interface (`server/src/store.js`
 
 ## 4. Cost per holder (estimate)
 
-**This is an estimate.** Gas figures are the Hardhat measurements in `docs/CONTRACT-SPEC.md` section 12 (re-measured 2026-11-14 after the 0.4 ratio change), adjusted for Kaia's intrinsic gas: plus 10,000 for fee delegated types and 100 gas per calldata byte instead of Ethereum's 4 or 16 [6]. Gas price is the node's `eth_gasPrice` on 2026-11-12: **27.5 gkei** (base fee 25 gkei). Confirm with real receipts on Kairos.
+**This is an estimate.** Gas figures are the Hardhat measurements in `docs/CONTRACT-SPEC.md` section 12 (measured 2026-11-14 at the 0.4 ratio; the 0.2 ratio changes only a constant), adjusted for Kaia's intrinsic gas: plus 10,000 for fee delegated types and 100 gas per calldata byte instead of Ethereum's 4 or 16 [6]. Gas price is the node's `eth_gasPrice` on 2026-11-12: **27.5 gkei** (base fee 25 gkei). Confirm with real receipts on Kairos.
 
 `fee in KAIA = gas x 27.5 / 1,000,000,000`
 

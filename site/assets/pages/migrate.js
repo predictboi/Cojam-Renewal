@@ -30,7 +30,7 @@
   function lots(status) { return led().lots.filter(function (l) { return !status || L.lotStatus(l) === status; }); }
   function sum(arr) { return arr.reduce(function (a, l) { return a + l.amount; }, 0); }
   function sumL(arr) { return arr.reduce(function (a, l) { return a + l.locked; }, 0); }
-  // What a swap of v old CT gives at the 0.4 rate: {credit (new CT in total), instant (10%), locked (90%)}. Live, with the
+  // What a swap of v old CT gives at the 0.2 rate: {credit (new CT in total), instant (10%), locked (90%)}. Live, with the
   // exact amount in base units, it matches the contract's previewSwap to the unit.
   function sp(v, wei) { return CJ.split(v, wei); }
   // month and day, short enough to sit beside the amount at 390 px; the full date is in the help and on the track
@@ -404,7 +404,7 @@
     if (LIVE) {
       var w = liveWei(ui.text);
       if (w == null || w <= 0n) return { ok: false, msg: t("parse.junk") };
-      if (w < 3n) return { ok: false, msg: t("parse.small") }; // the contract reverts AmountTooSmall below 3 base units
+      if (w < BigInt(C.minOldUnits)) return { ok: false, msg: t("parse.small") }; // the contract reverts AmountTooSmall below this many base units (5 at 1 / 5)
       if (w > BigInt(led().wei.old)) return { ok: false, over: true, msg: t("f.over", { amount: A(bal) }) };
       return { ok: true, value: r.value, wei: w };
     }

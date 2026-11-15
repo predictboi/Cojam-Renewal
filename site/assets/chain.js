@@ -62,12 +62,12 @@
     "function totalOwed() view returns (uint256)",
     "function MASTER() view returns (address)",
     "function withdraw(uint256 amount)",
-    // exact result for oldAmount arriving: credit = oldAmount * 2 / 5, instant = credit * 10 / 100, locked = the rest
+    // exact result for oldAmount arriving: credit = oldAmount * 1 / 5, instant = credit * 10 / 100, locked = the rest
     "function previewSwap(uint256 oldAmount) view returns (uint256 credit, uint256 instant, uint256 locked)",
     "function WINDOW_START() view returns (uint256)",
     "function WINDOW_END() view returns (uint256)",
     "function LOCK_PERIOD() view returns (uint256)",
-    // newAmount = oldAmount * 2 / 5 rounded down; instantAmount + lockedAmount = newAmount (10% now, 90% locked)
+    // newAmount = oldAmount * 1 / 5 rounded down; instantAmount + lockedAmount = newAmount (10% now, 90% locked)
     "event Migrated(address indexed user, uint256 indexed lotId, uint256 oldAmount, uint256 newAmount, uint256 instantAmount, uint256 lockedAmount, uint256 unlockAt)",
     "event Claimed(address indexed user, uint256 indexed lotId, uint256 amount, address indexed caller)",
     "error ZeroAmount()", "error NotMaster()", "error AmountTooSmall()", "error WindowClosed()", "error InsufficientReserve(uint256 available, uint256 needed)",
@@ -375,7 +375,7 @@
     return d.lots.map(function (l) {
       var m = d.ev.m[l.id], c = d.ev.c[l.id];
       // lotOf gives the locked new CT. Without the event, rebuild the split from it (locked = credit - floor(credit / 10))
-      // and the old CT from the rate (credit = floor(old * 2 / 5), so this is the smallest old amount that gives it).
+      // and the old CT from the rate (credit = floor(old * 1 / 5), so this is the smallest old amount that gives it).
       var inst = m ? BigInt(m.inst) : (l.locked * 10n + 8n) / 9n - l.locked;
       var credit = m && m.nw ? BigInt(m.nw) : inst + l.locked;
       var old = m ? BigInt(m.old) : (credit * BigInt(C.ratioDen) + BigInt(C.ratioNum) - 1n) / BigInt(C.ratioNum);

@@ -6,7 +6,7 @@
   function paint() {
     $("dc-window").textContent = t("docs.lock.window", { start: F.date(C.windowStart), end: F.date(C.windowEnd) });
     $("dc-supply").textContent = t("docs.c.supply", { supply: C.newToken.supplyText, old: C.oldToken.supplyText, orig: C.oldToken.originalSupplyText });
-    CJ.track($("dc-track"), null, { amount: 12500, demoDays: 3.4 }); // 12,500 old CT -> 5,000 new CT: 500 now, 4,500 later
+    CJ.track($("dc-track"), null, { amount: 12500, demoDays: 3.4 }); // 12,500 old CT -> 2,500 new CT: 250 now, 2,250 later
   }
   document.addEventListener("cj:lang", paint);
   paint();

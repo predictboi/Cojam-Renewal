@@ -115,9 +115,11 @@ Claude can read every result on chain from the addresses alone, so there is no n
 
 ## 7. Small mainnet test with the real tokens (1 minute lock)
 
+The test swap deployed on 2026-11-14 runs the earlier 0.4 rate. The steps below are for a test swap deployed from the 0.2 code (5 old CT = 1 new CT).
+
 1. `cojam-ops`: `OPS_TASK=deploy-test-swap`, `CONFIRM_MAINNET=yes`, **Trigger Run**. It deploys the real swap code with a 1 minute lock at `0x197e08ba085Ee1171AfD2fd7263cF14Db403FBbD` (the deployer's second transaction), against the live new CT, with the master as `MASTER`. Then set `CONFIRM_MAINNET` back to `no`.
-2. From the master wallet app, send **4 new CT** to the test swap address.
+2. From the master wallet app, send **2 new CT** to the test swap address.
 3. Put **10 old CT** and about 0.1 KAIA in the test wallet.
 4. Open **https://cojam.app/migrate/?net=kaia-test** in Kaia Wallet's in-app browser (or MetaMask on Kaia). The page shows a "Mainnet test" notice. There is no fee delegation on this test link, so the wallet pays its own small KAIA fee.
-5. Swap 10 old CT: 0.4 new CT arrive at once, 3.6 unlock after 1 minute. Press Claim on the page after the minute (the keeper serves Kairos, not this test).
-6. The 10 old CT stay in the test swap forever. Anything left of the 4 new CT can be withdrawn by the master.
+5. Swap 10 old CT: 0.2 new CT arrive at once, 1.8 unlock after 1 minute. Press Claim on the page after the minute (the keeper serves Kairos, not this test).
+6. The 10 old CT stay in the test swap forever. Anything left of the 2 new CT can be withdrawn by the master.

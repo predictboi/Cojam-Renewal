@@ -4,7 +4,7 @@
 //
 // CJ.liveStats.load({ gas, health }) resolves to the same shape as CJ.sample.state(), so the pages render it unchanged:
 //   { now, lots, wallets, walletList, tot (with tot.u in micro CT), gas, holders: null, chain, supply, supplyText, health }
-// Lots and totals carry both sides of the 0.4 rate: amount and tot.swapped in old CT; newAmount, instant, locked and
+// Lots and totals carry both sides of the 0.2 rate: amount and tot.swapped in old CT; newAmount, instant, locked and
 // tot.credit in new CT. Migrated(user, lotId, oldAmount, newAmount, instantAmount, lockedAmount, unlockAt) has both.
 // Events are scanned from CJ.net.deployBlock in block ranges (the public node may refuse a large range, so a refused
 // range is halved and retried), cached in sessionStorage and read incrementally on every refresh. Counters are read at
@@ -59,7 +59,7 @@
     "function totalOwed() view returns (uint256)", "function totalClaimed() view returns (uint256)",
     "function availableReserve() view returns (uint256)",
     "function WINDOW_START() view returns (uint256)", "function WINDOW_END() view returns (uint256)",
-    // newAmount = oldAmount * 2 / 5 rounded down (rate 0.4); instantAmount + lockedAmount = newAmount
+    // newAmount = oldAmount * 1 / 5 rounded down (rate 0.2); instantAmount + lockedAmount = newAmount
     "event Migrated(address indexed user, uint256 indexed lotId, uint256 oldAmount, uint256 newAmount, uint256 instantAmount, uint256 lockedAmount, uint256 unlockAt)",
     "event Claimed(address indexed user, uint256 indexed lotId, uint256 amount, address indexed caller)"
   ];
