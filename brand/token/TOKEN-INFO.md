@@ -17,6 +17,6 @@ Copy these into Kaiascan's token info form (or an email to support@kaiascan.io),
 | Short description | Cojam is the OG prediction market on Kaia, since 2019. CT is its token. |
 | Long description | Cojam has run a community prediction market since 2019. The new CT is a plain fixed supply token on Kaia: 2,000,000,000 CT minted once, with no mint, burn, pause, blacklist or owner functions. Holders of the old CT (0x7f223b1607171b81ebd68d22f1ca79157fd4a44b) swap at cojam.app at 0.2 new CT per old CT (5 old CT = 1 new CT): 10% arrives at once and 90% after 7 days. |
 | Old token (migration) | `0x7f223b1607171b81ebd68d22f1ca79157fd4a44b` (old CT, replaced by this token) |
-| Swap contract | `0x8a5356f0207f374D1E04BB03Dedac87A43246060` |
+| Swap contract | `0x7879F0a137Eae8E45EB670e9ac7BB08C5DfADb84` |
 | DEX pool | DGSwap v3 CT / KAIA: https://dgswap.io/pools/v3/0x969e56b6c8bdcac45027a71485f528687845e48d/ |
 | X / Telegram | to come |

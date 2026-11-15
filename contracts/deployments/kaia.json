@@ -1,7 +1,7 @@
 {
   "network": "kaia",
   "chainId": 8217,
-  "note": "Kaia mainnet. Launched 2026-11-14: new CT live, launch swap live (7 day lock), window open until 2027-11-14T18:09:12Z.",
+  "note": "Kaia mainnet. New CT live since 2026-11-14. Launch swap redeployed 2026-11-15 at rate 1/5 (5 old CT = 1 new CT), 7 day lock, window open until 2027-11-15T15:24:52Z.",
   "deployer": "0xB18149317Bf633F5Dc2a6044a11103D580cA4a33",
   "master": "0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb",
   "oldToken": "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b",
@@ -19,8 +19,8 @@
     "verified": "Sourcify exact_match, 2026-11-14",
     "checkedOnChain": "2026-11-14: name Cojam Token, symbol CT, 18 decimals, supply 2,000,000,000, master holds 2,000,000,000, deployer holds 0"
   },
-  "migration": "0x8a5356f0207f374D1E04BB03Dedac87A43246060",
-  "migrationDeployBlock": 232475505,
+  "migration": "0x7879F0a137Eae8E45EB670e9ac7BB08C5DfADb84",
+  "migrationDeployBlock": 232552030,
   "testSwap": {
     "address": "0x197e08ba085Ee1171AfD2fd7263cF14Db403FBbD",
     "contract": "CojamMigrationShortLock (real swap code, 1 minute lock)",
@@ -30,17 +30,23 @@
     "sitePage": "https://cojam.app/migrate/?net=kaia-test (remembered in the browser; ?net=kairos to leave)",
     "note": "Not the launch swap. Old CT swapped into it stays there forever."
   },
-  "migrationTx": "0xb485c32513eabb558fe708159120296434c349bc5f7b2356ba4c72fb300a431a",
-  "windowStart": "2026-11-14T18:09:12Z",
-  "windowEnd": "2027-11-14T18:09:12Z",
+  "migrationTx": "0x0085c193b35706ebfca32e0f1546e331c541c0834b8704e87eac780a52899f6a",
+  "windowStart": "2026-11-15T15:24:52Z",
+  "windowEnd": "2027-11-15T15:24:52Z",
   "swap": {
     "lockDays": 7,
-    "ratio": "2/5 (0.4)",
+    "ratio": "1/5 (0.2)",
     "instantPercent": 10,
     "master": "0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb",
     "gasUsed": "1223810",
-    "runBy": "Render cojam-ops, OPS_TASK=deploy-mainnet (deployer nonce 2)",
-    "verified": "Sourcify exact_match, 2026-11-14",
-    "checkedOnChain": "2026-11-14: lock 7 days, master, old CT, new CT, ratio 2/5, 10% instant, reserve 0 until funded"
+    "runBy": "Render cojam-ops, OPS_TASK=deploy-mainnet (deployer nonce 3)",
+    "verified": "Sourcify exact_match, 2026-11-15",
+    "checkedOnChain": "2026-11-15: ratio 1/5, lock 7 days, 10% instant, master, old CT, new CT, reserve 0 until funded"
+  },
+  "retiredSwap_0_4": {
+    "address": "0x8a5356f0207f374D1E04BB03Dedac87A43246060",
+    "block": 232475505,
+    "tx": "0xb485c32513eabb558fe708159120296434c349bc5f7b2356ba4c72fb300a431a",
+    "note": "First launch swap at 0.4 (2/5). Never funded, never used (0 old CT received). Replaced on 2026-11-15 by the 1/5 swap; do not fund it."
   }
 }

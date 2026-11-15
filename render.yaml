@@ -80,9 +80,9 @@ services:
       - key: KAIA_RPC_URL
         value: https://public-en.node.kaia.io
       - key: SWAP_CONTRACT_ADDRESS
-        value: "0x8a5356f0207f374D1E04BB03Dedac87A43246060"
+        value: "0x7879F0a137Eae8E45EB670e9ac7BB08C5DfADb84"
       - key: SWAP_DEPLOY_BLOCK
-        value: "232475505"
+        value: "232552030"
       # Only on Kairos (mainnet defaults to the real old CT 0x7f223b1607171b81ebd68d22f1ca79157fd4a44b).
       - key: OLD_CT_ADDRESS
         value: "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b"

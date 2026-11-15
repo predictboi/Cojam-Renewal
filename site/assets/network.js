@@ -23,8 +23,8 @@
       explorer: "https://kaiascan.io",
       oldToken: "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b",
       newToken: "0x91cb3B346C80ff965a9667ba6228834dbedD71a2", // live since 2026-11-14 (contracts/deployments/kaia.json)
-      swap: "0x8a5356f0207f374D1E04BB03Dedac87A43246060", // launch swap, 7 day lock
-      deployBlock: 232475505, // launch swap deploy block (tx 0xb485c325…431a)
+      swap: "0x7879F0a137Eae8E45EB670e9ac7BB08C5DfADb84", // launch swap, 7 day lock, rate 1/5 (redeployed 2026-11-15)
+      deployBlock: 232552030, // launch swap deploy block (tx 0x0085c193…9f6a)
       gasApi: "https://api.cojam.app",
       master: "0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb", // the only wallet that can open the admin page and withdraw
       nativeCurrency: { name: "KAIA", symbol: "KAIA", decimals: 18 }
