@@ -4,7 +4,7 @@
 // OPS_TASK picks the job:
 //   check             (default) addresses, KAIA and old CT balances, nonces. Sends nothing.
 //   rehearse-mainnet  small real rehearsal with the test wallet: deploys "Cojam Rehearsal" (CTR) and a 1 minute lock
-//                     copy of the swap, funds it, swaps REHEARSAL_AMOUNT old CT (default 100) at 0.4, checks that
+//                     copy of the swap, funds it, swaps REHEARSAL_AMOUNT old CT (default 100) at 0.2, checks that
 //                     10% of the credit arrived, waits for the unlock, releases the 90% with claimFor from the
 //                     deployer (as the keeper would), checks the total equals the credit, then withdraws the rest of the reserve. The swapped old CT stays in the
 //                     rehearsal contract forever. Needs CONFIRM_MAINNET=yes.
@@ -75,7 +75,7 @@ async function rehearse({ deployer, tester }, fork) {
   const swap = await (await ethers.getContractFactory("CojamMigrationShortLock", tester)).deploy(OLD_CT, out.rehearsalToken, tester.address);
   await swap.waitForDeployment(); out.rehearsalSwap = await swap.getAddress(); log("rehearsal swap (1 minute lock)", out.rehearsalSwap);
 
-  await wait("fund", tok.transfer(out.rehearsalSwap, amt)); // more than the credit (0.4 x amt)
+  await wait("fund", tok.transfer(out.rehearsalSwap, amt)); // more than the credit (0.2 x amt)
   const before = await tok.balanceOf(tester.address);
   await wait("approve", old.connect(tester).approve(out.rehearsalSwap, amt));
   await wait("migrate", swap.migrate(amt));

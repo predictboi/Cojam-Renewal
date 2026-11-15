@@ -2,7 +2,7 @@
 //   OLD_TOKEN_ADDRESS=0x.. NEW_TOKEN_ADDRESS=0x.. MIGRATION_ADDRESS=0x.. SWAP_AMOUNT=10000 \
 //   npx hardhat run scripts/rehearse-kairos.js --network kairos
 // The signer (PRIVATE_KEY) acts as a holder: it needs test old CT (the mock old CT mints to the deployer) and KAIA.
-// Steps: read state, approve the exact amount, migrate, then check that 10% of the credit (0.4 new CT per old CT)
+// Steps: read state, approve the exact amount, migrate, then check that 10% of the credit (0.2 new CT per old CT)
 // arrived and a lot for the other 90% was recorded.
 // Optional: CLAIM=1 releases matured lots (only after 7 days), WITHDRAW_AMOUNT=n withdraws reserve as the master.
 const { ethers, network } = require("hardhat");

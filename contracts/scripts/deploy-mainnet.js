@@ -10,7 +10,7 @@ const fs = require("fs"), path = require("path");
 const OLD_CT = "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b";
 const OLD_OWNER = "0xeb1622d0377da1f9815bfc6eff61afe3257a0518";
 const SUPPLY = 2_000_000_000n * 10n ** 18n; // new CT fixed supply: 2,000,000,000 CT
-const RATIO_NUM = 2n, RATIO_DEN = 5n; // 0.4 new CT per old CT
+const RATIO_NUM = 1n, RATIO_DEN = 5n; // 0.2 new CT per old CT (5 old CT give 1 new CT)
 const W = JSON.parse(fs.readFileSync(path.join(__dirname, "..", "deployments", "wallets.mainnet.json"), "utf8"));
 
 async function main() {
@@ -39,7 +39,7 @@ async function main() {
   if ((await ethers.provider.getCode(master)) !== "0x") fail("master has code; expected the founder's EOA");
   const old = await ethers.getContractAt("IERC20", OLD_CT);
   const oldSupply = await old.totalSupply();
-  if (SUPPLY * RATIO_DEN < oldSupply * RATIO_NUM) fail(`old supply ${oldSupply} x 0.4 is above the new supply`);
+  if (SUPPLY * RATIO_DEN < oldSupply * RATIO_NUM) fail(`old supply ${oldSupply} x 0.2 is above the new supply`);
   const bal = await ethers.provider.getBalance(deployer.address);
   if (bal < ethers.parseEther("0.3")) fail(`deployer has ${ethers.formatEther(bal)} KAIA; keep at least 0.3`);
   console.log(`${dry ? "DRY RUN on a mainnet fork" : "MAINNET"} | deployer ${deployer.address} (${ethers.formatEther(bal)} KAIA) | master ${master} | old CT supply ${ethers.formatUnits(oldSupply, 18)}`);
@@ -75,6 +75,8 @@ async function main() {
   if ((await mig.OLD_TOKEN()).toLowerCase() !== OLD_CT) fail("swap OLD_TOKEN");
   if ((await mig.NEW_TOKEN()).toLowerCase() !== tokenAddr.toLowerCase()) fail("swap NEW_TOKEN");
   if ((await mig.availableReserve()) !== 0n) fail("reserve should be empty until the master funds it");
+  if ((await mig.RATIO_NUM()) !== RATIO_NUM || (await mig.RATIO_DEN()) !== RATIO_DEN) fail("swap ratio is not 1/5");
+  if ((await mig.LOCK_PERIOD()) !== 7n * 24n * 3600n) fail("swap lock is not 7 days");
 
   const out = {
     network: dry ? "kaia-fork-dry-run" : "kaia", chainId: 8217, deployedAt: new Date().toISOString(),

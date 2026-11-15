@@ -7,10 +7,10 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-/// @title Cojam migration: old CT to new CT at 0.4 (2 new per 5 old), 10% at once and 90% after 7 days
+/// @title Cojam migration: old CT to new CT at 0.2 (1 new per 5 old), 10% at once and 90% after 7 days
 /// @notice Holders call `migrate(amount)` after approving old CT. The contract
 /// pulls the old CT and measures what arrived. The credit in new CT is
-/// `received * RATIO_NUM / RATIO_DEN` (2/5, rounded down to the base unit): the ratio
+/// `received * RATIO_NUM / RATIO_DEN` (1/5, rounded down to the base unit): the ratio
 /// is set against the pre burn old supply of 5,000,000,000 CT and the new fixed
 /// supply of 2,000,000,000 CT. 10% of the credit (rounded down) is sent in new CT at
 /// once; the rest becomes a lot that unlocks 7 days later.
@@ -40,8 +40,8 @@ contract CojamMigration is ReentrancyGuard {
     uint256 public constant INSTANT_PERCENT = 10;
     /// @notice Both tokens use 18 decimals, so the ratio applies to base units directly.
     uint8 public constant DECIMALS = 18;
-    /// @notice New CT per old CT is RATIO_NUM / RATIO_DEN = 2/5 = 0.4 (10 old CT give 4 new CT).
-    uint256 public constant RATIO_NUM = 2;
+    /// @notice New CT per old CT is RATIO_NUM / RATIO_DEN = 1/5 = 0.2 (5 old CT give 1 new CT).
+    uint256 public constant RATIO_NUM = 1;
     uint256 public constant RATIO_DEN = 5;
     /// @notice Owner of the old CT contract, unrelated to the relaunch. Refused as MASTER.
     address public constant OLD_CT_OWNER = 0xEB1622d0377da1F9815bFC6efF61afE3257a0518;
@@ -115,7 +115,7 @@ contract CojamMigration is ReentrancyGuard {
         if (IERC20Metadata(address(oldToken)).decimals() != DECIMALS) revert DecimalsMismatch();
         if (IERC20Metadata(address(newToken)).decimals() != DECIMALS) revert DecimalsMismatch();
         // The new supply must cover every old token still in existence at the ratio:
-        // newSupply >= oldSupply * 2/5. (Old CT can only shrink: it has burn and no mint.)
+        // newSupply >= oldSupply * 1/5. (Old CT can only shrink: it has burn and no mint.)
         if (newToken.totalSupply() * RATIO_DEN < oldToken.totalSupply() * RATIO_NUM) revert SupplyMismatch();
 
         OLD_TOKEN = oldToken;
@@ -129,9 +129,9 @@ contract CojamMigration is ReentrancyGuard {
     // Holder actions
     // ------------------------------------------------------------------
 
-    /// @notice Swap `amount` old CT for `amount * 2 / 5` new CT: 10% now, 90% locked for 7 days.
+    /// @notice Swap `amount` old CT for `amount / 5` new CT: 10% now, 90% locked for 7 days.
     /// @dev Requires a prior `approve(this, amount)` on old CT (old CT has no permit).
-    /// The reserve is checked against the largest possible credit, `amount * 2 / 5`, before
+    /// The reserve is checked against the largest possible credit, `amount / 5`, before
     /// the pull; the real credit comes from what arrived and is never larger, so a swap can
     /// never use new CT owed to earlier lots.
     /// The pull happens before the state writes on purpose: the credit is the measured
@@ -154,7 +154,7 @@ contract CojamMigration is ReentrancyGuard {
         uint256 received = balanceAfter - balanceBefore;
         if (received > amount) revert ReceivedMoreThanSent();
 
-        // Credit in new CT at 2/5, rounded down (<= maxCredit <= available, since received <= amount).
+        // Credit in new CT at 1/5, rounded down (<= maxCredit <= available, since received <= amount).
         uint256 credit = (received * RATIO_NUM) / RATIO_DEN;
         if (credit == 0) revert AmountTooSmall();
         uint256 instant = (credit * INSTANT_PERCENT) / 100; // rounded down
@@ -271,7 +271,7 @@ contract CojamMigration is ReentrancyGuard {
     }
 
     /// @notice Exact result of a swap in which `oldAmount` old CT arrives: the credit in new
-    /// CT (2/5, rounded down), the part paid at once (10% of the credit, rounded down) and
+    /// CT (1/5, rounded down), the part paid at once (10% of the credit, rounded down) and
     /// the part locked for 7 days. A credit of 0 means `migrate` would revert AmountTooSmall.
     function previewSwap(uint256 oldAmount)
         external

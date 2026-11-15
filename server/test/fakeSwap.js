@@ -76,7 +76,7 @@ function createFakeSwap({ startBlock = 100, startTime = 1_800_000_000, maxLogRan
     migrate(user, amount) {
       s.block += 1;
       const u = userOf(user);
-      const credit = (amount * 2n) / 5n; // 0.4 new CT per old CT, as CojamMigration
+      const credit = amount / 5n; // 0.2 new CT per old CT, as CojamMigration
       const locked = credit - credit / 10n;
       const lotId = u.list.length;
       u.list.push({ amount: locked, unlockAt: s.time + LOCK });

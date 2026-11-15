@@ -2,7 +2,7 @@
 //   OLD_TOKEN_ADDRESS=0x.. NEW_TOKEN_ADDRESS=0x.. npx hardhat run scripts/shortlock-kairos.js --network kairos
 // The signer is the master of the existing Kairos new CT and holds test old CT. Steps:
 //   1. deploy the short lock swap and fund it with 1,000,000 new CT from the master
-//   2. holder A (the signer) swaps 10,000 old CT (credit 4,000 new CT at 0.4): its lot is left for the keeper to release
+//   2. holder A (the signer) swaps 10,000 old CT (credit 2,000 new CT at 0.2): its lot is left for the keeper to release
 //   3. holder B (a fresh random wallet, given 2 KAIA and 5,000 old CT, credit 2,000) swaps, waits for the unlock and claims itself
 // Prints the swap address, deploy block and B's address for the keeper run.
 const { ethers } = require("hardhat");
