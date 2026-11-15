@@ -121,6 +121,20 @@
   // Kaia Wallet browser open (documented, see the sources above). The page URL goes in raw, as in the docs example:
   // app.kaiawallet.io encodes it once when it hands off to kaiawallet://wallet/browser?url=.
   function kaiaLink() { return "https://app.kaiawallet.io/u/" + pageUrl(); }
+  // Other wallet apps with an in-app browser on Kaia, each through its documented HTTPS link (a missing app lands on the
+  // wallet's download page instead of a dead tap):
+  // - OKX Wallet: https://web3.okx.com/build/docs/waas/app-universal-link : okx://wallet/dapp/url?dappUrl=<encoded page>
+  //   wrapped in https://web3.okx.com/download?deeplink=<encoded okx link>.
+  // - Bitget Wallet: https://web3.bitget.com/zh-CN/docs/configuration/deeplink/ : https://bkcode.vip?action=dapp&url=<encoded>
+  //   (Android accepts only this HTTPS form).
+  // - Trust Wallet: https://developer.trustwallet.com/developer/develop-for-trust/deeplinking :
+  //   https://link.trustwallet.com/open_url?coin_id=60&url=<encoded> (60 is the EVM coin id; the page switches to Kaia).
+  var APPS = [
+    ["okx", "OKX Wallet", function (u) { return "https://web3.okx.com/download?deeplink=" + encodeURIComponent("okx://wallet/dapp/url?dappUrl=" + encodeURIComponent(u)); }],
+    ["bitget", "Bitget Wallet", function (u) { return "https://bkcode.vip?action=dapp&url=" + encodeURIComponent(u); }],
+    ["trust", "Trust Wallet", function (u) { return "https://link.trustwallet.com/open_url?coin_id=60&url=" + encodeURIComponent(u); }]
+  ];
+  function appLink(id) { var a = APPS.filter(function (x) { return x[0] === id; })[0]; return a ? a[2](pageUrl()) : null; }
   function kaiaStore() { return os === "android" ? [STORE.kaiaAndroid] : os === "ios" ? [STORE.kaiaIos] : [STORE.kaiaIos, STORE.kaiaAndroid]; }
 
   // Label for a one tap connect button (in-app) or the generic one.
@@ -150,7 +164,8 @@
   }
   // Wallet logos: the official marks, bundled in assets/wallets/, or the icon a wallet announces about itself (EIP-6963).
   var LOGO_DIR = (document.body && document.body.dataset.root || "../") + "assets/wallets/";
-  var LOGOS = { kaia: LOGO_DIR + "kaia-wallet.png", mm: LOGO_DIR + "metamask.svg", wc: LOGO_DIR + "walletconnect.svg" };
+  var LOGOS = { kaia: LOGO_DIR + "kaia-wallet.png", mm: LOGO_DIR + "metamask.svg", wc: LOGO_DIR + "walletconnect.svg",
+    okx: LOGO_DIR + "okx.png", bitget: LOGO_DIR + "bitget.png", trust: LOGO_DIR + "trust.png" };
   function logoFor(kind) {
     if (LOGOS[kind]) return LOGOS[kind];
     // other Kaia wallets: the bundled official mark first, so the chooser never depends on what an extension announces
@@ -206,6 +221,9 @@
         opt("a", 'href="' + esc(kaiaLink()) + '" data-deeplink="kaia"', "logo:kaia", t("wl.open.kaia"), t("wl.sub.kaia.open"), t("wl.rec"), "ext") +
         '<button type="button" class="btn btn-ghost btn-block cj-opt-alt" data-view="kaia">' + t("wl.kaia.alt") + "</button></div>" +
         opt("a", 'href="' + esc(metamaskLink()) + '" data-deeplink="mm"', "logo:mm", t("wl.open.mm"), t("wl.sub.mm"), null, "ext") +
+        APPS.map(function (a) {
+          return opt("a", 'href="' + esc(a[2](pageUrl())) + '" data-deeplink="' + a[0] + '"', "logo:" + a[0], esc(tt("wl.open.x", "Open in {wallet}").replace("{wallet}", a[1])), t("wl.sub.mm"), null, "ext");
+        }).join("") +
         wcRow('type="button" data-pick="wc"', t("wl.sub.wc.mobile")) + "</div>";
     } else if (e.mode === "desktop-none") {
       h = '<p class="cj-sheet-lead">' + t("wl.none.lead") + "</p><div class=\"cj-opts\">" +
@@ -306,5 +324,5 @@
   }
   document.addEventListener("cj:lang", function () { if (dlg && dlg.open) paint(); });
 
-  CJ.wallet = { env: env, open: open, close: close, ctaLabel: ctaLabel, os: os, links: { metamask: metamaskLink, kaia: kaiaLink, store: STORE, page: pageUrl } };
+  CJ.wallet = { env: env, open: open, close: close, ctaLabel: ctaLabel, os: os, links: { metamask: metamaskLink, kaia: kaiaLink, app: appLink, store: STORE, page: pageUrl } };
 })();
