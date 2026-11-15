@@ -7,15 +7,17 @@ const fixture = () => deploySystem("MockOldCojam");
 const unfunded = () => deploySystem("MockOldCojam", [], { fund: 0n });
 
 describe("CojamToken", function () {
-  it("total supply is exactly 2,000,000,000 CT and covers the whole old supply at 0.4", async function () {
+  it("total supply is exactly 2,000,000,000 CT and covers the whole old supply at 0.2 (1 new per 5 old)", async function () {
     const { oldToken, newToken } = await loadFixture(fixture);
     expect(await newToken.totalSupply()).to.equal(NEW_SUPPLY);
     expect(await newToken.TOTAL_SUPPLY()).to.equal(2_000_000_000n * 10n ** 18n);
     expect(ethers.formatUnits(await newToken.totalSupply(), 18)).to.equal("2000000000.0");
     expect(await oldToken.totalSupply()).to.equal(OLD_SUPPLY);
-    // 4,083,262,533.9560001 old CT x 0.4 = 1,633,305,013.58240004 new CT, under 2B
-    expect(credit(OLD_SUPPLY)).to.equal(1_633_305_013_582_400_040_000_000_000n);
+    // 4,083,262,533.9560001 old CT x 0.2 = 816,652,506.79120002 new CT, under 2B
+    expect(credit(OLD_SUPPLY)).to.equal(816_652_506_791_200_020_000_000_000n);
     expect(credit(OLD_SUPPLY) < NEW_SUPPLY).to.equal(true);
+    // 2B new CT would cover up to 10B old CT at 1/5.
+    expect(credit(10_000_000_000n * E18)).to.equal(NEW_SUPPLY);
   });
 
   it("mints the whole supply to the master wallet; the deployer and the swap hold none", async function () {
@@ -63,7 +65,7 @@ describe("CojamMigration: deployment", function () {
     expect(await migration.MASTER()).to.equal(master.address);
     expect(await migration.LOCK_PERIOD()).to.equal(LOCK);
     expect(await migration.INSTANT_PERCENT()).to.equal(10n);
-    expect(await migration.RATIO_NUM()).to.equal(2n);
+    expect(await migration.RATIO_NUM()).to.equal(1n);
     expect(await migration.RATIO_DEN()).to.equal(5n);
     expect(await migration.isOpen()).to.equal(true);
   });
@@ -98,11 +100,13 @@ describe("CojamMigration: deployment", function () {
     await expect(Migration.deploy(await six.getAddress(), n, master.address)).to.be.revertedWithCustomError(Migration, "DecimalsMismatch");
     await expect(Migration.deploy(o, await six.getAddress(), master.address)).to.be.revertedWithCustomError(Migration, "DecimalsMismatch");
 
-    // The new supply must cover the whole old supply at 2/5: newSupply * 5 >= oldSupply * 2.
-    // 2B new covers exactly 5B old; one more old base unit fails.
+    // The new supply must cover the whole old supply at 1/5: newSupply * 5 >= oldSupply * 1.
+    // 2B new covers exactly 10B old (and so the 5B pre burn supply); one more old base unit fails.
     const fiveB = await Old.deploy(5_000_000_000n * E18);
     await expect(Migration.deploy(await fiveB.getAddress(), n, master.address)).to.not.be.reverted;
-    const bigOld = await Old.deploy(5_000_000_000n * E18 + 1n);
+    const tenB = await Old.deploy(10_000_000_000n * E18);
+    await expect(Migration.deploy(await tenB.getAddress(), n, master.address)).to.not.be.reverted;
+    const bigOld = await Old.deploy(10_000_000_000n * E18 + 1n);
     await expect(Migration.deploy(await bigOld.getAddress(), n, master.address))
       .to.be.revertedWithCustomError(Migration, "SupplyMismatch");
 
@@ -120,32 +124,33 @@ describe("CojamMigration: funding and the reserve", function () {
     await oldToken.connect(alice).approve(m, 1_000n * E18);
     await oldToken.connect(bob).approve(m, 1_000n * E18);
 
-    // The reserve check uses the credit (2/5 of the old amount), not the old amount.
+    // The reserve check uses the credit (1/5 of the old amount), not the old amount.
     await expect(migration.connect(alice).migrate(E18))
-      .to.be.revertedWithCustomError(migration, "InsufficientReserve").withArgs(0n, 4n * E18 / 10n);
+      .to.be.revertedWithCustomError(migration, "InsufficientReserve").withArgs(0n, 2n * E18 / 10n);
 
     // The master funds the swap with a plain transfer.
     await newToken.connect(master).transfer(m, 100n * E18);
     expect(await migration.availableReserve()).to.equal(100n * E18);
-    // 250 old CT + 3 base units credit 100 CT + 1 base unit: one base unit too much.
-    await expect(migration.connect(alice).migrate(250n * E18 + 3n))
+    // 500 old CT + 5 base units credit 100 CT + 1 base unit: one base unit too much.
+    await expect(migration.connect(alice).migrate(500n * E18 + 5n))
       .to.be.revertedWithCustomError(migration, "InsufficientReserve").withArgs(100n * E18, 100n * E18 + 1n);
-    // 250 old CT + 2 base units still credit exactly 100 CT (rounded down): fits.
-    await expect(migration.connect(alice).migrate(250n * E18 + 2n))
-      .to.emit(migration, "Migrated").withArgs(alice.address, 0n, 250n * E18 + 2n, 100n * E18, 10n * E18, 90n * E18, (v) => v > 0n);
+    // 500 old CT + 4 base units still credit exactly 100 CT (rounded down): fits.
+    await expect(migration.connect(alice).migrate(500n * E18 + 4n))
+      .to.emit(migration, "Migrated").withArgs(alice.address, 0n, 500n * E18 + 4n, 100n * E18, 10n * E18, 90n * E18, (v) => v > 0n);
 
     // The contract still holds 90 CT, but all of it is owed to alice's lot: nothing is available.
     expect(await newToken.balanceOf(m)).to.equal(90n * E18);
     expect(await migration.totalOwed()).to.equal(90n * E18);
     expect(await migration.availableReserve()).to.equal(0n);
-    await expect(migration.connect(bob).migrate(3n))
+    // Even the smallest swap (5 base units, credit 1 base unit) is refused.
+    await expect(migration.connect(bob).migrate(5n))
       .to.be.revertedWithCustomError(migration, "InsufficientReserve").withArgs(0n, 1n);
 
-    // Topping up reopens it, exactly up to the new reserve (credit 50 CT = 125 old CT).
+    // Topping up reopens it, exactly up to the new reserve (credit 50 CT = 250 old CT).
     await newToken.connect(master).transfer(m, 50n * E18);
-    await expect(migration.connect(bob).migrate(127n * E18 + 5n * E18 / 10n))
+    await expect(migration.connect(bob).migrate(255n * E18))
       .to.be.revertedWithCustomError(migration, "InsufficientReserve").withArgs(50n * E18, 51n * E18);
-    await expect(migration.connect(bob).migrate(125n * E18)).to.emit(migration, "Migrated");
+    await expect(migration.connect(bob).migrate(250n * E18)).to.emit(migration, "Migrated");
     expect(await migration.availableReserve()).to.equal(0n);
 
     // Both lots stay fully backed and pay in full.
@@ -159,35 +164,36 @@ describe("CojamMigration: funding and the reserve", function () {
     const { master, alice, migration, oldToken, newToken } = await loadFixture(unfunded);
     const m = await migration.getAddress();
     await newToken.connect(master).transfer(m, 10n * E18);
-    await oldToken.connect(alice).approve(m, 50n * E18);
-    await expect(migration.connect(alice).migrate(50n * E18)) // credit 20 > reserve 10
+    await oldToken.connect(alice).approve(m, 100n * E18);
+    await expect(migration.connect(alice).migrate(100n * E18)) // credit 20 > reserve 10
       .to.be.revertedWithCustomError(migration, "InsufficientReserve").withArgs(10n * E18, 20n * E18);
     expect(await oldToken.balanceOf(alice.address)).to.equal(1_000_000n * E18);
-    expect(await oldToken.allowance(alice.address, m)).to.equal(50n * E18);
+    expect(await oldToken.allowance(alice.address, m)).to.equal(100n * E18);
     expect(await migration.lotCount(alice.address)).to.equal(0n);
     expect(await newToken.balanceOf(alice.address)).to.equal(0n);
   });
 });
 
 describe("CojamMigration: migrate", function () {
-  it("10 old CT give 4 new CT: 0.4 at once, 3.6 in a 7 day lot", async function () {
+  it("10 old CT give 2 new CT: 0.2 at once, 1.8 in a 7 day lot (5 old CT give 1 new CT)", async function () {
     const { alice, migration, oldToken, newToken } = await loadFixture(fixture);
     const amount = 10n * E18;
-    expect(await migration.previewSwap(amount)).to.deep.equal([4n * E18, 4n * E18 / 10n, 36n * E18 / 10n]);
+    expect(await migration.previewSwap(5n * E18)).to.deep.equal([E18, E18 / 10n, 9n * E18 / 10n]);
+    expect(await migration.previewSwap(amount)).to.deep.equal([2n * E18, 2n * E18 / 10n, 18n * E18 / 10n]);
     await oldToken.connect(alice).approve(await migration.getAddress(), amount);
     const tx = await migration.connect(alice).migrate(amount);
     const t = BigInt(await time.latest());
     await expect(tx).to.emit(migration, "Migrated")
-      .withArgs(alice.address, 0n, amount, 4n * E18, 400_000_000_000_000_000n, 3_600_000_000_000_000_000n, t + LOCK);
-    await expect(tx).to.changeTokenBalance(newToken, alice, 400_000_000_000_000_000n);
+      .withArgs(alice.address, 0n, amount, 2n * E18, 200_000_000_000_000_000n, 1_800_000_000_000_000_000n, t + LOCK);
+    await expect(tx).to.changeTokenBalance(newToken, alice, 200_000_000_000_000_000n);
     await time.increase(LOCK);
-    await expect(migration.connect(alice).claim(1)).to.changeTokenBalance(newToken, alice, 3_600_000_000_000_000_000n);
-    expect(await newToken.balanceOf(alice.address)).to.equal(4n * E18);
+    await expect(migration.connect(alice).claim(1)).to.changeTokenBalance(newToken, alice, 1_800_000_000_000_000_000n);
+    expect(await newToken.balanceOf(alice.address)).to.equal(2n * E18);
   });
 
-  it("swaps at 0.4: 10% of the credit lands at once, 90% becomes a 7 day lot, old CT stays in the contract", async function () {
+  it("swaps at 0.2: 10% of the credit lands at once, 90% becomes a 7 day lot, old CT stays in the contract", async function () {
     const { alice, migration, oldToken, newToken } = await loadFixture(fixture);
-    const amount = 12_500n * E18; // credit 5,000 new CT
+    const amount = 25_000n * E18; // credit 5,000 new CT
     await oldToken.connect(alice).approve(await migration.getAddress(), amount);
     const tx = await migration.connect(alice).migrate(amount);
     const t = BigInt(await time.latest());
@@ -207,13 +213,13 @@ describe("CojamMigration: migrate", function () {
     expect(await migration.availableReserve()).to.equal(NEW_SUPPLY - cr);
   });
 
-  it("0.4 math and the 10% split round down to the base unit, also for non multiples of 5", async function () {
+  it("0.2 math and the 10% split round down to the base unit, also for amounts that are not multiples of 5", async function () {
     const { alice, migration, oldToken, newToken } = await loadFixture(fixture);
     // old base units -> [credit, instant, locked]
     const expected = new Map([
-      [3n, [1n, 0n, 1n]], [4n, [1n, 0n, 1n]], [5n, [2n, 0n, 2n]], [6n, [2n, 0n, 2n]], [7n, [2n, 0n, 2n]],
-      [8n, [3n, 0n, 3n]], [24n, [9n, 0n, 9n]], [25n, [10n, 1n, 9n]], [27n, [10n, 1n, 9n]], [49n, [19n, 1n, 18n]],
-      [250n, [100n, 10n, 90n]], [251n, [100n, 10n, 90n]], [253n, [101n, 10n, 91n]],
+      [5n, [1n, 0n, 1n]], [6n, [1n, 0n, 1n]], [7n, [1n, 0n, 1n]], [9n, [1n, 0n, 1n]], [10n, [2n, 0n, 2n]],
+      [11n, [2n, 0n, 2n]], [14n, [2n, 0n, 2n]], [49n, [9n, 0n, 9n]], [50n, [10n, 1n, 9n]], [54n, [10n, 1n, 9n]],
+      [99n, [19n, 1n, 18n]], [500n, [100n, 10n, 90n]], [504n, [100n, 10n, 90n]], [505n, [101n, 10n, 91n]],
     ]);
     const odd = 123_456_789_012_345_678_901n;
     await oldToken.connect(alice).approve(await migration.getAddress(), ethers.MaxUint256);
@@ -221,7 +227,7 @@ describe("CojamMigration: migrate", function () {
     for (const a of [...expected.keys(), odd]) {
       const [c, i, l] = swapOf(a);
       if (expected.has(a)) expect([c, i, l]).to.deep.equal(expected.get(a));
-      expect(c).to.equal((a * 2n) / 5n);
+      expect(c).to.equal(a / 5n);
       expect(i + l).to.equal(c);
       expect(await migration.previewSwap(a)).to.deep.equal([c, i, l]);
       await expect(migration.connect(alice).migrate(a))
@@ -240,19 +246,19 @@ describe("CojamMigration: migrate", function () {
     expect(await migration.totalCredited()).to.equal(creditSum);
     expect(await migration.totalMigrated()).to.equal(oldSum);
     // Rounding only ever loses less than one new base unit per swap.
-    expect((oldSum * 2n) / 5n - creditSum <= id + 1n).to.equal(true);
+    expect(oldSum / 5n - creditSum <= id + 1n).to.equal(true);
   });
 
-  it("amounts whose credit rounds to 0 (1 and 2 base units) revert AmountTooSmall and move nothing", async function () {
+  it("amounts whose credit rounds to 0 (1 to 4 base units) revert AmountTooSmall and move nothing; 5 base units credit 1", async function () {
     const { alice, migration, oldToken } = await loadFixture(fixture);
     await oldToken.connect(alice).approve(await migration.getAddress(), 10n);
-    for (const a of [1n, 2n]) {
+    for (const a of [1n, 2n, 3n, 4n]) {
       expect((await migration.previewSwap(a))[0]).to.equal(0n);
       await expect(migration.connect(alice).migrate(a)).to.be.revertedWithCustomError(migration, "AmountTooSmall");
     }
     expect(await oldToken.balanceOf(alice.address)).to.equal(1_000_000n * E18);
     expect(await migration.lotCount(alice.address)).to.equal(0n);
-    await expect(migration.connect(alice).migrate(3n)).to.emit(migration, "Migrated").withArgs(alice.address, 0n, 3n, 1n, 0n, 1n, (v) => v > 0n);
+    await expect(migration.connect(alice).migrate(5n)).to.emit(migration, "Migrated").withArgs(alice.address, 0n, 5n, 1n, 0n, 1n, (v) => v > 0n);
   });
 
   it("reverts on a zero amount", async function () {
@@ -346,7 +352,7 @@ describe("CojamMigration: migrate", function () {
 describe("CojamMigration: release of the locked 90%", function () {
   it("lock edges: claim at unlock minus 1 reverts, at unlock pays and emits Claimed", async function () {
     const { alice, migration, oldToken, newToken } = await loadFixture(fixture);
-    await approveAndMigrate(oldToken, migration, alice, 175n * E18); // credit 70
+    await approveAndMigrate(oldToken, migration, alice, 350n * E18); // credit 70
     const [, unlockAt] = await migration.lotOf(alice.address, 0);
     const locked = 63n * E18;
 
@@ -366,7 +372,7 @@ describe("CojamMigration: release of the locked 90%", function () {
 
   it("claimFor by a stranger (keeper) pays the lot owner, never the caller", async function () {
     const { alice, stranger, migration, oldToken, newToken } = await loadFixture(fixture);
-    await approveAndMigrate(oldToken, migration, alice, 250n * E18); // credit 100
+    await approveAndMigrate(oldToken, migration, alice, 500n * E18); // credit 100
     const [, unlockAt] = await migration.lotOf(alice.address, 0);
 
     await time.setNextBlockTimestamp(unlockAt - 1n);
@@ -383,7 +389,7 @@ describe("CojamMigration: release of the locked 90%", function () {
 
   it("nobody can redirect or take someone else's lots", async function () {
     const { alice, bob, stranger, migration, oldToken, newToken } = await loadFixture(fixture);
-    await approveAndMigrate(oldToken, migration, alice, 125n * E18); // credit 50
+    await approveAndMigrate(oldToken, migration, alice, 250n * E18); // credit 50
     await time.increase(LOCK);
     // bob has no lots: claim pays him nothing, and claimFor(bob) cannot touch alice's lots
     await expect(migration.connect(bob).claim(10)).to.be.revertedWithCustomError(migration, "NothingToClaim");
@@ -396,10 +402,10 @@ describe("CojamMigration: release of the locked 90%", function () {
 
   it("claimForMany releases matured lots for several owners and skips the rest", async function () {
     const { alice, bob, carol, stranger, migration, oldToken, newToken } = await loadFixture(fixture);
-    await approveAndMigrate(oldToken, migration, alice, 25n * E18); // credit 10
-    await approveAndMigrate(oldToken, migration, bob, 50n * E18); // credit 20
+    await approveAndMigrate(oldToken, migration, alice, 50n * E18); // credit 10
+    await approveAndMigrate(oldToken, migration, bob, 100n * E18); // credit 20
     await time.increase(LOCK);
-    await approveAndMigrate(oldToken, migration, carol, 75n * E18); // credit 30, still locked
+    await approveAndMigrate(oldToken, migration, carol, 150n * E18); // credit 30, still locked
 
     await expect(migration.connect(stranger).claimForMany([carol.address], 10))
       .to.be.revertedWithCustomError(migration, "NothingToClaim");
@@ -411,11 +417,11 @@ describe("CojamMigration: release of the locked 90%", function () {
   it("multiple lots and partial claims, oldest first, bounded by maxLots", async function () {
     const { alice, migration, oldToken, newToken } = await loadFixture(fixture);
     await oldToken.connect(alice).approve(await migration.getAddress(), 1_000n * E18);
-    await migration.connect(alice).migrate(25n * E18); // lot 0: credit 10, 9 locked
+    await migration.connect(alice).migrate(50n * E18); // lot 0: credit 10, 9 locked
     await time.increase(DAY);
-    await migration.connect(alice).migrate(50n * E18); // lot 1: credit 20, 18 locked
+    await migration.connect(alice).migrate(100n * E18); // lot 1: credit 20, 18 locked
     await time.increase(3n * DAY);
-    await migration.connect(alice).migrate(100n * E18); // lot 2: credit 40, 36 locked
+    await migration.connect(alice).migrate(200n * E18); // lot 2: credit 40, 36 locked
     const [, unlock1] = await migration.lotOf(alice.address, 1);
     await time.increaseTo(unlock1); // lots 0 and 1 matured, lot 2 locked
 
@@ -440,8 +446,8 @@ describe("CojamMigration: release of the locked 90%", function () {
 
   it("a wallet with 60 lots is released in bounded chunks", async function () {
     const { alice, stranger, migration, oldToken, newToken } = await loadFixture(fixture);
-    await oldToken.connect(alice).approve(await migration.getAddress(), 1_500n * E18);
-    for (let i = 0; i < 60; i++) await migration.connect(alice).migrate(25n * E18); // credit 10 each
+    await oldToken.connect(alice).approve(await migration.getAddress(), 3_000n * E18);
+    for (let i = 0; i < 60; i++) await migration.connect(alice).migrate(50n * E18); // credit 10 each
     expect(await newToken.balanceOf(alice.address)).to.equal(60n * E18);
     await time.increase(LOCK);
 
@@ -461,9 +467,9 @@ describe("CojamMigration: release of the locked 90%", function () {
     for (let i = 0; i < 25; i++) {
       const w = ethers.Wallet.createRandom().connect(ethers.provider);
       await setBalance(w.address, E18);
-      await oldToken.connect(deployer).transfer(w.address, 250n * E18);
-      await oldToken.connect(w).approve(m, 250n * E18);
-      await migration.connect(w).migrate(250n * E18); // credit 100
+      await oldToken.connect(deployer).transfer(w.address, 500n * E18);
+      await oldToken.connect(w).approve(m, 500n * E18);
+      await migration.connect(w).migrate(500n * E18); // credit 100
       users.push(w.address);
     }
     await time.increase(LOCK);
@@ -517,7 +523,7 @@ describe("CojamMigration: master withdraw", function () {
     const { master, alice, migration, oldToken, newToken } = await loadFixture(unfunded);
     const m = await migration.getAddress();
     await newToken.connect(master).transfer(m, 1_000n * E18);
-    await approveAndMigrate(oldToken, migration, alice, 1_250n * E18); // credit 500: 50 paid, 450 owed
+    await approveAndMigrate(oldToken, migration, alice, 2_500n * E18); // credit 500: 50 paid, 450 owed
     expect(await newToken.balanceOf(m)).to.equal(950n * E18);
     expect(await migration.availableReserve()).to.equal(500n * E18);
 
@@ -546,21 +552,21 @@ describe("CojamMigration: master withdraw", function () {
   it("a withdrawal during the window makes migrate fail with InsufficientReserve until the master funds again", async function () {
     const { master, alice, bob, carol, stranger, migration, oldToken, newToken } = await loadFixture(fixture);
     const m = await migration.getAddress();
-    await approveAndMigrate(oldToken, migration, alice, 25n * E18); // credit 10
-    await approveAndMigrate(oldToken, migration, bob, 50n * E18); // credit 20
+    await approveAndMigrate(oldToken, migration, alice, 50n * E18); // credit 10
+    await approveAndMigrate(oldToken, migration, bob, 100n * E18); // credit 20
     const available = await migration.availableReserve();
     expect(available).to.equal(NEW_SUPPLY - 30n * E18);
     await migration.connect(master).withdraw(available);
     expect(await newToken.balanceOf(master.address)).to.equal(available);
     expect(await migration.isOpen()).to.equal(true); // window still open, reserve empty
 
-    await oldToken.connect(carol).approve(m, 12_500_000_000_000_000_000n);
-    await expect(migration.connect(carol).migrate(12_500_000_000_000_000_000n)) // 12.5 old CT, credit 5
+    await oldToken.connect(carol).approve(m, 25_000_000_000_000_000_000n);
+    await expect(migration.connect(carol).migrate(25_000_000_000_000_000_000n)) // 25 old CT, credit 5
       .to.be.revertedWithCustomError(migration, "InsufficientReserve").withArgs(0n, 5n * E18);
     expect(await oldToken.balanceOf(carol.address)).to.equal(1_000_000n * E18); // nothing pulled
 
     await newToken.connect(master).transfer(m, 5n * E18);
-    await expect(migration.connect(carol).migrate(12_500_000_000_000_000_000n)).to.emit(migration, "Migrated");
+    await expect(migration.connect(carol).migrate(25_000_000_000_000_000_000n)).to.emit(migration, "Migrated");
 
     // Every lot, before and after the withdrawal, pays in full through the keeper paths.
     await time.increase(LOCK);
@@ -574,13 +580,13 @@ describe("CojamMigration: master withdraw", function () {
   it("after the window: no new swaps even with a full reserve; the master withdraws the rest; lots pay years later", async function () {
     const { master, alice, bob, stranger, migration, oldToken, newToken, start } = await loadFixture(fixture);
     const end = start + WINDOW;
-    await approveAndMigrate(oldToken, migration, bob, 50n * E18); // credit 20
-    await oldToken.connect(alice).approve(await migration.getAddress(), 50n * E18);
+    await approveAndMigrate(oldToken, migration, bob, 100n * E18); // credit 20
+    await oldToken.connect(alice).approve(await migration.getAddress(), 100n * E18);
     await time.setNextBlockTimestamp(end - 1n);
-    await migration.connect(alice).migrate(25n * E18); // credit 10, last second of the window
+    await migration.connect(alice).migrate(50n * E18); // credit 10, last second of the window
 
     await time.setNextBlockTimestamp(end);
-    await expect(migration.connect(alice).migrate(25n * E18)).to.be.revertedWithCustomError(migration, "WindowClosed");
+    await expect(migration.connect(alice).migrate(50n * E18)).to.be.revertedWithCustomError(migration, "WindowClosed");
     expect(await migration.isOpen()).to.equal(false);
 
     const rest = await migration.availableReserve();
@@ -605,8 +611,8 @@ describe("CojamMigration: master withdraw", function () {
     const { master, alice, bob, migration, oldToken, newToken } = await loadFixture(unfunded);
     const m = await migration.getAddress();
     await newToken.connect(master).transfer(m, 300n * E18);
-    await approveAndMigrate(oldToken, migration, alice, 500n * E18); // credit 200
-    await approveAndMigrate(oldToken, migration, bob, 250n * E18); // credit 100: reserve now empty
+    await approveAndMigrate(oldToken, migration, alice, 1_000n * E18); // credit 200
+    await approveAndMigrate(oldToken, migration, bob, 500n * E18); // credit 100: reserve now empty
     expect(await migration.totalCredited()).to.equal(300n * E18);
     expect((await migration.totalInstant()) + (await migration.totalOwed())).to.equal(300n * E18);
     expect(await newToken.balanceOf(m)).to.equal(await migration.totalOwed());
@@ -650,14 +656,14 @@ describe("CojamMigration: contract wallet caller (Safe style)", function () {
     const Wallet = await ethers.getContractFactory("MockSmartWallet");
     const wallet = await Wallet.deploy(alice.address);
     const w = await wallet.getAddress();
-    await oldToken.connect(deployer).transfer(w, 1_250n * E18); // credit 500
+    await oldToken.connect(deployer).transfer(w, 2_500n * E18); // credit 500
 
     const m = await migration.getAddress();
     await wallet.connect(alice).executeBatch(
       [await oldToken.getAddress(), m],
       [
-        oldToken.interface.encodeFunctionData("approve", [m, 1_250n * E18]),
-        migration.interface.encodeFunctionData("migrate", [1_250n * E18]),
+        oldToken.interface.encodeFunctionData("approve", [m, 2_500n * E18]),
+        migration.interface.encodeFunctionData("migrate", [2_500n * E18]),
       ]
     );
     expect(await migration.lotCount(w)).to.equal(1n);

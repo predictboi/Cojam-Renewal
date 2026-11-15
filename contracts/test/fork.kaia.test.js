@@ -56,8 +56,8 @@ describe("fork: real old CT on Kaia mainnet", function () {
     console.log(`      on chain at ~${forkBlock}: ${name} (${symbol}), ${decimals} decimals, supply ${supply} = ${ethers.formatUnits(supply, 18)} CT, owner ${owner}, paused ${paused}`);
     expect(symbol).to.equal("CT");
     expect(decimals).to.equal(18n);
-    expect(supply, "old supply changed since 2026-11-12: re-check the 0.4 coverage").to.equal(OLD_SUPPLY);
-    expect(NEW_SUPPLY * RATIO_DEN >= supply * RATIO_NUM, "2B new CT must cover the old supply at 0.4").to.equal(true);
+    expect(supply, "old supply changed since 2026-11-12: re-check the 0.2 coverage").to.equal(OLD_SUPPLY);
+    expect(NEW_SUPPLY * RATIO_DEN >= supply * RATIO_NUM, "2B new CT must cover the old supply at 0.2").to.equal(true);
     expect(owner.toLowerCase()).to.equal(OLD_OWNER);
     expect(paused, "old CT is paused: migrate would revert, use the snapshot fallback").to.equal(false);
   });
@@ -101,18 +101,21 @@ describe("fork: real old CT on Kaia mainnet", function () {
       expect((await newToken.totalSupply()) * RATIO_DEN >= (await old.totalSupply()) * RATIO_NUM).to.equal(true);
       expect(await newToken.balanceOf(master.address)).to.equal(NEW_SUPPLY);
       const m = await migration.getAddress();
-      await old.connect(holder).approve(m, 3n);
-      await credit(holder.address, 3n);
-      await expect(migration.connect(holder).migrate(3n)).to.be.revertedWithCustomError(migration, "InsufficientReserve");
+      // 5 base units are the smallest swap with a credit at 1/5 (1 new base unit); with no reserve it is refused.
+      await old.connect(holder).approve(m, 5n);
+      await credit(holder.address, 5n);
+      await expect(migration.connect(holder).migrate(5n))
+        .to.be.revertedWithCustomError(migration, "InsufficientReserve").withArgs(0n, 1n);
       await credit(holder.address, 0n);
       await newToken.connect(master).transfer(m, NEW_SUPPLY);
       expect(await migration.availableReserve()).to.equal(NEW_SUPPLY);
       expect(await migration.MASTER()).to.equal(master.address);
     });
 
-    it("migrates real old CT at 0.4 (no transfer fee): 10% of the credit at once, 90% released by a keeper after 7 days", async function () {
+    it("migrates real old CT at 0.2 (no transfer fee): 10% of the credit at once, 90% released by a keeper after 7 days", async function () {
       const bal = 1_234_567n * E18 + 89n;
       const [cr, instant, locked] = swapOf(bal);
+      expect(cr).to.equal(246_913_400_000_000_000_000_017n); // 1,234,567 old CT + 89 base units at 1/5, rounded down
       await credit(holder.address, bal);
       await old.connect(holder).approve(await migration.getAddress(), bal);
       await expect(migration.connect(holder).migrate(bal)).to.emit(migration, "Migrated")
@@ -130,14 +133,14 @@ describe("fork: real old CT on Kaia mainnet", function () {
     it("real pause() by the old owner: migrate reverts, claims of existing lots still pay, unPause() restores", async function () {
       await credit(other.address, 100n * E18);
       await old.connect(other).approve(await migration.getAddress(), 100n * E18);
-      await migration.connect(other).migrate(40n * E18); // lot 0 (credit 16, 14.4 locked), before the pause
+      await migration.connect(other).migrate(40n * E18); // lot 0 (credit 8, 7.2 locked), before the pause
       await time.increase(LOCK);
 
       await old.connect(owner).pause();
       expect(await old.paused()).to.equal(true);
       await expect(migration.connect(other).migrate(10n * E18)).to.be.reverted;
       expect(await migration.lotCount(other.address)).to.equal(1n);
-      await expect(migration.connect(other).claim(10)).to.changeTokenBalance(newToken, other, 144n * E18 / 10n);
+      await expect(migration.connect(other).claim(10)).to.changeTokenBalance(newToken, other, 72n * E18 / 10n);
 
       await old.connect(owner).unPause();
       await expect(migration.connect(other).migrate(10n * E18)).to.emit(migration, "Migrated");

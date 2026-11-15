@@ -4,8 +4,8 @@ const { ethers } = require("hardhat");
 const OLD_SUPPLY = 4_083_262_533_956_000_100_000_000_000n;
 // New CT fixed supply: 2,000,000,000 CT.
 const NEW_SUPPLY = 2_000_000_000n * 10n ** 18n;
-// Swap ratio: 2 new per 5 old (0.4), set against the pre burn old supply of 5,000,000,000 CT.
-const RATIO_NUM = 2n, RATIO_DEN = 5n;
+// Swap ratio: 1 new per 5 old (0.2).
+const RATIO_NUM = 1n, RATIO_DEN = 5n;
 const DAY = 24n * 60n * 60n;
 const WINDOW = 365n * DAY;
 const LOCK = 7n * DAY;
@@ -44,7 +44,7 @@ async function deploySystem(oldKind = "MockOldCojam", extraArgs = [], opts = {})
   return { deployer, alice, bob, carol, master, stranger, rest, oldToken, migration, newToken, start, fund };
 }
 
-/** New CT credited for `old` old CT received: 2/5, rounded down. */
+/** New CT credited for `old` old CT received: 1/5, rounded down. */
 const credit = (old) => (old * RATIO_NUM) / RATIO_DEN;
 /** Expected split of a credit: 10% now (rounded down), the rest locked. */
 const split = (c) => [(c * 10n) / 100n, c - (c * 10n) / 100n];
