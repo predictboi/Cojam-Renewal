@@ -46,6 +46,9 @@ async function main() {
   const bTotal = await newT.balanceOf(B.address);
   console.log("B claimed: new", fmt(bTotal), "pending", fmt(await mig.pendingOf(B.address)));
   if (bTotal !== (await mig.previewSwap(b))[0]) throw new Error("B did not receive the full credit");
+  // the rate itself: 5 old CT give 1 new CT, so 5,000 old CT must have paid exactly 1,000 new CT (100 now + 900 later)
+  if (bTotal !== ethers.parseUnits("1000", 18)) throw new Error(`rate check failed: 5,000 old CT paid ${fmt(bTotal)} new CT, expected 1,000`);
+  console.log("rate check: 5,000 old CT paid exactly 1,000 new CT (1/5)");
   console.log(JSON.stringify({ swap: addr, deployBlock: rc.blockNumber, holderA: A.address, holderB: B.address }));
 }
 main().catch((e) => { console.error(e); process.exitCode = 1; });

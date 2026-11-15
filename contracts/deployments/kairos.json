@@ -17,5 +17,17 @@
     "newToken": "0x0220Ecd152517A8Cbc020490342cE668b29b8905",
     "migration": "0x12C3ED5EC87B42C4C36b77f2693D72657f7229B0",
     "migrationDeployBlock": 233001353
+  },
+  "rate_1to5_tests_2026_11_15": {
+    "shortLockSwap": {
+      "address": "0xED4741166AEc7993Ba8B16E24c64E8205101C4BE",
+      "block": 233103397,
+      "result": "5,000 old CT paid exactly 1,000 new CT: 100 at once, 900 claimed after the 1 minute lock; claim before unlock reverted"
+    },
+    "realSwap7Day": {
+      "address": "0x8F4733bb888424ab137480fBcC71D63823C9Ec93",
+      "block": 233103497,
+      "result": "RATIO 1/5, LOCK 604800 s; 10 old CT credited 2 new CT (0.2 now, 1.8 locked 7 days); master withdraw of 100 new CT took exactly 100 and left the owed 1.8 untouched"
+    }
   }
 }
