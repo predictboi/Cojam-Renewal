@@ -1,0 +1,33 @@
+{
+  "network": "kairos",
+  "chainId": 1001,
+  "note": "Rehearsal deploy with a throwaway test key. 2,000,000,000 new CT, swap rate 0.4 (10 old CT = 4 new CT). Old CT here is MockOldCojam (exact old supply). Verified on Sourcify.",
+  "deployedAt": "2026-11-14",
+  "deployer": "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+  "master": "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+  "oldToken": "0x6E86699DE0182884E5ee627E43764c718832D5e8",
+  "newToken": "0xa8e540C5b5804D4BF2Dd2110a307a99E76C6Bd9E",
+  "migration": "0x4948D9DFaafC8CC0ee6464208659350F11931252",
+  "migrationDeployBlock": 233013908,
+  "windowStart": 1794658382,
+  "windowEnd": 1826194382,
+  "funded": "100000000 CT",
+  "fundTx": "0x2c1a79b4fd4fe69ea428ac7acdb025eadc0461989f1300473ff926867b323d0c",
+  "previous_1to1": {
+    "newToken": "0x0220Ecd152517A8Cbc020490342cE668b29b8905",
+    "migration": "0x12C3ED5EC87B42C4C36b77f2693D72657f7229B0",
+    "migrationDeployBlock": 233001353
+  },
+  "rate_1to5_tests_2026_11_15": {
+    "shortLockSwap": {
+      "address": "0xED4741166AEc7993Ba8B16E24c64E8205101C4BE",
+      "block": 233103397,
+      "result": "5,000 old CT paid exactly 1,000 new CT: 100 at once, 900 claimed after the 1 minute lock; claim before unlock reverted"
+    },
+    "realSwap7Day": {
+      "address": "0x8F4733bb888424ab137480fBcC71D63823C9Ec93",
+      "block": 233103497,
+      "result": "RATIO 1/5, LOCK 604800 s; 10 old CT credited 2 new CT (0.2 now, 1.8 locked 7 days); master withdraw of 100 new CT took exactly 100 and left the owed 1.8 untouched"
+    }
+  }
+}

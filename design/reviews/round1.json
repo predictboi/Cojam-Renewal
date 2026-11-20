@@ -1,0 +1,120 @@
+{
+  "round": 1,
+  "date": "2026-11-12",
+  "language": "en",
+  "target": { "design": 85, "usability": 34 },
+  "note": "Copy describing a fully locked 7 day swap was not marked down; the swap rule is changing to 10% instant and 90% after 7 days.",
+  "pages": {
+    "landing": {
+      "design": 82,
+      "usability": 34,
+      "design_breakdown": { "hierarchy": 8, "layout": 8, "spacing": 8, "type": 9, "colour": 8, "consistency": 8, "density": 8, "copy": 8, "mobile": 8, "finish": 8 },
+      "usability_breakdown": { "visibility": 3, "match": 4, "control": 4, "consistency": 3, "error_prevention": 3, "recognition": 4, "flexibility": 3, "aesthetic": 3, "recovery": 3, "help": 4 },
+      "fixes": [
+        { "rank": 1, "where": "site/index.html #how-track, site/assets/pages/landing.js paint()", "change": "Remove the second track 300 px under the hero track (or turn the hero card into the live window summary). The how track at demoDays 7 is fully sky while showing the closed lock and '7 day lock'." },
+        { "rank": 2, "where": "site/index.html .how-body details.help", "change": "Help toggles wrap onto their own line at 1440. Wrap the last word plus toggle in a nowrap span or reuse the .mg-hh pattern." },
+        { "rank": 3, "where": "site/assets/pages/landing.js #hero-window", "change": "Show the live state 'Swaps are open until Dec 1, 2027, in 352 days' (reuse win.open) instead of only the date range." },
+        { "rank": 4, "where": "site/assets/shell.js footer .cj-foot-addrs", "change": "Do not repeat the contract list in the footer on pages that already show #contracts; add a lite footer option." },
+        { "rank": 5, "where": "site/assets/pages/landing.css .tl-item .tl-dot rules", "change": "Give dot fills a meaning (mark today between opens and closes) or use one rule: fixed events ink, future hollow." }
+      ]
+    },
+    "migrate": {
+      "design": 81,
+      "usability": 33,
+      "design_breakdown": { "hierarchy": 9, "layout": 8, "spacing": 8, "type": 8, "colour": 9, "consistency": 8, "density": 8, "copy": 9, "mobile": 6, "finish": 8 },
+      "usability_breakdown": { "visibility": 4, "match": 4, "control": 4, "consistency": 3, "error_prevention": 4, "recognition": 4, "flexibility": 3, "aesthetic": 3, "recovery": 2, "help": 2 },
+      "fixes": [
+        { "rank": 1, "where": "site/assets/base.css .help-pop and .mg .help in .mg-row dt / .mg-hh", "change": "Every panel help popover is clipped at 390 (Rate -63..217, Unlocks -41..239, Network fee -14..266, approval 205..485). Under 600 px make .help static and anchor .help-pop to the panel with left/right 16 px, as .how-step .help-pop does on landing." },
+        { "rank": 2, "where": "site/assets/pages/migrate.js DOCS + '#gas' | '#support' | '#exchange' | '#pool' | '#faq'; site/docs/index.html", "change": "None of these anchors exist in docs; every fix link lands at the top of the guide. Add the ids (and a 'Get KAIA for gas' block), point 'Other cases' to #special." },
+        { "rank": 3, "where": "site/assets/shell.js paintWallet, .cj-wallet", "change": "Pretendard contextual alternates render '0×3fA9…E915'. Use --font-data for .cj-wallet .num (or calt off on addresses). Add nowrap and a short 'Connect' label under 400 px so the header button stays one line." },
+        { "rank": 4, "where": "site/assets/pages/migrate.js V.locked .mg-count", "change": "Locked state shows 'Unlocks in 7 days' and 'Time left 6 d 23 h 59 min'. Keep one countdown." },
+        { "rank": 5, "where": "site/migrate/index.html #mg-kbd-open, migrate.css .mg-kbd-btn", "change": "Hide on (hover: none); on desktop move into the panel footer as a quiet text link so the panel ends cleanly." }
+      ],
+      "also": [
+        "Invalid amount shows 'You will receive 0 new CT'; show a neutral placeholder instead of a confident zero.",
+        ".track.is-claimed .track-day uses solid --ink-2, the heaviest block on a done screen; use --line-strong."
+      ]
+    },
+    "status": {
+      "design": 80,
+      "usability": 33,
+      "design_breakdown": { "hierarchy": 9, "layout": 8, "spacing": 8, "type": 9, "colour": 7, "consistency": 6, "density": 8, "copy": 8, "mobile": 8, "finish": 9 },
+      "usability_breakdown": { "visibility": 4, "match": 4, "control": 3, "consistency": 3, "error_prevention": 3, "recognition": 4, "flexibility": 4, "aesthetic": 3, "recovery": 2, "help": 3 },
+      "fixes": [
+        { "rank": 1, "where": "site/assets/pages/status.js (no CJ.track call)", "change": "Add the aggregate swap track (seven day ticks with CT unlocking per day, locked now on the left, ready to claim on the right), replacing the 'Unlocking in the next 7 days' bar list." },
+        { "rank": 2, "where": "site/assets/pages/status.js supply bar legend", "change": "Legend 'Locked or ready to claim 318,051,090 CT' while 223,204,818 + 94,846,271 = 318,051,089. Derive every figure from one set of integers." },
+        { "rank": 3, "where": "site/assets/pages/status.js first paint and refetch", "change": "Add skeletons (.skel) on first paint and a note-warn stale state with Retry when the refetch fails; reachable via ?state=stale." },
+        { "rank": 4, "where": "site/assets/pages/status.css .st-seg / .st-seg-btn vs admin.css .seg", "change": "Move one .seg component into base.css; selected = --brand-tint background, --brand text; delete .st-seg." },
+        { "rank": 5, "where": "site/assets/pages/status.css .st-live-dot; figure labels in status.js", "change": "Live dot uses green (--up), reserved for gain; use --ink-2 and no pulse on sample data. Add help toggles on Reserve left, Locked now, Ready to claim." }
+      ]
+    },
+    "docs": {
+      "design": 82,
+      "usability": 34,
+      "design_breakdown": { "hierarchy": 8, "layout": 8, "spacing": 8, "type": 9, "colour": 9, "consistency": 7, "density": 8, "copy": 9, "mobile": 8, "finish": 8 },
+      "usability_breakdown": { "visibility": 4, "match": 4, "control": 4, "consistency": 3, "error_prevention": 3, "recognition": 4, "flexibility": 3, "aesthetic": 4, "recovery": 2, "help": 3 },
+      "fixes": [
+        { "rank": 1, "where": "site/docs/index.html Special cases, Fees, Contact", "change": "Add id=exchange, id=pool, id=support and a 'Get KAIA for gas' block with id=gas (where to get KAIA, how much covers approve, swap and claim, same wallet)." },
+        { "rank": 2, "where": "site/docs/index.html #special h3 + p", "change": "Render the five cases as a scannable list with 16 px semibold case titles so 'my CT is on an exchange' is found at a glance." },
+        { "rank": 3, "where": "docs 'Audit in progress' .tag-warn vs landing .tag", "change": "One audit tag style site wide (neutral .tag; amber means warning or time pressure)." },
+        { "rank": 4, "where": "site/assets/pages/docs.css .dc-toc grid-row: 2", "change": "Use grid-row: 1 / span 2 so the sticky contents start beside the H1 on the first screen." },
+        { "rank": 5, "where": "site/docs/index.html #steps step 1", "change": "Add an inline 'Open the Swap page' link in step 1; the only Go to Swap button sits after step 6." }
+      ]
+    },
+    "admin": {
+      "design": 73,
+      "usability": 33,
+      "design_breakdown": { "hierarchy": 8, "layout": 7, "spacing": 8, "type": 8, "colour": 7, "consistency": 6, "density": 7, "copy": 8, "mobile": 6, "finish": 8 },
+      "usability_breakdown": { "visibility": 4, "match": 4, "control": 4, "consistency": 3, "error_prevention": 3, "recognition": 4, "flexibility": 2, "aesthetic": 3, "recovery": 3, "help": 3 },
+      "fixes": [
+        { "rank": 1, "where": "site/assets/pages/status.js and admin.js mock generators", "change": "Sample figures contradict: 413 wallets and 643,204,133 CT on admin vs 2,503 wallets and 637,450,537 CT on status. Move one seeded generator into system.js (CJ.sample) and read it on both pages." },
+        { "rank": 2, "where": "site/assets/pages/admin.css line 2 body[data-page=\"admin\"] .container { max-width: 1280px }", "change": "This widens the shared header and footer so the logo shifts 56 px between pages. Scope to .adm > .container." },
+        { "rank": 3, "where": "site/assets/pages/admin.js Amount column and wallet sheet", "change": "Mixed '23,513' and '26,595.16'. Use fixed 2 decimals, right aligned, so decimal points line up." },
+        { "rank": 4, "where": "site/assets/pages/admin.js Export CSV, keydown", "change": "CSV exports only the filtered rows without saying so; label with the count ('Export 1 filtered request'). Add '/' to focus #lots-q (no handler today)." },
+        { "rank": 5, "where": "admin large swaps list rows; unlock schedule chart", "change": "Drop the amber warning icon from every large swap row (keep amber for the 24 hour note) and draw the unlock schedule for 7 days instead of 14 so half the chart is not empty." }
+      ]
+    }
+  },
+  "site_wide": [
+    { "rank": 1, "issue": "Help popovers centred on the toggle overflow the viewport edge and are clipped by overflow-x: clip.", "where": "site/assets/base.css .help-pop", "change": "Fix once in base.css: static .help under 600 px, popover anchored to the panel with 16 px insets." },
+    { "rank": 2, "issue": "Segmented control forked with different selected styles.", "where": "status.css .st-seg vs admin.css .seg", "change": "One .seg in base.css; selected = --brand-tint + --brand text." },
+    { "rank": 3, "issue": "Status vocabulary and tag styles drift: 'In wallet' vs 'Claimed', outlined vs filled Claimed, grey vs amber audit tag.", "where": "i18n/status.js, admin.css, docs and landing tags", "change": "Define tag.locked, tag.ready, tag.claimed, tag.audit once in i18n/shell.js with one style each in base.css." },
+    { "rank": 4, "issue": "Signature swap track missing on the public status page.", "where": "site/assets/pages/status.js", "change": "Add the aggregate track." },
+    { "rank": 5, "issue": "Live dot green on status, sky on admin.", "where": "status.css .st-live-dot, admin.css .adm-dot", "change": "One .live-dot in base.css, not green." },
+    { "rank": 6, "issue": "Contract list appears twice on landing, status, docs and migrate disconnected (panel plus footer).", "where": "site/assets/shell.js footer", "change": "Lite footer without addresses where a contracts panel is present." },
+    { "rank": 7, "issue": "Footer legal rule spans the gutter padding, 45 px wider than the text.", "where": "base.css .cj-foot-legal border-top on .container", "change": "Move the border to an inner element." },
+    { "rank": 8, "issue": "Mobile sticky header is 110 px (row plus nav row), and on /migrate/ its Connect wallet button wraps.", "where": "base.css .cj-header, .cj-nav-mobile, .cj-wallet", "change": "Make only the top row sticky or hide the nav row on scroll down; nowrap the wallet button." },
+    { "rank": 9, "issue": "No skip link; Tab walks the whole header first on every page.", "where": "site/assets/shell.js", "change": "Add 'Skip to content' targeting #main." },
+    { "rank": 10, "issue": "Address '0x' renders as '0×' in Pretendard where addresses use the UI font.", "where": ".cj-wallet .num (header chip)", "change": "Use --font-data or font-feature-settings: 'calt' 0 for any address in UI font." },
+    { "rank": 11, "issue": "Title pattern drifts.", "where": "site/admin/index.html <title>", "change": "'Swap monitor: Cojam' like the other pages." }
+  ],
+  "rules_check": {
+    "one_accent": "pass",
+    "one_primary_per_view": "pass",
+    "units_on_figures": "pass",
+    "no_dash_no_tracked_caps_no_middle_dot": "pass",
+    "no_card_in_card": "pass with borderline dashed example box in history panel",
+    "targets_44": "pass on mobile",
+    "contrast_4_5": "pass",
+    "visible_focus": "pass",
+    "no_horizontal_scroll_390": "pass for layout, fail in use: help popovers clipped",
+    "reduced_motion": "pass",
+    "swap_track_consistent": "fail on status",
+    "no_lot_before_confirm": "pass",
+    "concepts_labelled": "pass",
+    "no_invented_metrics_as_real": "pass, but status and admin sample sets contradict"
+  },
+  "keep": [
+    "Named primary per state and the whole state machine with Back, Esc, Cancel while waiting, Undo on disconnect, focus to view heading, live region",
+    "Amount parser and its messages; Use max on over balance",
+    "History shows 'Confirming on Kaia' and no lot until confirmation",
+    "Large swap review gate and partial approval recovery",
+    "Swap track component, including per request tracks in the admin wallet sheet",
+    "Safety banner and full address rows with copy and explorer",
+    "Night concept section with labelled, inert mocks",
+    "Status display total, keyboard chart with table fallback, remembered Table and Cards toggle",
+    "Docs scrollspy and mobile jump list",
+    "Token discipline and a clean audit at both sizes"
+  ],
+  "captures": "/tmp/claude-0/-home-user-Cojam-Renewal/b3270fa9-0a00-5483-ac13-fc0e6a3d97c3/scratchpad/review/"
+}

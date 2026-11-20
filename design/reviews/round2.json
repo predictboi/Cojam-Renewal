@@ -1,0 +1,436 @@
+{
+  "round": 2,
+  "date": "2026-11-12",
+  "language": "en",
+  "commit": "bfa4ed4",
+  "target": {
+    "design": 85,
+    "usability": 34
+  },
+  "method": "Touch only Playwright flows on iPhone 15 and 360x740 Android profiles (mobile-browser sheet, inapp-kaia swap, days=7.01 claim, days=8 keeper release); desktop 1440 keyboard; held touch frame strips, celebrate and track frames, video, PerformanceObserver CLS, reducedMotion; 62 shot.js captures; audit.js at 360 --mobile and 1440.",
+  "pages": {
+    "landing": {
+      "design": 86,
+      "usability": 35,
+      "mobile": 9,
+      "interaction": 7,
+      "delta": {
+        "design": 4,
+        "usability": 1
+      },
+      "design_breakdown": {
+        "hierarchy": 9,
+        "layout": 8,
+        "spacing": 9,
+        "type": 9,
+        "colour": 8,
+        "consistency": 9,
+        "density": 8,
+        "copy": 9,
+        "mobile": 9,
+        "finish": 8
+      },
+      "usability_breakdown": {
+        "visibility": 3,
+        "match": 4,
+        "control": 4,
+        "consistency": 4,
+        "error_prevention": 3,
+        "recognition": 4,
+        "flexibility": 3,
+        "aesthetic": 3,
+        "recovery": 3,
+        "help": 4
+      },
+      "fixes": [
+        {
+          "rank": 1,
+          "where": "every page: <div id=\"cj-top\"> plus shell.js loaded at end of body",
+          "change": "Header and banner are injected after first paint; main jumps 100 px. Load CLS at 1440: landing 0.13, migrate 0.48, docs 0.37, status 0.95. Load system.js, i18n/shell.js and shell.js synchronously right after #cj-top (before <main>), or ship static header markup."
+        },
+        {
+          "rank": 2,
+          "where": "site/index.html .mock (class lift, data-tilt)",
+          "change": "Remove lift and tilt from non interactive concept mocks; animate inside each mock once on reveal instead (sparkline draws, LTV bar to 40%, 3x selected)."
+        },
+        {
+          "rank": 3,
+          "where": "site/assets/pages/landing.js #hero-window",
+          "change": "Live line: 'Opens Dec 1, 2026, in 19 days' before launch, win.open after."
+        },
+        {
+          "rank": 4,
+          "where": "site/assets/pages/landing.css:37-39 .tl-dot",
+          "change": "One rule for dots: fixed events ink, future hollow, recurring 'On every swap' a sky ring; or a sky Today marker."
+        },
+        {
+          "rank": 5,
+          "where": "landing.css under 600 px, concept grid; hero track card",
+          "change": "Concept mocks as a horizontal snap row on phones (one screen tall); label the hero track card 'Example'."
+        }
+      ]
+    },
+    "migrate": {
+      "design": 83,
+      "usability": 36,
+      "mobile": 8,
+      "interaction": 8,
+      "delta": {
+        "design": 2,
+        "usability": 3
+      },
+      "design_breakdown": {
+        "hierarchy": 9,
+        "layout": 8,
+        "spacing": 9,
+        "type": 9,
+        "colour": 9,
+        "consistency": 8,
+        "density": 7,
+        "copy": 8,
+        "mobile": 8,
+        "finish": 8
+      },
+      "usability_breakdown": {
+        "visibility": 4,
+        "match": 4,
+        "control": 4,
+        "consistency": 3,
+        "error_prevention": 4,
+        "recognition": 4,
+        "flexibility": 3,
+        "aesthetic": 3,
+        "recovery": 3,
+        "help": 4
+      },
+      "fixes": [
+        {
+          "rank": 1,
+          "where": "site/assets/pages/migrate.js doSwap() and doClaim(); stickyBar()",
+          "change": "On phones the confirm view renders with the track at the bottom edge under the 'Swap confirmed' toast and celebrate fires over the toast; Done is at y 813..865 in a 740 viewport. Scroll the new track to centre, celebrate from .track-now, drop toast.swapped and toast.claimed on these paths, and make Done sticky (stickyBar skips .mg-actions-row)."
+        },
+        {
+          "rank": 2,
+          "where": "site/assets/wallet.js paint() mobile-browser branch; i18n/shell.js wl.*",
+          "change": "'Open in Kaia Wallet' (Recommended) is copy link, switch app, paste. Make it a one tap WalletConnect pairing with Kaia Wallet's registry deep link (verify the link and that Kaia Wallet over WalletConnect signs fee delegated tx; otherwise say it pays KAIA); check the Kaikas app2app API (kaikas://wallet/api?request_key=) still works. Keep copy link as fallback. Keep the Recommended tag on the name line (row is 127 px vs 76)."
+        },
+        {
+          "rank": 3,
+          "where": "site/migrate/index.html .mg-head, migrate.css under 600 px",
+          "change": "When connected, hide .mg-lede and shorten #mg-window to one line so each step's heading and track sit about 200 px higher on a 740 screen."
+        },
+        {
+          "rank": 4,
+          "where": "i18n/migrate.js cl.title, cl.body.one, cl.body.many, tag.releasing, h.releasing, track captions",
+          "change": "One name for an unlocked lot ('Unlocked, sending now'). Rewrite cl.body.one: 'Your {amount} new CT unlocked on {date}. Cojam sends it to your wallet within 30 minutes, or claim it now.' Distinguish lots in the many list by amount and time, not only 'Swapped Dec 6, 2026' twice."
+        },
+        {
+          "rank": 5,
+          "where": "base.css .track.is-claimed; migrate.js updateForm(); migrate.css .mg-totals; base.css .toast .btn; V.closed",
+          "change": "Done track in --sky-tint with check (grey reads empty); 'No amount yet' instead of '0 new CT' on invalid input; stop '112,500 new / CT' wrap at 1440; toast Undo min-height 44px (now 32); drop the duplicate amber window line in the closed state."
+        }
+      ]
+    },
+    "status": {
+      "design": 81,
+      "usability": 35,
+      "mobile": 8,
+      "interaction": 7,
+      "delta": {
+        "design": 1,
+        "usability": 2
+      },
+      "design_breakdown": {
+        "hierarchy": 9,
+        "layout": 7,
+        "spacing": 8,
+        "type": 9,
+        "colour": 8,
+        "consistency": 8,
+        "density": 8,
+        "copy": 8,
+        "mobile": 8,
+        "finish": 8
+      },
+      "usability_breakdown": {
+        "visibility": 4,
+        "match": 4,
+        "control": 3,
+        "consistency": 3,
+        "error_prevention": 3,
+        "recognition": 4,
+        "flexibility": 4,
+        "aesthetic": 3,
+        "recovery": 4,
+        "help": 3
+      },
+      "fixes": [
+        {
+          "rank": 1,
+          "where": "site/assets/pages/status.js:112 Math.ceil",
+          "change": "Time left shows 353 days while swap and admin show 352. Add CJ.daysLeft() to system.js and use it on all three pages."
+        },
+        {
+          "rank": 2,
+          "where": "status.css desktop grid of the daily chart and aggregate track panels",
+          "change": "Left chart ends about 250 px above the right panel. Span the track panel full width (track left, Unlocking next right) or give the list its own row so columns end level."
+        },
+        {
+          "rank": 3,
+          "where": "site/assets/system.js trackAggregate (around line 400)",
+          "change": "4 px minimum tick fill, CT figure under each tick at 1024+, ends labelled 'Unlocks in 7 days' and 'Unlocks today', list in the same left to right order."
+        },
+        {
+          "rank": 4,
+          "where": "status.js error state notes",
+          "change": "Error as note-error (or in the header row replacing the live stamp); sample note neutral note-info. Two equal amber blocks hide the error."
+        },
+        {
+          "rank": 5,
+          "where": "status.js recent rows and cards; .st-card.lift",
+          "change": "One amount format (49,787 vs 4,089.6 vs 174,413.78). Make each card a link to its tx on Kaiascan or drop lift from cards that are not actions."
+        }
+      ]
+    },
+    "docs": {
+      "design": 84,
+      "usability": 36,
+      "mobile": 8,
+      "interaction": 7,
+      "delta": {
+        "design": 2,
+        "usability": 2
+      },
+      "design_breakdown": {
+        "hierarchy": 8,
+        "layout": 9,
+        "spacing": 8,
+        "type": 9,
+        "colour": 9,
+        "consistency": 9,
+        "density": 8,
+        "copy": 8,
+        "mobile": 8,
+        "finish": 8
+      },
+      "usability_breakdown": {
+        "visibility": 4,
+        "match": 4,
+        "control": 4,
+        "consistency": 3,
+        "error_prevention": 3,
+        "recognition": 4,
+        "flexibility": 3,
+        "aesthetic": 4,
+        "recovery": 4,
+        "help": 3
+      },
+      "fixes": [
+        {
+          "rank": 1,
+          "where": "site/assets/i18n/docs.js docs.step2.b (EN, KO, JA)",
+          "change": "'This is its own transaction and costs a little gas' contradicts gasless Kaia Wallet. Say: free with Kaia Wallet, a small KAIA fee with MetaMask."
+        },
+        {
+          "rank": 2,
+          "where": "site/docs/index.html #special",
+          "change": "Bordered list with icon and 16 px semibold title per case; details.smooth on mobile."
+        },
+        {
+          "rank": 3,
+          "where": "site/docs/index.html above Step by step",
+          "change": "'Which wallet should I use?' block with the three mobile paths named exactly as in the connect sheet."
+        },
+        {
+          "rank": 4,
+          "where": "site/docs/index.html #contact",
+          "change": "Say what to do now (official site announcements only, link Safety); it is the landing for the app's reserve error fix."
+        },
+        {
+          "rank": 5,
+          "where": "docs lock rules track",
+          "change": "Tag it 'Example' like the history example."
+        }
+      ]
+    },
+    "admin": {
+      "design": 78,
+      "usability": 35,
+      "mobile": 7,
+      "interaction": 7,
+      "delta": {
+        "design": 5,
+        "usability": 2
+      },
+      "design_breakdown": {
+        "hierarchy": 8,
+        "layout": 7,
+        "spacing": 8,
+        "type": 9,
+        "colour": 8,
+        "consistency": 8,
+        "density": 7,
+        "copy": 8,
+        "mobile": 7,
+        "finish": 8
+      },
+      "usability_breakdown": {
+        "visibility": 4,
+        "match": 4,
+        "control": 4,
+        "consistency": 3,
+        "error_prevention": 3,
+        "recognition": 4,
+        "flexibility": 4,
+        "aesthetic": 3,
+        "recovery": 3,
+        "help": 3
+      },
+      "fixes": [
+        {
+          "rank": 1,
+          "where": "site/assets/pages/admin.css content container vs shared header",
+          "change": "H1 at x 112, logo at x 192 (80 px misaligned). Widen header and footer containers on this page to 1280 or return content to --container."
+        },
+        {
+          "rank": 2,
+          "where": "admin.js request cards under 600 px",
+          "change": "About 72 px rows (wallet, amount, status; time left on line two), details behind a row tap that opens the wallet sheet; saves about 1,200 px."
+        },
+        {
+          "rank": 3,
+          "where": "admin.js KPI tile order",
+          "change": "Order by urgency on mobile: overdue releases, runway, next 24 hours, then totals."
+        },
+        {
+          "rank": 4,
+          "where": "admin.css KPI grid under 600 px",
+          "change": "2x2 compact tiles with sublines in details instead of eight full width rows."
+        },
+        {
+          "rank": 5,
+          "where": "admin gas wallet panel",
+          "change": "Show the per wallet fee limit and how many wallets hit it today (cause of the app's sponsor error)."
+        }
+      ]
+    }
+  },
+  "round1_verification": {
+    "fixed": [
+      "landing duplicate track",
+      "landing help icon wrap",
+      "landing footer contracts (compact)",
+      "swap help popovers on screen at 360 (10 states, every toggle)",
+      "swap docs anchors and Get KAIA",
+      "swap 0x glyph and chip wrap",
+      "swap single countdown",
+      "swap shortcut button hidden on touch",
+      "status aggregate track",
+      "status sums add up",
+      "status loading and error states",
+      "one seg control",
+      "live dot not green",
+      "docs anchors",
+      "audit tag one style",
+      "docs TOC from top",
+      "docs step 1 link",
+      "admin shared sample data",
+      "admin decimals",
+      "admin CSV label and /",
+      "admin amber discipline",
+      "footer legal rule",
+      "mobile sticky header 57 px",
+      "skip link",
+      "title pattern"
+    ],
+    "partly": [
+      "status term help (sublines, no popovers)",
+      "docs special cases scannable",
+      "claimed track now grey: overcorrected, reads empty"
+    ],
+    "not_done": [
+      "landing hero live window line",
+      "landing timeline dot meaning",
+      "swap invalid amount shows 0 new CT",
+      "swap page lede repeats every state",
+      "admin container alignment (reversed: content now wider than header)"
+    ]
+  },
+  "site_wide": [
+    {
+      "rank": 1,
+      "issue": "Shell injected after first paint; content jumps 100 px.",
+      "where": "shell.js at end of body on every page",
+      "change": "Run shell synchronously before <main> or ship static header markup. CLS at 1440: 0.13 to 0.95."
+    },
+    {
+      "rank": 2,
+      "issue": "Toasts cover the content they announce on phones; Undo target 32 px.",
+      "where": "base.css .toasts, migrate.js toast calls",
+      "change": "No toast where the view already has a heading and live region; .toast .btn min-height 44px."
+    },
+    {
+      "rank": 3,
+      "issue": "Days left 353 on status vs 352 on swap and admin.",
+      "where": "status.js:112",
+      "change": "One CJ.daysLeft()."
+    },
+    {
+      "rank": 4,
+      "issue": "Lift, tilt and press on non actions.",
+      "where": ".mock.lift[data-tilt], .st-card.lift",
+      "change": "Motion only on real targets; make cards links where a target exists."
+    },
+    {
+      "rank": 5,
+      "issue": "Unlocked state has four names.",
+      "where": "i18n/migrate.js, i18n/shell.js tags, system.js track captions",
+      "change": "Define once, reuse."
+    },
+    {
+      "rank": 6,
+      "issue": "Kaia Wallet from a mobile browser is copy and paste.",
+      "where": "wallet.js",
+      "change": "WalletConnect deep link to Kaia Wallet (or app2app) as the one tap path; copy link as fallback."
+    }
+  ],
+  "rules_check": {
+    "one_accent": "pass",
+    "one_primary_per_view": "pass",
+    "units_on_figures": "pass",
+    "no_dash_no_tracked_caps_no_eyebrows_no_middle_dot": "pass",
+    "no_card_in_card": "pass (dashed example box as inset group)",
+    "targets_44": "pass in audit; fail in use: toast Undo 57x32",
+    "contrast_4_5": "pass",
+    "visible_focus": "pass",
+    "no_horizontal_scroll_360": "pass, popovers included",
+    "reduced_motion": "pass",
+    "no_lot_before_confirm": "pass (0 lots in ledger during pending)",
+    "concepts_labelled": "pass",
+    "sample_data_labelled": "pass on status and admin; landing hero and docs lock rules tracks unlabelled examples",
+    "honest_wallet_fee_copy": "pass in app; fail in docs step 2"
+  },
+  "motion": {
+    "press": "scale 0.97 held from pointerdown (90 ms min) with press shade; ripple from touch point on primaries only; good",
+    "sheet": "240 ms slide up, drag, Esc, backdrop, focus return; good",
+    "track_fill": "10% pop then ticks fill with stagger; good",
+    "celebrate": "check, ring and sparks; on phones it lands under the toast and below the fold",
+    "tilt_lift": "on non interactive cards; reads as false affordance",
+    "cls_during_swap_mobile": 0.168,
+    "reduced_motion": "verified: no ripple, sparks, ring or arming; still check"
+  },
+  "keep": [
+    "Mobile swap path: one tap in-app connect, sticky named primary, 16 px decimal input, field kept above keyboard",
+    "Connect sheet: bottom sheet with grip, drag, Esc, backdrop, focus return, honest fee sub lines, MetaMask deep link",
+    "Press system with ripple on primaries only and full reduced motion fallback",
+    "Swap track as the signature, now also on status",
+    "State machine and recovery: rejected, sponsor busy with Pay the fee myself, no gas with Switch to Kaia Wallet, partial resume, closed with claims, RPC retry",
+    "Amount parser and messages",
+    "Status loading and stale states; shared sample data with admin",
+    "Help popovers anchored to the panel on phones",
+    "Docs anchors for every app fix link",
+    "Token discipline and clean audit at 360 and 1440"
+  ],
+  "ko_spot_check": "Natural, no missing keys, no overflow, header button 44 px in KO and JA; nit: space before (10%).",
+  "captures": "/tmp/claude-0/-home-user-Cojam-Renewal/b3270fa9-0a00-5483-ac13-fc0e6a3d97c3/scratchpad/review2/"
+}

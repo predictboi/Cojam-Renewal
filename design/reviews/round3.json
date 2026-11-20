@@ -1,0 +1,461 @@
+{
+  "round": 3,
+  "date": "2026-11-12",
+  "language": "en",
+  "commit": "49defce",
+  "target": {
+    "design": 85,
+    "usability": 34
+  },
+  "method": "Touch only Playwright flows on iPhone 15 (393x659) and 360x740 Android, each with and without reducedMotion: inapp-kaia swap with MutationObserver logging celebrate position, track and sticky rects and toasts; days=7.01 claim; days=8 keeper release; mobile-browser sheet in EN, KO, JA including Recommended Kaia link navigation, fallback and WalletConnect fee row. Desktop 1440 keyboard pass and left edge alignment. Held touch press and ripple frames, track fill sampling, carousel swipe, video. Load CLS per page at 1440, iPhone 15 and 360, fast and throttled (150 ms, 200 kB/s). 75 shot.js captures plus about 200 flow frames; audit.js 28 runs at 360 --mobile and 1440.",
+  "pages": {
+    "landing": {
+      "design": 89,
+      "usability": 37,
+      "mobile": 9,
+      "interaction": 8,
+      "delta": {
+        "design": 3,
+        "usability": 2
+      },
+      "design_breakdown": {
+        "hierarchy": 9,
+        "layout": 8,
+        "spacing": 9,
+        "type": 9,
+        "colour": 9,
+        "consistency": 9,
+        "density": 9,
+        "copy": 9,
+        "mobile": 9,
+        "finish": 9
+      },
+      "usability_breakdown": {
+        "visibility": 4,
+        "match": 4,
+        "control": 4,
+        "consistency": 4,
+        "error_prevention": 3,
+        "recognition": 4,
+        "flexibility": 3,
+        "aesthetic": 4,
+        "recovery": 3,
+        "help": 4
+      },
+      "fixes": [
+        {
+          "rank": 1,
+          "where": "site/assets/base.css:13 :lang(ja) h1 auto-phrase; i18n/landing.js hero.title (ja)",
+          "change": "JA H1 at 360 breaks '元祖予測マーケッ / ト。'. Under 400 px set :lang(ja) .hero h1 { font-size: 30px } or add <wbr> between 2019年から続く, 元祖, 予測マーケット。 (Safari has no auto-phrase)."
+        },
+        {
+          "rank": 2,
+          "where": "site/assets/pages/landing.css .hero-card",
+          "change": "Throttled load at 360 CLS 0.151: card grows 89 to 188 px when landing.js fills it. Reserve min-height or ship the example track markup in index.html."
+        },
+        {
+          "rank": 3,
+          "where": "landing.css hero grid at 1024+",
+          "change": "Optional: let the hero card fill its column height; it still sits small with air under it."
+        }
+      ]
+    },
+    "migrate": {
+      "design": 88,
+      "usability": 38,
+      "mobile": 9,
+      "interaction": 9,
+      "delta": {
+        "design": 5,
+        "usability": 2
+      },
+      "design_breakdown": {
+        "hierarchy": 9,
+        "layout": 9,
+        "spacing": 9,
+        "type": 9,
+        "colour": 9,
+        "consistency": 9,
+        "density": 8,
+        "copy": 9,
+        "mobile": 9,
+        "finish": 8
+      },
+      "usability_breakdown": {
+        "visibility": 4,
+        "match": 4,
+        "control": 4,
+        "consistency": 4,
+        "error_prevention": 4,
+        "recognition": 4,
+        "flexibility": 4,
+        "aesthetic": 3,
+        "recovery": 3,
+        "help": 4
+      },
+      "fixes": [
+        {
+          "rank": 1,
+          "where": "site/assets/pages/migrate.js:371 render(true); CJ.toast(t('toast.approved'))",
+          "change": "Toast sits over the step 2 lead and fee row just above the sticky Swap button on iPhone 15 and 360, and stays into 'Swapping'. Use say() and no toast, as connect, swap and claim now do."
+        },
+        {
+          "rank": 2,
+          "where": "migrate.js V.claim and stickyBar(); migrate.css .mg-sticky",
+          "change": "days=7.01 on iPhone 15: track at 514..637, two button sticky bar from about 530, so the track is hidden. Stick only 'Claim 18,000 new CT'; move 'Swap old CT instead' inline under the track; shorten the lead under 600 px."
+        },
+        {
+          "rank": 3,
+          "where": "migrate.js render() h.focus()",
+          "change": "Reduced motion at 360x740: after connect scrollY 258 and #mg-h top 29 under the 57 px header. After focus, scrollIntoView({block:'start', behavior:'auto'}) when the heading is under the header, or scroll to 0 as the motion path does."
+        },
+        {
+          "rank": 4,
+          "where": "site/assets/i18n/shell.js wl.sub.wc.mobile, wl.sub.wc.desk, wl.kaia.wc (EN, KO, JA); wallet.js kaiaLink()",
+          "change": "WalletConnect now pays KAIA (fee row 'About 0.016 KAIA') but the sheet does not say so, and the Kaia fallback says 'you need no KAIA' then offers WalletConnect. Add 'Pays a small KAIA fee for each step.' Device test app.kaiawallet.io/u/ on iOS and Android with a query string; strip the scheme or encode if & is lost."
+        },
+        {
+          "rank": 5,
+          "where": "migrate.js V.empty and form view",
+          "change": "Returning at days=8 after the keeper released: panel says 'All old CT in this wallet is swapped' with no word on the 112,500 that arrived. Show the keeper copy once per lot as a sky note ('112,500 new CT was sent to your wallet automatically on Dec 20, 2026')."
+        },
+        {
+          "rank": 6,
+          "where": "migrate.js reserve error; #mg-panel; paintWindow() compact toggle; .mg-head.is-compact h1",
+          "change": "Replace 'Contact support' (dead end) with 'What to do' to docs #special; min-height on #mg-panel (throttled desktop CLS 0.20); collapse the head at the connect tap, not 1.8 s later (CLS 0.18 on phones); visually hide the compact H1 that duplicates the panel title."
+        }
+      ]
+    },
+    "status": {
+      "design": 88,
+      "usability": 36,
+      "mobile": 9,
+      "interaction": 8,
+      "delta": {
+        "design": 7,
+        "usability": 1
+      },
+      "design_breakdown": {
+        "hierarchy": 9,
+        "layout": 9,
+        "spacing": 9,
+        "type": 9,
+        "colour": 9,
+        "consistency": 9,
+        "density": 8,
+        "copy": 9,
+        "mobile": 9,
+        "finish": 8
+      },
+      "usability_breakdown": {
+        "visibility": 4,
+        "match": 4,
+        "control": 3,
+        "consistency": 4,
+        "error_prevention": 3,
+        "recognition": 4,
+        "flexibility": 4,
+        "aesthetic": 3,
+        "recovery": 4,
+        "help": 3
+      },
+      "fixes": [
+        {
+          "rank": 1,
+          "where": "site/assets/pages/status.js around line 322 .st-card",
+          "change": "8 cards at 155 px is about 1,300 px on a phone and each says 'Released' twice. Show 5 with 'Show all 8' or 72 px rows; tag 'Released' plus 'by the keeper, 1 hour ago'."
+        },
+        {
+          "rank": 2,
+          "where": "status.css .note-warn with Retry at 1024+",
+          "change": "Retry sits alone on a second line in a 1,100 px note; put it at the right end of the one line message."
+        },
+        {
+          "rank": 3,
+          "where": "status figures (Locked, Released, Reserve left, Holders swapped)",
+          "change": "Add the shared .help popover with the app's help.* copy so keeper and reserve are explained in place."
+        }
+      ]
+    },
+    "docs": {
+      "design": 86,
+      "usability": 37,
+      "mobile": 8,
+      "interaction": 7,
+      "delta": {
+        "design": 2,
+        "usability": 1
+      },
+      "design_breakdown": {
+        "hierarchy": 8,
+        "layout": 9,
+        "spacing": 8,
+        "type": 9,
+        "colour": 9,
+        "consistency": 9,
+        "density": 8,
+        "copy": 9,
+        "mobile": 8,
+        "finish": 9
+      },
+      "usability_breakdown": {
+        "visibility": 4,
+        "match": 4,
+        "control": 4,
+        "consistency": 4,
+        "error_prevention": 3,
+        "recognition": 4,
+        "flexibility": 3,
+        "aesthetic": 4,
+        "recovery": 4,
+        "help": 3
+      },
+      "fixes": [
+        {
+          "rank": 1,
+          "where": "site/docs/index.html #special",
+          "change": "Bordered list with icon and 16 px semibold title per case; details.smooth on mobile (page is 7,636 px at 360). Carried from round 2."
+        },
+        {
+          "rank": 2,
+          "where": "site/docs/index.html above Step by step",
+          "change": "'Which wallet should I use?' with the three sheet names and costs (Kaia Wallet no KAIA; MetaMask and WalletConnect a small KAIA fee). Carried from round 2."
+        },
+        {
+          "rank": 3,
+          "where": "i18n/docs.js docs.contact.b",
+          "change": "Add one action available today (announcements on this site only, link #safety); the app's reserve error lands here."
+        },
+        {
+          "rank": 4,
+          "where": "docs lock rules track",
+          "change": "Tag it 'Example' like .mg-example .tag."
+        }
+      ]
+    },
+    "admin": {
+      "design": 86,
+      "usability": 37,
+      "mobile": 8,
+      "interaction": 7,
+      "delta": {
+        "design": 8,
+        "usability": 2
+      },
+      "design_breakdown": {
+        "hierarchy": 9,
+        "layout": 9,
+        "spacing": 8,
+        "type": 9,
+        "colour": 9,
+        "consistency": 9,
+        "density": 8,
+        "copy": 8,
+        "mobile": 8,
+        "finish": 9
+      },
+      "usability_breakdown": {
+        "visibility": 4,
+        "match": 4,
+        "control": 4,
+        "consistency": 4,
+        "error_prevention": 3,
+        "recognition": 4,
+        "flexibility": 4,
+        "aesthetic": 4,
+        "recovery": 3,
+        "help": 3
+      },
+      "fixes": [
+        {
+          "rank": 1,
+          "where": "site/assets/pages/admin.js gas panel; i18n/admin.js",
+          "change": "Per wallet fee limit and how many wallets hit it today (cause of the app's sponsor error). Carried from round 2."
+        },
+        {
+          "rank": 2,
+          "where": "admin.css .adm-gas, .adm-charts",
+          "change": "Throttled 1440 CLS 0.18: gas panel grows 141 to 271 px and charts appear late. Reserve min-height."
+        },
+        {
+          "rank": 3,
+          "where": "admin mobile: Top wallets, Large swap watch",
+          "change": "About 1,400 px under the request list on phones; put each in a closed details with the count in its summary."
+        }
+      ]
+    }
+  },
+  "round2_verification": {
+    "fixed": [
+      "site 1 shell before main: fast load CLS <= 0.007 everywhere",
+      "site 3 one CJ.daysLeft (352 on all pages)",
+      "site 4 no tilt or lift on non actions",
+      "site 5 one vocabulary 'Being sent'",
+      "site 6 Kaia Wallet one tap open link with copy link fallback (prototype; device test pending)",
+      "landing live window line",
+      "landing tilt removed from mocks",
+      "landing timeline key Done / Now / Later",
+      "landing mobile snap carousel and hero Example tag",
+      "swap success centred, celebrate from 10% block, no toast, Done sticky; claim celebrates from 90% end",
+      "swap compact head 169 to 67 px with disclosure",
+      "swap cl.body.one rewritten, lots named by UTC time",
+      "swap claimed track sky with check",
+      "swap 'No amount yet' on invalid input",
+      "swap totals one line at 1440",
+      "toast Undo 44 px",
+      "closed state window line hidden",
+      "sheet Recommended tag inline (row 103 px vs 127)",
+      "status days left",
+      "status layout level",
+      "status aggregate track labelled and mirrored by list",
+      "status error vs sample note",
+      "status amount format",
+      "docs step 2 gas copy (EN, KO, JA)",
+      "admin alignment x 192",
+      "admin two line mobile rows (page 6,540 px at 360)",
+      "admin urgency first",
+      "admin 2x2 KPIs with notes in details"
+    ],
+    "partly": [
+      "site 2 toasts: connect, swap, claim removed; toast.approved still covers content on phones",
+      "docs contact: scam warning added, still no channel",
+      "landing mock inner reveal animation not added (optional)"
+    ],
+    "not_done": [
+      "docs special cases scannable",
+      "docs which wallet block",
+      "docs lock rules Example tag",
+      "admin per wallet fee limit",
+      "swap reserve 'Contact support' dead end"
+    ]
+  },
+  "site_wide": [
+    {
+      "rank": 1,
+      "issue": "Throttled load still shifts where page scripts fill empty containers.",
+      "where": "landing .hero-card, #mg-panel, admin .adm-gas and .adm-charts",
+      "change": "Reserve heights. Throttled CLS: landing 360 0.151, migrate 1440 0.201, admin 1440 0.183."
+    },
+    {
+      "rank": 2,
+      "issue": "One toast still covers content on phones.",
+      "where": "migrate.js:371 toast.approved",
+      "change": "No toast where the view change already announces it."
+    },
+    {
+      "rank": 3,
+      "issue": "Reduced motion path lands the heading under the sticky header after connect at 360.",
+      "where": "migrate.js render()",
+      "change": "Same scroll target with behavior auto."
+    },
+    {
+      "rank": 4,
+      "issue": "Kaia Wallet /u/ link untested on device.",
+      "where": "wallet.js kaiaLink()",
+      "change": "Test on iOS Safari and Android Chrome with a query string before launch."
+    }
+  ],
+  "rules_check": {
+    "one_accent": "pass (28 audits)",
+    "one_primary_per_view": "pass",
+    "units_on_figures": "pass",
+    "no_dash_no_tracked_caps_no_eyebrows_no_middle_dot": "pass",
+    "no_card_in_card": "pass",
+    "targets_44": "pass, toast Undo included",
+    "contrast_4_5": "pass",
+    "visible_focus": "pass",
+    "no_horizontal_scroll_360": "pass",
+    "reduced_motion": "pass on effects; fail on one scroll position (swap fix 3)",
+    "no_lot_before_confirm": "pass",
+    "concepts_labelled": "pass",
+    "sample_data_labelled": "pass except docs lock rules track",
+    "honest_wallet_fee_copy": "pass in app and docs; partial in mobile sheet (WalletConnect not marked as paying KAIA)"
+  },
+  "motion": {
+    "press": "scale 0.97 from pointerdown, ripple on primaries; reduced motion shade only",
+    "celebrate": "swap: from the 10% block after the track is centred (x 43, y 356 at 360; x 45, y 316 iPhone); claim: from the 90% end (x 310); no toast; reduced motion still check, no sparks",
+    "track_fill": "is-armed then fills; none under reduced motion",
+    "carousel": "x mandatory snap, dot follows",
+    "cls_load_fast": {
+      "1440": {
+        "landing": 0.007,
+        "migrate": 0.0,
+        "status": 0.007,
+        "docs": 0.001,
+        "admin": 0.002
+      },
+      "iphone15": "0.000 all pages",
+      "360": "0.000 all pages"
+    },
+    "cls_load_throttled": {
+      "landing_360": 0.151,
+      "migrate_1440": 0.201,
+      "admin_1440": 0.183,
+      "others": "<= 0.04"
+    },
+    "cls_during_swap_mobile": {
+      "connect_head_collapse": 0.18,
+      "history_panel_growth": "0.02 to 0.11 per step"
+    }
+  },
+  "success_moment_metrics": {
+    "android_360x740": {
+      "track": [
+        290,
+        413
+      ],
+      "done": [
+        579,
+        631
+      ],
+      "sticky_bar": [
+        566,
+        643
+      ],
+      "celebrate": [
+        43,
+        356
+      ],
+      "toasts": 0
+    },
+    "iphone15_393x659": {
+      "track": [
+        250,
+        373
+      ],
+      "done": [
+        539,
+        591
+      ],
+      "celebrate": [
+        45,
+        316
+      ],
+      "toasts": 0
+    },
+    "claim_view_days_7_01_iphone": {
+      "track": [
+        514,
+        637
+      ],
+      "primary": [
+        543,
+        595
+      ],
+      "note": "track hidden behind two button sticky bar"
+    }
+  },
+  "keep": [
+    "land(): centre track, celebrate from the part that arrived, no toast, say() to live region, sticky Done",
+    "Compact phone head with 44 px window disclosure",
+    "Kaia Wallet /u/ open link as Recommended with copy link fallback in the same group",
+    "One vocabulary 'Being sent', claim lead, lots by UTC time",
+    "Shell scripts before <main>",
+    "Landing live line, timeline key, snap carousel, inert mocks, Example tags",
+    "Status full width chart, labelled aggregate track mirrored by list, amount rule, neutral sample note, amber error",
+    "Admin alignment, urgency order, 2x2 KPIs, two line rows",
+    "Round 2 keep list: press system, sticky named primary, 16 px input above keyboard, sheet behaviour, parser, state machine, docs anchors, clean audit"
+  ],
+  "ko_ja_spot_check": "KO natural, (10%) spacing fixed; locked track right caption wraps to two lines at 360. JA natural; hero H1 breaks inside マーケット at 360; sheet fallback line wraps to two lines in a 44 px button.",
+  "captures": "/tmp/claude-0/-home-user-Cojam-Renewal/b3270fa9-0a00-5483-ac13-fc0e6a3d97c3/scratchpad/review3/"
+}

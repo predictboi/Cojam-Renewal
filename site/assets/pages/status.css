@@ -1,0 +1,214 @@
+/* Status page layout (Operate mode: dense and calm). Components come from base.css. */
+.st { position: relative; isolation: isolate; padding: 0; }
+.st > .container { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-stack); }
+/* The page head is the blue band (.cj-band in base.css); the grid gap below it gives the first panel air. */
+.st-recent, .st-recent > * { min-width: 0; }
+
+/* ---------- head ---------- */
+.st-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-16) var(--s-24); }
+.st-head-copy p { margin-top: var(--s-12); font-weight: var(--fw-semi); }
+.st-head-tools { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-16); }
+.st-live { display: inline-flex; align-items: center; gap: var(--s-8); min-height: 36px; padding: 0 14px 0 12px; border-radius: var(--r-pill); background: rgba(11, 21, 48, 0.32); color: var(--on-brand); font-weight: var(--fw-semi); min-width: 11em; }
+/* the dot is .live-dot from base.css: sky, never green; grey while stale */
+.st-error strong { font-weight: var(--fw-semi); }
+
+.st-sample strong { font-weight: var(--fw-semi); }
+
+/* ---------- headline figures ---------- */
+.st-label { font-size: var(--fs-14); font-weight: var(--fw-bold); color: var(--ink-2); letter-spacing: 0; line-height: 1.4; }
+.st-unit { font-size: var(--fs-14); font-weight: var(--fw-semi); color: var(--ink-2); white-space: nowrap; }
+.st-top { display: grid; gap: var(--sp-stack); padding: var(--sp-panel); }
+
+.st-hero { display: grid; gap: var(--s-8); align-content: start; min-width: 0; }
+.st-hero-value { display: flex; align-items: baseline; flex-wrap: wrap; gap: 0 var(--s-8); margin-top: var(--s-4); }
+/* The headline figure in Archivo, blue on white (7.35:1), as the landing's numbers. */
+.st-hero-num { font-family: var(--font-display); font-size: clamp(32px, 8vw, 52px); font-weight: 900; font-stretch: 100%; line-height: 1; letter-spacing: -0.03em; color: var(--brand); white-space: nowrap; }
+.st-hero-value .st-unit { font-size: var(--fs-16); }
+
+.st-split { margin-top: var(--s-16); display: grid; gap: var(--s-12); }
+.st-split-title { font-size: var(--fs-14); font-weight: var(--fw-heavy); color: var(--ink); }
+.st-bar { display: flex; gap: 3px; height: 32px; padding: 3px; border: var(--edge-ink); border-radius: 12px; }
+.st-seg-part { min-width: 2px; border-radius: 7px; display: flex; align-items: center; padding: 0 var(--s-8); font-size: var(--fs-13); font-weight: var(--fw-bold); overflow: visible; }
+.st-seg-label { white-space: nowrap; }
+.is-claimed { background: var(--brand); color: var(--on-brand); }
+.is-held { background: var(--sky); color: var(--on-sky); }
+.is-reserve { background: var(--inset); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line-strong); }
+.st-legend { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-4); font-size: var(--fs-14); }
+.st-legend li { display: flex; align-items: center; gap: var(--s-8); min-height: 28px; }
+.st-legend-name { color: var(--ink-2); }
+.st-legend-val { margin-left: auto; color: var(--ink); font-weight: var(--fw-bold); }
+.st-key { width: 14px; height: 14px; border-radius: 4px; flex: none; }
+
+.st-figs { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); border-top: 1px solid var(--line); }
+.st-fig { display: grid; grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "label value" "sub value"; align-items: center; column-gap: var(--s-16); min-height: 68px; padding: var(--s-12) 0; border-bottom: 1px solid var(--line); }
+.st-fig:last-child { border-bottom: 0; }
+.st-fig .st-label { grid-area: label; }
+.st-fig-value { grid-area: value; margin: 0; font-size: var(--fs-16); font-weight: var(--fw-heavy); letter-spacing: -0.01em; text-align: right; white-space: nowrap; }
+.st-fig-sub { grid-area: sub; margin: 0; line-height: 1.4; }
+
+@media (min-width: 720px) {
+  .st-figs { grid-template-columns: repeat(2, minmax(0, 1fr)); border-top: 0; }
+  .st-fig { grid-template-columns: minmax(0, 1fr); grid-template-areas: "label" "value" "sub"; align-content: start; row-gap: var(--s-4); padding: var(--s-16) var(--s-24); border-bottom: 1px solid var(--line); border-left: 1px solid var(--line); min-height: 0; }
+  .st-fig:nth-child(odd) { border-left: 0; padding-left: 0; }
+  .st-fig:nth-last-child(-n+2) { border-bottom: 0; }
+  .st-fig-value { text-align: left; font-size: var(--fs-20); }
+}
+@media (min-width: 1024px) {
+  .st-top { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.4fr); gap: 0; padding: var(--s-32); }
+  .st-hero { padding-right: var(--s-32); border-right: 1px solid var(--line); }
+  .st-figs { align-self: start; }
+  .st-fig:nth-child(odd) { border-left: 1px solid var(--line); padding-left: var(--s-24); }
+  .st-fig:nth-child(-n+2) { padding-top: 0; }
+}
+
+/* ---------- panels in the grid ---------- */
+/* One column: the daily chart, then the aggregate track panel at full width, so no column ends early and leaves a gap. */
+.st-grid { display: grid; gap: var(--sp-stack); grid-template-columns: minmax(0, 1fr); align-items: start; }
+.st-panel-head { display: grid; gap: var(--s-4); margin-bottom: var(--s-16); }
+/* Card headings: Archivo wide capitals, as the landing's concept cards. */
+.st-h2 { font-family: var(--font-display); font-size: 22px; font-weight: 900; font-stretch: 112%; text-transform: uppercase; letter-spacing: -0.02em; line-height: 1.05; }
+:is(:lang(ko), :lang(ja)) .st-h2 { font-stretch: 100%; letter-spacing: -0.03em; line-height: 1.25; }
+
+/* ---------- daily chart ---------- */
+.st-chart { position: relative; border-radius: var(--r-control); }
+.st-chart-svg { width: 100%; min-height: 200px; }
+.st-chart-svg svg { overflow: visible; }
+.st-grid-line { stroke: var(--line); stroke-width: 1; }
+.st-base { stroke: var(--line-strong); stroke-width: 1; }
+.st-axis { fill: var(--ink-2); font-size: 12px; font-family: var(--font); font-variant-numeric: tabular-nums; }
+.st-peak { fill: var(--ink); font-size: 12px; font-weight: var(--fw-semi); font-family: var(--font); }
+.st-col { fill: var(--brand); transition: opacity var(--dur) var(--ease); }
+.st-col.is-dim { opacity: 0.35; }
+.st-tip {
+  position: absolute; left: 0; top: 0; pointer-events: none; z-index: 5;
+  display: grid; gap: 2px; padding: var(--s-8) var(--s-12); border-radius: 14px;
+  background: var(--surface); border: var(--edge-ink); box-shadow: 4px 4px 0 var(--ink);
+  font-size: var(--fs-13); line-height: 1.4; white-space: nowrap;
+}
+.st-tip[hidden] { display: none; }
+.st-tip strong { font-size: var(--fs-14); font-weight: var(--fw-heavy); color: var(--ink); }
+
+.st-table-toggle { margin-top: var(--s-16); border-top: 1px solid var(--line); }
+.st-table-toggle > summary { display: inline-flex; align-items: center; gap: var(--s-8); min-height: 44px; cursor: pointer; color: var(--ink); font-size: var(--fs-14); font-weight: var(--fw-bold); list-style: none; }
+.st-table-toggle > summary::-webkit-details-marker { display: none; }
+.st-table-toggle > summary::before { content: ""; width: 7px; height: 7px; border-right: 1.75px solid currentColor; border-bottom: 1.75px solid currentColor; transform: rotate(-45deg); transition: transform var(--dur) var(--ease); }
+.st-table-toggle[open] > summary::before { transform: rotate(45deg); }
+.st-table-toggle .table td { height: 44px; padding-top: var(--s-8); padding-bottom: var(--s-8); }
+.st-scroll { overflow-x: auto; max-width: 100%; }
+
+/* ---------- unlock calendar: the swap track in aggregate ---------- */
+/* Track left, the same seven days as a list right (wide screens); stacked on phones. Both read day 1 to day 7. */
+.st-unlock { display: grid; gap: 0 var(--s-48); grid-template-columns: minmax(0, 1fr); }
+.st-unlock-main { min-width: 0; container-type: inline-size; }
+.st-unlock-side { min-width: 0; }
+@media (min-width: 1024px) {
+  .st-unlock { grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr); }
+  .st-unlock-side .st-cal-h { border-top: 0; padding-top: 0; }
+  .st-unlock #st-track { margin-bottom: 0; }
+}
+.st-cal { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.st-unlock #st-track { margin: var(--s-8) 0 var(--s-24); }
+.st-cal-h { font-size: var(--fs-14); font-weight: var(--fw-heavy); color: var(--ink); padding-top: var(--s-16); border-top: 1px solid var(--line); margin-bottom: var(--s-4); }
+.st-cal-row { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); min-height: 32px; }
+.st-cal-date { color: var(--ink-2); white-space: nowrap; }
+.st-cal-d { display: inline-block; min-width: 3.6em; color: var(--ink); font-weight: var(--fw-bold); }
+.st-cal-row.is-next .st-cal-amt .num { font-weight: var(--fw-heavy); }
+/* Aggregate track: taller levels, the first label starts at its tick, and the CT of each day under its tick when there is room. */
+.st-unlock .track-agg .track-rail { height: 56px; }
+.st-unlock .track-axis { margin-top: 0; }
+.st-unlock .track-axis > :empty { display: none; }
+.st-unlock .track-axis > :nth-child(2) { grid-column: 2 / 5; text-align: left; }
+.st-unlock .track-axis > :last-child { grid-column: 6 / 9; text-align: right; }
+.st-tick-vals { grid-column: 1 / -1; display: none; grid-template-columns: minmax(18px, 0.78fr) repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: -6px; font-size: var(--fs-12); font-weight: var(--fw-bold); color: var(--ink); text-align: center; white-space: nowrap; }
+@container (min-width: 520px) { .st-tick-vals { display: grid; } }
+.st-cal-amt { text-align: right; white-space: nowrap; color: var(--ink); }
+.st-cal-total { margin-top: var(--s-12); padding-top: var(--s-12); border-top: var(--edge-ink); color: var(--ink); font-weight: var(--fw-semi); }
+
+/* ---------- recent activity ---------- */
+.st-recent { display: grid; gap: var(--s-16); }
+.st-recent-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: var(--s-12) var(--s-24); }
+.st-recent-head p { margin-top: var(--s-4); }
+.st-view .seg-btn { min-width: 76px; padding: 0 var(--s-16); }
+
+.st-hash { font-family: var(--font-data); font-size: var(--fs-13); color: var(--ink); white-space: nowrap; }
+.st-tx { gap: 6px; color: var(--ink); min-height: 44px; }
+.st-tx .st-hash { color: inherit; }
+.st-recent-table td { white-space: nowrap; }
+.st-recent-table .tag svg, .st-card .tag svg { display: inline-block; }
+
+.st-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--s-12); grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)); }
+/* Cards are not links (the tx button inside is), so they stay still under the finger. */
+.st-card { display: grid; gap: var(--s-4); padding: var(--s-12) var(--s-16) var(--s-4); }
+.st-card-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4) var(--s-8); }
+.st-card { border-radius: 20px; }
+.st-card-amt { font-size: var(--fs-20); font-weight: var(--fw-heavy); letter-spacing: -0.01em; line-height: 1.25; }
+.st-card-amt .st-unit { font-size: var(--fs-14); }
+.st-card-foot { display: flex; align-items: center; justify-content: space-between; gap: var(--s-8); margin-top: var(--s-4); padding-top: var(--s-4); border-top: 1px solid var(--line); }
+.st-card-foot .st-tx { margin-right: calc(var(--s-12) * -1); }
+
+/* ---------- contracts ---------- */
+.st-contracts { display: grid; gap: var(--s-16); }
+.st-addrs { display: grid; gap: var(--s-8); }
+.st-addrs .addr { min-height: 44px; }
+.st-contracts p { max-width: 64em; }
+@media (max-width: 599px) {
+  .st-addrs .addr { padding: var(--s-4) 0; }
+  .st-addrs .addr-label { flex-basis: 100%; }
+}
+
+/* ---------- mechanism details ---------- */
+.st-fees { color: var(--ink); font-weight: var(--fw-semi); max-width: 34em; }
+.st-later { white-space: nowrap; }
+.st-card .st-later { margin-left: var(--s-4); }
+
+/* ---------- loading skeleton ---------- */
+.st-skel-bar { display: block; width: 100%; height: 28px; border-radius: 4px; }
+.st-skel-block { display: block; width: 100%; height: 200px; border-radius: var(--r-control); }
+.st-skel-track { height: 120px; }
+.st-track-skel { display: block; }
+.st-skel-list { display: grid; gap: var(--s-16); }
+.st-skel-list .skel { display: block; height: 20px; }
+.st-fig .skel { display: block; }
+.st-hero-num .skel { height: 0.9em; }
+
+/* Term help beside a figure label */
+.st-label .help { margin-left: 2px; vertical-align: -6px; }
+.st-label .help > summary { width: 32px; height: 32px; margin: -4px; }
+/* Phones: 5 recent cards, then the rest on request */
+.st-more { margin-top: var(--s-12); }
+.st-card:focus-visible { outline: 3px solid var(--brand); outline-offset: 2px; }
+/* Wide screens: the error note is one line with Retry at its end */
+@media (min-width: 720px) {
+  .st-error { align-items: center; }
+  .st-error > svg { margin-top: 0; }
+  .st-error .note-body { display: flex; align-items: center; justify-content: space-between; gap: var(--s-16); }
+  .st-error .note-action { margin-top: 0; flex: none; }
+}
+
+/* ---------- reserved heights until status.js has painted (CJ.ready) ---------- */
+html:not(.cj-ready) .st-head { min-height: 68px; }
+html:not(.cj-ready) .st-hero { min-height: 380px; }
+html:not(.cj-ready) #st-figs { min-height: 380px; }
+html:not(.cj-ready) .st-daily { min-height: 417px; }
+html:not(.cj-ready) .st-unlock { min-height: 414px; }
+html:not(.cj-ready) #st-recent-body { min-height: 600px; }
+#st-error-text { display: inline-block; min-height: 1.5em; }
+@media (min-width: 1024px) and (max-width: 1279px) { html:not(.cj-ready) .st-hero, html:not(.cj-ready) #st-figs { min-height: 399px; } }
+@media (max-width: 1023px) {
+  html:not(.cj-ready) .st-head { min-height: 128px; }
+  html:not(.cj-ready) .st-hero { min-height: 330px; }
+  html:not(.cj-ready) #st-figs { min-height: 396px; }
+  html:not(.cj-ready) .st-unlock { min-height: 722px; }
+}
+@media (max-width: 719px) { html:not(.cj-ready) #st-figs { min-height: 422px; } html:not(.cj-ready) .st-daily { min-height: 377px; } html:not(.cj-ready) #st-recent-body { min-height: 546px; } }
+@media (max-width: 599px) { html:not(.cj-ready) #st-recent-body { min-height: 801px; } }
+@media (max-width: 599px) {
+  html:not(.cj-ready) .st-head { min-height: 154px; }
+  html:not(.cj-ready) .st-hero { min-height: 358px; }
+  html:not(.cj-ready) #st-figs { min-height: 536px; }
+  html:not(.cj-ready) .st-daily { min-height: 384px; }
+  html:not(.cj-ready) .st-unlock { min-height: 771px; }
+}
+@media (max-width: 374px) { html:not(.cj-ready) .st-hero { min-height: 373px; } html:not(.cj-ready) #st-figs { min-height: 575px; } html:not(.cj-ready) .st-unlock { min-height: 794px; } }
+#st-error-icon, #st-sample-icon { display: inline-block; flex: none; width: 18px; height: 18px; margin-top: 3px; }
+#st-retry-icon { display: inline-block; flex: none; width: 16px; height: 16px; }
