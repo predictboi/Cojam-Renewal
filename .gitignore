@@ -11,3 +11,5 @@ tools/video/*.mp4
 tools/video/*.mp3
 __pycache__/
 dist/
+dist/ui-ux-kit-guide.md
+dist/ui-ux-kit-skills.zip
