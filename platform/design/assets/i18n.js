@@ -435,6 +435,7 @@
     "p.name": ["Name in the ranking", "랭킹에 표시할 이름", "ランキングでの表示名"],
     "p.name.help": ["Shown to everyone on the weekly ranking. Leave empty to show your short address.", "주간 랭킹에서 모두에게 보여요. 비워 두면 줄인 지갑 주소가 표시돼요.", "週間ランキングで全員に表示されます。空欄にすると短縮アドレスが表示されます。"],
     "p.name.save": ["Save name", "이름 저장", "名前を保存"],
+    "p.name.save.short": ["Save", "저장", "保存"],
     "p.name.saved": ["Name saved.", "이름을 저장했어요.", "名前を保存しました。"],
     "p.name.e.len": ["Use 2 to 20 characters.", "2~20자로 입력해 주세요.", "2〜20文字で入力してください。"],
     "p.name.e.chars": ["Use letters, numbers, spaces, _ or . only.", "글자, 숫자, 띄어쓰기, _ 와 . 만 쓸 수 있어요.", "文字、数字、スペース、_ と . のみ使えます。"],

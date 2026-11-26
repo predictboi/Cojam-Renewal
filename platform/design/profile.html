@@ -43,8 +43,8 @@
       '<div class="prow-addr"><p class="lbl">' + t("w.addr") + "</p>" + C.addr(a) + "</div>" +
       linkRow(t("w.scan"), "https://kaiascan.io/address/" + a, true) +
       '<div class="stack-8 prow-dev">' + device() + "</div></div></section>" +
-      '<section class="sec"><div class="field"><div class="field-label"><label for="name"><b>' + t("p.name") + '</b></label></div><div class="field-box field-box--text' + (S === "nameerror" ? " is-error" : "") + '"><input id="name" name="nickname" type="text" autocomplete="nickname" spellcheck="false" maxlength="24" value="' + (S === "nameerror" ? "cojam_admin" : S === "nameword" ? "f**k" : M.user.name) + '" aria-describedby="name-msg"></div>' +
-      '<div class="field-msg" id="name-msg" aria-live="polite"></div></div>' + C.btn(t("p.name.save"), { block: true, id: "save" }) + "</section>" +
+      '<section class="sec"><div class="field"><div class="field-label"><label for="name"><b>' + t("p.name") + '</b></label></div><div class="field-box field-box--text' + (S === "nameerror" ? " is-error" : "") + '"><input id="name" name="nickname" type="text" autocomplete="nickname" spellcheck="false" maxlength="24" value="' + (S === "nameerror" ? "cojam_admin" : S === "nameword" ? "f**k" : M.user.name) + '" aria-describedby="name-msg"><button type="button" class="field-max" id="save" disabled>' + t("p.name.save.short") + '</button></div>' +
+      '<div class="field-msg" id="name-msg" aria-live="polite"></div></div></section>' +
       '<section class="sec"><h2 class="sect-h">' + t("p.prefs") + '</h2><div class="stack-8"><p class="small" id="l-lang">' + t("lang.label") + "</p>" +
       C.seg(I.langs.map(function (l) { return { label: I.names[l], value: l, on: l === App.lang }; }), { name: "lang", label: t("lang.label") }) + "</div>" +
       '<div class="stack-8"><p class="small">' + t("p.view") + "</p>" + C.seg([{ label: t("h.view.card"), value: "card", on: view !== "term" }, { label: t("h.view.term"), value: "term", on: view === "term" }], { name: "view", label: t("p.view") }) + "</div></section>" +
@@ -71,8 +71,12 @@
   App.mount({ tab: "", me: true, back: "wallet.html", title: t("p.title"), body: body(), badges: { home: "dot", results: 2 }, after: function () {
     var name = $("#name"), msg = $("#name-msg");
     function check() { var e = validate(name.value); name.closest(".field-box").classList.toggle("is-error", !!e); name.setAttribute("aria-invalid", e ? "true" : "false"); msg.className = "field-msg" + (e ? " is-error" : ""); msg.textContent = e ? t(e) : t("p.name.help"); return !e; }
-    name.addEventListener("input", check); check();
-    $("#save").addEventListener("click", function () { if (check()) { M.user.name = name.value; $("#pid-name").textContent = name.value || F.short(M.user.address); App.toast(t("p.name.saved")); } else name.focus(); });
+    var save = $("#save");
+    // Save sits inside the field (like Max on the amount field) and wakes only when the name has changed and is valid
+    function sync() { var ok = check(); save.disabled = !ok || name.value === (M.user.name || ""); }
+    name.addEventListener("input", sync); sync();
+    name.addEventListener("keydown", function (e) { if (e.key === "Enter" && !save.disabled) save.click(); });
+    $("#save").addEventListener("click", function () { if (check()) { M.user.name = name.value; $("#pid-name").textContent = name.value || F.short(M.user.address); App.toast(t("p.name.saved")); save.disabled = true; } else name.focus(); });
     document.addEventListener("seg", function (e) { if (e.detail.name === "lang") I.setLang(e.detail.value); if (e.detail.name === "view") App.store.set("view", e.detail.value); });
     function logout() { App.sheet.open("<h2>" + t("p.logout.h") + '</h2><p class="sheet-lead">' + t("p.logout.b") + '</p><div class="sheet-acts">' + C.btn(t("p.logout"), { block: true, href: "login.html" }) + C.btn(t("common.cancel"), { kind: "ghost", block: true, attrs: "data-sheet-close" }) + "</div>"); }
     $("#logout").addEventListener("click", logout);
