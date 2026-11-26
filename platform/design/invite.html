@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/screens/invite.css">
 </head>
 <body>
-<!-- I1 Invite friends. States: (none), empty (no friends yet), loading, error, offline (the code and link still copy; the figures may be out of date), copied (code copied), shared (link shared), hold (account on hold: code and link hidden with the reason, figures stay). Add ?lang=en|ko|ja. Mock data only. -->
+<!-- I1 Invite friends. States: (none), empty (no friends yet), loading, error, offline (the code and link still copy; the figures may be out of date), copied (code copied), shared (link shared), hold (account on hold: code and link hidden with the reason, figures stay, with one line that no bonus is added while on hold). Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -58,7 +58,9 @@
     if (S === "error") return '<section class="sec" aria-labelledby="res-h"><h2 class="sect-h" id="res-h">' + t("inv.res.h") + "</h2>" + C.note("error", t("inv.error"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" })) + "</section>";
     /* nobody yet: one plain sentence, no figures at zero and no empty box. The offer and the steps above carry the page */
     if (S === "empty") return '<section class="sec" aria-labelledby="res-h"><h2 class="sect-h" id="res-h">' + t("inv.res.h") + '</h2><p class="inv-none">' + t("inv.empty") + "</p></section>";
-    return '<section class="sec" aria-labelledby="res-h"><h2 class="sect-h" id="res-h">' + t("inv.res.h") + "</h2>" + (App.offline ? '<p class="hold-why" id="inv-stale">' + C.icon("info", 16) + "<span>" + t("inv.stale") + "</span></p>" : "") + '<div class="inv-tri">' +
+    return '<section class="sec" aria-labelledby="res-h"><h2 class="sect-h" id="res-h">' + t("inv.res.h") + "</h2>" + (App.offline ? '<p class="hold-why" id="inv-stale">' + C.icon("info", 16) + "<span>" + t("inv.stale") + "</span></p>" : "") +
+      /* on hold: no bonus is added for what friends earn in that time; what was received stays, so the figures below stand */
+      (S === "hold" ? '<p class="hold-why" id="inv-hold">' + C.icon("info", 16) + "<span>" + t("hold.invite.bonus") + "</span></p>" : "") + '<div class="inv-tri">' +
       "<div><b>" + V.joined + "</b><span>" + t("inv.res.joined") + "</span></div><div><b>" + F.pts(V.week) + "</b><span>" + t("inv.res.week") + "</span></div><div><b>" + F.pts(V.total) + "</b><span>" + t("inv.res.total") + "</span></div></div>" +
       '<h3 class="inv-sub-h">' + t("inv.friends.h") + '</h3><ul class="list inv-friends">' + V.friends.map(friend).join("") + "</ul></section>";
   }

@@ -56,7 +56,7 @@
     Owner: "ink", Operator: "", Viewer: "line", info: "line", warn: "warn", error: "down" };
   X.tag = function (label, kind) { if (kind == null) kind = STATE_KIND[label] || ""; return '<span class="tag"' + (kind ? ' data-k="' + kind + '"' : "") + ">" + esc(label) + "</span>"; };
   X.addr = function (a, o) {
-    o = o || {}; var shown = o.full ? a : X.short(a);
+    o = o || {}; var shown = o.full ? '<span class="a-full">' + a + '</span><span class="a-short">' + X.short(a) + "</span>" : X.short(a);
     return '<span class="addr" title="' + a + '">' + (o.link === false ? shown : '<a href="https://kaiascan.io/' + (a.length > 42 ? "tx" : "address") + "/" + a + '" target="_blank" rel="noopener">' + shown + "</a>") +
       '<button type="button" data-copy="' + a + '" aria-label="Copy ' + (a.length > 42 ? "transaction hash" : "address") + " " + a + '">' + ic("copy", 14) + "</button></span>";
   };

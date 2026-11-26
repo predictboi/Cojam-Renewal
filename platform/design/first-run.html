@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/screens/invite.css">
 </head>
 <body>
-<!-- A2 First run. States: 1 (default), 2, 3, settingup (setup still running when the last button is tapped), code (the invite code field open), code-valid, code-unknown, code-own, code-linked (this account already has an inviter: read only), code-offline (the code cannot be checked without a connection). Add ?lang=en|ko|ja. Mock data only. -->
+<!-- A2 First run. States: 1 (default), 2, 3, settingup (setup still running when the last button is tapped), code (the invite code field open), code-valid, code-unknown, code-own, code-linked (this account already has an inviter: read only), code-offline (the code cannot be checked without a connection). Every failed check offers "Continue without a code" with the line that a code can still be added from Profile within 24 hours of signing up. Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -67,7 +67,7 @@
     function say(kind, html) { msg.className = "onb-code-msg" + (kind ? " is-" + kind : ""); msg.innerHTML = html; }
     function idle() { codeOk = ""; inp.readOnly = false; box.classList.remove("is-ok", "is-error"); inp.removeAttribute("aria-invalid"); apply.textContent = t("o.code.apply"); apply.disabled = !inp.value; say("help", t("o.code.help")); }
     function fail(key) { box.classList.add("is-error"); inp.setAttribute("aria-invalid", "true"); apply.disabled = false;
-      say("error", C.icon("warn", 16) + "<div><span>" + t(key) + '</span><button type="button" class="linkish" id="code-without">' + t("o.code.without") + "</button></div>"); }
+      say("error", C.icon("warn", 16) + "<div><span>" + t(key) + '</span><button type="button" class="linkish" id="code-without">' + t("o.code.without") + '</button><small class="onb-code-later">' + t("o.code.later") + "</small></div>"); }
     function settle(v, then) {
       checking = false;
       if (v.length < 6) return fail("o.code.short");

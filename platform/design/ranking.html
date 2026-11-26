@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/screens/rank.css">
 </head>
 <body>
-<!-- K1 Weekly ranking. States: (none) outside the Top 10, top10, unranked, winner, short, lastweek (being finalised), sent (prizes sent), loading, error, offline, hold (account on hold: your row says no prize can be received). Add ?lang=en|ko|ja. Mock data only. -->
+<!-- K1 Weekly ranking. States: (none) outside the Top 10, top10, unranked, winner, short, lastweek (being finalised), sent (prizes sent), loading, error, offline, hold (account on hold: left out of the ranks, so no own row on the board and no "Around you"; the pinned bar shows the points and "On hold: no weekly prize", without a rank). Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -28,7 +28,8 @@
   function prize(n) { return Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }   /* one format for every prize: two decimals */
   function head() { return '<div class="ph-top"><h1>' + t("k.title") + "</h1></div>"; }
   function rowsFor(w) {
-    var rows = M.ranking.slice();
+    /* an account on hold is never in the prize ranks: its row is dropped and the players below move up one place */
+    var rows = M.ranking.filter(function (r) { return !r.hold; }).map(function (r, i) { return r.rank === i + 1 ? r : Object.assign({}, r, { rank: i + 1 }); });
     /* last week ran the full seven days, so its totals are higher */
     if (w === "last") return rows.map(function (r, i) { return Object.assign({}, r, { pts: r.pts + 900 - i * 10, prize: +(1196 * M.pool.split[i] / 100).toFixed(2) }); });
     if (S === "top10") rows[6] = { rank: 7, name: M.user.name, pts: 1150, prize: 51.36, me: true };
@@ -62,8 +63,7 @@
   function gap(g) { return t(g > 0 ? "k.gap.up" : g < 0 ? "k.gap.down" : "k.gap.same", { n: F.int(Math.abs(g)) }); }
   function row(r) {
     return '<li class="krow' + (r.me ? " is-me" : "") + '" data-rank="' + r.rank + '"><span class="krow-rank">' + rankNo(r.rank) + "</span>" +
-      '<div class="grow"><p class="krow-name">' + name(r) + (r.me ? C.tag(t("k.you"), "ink") + (S === "hold" ? C.tag(t("hold.tag"), "", "pause") : "") : "") + '</p><p class="krow-pts">' + F.pts(r.pts) + "</p></div>" +
-      (r.me && S === "hold" ? '<p class="krow-gap" id="hold-row">' + t("hold.rank.row") + "</p>" : "") +
+      '<div class="grow"><p class="krow-name">' + name(r) + (r.me ? C.tag(t("k.you"), "ink") : "") + '</p><p class="krow-pts">' + F.pts(r.pts) + "</p></div>" +
       (r.prize === undefined ? "" : '<p class="krow-prize">' + prize(r.prize) + "<small>CT</small></p>") +
       (r.gap === undefined || r.me ? "" : '<p class="krow-gap">' + gap(r.gap) + "</p>") + "</li>";
   }
@@ -74,7 +74,8 @@
     var mine = rows.filter(function (r) { return r.me; })[0];
     return rows.map(function (r) { return Object.assign({}, r, { gap: r.pts - mine.pts }); });
   }
-  function hasAround(w) { return S !== "loading" && S !== "unranked" && !(w === "this" && S === "top10"); }
+  /* on hold the player has no rank, so there is no "Around you" either */
+  function hasAround(w) { return S !== "loading" && S !== "unranked" && S !== "hold" && !(w === "this" && S === "top10"); }
   function around(w) {
     if (!hasAround(w)) return "";
     var rows = aroundRows(w);
@@ -96,10 +97,11 @@
     function bar(rank, title, sub, pts, label) {
       return '<button type="button" class="pin" id="pin" aria-label="' + App.esc(t("k.around.open")) + '"><span class="pin-rank"><span class="sr-only">' + t("k.rank.sr", { n: rank }) + '</span><span aria-hidden="true">' + rank + '</span></span><span class="pin-main"><b>' + title + "</b><span>" + sub + '</span></span><span class="pin-pts">' + F.pts(pts) + "<small>" + label + "</small></span></button>";
     }
+    /* on hold: the same bar without a rank block (the account is left out of the ranks, this week and last); the points stay */
+    if (S === "hold") return '<aside class="pin pin--wide" id="pin" aria-label="' + App.esc(t("k.you")) + '"><span class="pin-main"><b>' + t("k.you") + "</b><span>" + t("hold.rank.pin") + '</span></span><span class="pin-pts">' + F.pts(w === "last" ? 1200 : me.pts) + "<small>" + t(w === "last" ? "k.lastweek" : "r.week") + "</small></span></aside>";
     if (w === "last") return bar(31, t("k.you"), t("k.final.h"), 1200, t("k.lastweek"));
     if (S === "unranked") return '<aside class="pin pin--wide" id="pin" aria-label="' + t("k.you") + '"><div class="pin-main"><b>' + t("k.none") + "</b></div>" + C.btn(t("k.play"), { sm: true, href: "home-cards.html", cls: "btn-onink" }) + "</aside>";
     if (S === "top10") return bar(7, t("k.in"), t("k.prize", { c: "51.36" }), 1150, t("r.week"));
-    if (S === "hold") return bar(me.rank, t("k.you"), t("hold.rank.pin"), me.pts, t("r.week"));
     return bar(me.rank, t("k.you"), t("k.gap", { gap: F.int(me.gap) }), me.pts, t("r.week"));
   }
   /* the pinned bar jumps to the "Around you" block under rank 10 */
@@ -121,8 +123,8 @@
   }
   function view(w) {
     var note = "";
-    if (w === "last") note = S === "sent" ? C.note("ok", t("k.sent") + ' <a href="https://kaiascan.io/" target="_blank" rel="noopener">' + t("w.scan") + "</a>") : C.note("sky", t("k.closed", { time: t("k.final.time") }));
-    else if (S === "hold") note = C.hold(t("hold.rank"));
+    if (S === "hold") note = C.hold(t("hold.rank"));
+    else if (w === "last") note = S === "sent" ? C.note("ok", t("k.sent") + ' <a href="https://kaiascan.io/" target="_blank" rel="noopener">' + t("w.scan") + "</a>") : C.note("sky", t("k.closed", { time: t("k.final.time") }));
     else if (S === "winner") note = C.note("sky", t("k.last", { rank: 4, amount: "119.60" }));
     return note + pool(w) + '<section class="sec sec-rule"><div class="sect-h"><h2 class="sect-h">' + t("k.top") + "</h2>" + (S === "loading" || w === "last" ? "" : '<span class="live"><span class="live-dot"></span><span data-stamp="12">' + t("common.updated", { n: 12 }) + "</span></span>") + "</div>" +
       list(w) + '<p class="tie-line">' + C.icon("info", 16) + "<span>" + t("k.tie") + "</span></p></section>" + around(w);
