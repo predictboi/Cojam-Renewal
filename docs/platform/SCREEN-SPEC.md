@@ -654,7 +654,7 @@ States: loading; offline; Max subtracts nothing (fee is KAIA, not CT).
 | Language | Segmented "EN" / "한국어" / "日本語" (applies at once) | `[local]` and `[api]` |
 | View | Segmented "Card view" / "Terminal view" (same setting as the Home switch) | `[local]` |
 | Help | "How Cojam works" (opens A2 panels), "How answers are set" (disclosure: "An AI checks public sources after each question closes and sets the answer automatically. If an answer turns out wrong, Cojam corrects it and pays the points owed.") | static |
-| Links | "Swap old CT" (cojam.app/migrate/), "Cojam website" (cojam.app), Terms and Privacy when they exist (Q24) | static |
+| Links | "Swap old CT" (cojam.app/migrate/), "Cojam website" (cojam.app), Terms and Privacy when they exist (hidden until then) | static |
 | Log out | Button "Log out" (secondary, down colour text) with confirm sheet "Log out of Cojam?" body "Your points and CT stay in your wallet. This device stops playing for you until you log in again with the same email." buttons "Log out", "Cancel". Log out revokes this device's play key and deletes it | `[privy]`, `[chain]` |
 | Version | "Version {x}" and "Check for update" | service worker |
 
@@ -679,7 +679,7 @@ Shared admin frame: desktop layout, left side nav (Dashboard, Reward settings, Q
 
 | Block | Elements | Source |
 | --- | --- | --- |
-| Alerts strip | Red or amber items with a link to the screen: "Gas wallet below {x} KAIA", "Reward wallet covers {d} days", "Tomorrow has {n} of 5 questions", "{n} answers waiting past their time", "Job {name} failed {t} ago" | `[api]` |
+| Alerts strip | Red or amber items with a link to the screen: "Gas wallet below {x} KAIA", "Reward reserve covers {d} days", "Staking interest fund covers {d} days", "Owner action announced: {action}", "Tomorrow has {n} of 5 questions", "{n} answers waiting past their time", "Job {name} failed {t} ago" | `[api]` |
 | Today | Set status ("Live, closes in {t}"), players today, picks today, completion rate, hits paid | `[api]` |
 | KPI grid | Signed up users, active this week, points issued (today, week), points converted, CT paid by conversions, staked CT total, interest owed, this week's pool | `[api]`, `[chain]` |
 | Charts | Daily players and completions (30 days), points issued vs converted (30 days) | `[api]` |
@@ -766,30 +766,33 @@ Status chips: "Healthy", "Slow", "Failing", "Off".
 
 | # | Case | Behaviour |
 | --- | --- | --- |
-| 7.1 | Set rollover while the app is open | At the close time the client refetches. If the user is on H1 or H2 with picks left: cards fade, message "Today's set has closed. A new set is ready." with button "Show new set". Picks already sent before close but confirmed after: valid if the contract accepts them by its own time check; if rejected, the row shows "Not saved: the set closed" and no completion reward. On H3 the countdown reaching zero loads the new set (H3 states) |
-| 7.2 | Pick sent, answer not set yet | R1 and H3 show "Waiting for answer" and the expected time. If the answer is late past its due time: "Answer is late. It will be set automatically." |
+| 7.1 | Set rollover while the app is open | At the close time the client refetches. If the user is on H1 or H2 with picks left: cards fade, message "Today's set has closed. A new set is ready." with button "Show new set". Picks already sent before close but confirmed after: valid if the contract accepts them by its own time check; if rejected, the row shows "Not saved: the question closed" and no completion reward. On H3 the countdown reaching zero loads the new set (H3 states) |
+| 7.2 | Pick sent, answer not set yet | R1 and H3 show "Waiting for answer" and the expected time. If the answer is late past its due time: "Answer is late. It will be set automatically." Every answer is set within 48 hours after the day's set closes; a question still without an answer then is cancelled (R1 "Cancelled"). Each question settles on its own, so a late answer never delays the hit points of the other four |
 | 7.3 | User answered only some of 5 | No 100P. The unanswered questions show "Not answered" in R1 after close. Hits on the answered ones still pay 50P each |
-| 7.4 | Answer correction and compensation | R1 row gets "Corrected" with date and line; points owed are paid and toasted "Answer corrected on question {n}: +{p}P." Treatment of points already paid on the wrong answer depends on Q5; the UI never silently lowers a balance |
-| 7.5 | Ranking ties | Same points share a rank (1, 2, 2, 4). Prize split for ties needs Q12; until settled the UI shows the tie note "Tied" and the prize the rule gives |
-| 7.6 | Week boundary | Ranking counts points earned between the week start and end in the week's time zone (Q8). Points from hits paid after the boundary for questions of the old week count in the week they are paid (Q8 confirm). K1 shows "Week closed. Final ranking is being counted." for the minutes the snapshot takes |
+| 7.4 | Answer correction and compensation | Inside the 6 hour correction window nothing has been paid, so the pending hit simply changes (R1 shows the corrected answer). After it: R1 row gets "Corrected" with date and line; points owed are paid and toasted "Answer corrected on question {n}: +{p}P." Players paid on the wrong answer keep their points; no balance is ever lowered |
+| 7.5 | Ranking ties | Ranks are always distinct: equal points rank by who reached the total first, then by address (the contract checks this order). Tied rows carry a "Tied" tag and the disclosure "Tied on points: whoever reached the total first ranks higher." Each rank gets its own prize; nothing is split |
+| 7.6 | Week boundary | Weeks run Monday 09:00 KST to the next Monday 09:00 KST. Hit points count in the week of the question's day, even when they land after the boundary (Sunday's questions can land until Wednesday). K1 shows last week as "Week closed. Late answers can still add points until {Wednesday 21:00 KST}, then prizes are sent." The new week starts at 0 at once |
 | 7.7 | Not enough points to convert | W2 empty state with gap (section W2) |
 | 7.8 | Staking below the minimum | S1 validation "The minimum stake is 100 CT." |
-| 7.9 | Interest below 10 CT | S2 claim disabled with the gap; at principal withdrawal see Q15 |
+| 7.9 | Interest below 10 CT | While locked: S2 claim disabled with the gap. After unlock: claim any amount; withdrawal pays the principal plus all remaining interest. Interest stops at the unlock date |
 | 7.10 | Unlock date | Shown as date and local time at stake creation and on each card; the button appears at the exact second; a stake unlocked while the app was closed shows "Unlocked" on open, and the Staking tab gets a dot |
 | 7.11 | Withdraw without KAIA | W4 blocks with the fee message and "Deposit KAIA" fix |
-| 7.12 | Privy session expiry | Session expired sheet (2.6); pending picks in the local queue are kept and resent after login if the set is still open |
+| 7.12 | Privy session expiry | Session expired sheet (2.6). Picks keep saving meanwhile, because the play key does not need the Privy session; value actions (convert, stake, claim, withdraw) wait for the login. If the play key also needs renewing, the reconnect banner follows the login |
 | 7.13 | In app browser | G1 `inapp` variant; nothing in the in app browser tries to log in |
-| 7.14 | iOS limits | No install prompt API: G1 shows steps. Home screen apps on iOS keep their own storage, separate from Safari: the Gate never stores anything the app needs. Storage can be evicted after weeks without use: everything that matters is on chain or on the server, Privy restores the wallet at login, `[local]` holds only caches and preferences, so an eviction means one new login and the view preference resets. iOS has no background sync: queued picks are only sent while the app is open, and resume on the next open while the set is still open |
+| 7.14 | iOS limits | No install prompt API: G1 shows steps. Home screen apps on iOS keep their own storage, separate from Safari: the Gate never stores anything the app needs. Storage can be evicted after weeks without use: everything that matters is on chain or on the server, Privy restores the wallet at login, `[local]` holds only caches and preferences, so an eviction means one new login, one "Setting up your game" step (the play key lived in that storage), and the view preference resets. iOS has no background sync: queued picks are only sent while the app is open, and resume on the next open while the set is still open |
 | 7.15 | App update available | New service worker waiting: toast "A new version of Cojam is ready." with "Reload". Never auto reload during a pick or a transaction. Below the minimum version: blocking Update required screen |
 | 7.16 | Maintenance mode | Maintenance screen on every PWA route; Gate unaffected; admin unaffected |
-| 7.17 | Two devices or two tabs | Picks are read from chain; the second device shows a pick made on the first after refresh; a duplicate pick is refused: "You already picked on this question." |
+| 7.17 | Two devices or two tabs | One device plays at a time: setting up a second device replaces the first device's play key. The first device then shows "Cojam is now set up on another device" with "Play on this device", and never takes the key back on its own. Picks are read from chain, so either device shows picks made on the other; a duplicate pick is refused: "You already picked on this question." Two tabs on one device share one key and one send queue |
 | 7.18 | Clock skew on the device | All countdowns use the server time offset from the API, not the device clock |
-| 7.19 | Pending pick when the user leaves the app | Queue in `[local]`; on return the app checks the chain first and resends only picks not found |
-| 7.20 | Reward wallet empty | Convert, interest claim, principal withdrawal (if paid from it, Q14) show the payouts paused note; nothing is debited |
-| 7.21 | Gas sponsor down | Pick, stake and convert show "Cojam could not sponsor this transaction right now." Never fall back to charging the user |
-| 7.22 | Display name abuse | Admin can reset a name (AD5 row action "Reset name"); user sees their short address until they save a new one (Q18) |
-| 7.23 | Deposit of old CT or another token to the Privy address | Not shown in balances. W3 warns before; no recovery tool in scope (Q19) |
-| 7.24 | Question cancelled after publish | R1 "Cancelled" row; the day still counts as complete if the user answered the remaining ones (Q6) |
+| 7.19 | Pending pick when the user leaves the app | Queue in `[local]`; on return the app checks the chain first and resends only picks not found, while their questions are open. If the play key was lost with the storage, queued picks are lost with it and the cards show again as unanswered |
+| 7.20 | Reward reserve empty | Convert and the airdrop show the payouts paused note; nothing is debited. Staking claims and withdrawals never pause: principal and every stake's full interest are held by the staking contract from the moment the stake opens; only new stakes can be "full for now" |
+| 7.21 | Gas sponsor down | Stake and convert show "Cojam could not sponsor this transaction right now."; picks keep retrying until the question closes with the H1 banner. Never fall back to charging the user |
+| 7.22 | Display name abuse | Admin can reset a name (AD5 row action "Reset name"); user sees their short address until they save a new one. Names are not unique |
+| 7.23 | Deposit of old CT or another token to the Privy address | Not shown in balances. W3 warns before; no recovery tool and no key export at launch |
+| 7.24 | Question cancelled after publish | The card stays in the set until it closes and a pick on it still counts toward the 5 and the 100P; it pays no hit points. R1 shows "Cancelled" |
+| 7.25 | Email provider not supported | A1 shows "This email provider is not supported yet" with the supported list; no code is sent. If a provider is removed later, its existing players keep playing |
+| 7.26 | Same mailbox, different spelling (dots or +tags) | Normalised to one address: the second account is refused at registration with "This email is already linked to another Cojam account." |
+| 7.27 | Play key expires while the app is closed | On the next open the key is renewed in the background (the "Reconnecting this device" banner only if it takes more than 2 s); no action from the user |
 
 ---
 
@@ -801,7 +804,7 @@ Match column: **Reuse** (take as is), **Adapt** (start from the named class and 
 | --- | --- | --- | --- |
 | Design tokens | everywhere | colours, type scale, radii, motion durations and easings | Reuse `tokens.css` (copy into the app; one source) |
 | App header | all PWA screens | tab root (logo), sub screen (back plus title); safe area top | Adapt `.cj-header`, `.cj-brand`, `.cj-chip` (`base.css`); new back button |
-| Point pill | header | loading, ready, pending, stale | Adapt `.cj-price` pill shape (`base.css`) on blue; new content |
+| Point pill | header | loading, ready, saving, hits pending ("+{n}" sky tag), stale | Adapt `.cj-price` pill shape (`base.css`) on blue; new content |
 | Profile button | header | initial, generic icon, focus | New (44 px round, snow on blue) |
 | Bottom tab bar | PWA | 5 items, selected (volt pill behind icon), badge dot, count badge, safe area bottom | New |
 | Segmented view switch | H1/H2, S1/S2, R1 filter, P1, A2 language | 2 or 3 options, selected volt, disabled | Reuse `.seg`, `.seg-btn` (`base.css`) |
@@ -840,6 +843,10 @@ Match column: **Reuse** (take as is), **Adapt** (start from the named class and 
 | Link box | G1 copy link | default, copied | Reuse `.cj-linkbox` (`wallet.css`) |
 | Help disclosure | S1, P1, A1 | closed, open | Reuse `.help`, `.help-pop` (`base.css`) |
 | Language select | G1, A1 | 3 languages | Reuse `.cj-lang` (`base.css`) |
+| Email field and code field | A1, AD0 | empty, typing, invalid, provider not supported (with the provider list), sending, checking, wrong, expired, locked; resend timer link | Reuse `.field` family; new code field (one input, tabular digits, `one-time-code`) |
+| Setup panel | A1, A2 setup line, P1 "Set up this device" | three steps waiting, in progress, done; busy; refused (per reason); failed | Reuse `.steps li` (`base.css`) inside a new full panel |
+| Inline banner above the stack | H1, H2 | "still being saved" with "Retry now", "Reconnecting this device", reconnect failed, set up on another device (panel variant) | Adapt `.note` and `.cj-banner` |
+| Email allow list editor | AD6 | row enabled or disabled, add form, rule select, reason prompt | Reuse `.table` and `.field` (`admin.css`) |
 | System screen | maintenance, update, no connection, 404 | title, body, one action | New |
 | Admin shell and side nav | AD1 to AD6 | selected, collapsed | Adapt `pages/admin.css` `.adm`, `.adm-head`; new side nav |
 | Admin KPI | AD1 | value, unit, sub, loading | Reuse `.kpi-grid`, `.kpi` (`admin.css`) |
@@ -918,50 +925,57 @@ Loops (stripes, live dot) pause when off screen or when the app is hidden (`visi
 
 ## 9. Open questions for the founder
 
-Each changes at least one screen. Proposed defaults are shown so work can start; none is built as a feature until confirmed.
+### 9.1 Still open
 
-| # | Question | Screens | Proposed default |
-| --- | --- | --- | --- |
-| Q1 | Which social logins? (Google, Apple, X, Telegram, LINE, Discord, others). Kakao is not a built in Privy provider | A1 | Google, Apple, X |
-| Q2 | Sponsored transactions: if Privy wallets cannot sign Kaia fee delegated transactions, the relayer path needs a signed message per action. Staking needs `approve` on CT, and new CT has no `permit`, so an approve cannot be relayed. How should staking work in that case (contract pulls by a different method, a sponsored approve through some other path, or users get a one time KAIA top up)? | S1, sheet steps | Decide after the Privy check |
-| Q3 | Terminal row button: plan says "Join". Keep "Join" or use "Pick"? | H2 | "Pick" |
-| Q4 | Is the 100P completion reward paid in the same transaction as the 5th pick, or by the server afterwards? | H3 | Same transaction |
-| Q5 | Wrong answer correction: players who picked the corrected right answer get 50P. What happens to players already paid for the wrong answer: keep their points, or take them back (needs a contract power that points can be reduced)? | AD4, R1 | Keep their points; pay the correct side |
-| Q6 | Can a live or closed question be cancelled (bad question, source gone)? If so, does the day still count as complete for the 100P? | AD3, R1, H1 | Yes; complete counts the remaining questions |
-| Q7 | AI drafts and posts automatically. Can the admin edit, reorder or discard AI drafts before they go live, or only add manual questions? | AD3 | Edit and discard allowed until publish |
-| Q8 | Day and week boundaries: at what time does a new set open (for example 00:00 UTC or 09:00 KST), when does the week start and end, and do hits paid after the week ends count for the old or the new week? | H1, H3, K1 | Sets at 00:00 UTC; week Monday 00:00 UTC; points count in the week they are paid |
-| Q9 | Fiat value: the plan shows KRW. Show KRW for every language, or KRW / USD / JPY by language, or none? Use the fixed 200 KRW reference or the live pool price? | S1, W1 | KRW for KO, USD for EN, JPY for JA, from the live price |
-| Q10 | Airdrop: automatic at the week end, or sent by an admin pressing "Send airdrop"? | AD5, K1 | Automatic, with admin view |
-| Q11 | Should K1 show last week's result (rank and prize) to the user? | K1 | Yes, one line for winners |
-| Q12 | Ties and short boards: how is a prize split when players tie at a rank, and what happens to the prize of empty ranks when fewer than 10 players scored? | K1, AD5 | Tied players split the sum of the ranks they occupy; unused prize stays in the reward wallet |
-| Q13 | Staking default period and whether a user may hold several stakes at once (the spec assumes yes, one card per stake) | S1, S2 | 90 days preselected; multiple stakes |
-| Q14 | Is interest paid from the reward wallet (so it can run out) or reserved in the staking contract at stake time? Can new stakes be paused? | S1, S2, AD6 | Reserved at stake time; pause allowed |
-| Q15 | Interest under 10 CT: a 100 CT stake for 30 days earns about 0.66 CT, so it can never reach the 10 CT claim minimum. Is all interest paid with the principal at withdrawal regardless of the minimum? Does interest keep growing after unlock until withdrawal? | S2 | Paid in full with the principal; no interest after unlock |
-| Q16 | Rate tier: decided by the size of each stake, or by the user's total staked? | S1 | Each stake |
-| Q17 | QR scan for the withdraw address (needs camera permission)? | W4 | Paste only for launch |
-| Q18 | Display names: must they be unique? Is a word filter needed, and should admins be able to reset names? | P1, K1, AD5 | Not unique; basic word list; admin reset |
-| Q19 | Wrong token sent to a Privy address (old CT, other tokens): offer any recovery or key export? Can users export their Privy wallet key at all? | W3, P1 | No recovery; key export shown in P1 if the founder wants it |
-| Q20 | Admin sign in method and host (`app.cojam.app/admin/` or `admin.cojam.app`), and who signs admin on chain changes (master EOA, a separate admin key, a multisig)? | AD0, AD2 | Privy login with an allowlist; separate admin key for settings |
-| Q21 | Admin in English only, or also Korean? | AD all | English only |
-| Q22 | Reward setting changes: effective at once, from the next set, or from the next week (for the pool and split)? Do staking rate changes apply to existing stakes? | AD2 | Next set; next week for pool; existing stakes keep their rate |
-| Q23 | Maintenance switch in the admin (needed for the maintenance screen)? | AD6, 2.6 | Yes |
-| Q24 | Terms and privacy pages: legal is deferred, but social login collects emails. Show links on A1 and P1 at launch or not? | A1, P1 | Placeholders hidden until pages exist |
-| Q25 | Notifications (a push when a new set opens or answers are set) are not in the plan. Wanted? iOS allows push only in the installed app | none yet | Not built |
-| Q26 | "Signed up users" for the weekly pool: every Privy account, or only accounts that played that week? (Social login makes accounts cheap, so the pool can be inflated) | K1, AD5 | Players with at least one pick that week |
-| Q27 | Does predicting ever cost points? DECISIONS says balances change through "predicting", the plan has free picks with completion and hit rewards | H1 | Free picks |
-| Q28 | KAIA withdrawal: W4 sends CT only. Should users also be able to send KAIA out? | W4 | CT only |
-| Q29 | Should each question lock earlier than the set close when its outcome becomes known during the day (for example a match that ends at 20:00)? | H1, AD3 | Each question has its own close time, never after the set close |
+| # | Question | Screens |
+| --- | --- | --- |
+| O1 | Reward funding amounts at launch: how much CT the master wallet sends for conversions and airdrops, and for staking interest. Sets when W2 shows "payouts paused" and when S1 shows "Staking is full for now" | W2, S1, AD6 |
+| O2 | External audit before mainnet (staking holds user principal). No screen changes | none |
+
+### 9.2 Settled since draft 1 (written into the screens above)
+
+| Former # | Decision | Where |
+| --- | --- | --- |
+| Q1 | Privy email login with a one time code only, limited to an allow list of major email providers with address normalisation; no social providers, no wallet connect (DECISIONS) | A1, AD6 |
+| Q2 | Play key for picks (one Cojam wallet signature per device per 30 days); value actions signed by the Cojam wallet with sponsored fees; if that fails in the spike, a relayer plus a one time KAIA top up for the staking approve (DEV-PLAN 1.2, 1.4) | H1, A1, S1 |
+| Q3 | "Pick" | H2 |
+| Q4 | Same transaction as the fifth pick | H3 |
+| Q5 | Players paid on the wrong answer keep their points; the correct side is paid | AD4, R1, 7.4 |
+| Q6 | A live question can be cancelled; a pick on it still counts toward the 5; no hit points | AD3, 7.24 |
+| Q7 | Edit, discard, cancel or replace until published on chain; no approval step | AD3 |
+| Q8 | New set at 09:00 KST daily; week from Monday 09:00 KST; hits count in the week of the question's day | A2, K1, 7.6 |
+| Q9 | KRW in Korean only, from the swap site's live price; no fiat in EN and JA | S1, W1 |
+| Q10 | Automatic airdrop on Wednesday 21:00 KST; admin retries only after a failure | AD5, K1 |
+| Q11 | Yes, one line for winners | K1 |
+| Q12 | Distinct ranks: equal points rank by who reached the total first; unused prizes stay in the reserve | K1, AD5, 7.5 |
+| Q13 | 90 days preselected; up to 20 open stakes | S1, S2 |
+| Q14 | Interest reserved at stake time; pause covers new stakes only | S1, 7.20 |
+| Q15 | 10 CT minimum while locked, any amount after unlock; no interest after unlock | S2, 7.9 |
+| Q16 | Tier by the size of each stake | S1 |
+| Q17 | Paste only at launch | W4 |
+| Q18 | Not unique, basic word list, admin reset | P1, AD5 |
+| Q19 | No recovery tool and no key export at launch | W3, 7.23 |
+| Q20 | `admin.cojam.app`, Privy email login on an allow list; owner actions signed by the master wallet `0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb` | AD0, AD2 |
+| Q21 | English only | Admin |
+| Q22 | Prediction values apply 48 hours after the owner's proposal; staking values apply to new stakes only; server settings at once | AD2 |
+| Q23 | Yes | AD6, 2.6 |
+| Q24 | Legal is deferred by the founder: Terms and Privacy links stay hidden until the pages exist | A1, P1 |
+| Q25 | No notifications at launch | none |
+| Q26 | Qualified players (3 or more days played that week, account older than 7 days), pool capped at 10,000 CT | K1, AD5 |
+| Q27 | Picks are free | H1 |
+| Q28 | CT only | W4 |
+| Q29 | Each question has its own close time, never after the set close | H1, AD3 |
 
 ---
 
-## 10. Items in the plan that conflict or do not add up
+## 10. Items in the plan that conflicted, and how they were resolved
 
-1. **Interest minimum vs small stakes**: minimum stake 100 CT and minimum interest withdrawal 10 CT. At the highest rate a 100 CT stake earns 27 CT a year, at 30 days about 0.66 CT. Small stakes can never claim interest under the stated rule (Q15).
-2. **Staking under the relayer fallback**: DECISIONS allows a relayer if Privy cannot sign fee delegated transactions, but staking needs `approve`, and new CT has no `permit` (CLAUDE.md token spec), so the "same experience either way" promise breaks for staking (Q2).
-3. **"Predicting" changes point balances** (DECISIONS) while the plan has no stake or cost per pick (Q27).
-4. **Login and wallet connect**: the plan's feature list says email login and wallet connect; DECISIONS replaces it with social login only. Followed DECISIONS. Email login is not social login; confirm it is out (Q1).
+1. **Interest minimum vs small stakes**: a 100 CT stake for 30 days earns about 0.66 CT, under the 10 CT minimum. Resolved: the minimum applies only while locked; after unlock any amount can be claimed, and withdrawal pays all remaining interest (REVIEW B9).
+2. **Staking under the relayer fallback**: new CT has no `permit`, so an approve cannot be relayed. Resolved: path A sponsors the approve directly; path B, only if the spike fails, sends a one time KAIA top up for it (DEV-PLAN 1.2).
+3. **"Predicting" changes point balances** (DECISIONS) while the plan has no cost per pick. Resolved: picks are free; predicting changes balances only through the completion and hit rewards.
+4. **Login and wallet connect**: the plan's feature list says email login and wallet connect. Resolved by DECISIONS: Privy email login only, no wallet connect, with an email provider allow list.
 5. **Desktop and mobile web app** in the plan vs installed PWA only in DECISIONS: followed DECISIONS (Gate).
 6. **Admin "Answer setting" tab** implies a human sets answers; DECISIONS makes it fully automatic. AD4 is a monitoring and correction screen, not an approval step.
-7. **Weekly pool = signed up users x 1 CT** grows without limit and is easy to inflate with free social accounts (Q26).
-8. **KRW value** in the staking mockup while the app ships in EN, KO and JA (Q9).
-9. **Wrong answer compensation** is promised, but points are non transferable and only change through the contracts; taking back wrongly paid points needs an explicit contract power that the decisions do not mention (Q5).
+7. **Weekly pool = signed up users x 1 CT** grows without limit and email accounts are cheap. Resolved: qualified players only, capped at 10,000 CT.
+8. **KRW value** in the staking mockup while the app ships in EN, KO and JA. Resolved: KRW in Korean only.
+9. **Wrong answer compensation** with non transferable points. Resolved: points are never taken back; only the correct side is paid, and the contract checks each compensation.
