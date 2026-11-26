@@ -18,4 +18,4 @@ Founder decisions for the operating platform (recorded 2026-11-26). The developm
 | Sponsored gas with Privy | Verify first whether Privy embedded wallets can sign Kaia fee delegated transactions. If not, users sign a message and a Cojam relayer sends the transaction (contracts designed for that). Same experience either way |
 | Deposits | Existing holders send new CT from their own wallet (Kaia Wallet and others) to their Privy wallet address; the PWA needs a deposit screen |
 | Answer setting | Fully automatic by AI, no human approval step. Markets are point markets, so the risk is small; a wrong answer is checked afterwards and compensated |
-| Points | On chain |
+| Points | On chain and non transferable: no transfer, no approve, no transferFrom between holders. Balances change only through the platform contracts (earning, predicting, payouts, point to token conversion) |
