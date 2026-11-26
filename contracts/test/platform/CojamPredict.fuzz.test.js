@@ -3,14 +3,14 @@
 // predict through wallets and keys, outcomes, corrections, voids, settle, corrected outcomes, compensation,
 // conversion, airdrop, parameter changes, time jumps), predicts from the model whether it must succeed,
 // sends it, and then checks the invariants of DEV-PLAN 3.4 and 3.9 against the chain and the event log.
-// FUZZ_RUNS (default 3) and FUZZ_STEPS (default 220) scale it; FUZZ_SEED fixes the first seed.
+// FUZZ_RUNS (default 2) and FUZZ_STEPS (default 260) scale it; FUZZ_SEED fixes the first seed.
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { time } = require("@nomicfoundation/hardhat-network-helpers");
 const { H, DAY, E18, deployPredict, hash } = require("./predictHelpers");
 
 const RUNS = Number(process.env.FUZZ_RUNS || 2);
-const STEPS = Number(process.env.FUZZ_STEPS || 200);
+const STEPS = Number(process.env.FUZZ_STEPS || 260);
 const SEED = Number(process.env.FUZZ_SEED || 20261126);
 const Z = ethers.ZeroAddress;
 const DEADLINE = 48n * H;
@@ -91,6 +91,7 @@ async function runOne(seed) {
 
   // ---------------- tx helper ----------------
   let now = 0n;
+  const okCounts = {};
   async function tick() { now = BigInt(await time.latest()) + 1n; await time.setNextBlockTimestamp(now); }
   async function send(ok, label, fn, apply) {
     await tick();
@@ -102,6 +103,7 @@ async function runOne(seed) {
       return false;
     }
     if (!ok) throw new Error(`seed ${seed}: ${label} succeeded but the model expected a revert`);
+    okCounts[label] = (okCounts[label] || 0) + 1;
     if (apply) apply();
     for (const log of receipt.logs) {
       let parsed;
@@ -146,7 +148,7 @@ async function runOne(seed) {
       const open = d * DAY;
       const inputs = [];
       for (let i = 0; i < 5; i++) {
-        const closesAt = open + BigInt(1 + r.int(24 * 3600 - 1));
+        const closesAt = r.chance(0.1) ? open + BigInt(1 + r.int(24 * 3600 - 1)) : open + 12n * H + BigInt(1 + r.int(12 * 3600 - 1));
         let resolvesAt = closesAt + H + BigInt(r.int(20 * 3600));
         if (resolvesAt > open + 2n * DAY) resolvesAt = open + 2n * DAY;
         inputs.push({ closesAt, resolvesAt, contentHash: hash(`${seed}:${d}:${i}`) });
@@ -158,6 +160,31 @@ async function runOne(seed) {
     }
   }
 
+  async function doPredict(sender, idPick, choice, t) {
+    let player = sender.address, ok = true;
+    const boundTo = M.playerOfKey.get(sender.address);
+    if (boundTo) { const k = M.keyOf.get(boundTo); if (!k || k.key !== sender.address || t >= k.exp) ok = false; player = boundTo; }
+    const p = P(player);
+    const pid = idPick, pday = pid / 5n;
+    const m = M.markets.get(pid);
+    const slot = Number(pid % 5n);
+    const ud = UD(player, pday);
+    ok = ok && p.registered && !p.frozen && (choice === 1 || choice === 2) && !!m && t >= pday * DAY && t < m.closesAt && ud.choices[slot] === 0;
+    await send(ok, "predict", () => predict.connect(sender).predict(pid, choice), () => {
+      ud.choices[slot] = choice; ud.answered += 1;
+      M.days.set(`${player}:${pday}`, ud);
+      if (ud.answered === 5) {
+        ud.completed = true;
+        if (M.params.completionPoints > 0n) credit(player, M.params.completionPoints, now, weekOf(pday));
+        if (!p.completedOnce) {
+          p.completedOnce = true;
+          const rp = P(p.referrer);
+          if (p.referrer !== Z && M.params.welcomePoints > 0n && rp.registered && !rp.frozen) mint(player, M.params.welcomePoints);
+        }
+      }
+    });
+  }
+
   const playerAddrs = () => named.map((s) => s.address).filter((a) => P(a).registered);
   const anyMarket = (pred) => {
     const ids = [...M.markets.keys()].filter((id) => pred(id, M.markets.get(id)));
@@ -167,8 +194,8 @@ async function runOne(seed) {
   // ---------------- actions ----------------
   const actions = [
     [6, async function jump() {
-      const big = r.chance(0.1);
-      await time.increase(big ? BigInt(DAY) + BigInt(r.int(Number(DAY))) : BigInt(r.int(6 * 3600) + 1));
+      const big = r.chance(0.08);
+      await time.increase(big ? BigInt(DAY) + BigInt(r.int(Number(DAY))) : BigInt(r.int(8 * 3600) + 1));
     }],
     [5, async function register() {
       const w = r.chance(0.9) ? r.pick(named).address : r.pick(keySigners).address;
@@ -227,7 +254,9 @@ async function runOne(seed) {
       let sender, idPick = id;
       const active = named.filter((x) => P(x.address).registered && !P(x.address).frozen);
       if (r.chance(0.8) && active.length) {
-        const pl = r.pick(active);
+        // half the time the active player closest to finishing today's set
+        const sorted = active.map((x) => [x, UD(x.address, today).answered]).filter(([, a]) => a < 5).sort((a, b) => b[1] - a[1]);
+        const pl = sorted.length && r.chance(0.5) ? sorted[0][0] : r.pick(active);
         const ud0 = UD(pl.address, today);
         const open = [0, 1, 2, 3, 4].filter((i) => ud0.choices[i] === 0 && (M.markets.get(today * 5n + BigInt(i))?.closesAt ?? 0n) > t);
         if (open.length) idPick = today * 5n + BigInt(r.pick(open));
@@ -236,28 +265,19 @@ async function runOne(seed) {
       } else if (r.chance(0.4) && M.playerOfKey.size) sender = byAddr.get(r.pick([...M.playerOfKey.keys()]));
       else sender = r.chance(0.9) ? r.pick(named) : r.pick(all);
       const choice = r.chance(0.97) ? 1 + r.int(2) : r.pick([0, 3]);
-      let player = sender.address, ok = true;
-      const boundTo = M.playerOfKey.get(sender.address);
-      if (boundTo) { const k = M.keyOf.get(boundTo); if (!k || k.key !== sender.address || t >= k.exp) ok = false; player = boundTo; }
-      const p = P(player);
-      const pid = idPick, pday = pid / 5n;
-      const m = M.markets.get(pid);
-      const slot = Number(pid % 5n);
-      const ud = UD(player, pday);
-      ok = ok && p.registered && !p.frozen && (choice === 1 || choice === 2) && !!m && t >= pday * DAY && t < m.closesAt && ud.choices[slot] === 0;
-      await send(ok, "predict", () => predict.connect(sender).predict(pid, choice), () => {
-        ud.choices[slot] = choice; ud.answered += 1;
-        M.days.set(`${player}:${pday}`, ud);
-        if (ud.answered === 5) {
-          ud.completed = true;
-          if (M.params.completionPoints > 0n) credit(player, M.params.completionPoints, now, weekOf(pday));
-          if (!p.completedOnce) {
-            p.completedOnce = true;
-            const rp = P(p.referrer);
-            if (p.referrer !== Z && M.params.welcomePoints > 0n && rp.registered && !rp.frozen) mint(player, M.params.welcomePoints);
-          }
-        }
-      });
+      await doPredict(sender, idPick, choice, t);
+    }],
+    [4, async function playSet() {
+      const active = named.filter((x) => P(x.address).registered && !P(x.address).frozen);
+      if (!active.length) return;
+      const pl = r.pick(active);
+      for (let i = 0; i < 5; i++) {
+        const t = BigInt(await time.latest()) + 1n;
+        const today = t / DAY;
+        const k = M.keyOf.get(pl.address);
+        const sender = k && r.chance(0.5) ? byAddr.get(k.key) : pl;
+        await doPredict(sender, today * 5n + BigInt(i), 1 + r.int(2), t);
+      }
     }],
     [4, async function setOutcome() {
       await tick(); now -= 1n; await time.setNextBlockTimestamp(now + 1n);
@@ -411,8 +431,8 @@ async function runOne(seed) {
         return;
       }
       const preset = r.pick(PRESETS);
-      const full = { ...preset, pointsPerCT: 1000n, minConvertPoints: 1000n, maxConvertCtPerUserPerDay: 50n, maxConvertCtPerDay: 20000n, minAccountAge: 7n * DAY, minResolveGap: H, maxWeeklyPool: 10000n, treasury: treasury.address, splitBps: M.params.split };
-      await send(true, "proposeParams", () => own.proposeParams(full), () => { M.pending = { p: { ...preset }, after: now + 48n * H }; });
+      const full = { ...preset, pointsPerCT: 1000n, minConvertPoints: 1000n, maxConvertCtPerUserPerDay: 50n, maxConvertCtPerDay: 20000n, minAccountAge: DAY, minResolveGap: H, maxWeeklyPool: 10000n, treasury: treasury.address, splitBps: M.params.split };
+      await send(true, "proposeParams", () => own.proposeParams(full), () => { M.pending = { p: { ...preset, minAge: DAY }, after: now + 48n * H }; });
     }],
   ];
   const total = actions.reduce((x, [w]) => x + w, 0);
@@ -500,7 +520,7 @@ async function runOne(seed) {
     await f();
     await check(step);
   }
-  return { counts, supply: M.supply, credits: ev.completion.size };
+  return { counts, okCounts, supply: M.supply, credits: ev.completion.size };
 }
 
 describe("CojamPredict: randomized sequences against a model (invariants 1 to 13)", function () {

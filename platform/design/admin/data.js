@@ -238,11 +238,11 @@
   /* ---------- ranking ---------- */
   D.split10 = function (pool) { return D.split.map(function (p) { return Math.round(pool * p) / 100; }); };
   var names = [["dalgona", A("r1", "c41d", "07ae")], ["0x4f2a…91bc", A("r2", "4f2a", "91bc")], ["yuki.m", A("r3")], ["하늘", A("r4")], ["kaia_whale", A("r5")], ["0x9c1e…77d0", A("r6", "9c1e", "77d0")], ["noodle", A("r7")], ["みさき", A("r8")], ["jay.park", A("r9")], ["0x03bd…e41a", A("r10", "03bd", "e41a")]];
-  var pts = [1000, 950, 950, 900, 900, 900, 850, 850, 850, 800], hit = [12, 11, 11, 10, 10, 10, 9, 9, 9, 8];
-  var first = ["", "", "Reached 950 P at Thu 12:05, after rank 2 (Thu 10:10)", "", "Reached 900 P at Thu 10:10, after rank 4", "Reached 900 P at Thu 12:05, after rank 5", "", "Reached 850 P at Thu 10:10, after rank 7", "Reached 850 P at Thu 12:05, after rank 8", ""];
+  var pts = [950, 900, 900, 850, 850, 850, 800, 800, 800, 750], hit = [11, 10, 10, 9, 9, 9, 8, 8, 8, 7];   /* the most anyone can have by now: 4 finished days and 11 settled hits */
+  var first = ["", "", "Reached 900 P at Thu 12:05, after rank 2 (Thu 10:10)", "", "Reached 850 P at Thu 10:10, after rank 4", "Reached 850 P at Thu 12:05, after rank 5", "", "Reached 800 P at Thu 10:10, after rank 7", "Reached 800 P at Thu 12:05, after rank 8", ""];
   var prize = D.split10(D.users.qualified);
   D.rank = names.map(function (nm, i) { return { rank: i + 1, name: nm[0], addr: nm[1], pts: pts[i], hits: hit[i], days: 4, prize: prize[i], tie: first[i] }; });
-  D.rankNext = [{ rank: 11, name: "sora", addr: A("r11"), pts: 800, hits: 8, days: 4, tie: "Reached 800 P at Thu 12:05, after rank 10" }, { rank: 12, name: "bongbong", addr: A("r12"), pts: 750, hits: 7, days: 4, tie: "" }];
+  D.rankNext = [{ rank: 11, name: "sora", addr: A("r11"), pts: 750, hits: 7, days: 4, tie: "Reached 750 P at Thu 12:05, after rank 10" }, { rank: 12, name: "bongbong", addr: A("r12"), pts: 700, hits: 6, days: 4, tie: "" }];
   D.week = { n: 48, qualified: D.users.qualified, per: 1, cap: 10000, pool: D.users.qualified, playersRanked: 2740, lateAnswers: 2 };
   var lastNames = [["kaia_whale", A("r5")], ["dalgona", A("r1", "c41d", "07ae")], ["みさき", A("r8")], ["yuki.m", A("r3")], ["0x4f2a…91bc", A("r2", "4f2a", "91bc")], ["noodle", A("r7")], ["jay.park", A("r9")], ["하늘", A("r4")], ["sora", A("r11")], ["0x77aa…c2d1", A("l10", "77aa", "c2d1")]];
   var lastPts = [1900, 1850, 1850, 1800, 1750, 1750, 1700, 1700, 1650, 1650];

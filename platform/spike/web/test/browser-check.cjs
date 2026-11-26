@@ -92,14 +92,21 @@ const stepText = (page, id) => page.textContent(`section[aria-labelledby="h-${id
     out.f = { badge: await stepDone(page, 'f') };
   }
 
+  // g: the report exactly as the tester would copy it
+  await click(page, 'Copy report');
+  await page.waitForSelector('text=/Copied|Clipboard blocked/', { timeout: 5000 });
+  const reportText = await page.evaluate(() => navigator.clipboard.readText()).catch(() => null);
+  if (reportText) {
+    fs.writeFileSync(path.join(OUT, 'browser-check.report.json'), reportText + '\n');
+    out.reportBytes = reportText.length;
+    out.reportHasNoDevKey = !/0x[0-9a-fA-F]{64}(?![0-9a-fA-F])/.test(reportText.replace(/"(txHash|hash|sigHash|r|s|authorisedTx|senderTxHash)":\s*"0x[0-9a-fA-F]{64}"/g, '') .replace(/kairos\.kaiascan\.io\/tx\/0x[0-9a-fA-F]{64}/g, ''));
+  }
+  await page.screenshot({ path: path.join(__dirname, '..', 'test-output', 'browser-check.png'), fullPage: true });
+
   // play key survives a reload (IndexedDB)
   await page.reload({ waitUntil: 'load' });
   await page.waitForFunction(() => /On launch: found/.test(document.body.innerText), null, { timeout: 15000 }).catch(() => {});
   out.playKeyAfterReload = (await stepText(page, 'd')).match(/On launch: [^.]*\./)?.[0];
-
-  // The report as the tester would copy it (after the reload the steps are fresh, so copy before? no:
-  // re-run nothing; copy shows launch info). Re-run c..e quickly is not needed: read the pre-reload report instead.
-  await page.screenshot({ path: path.join(OUT, 'browser-check.png'), fullPage: true });
   out.consoleWarningsAndErrors = consoleMsgs;
   await browser.close();
   fs.writeFileSync(path.join(OUT, 'browser-check.result.json'), JSON.stringify(out, null, 2) + '\n');

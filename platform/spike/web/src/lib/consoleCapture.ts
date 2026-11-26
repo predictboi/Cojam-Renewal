@@ -9,6 +9,7 @@ export interface LogLine {
 }
 
 const lines: LogLine[] = [];
+let snapshot: LogLine[] = [];
 const listeners = new Set<() => void>();
 const MAX = 60;
 
@@ -28,7 +29,10 @@ function push(level: LogLine['level'], args: unknown[]) {
   const safe = text.replace(/0x[0-9a-fA-F]{64}(?![0-9a-fA-F])/g, (m) => m.slice(0, 10) + '…');
   lines.push({ at: new Date().toISOString(), level, text: safe });
   if (lines.length > MAX) lines.shift();
-  listeners.forEach((l) => l());
+  // A new array only when something changed: useSyncExternalStore needs a stable snapshot.
+  snapshot = lines.slice();
+  // Notify after the current render, never during it.
+  queueMicrotask(() => listeners.forEach((l) => l()));
 }
 
 export function installConsoleCapture() {
@@ -47,7 +51,7 @@ export function installConsoleCapture() {
 }
 
 export function getLines(): LogLine[] {
-  return lines.slice();
+  return snapshot;
 }
 export function subscribe(fn: () => void): () => void {
   listeners.add(fn);

@@ -125,7 +125,7 @@ function StepCard(props: {
         </ul>
       )}
       {state.result !== undefined && (
-        <details className="result" open={state.status === 'ok'}>
+        <details className="result" open={state.status === 'ok' && props.id !== 'a'}>
           <summary>Result</summary>
           <pre>{json(state.result)}</pre>
         </details>
