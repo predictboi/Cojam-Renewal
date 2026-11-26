@@ -5,7 +5,7 @@
   var tab = X.is("blocked", "unblock", "unblockfail") ? "blocked" : X.is("invites") ? "invites" : X.is("search", "noresult") ? "search" : "review";
   var focus = D.review[3];   /* the account used by the detail, block and clear states */
   function score(s) { return '<span class="score"' + (s >= 80 ? ' data-k="down"' : "") + ' title="Review from 50, blocked at 80">' + s + '<i style="--p:' + s + '%"></i></span>'; }
-  function who(p) { return (p.name ? '<span class="t1">' + esc(p.name) + "</span>" : "") + X.addr(p.addr, { full: 1 }) + (p.email ? '<span class="t2">' + p.email + (p.cluster ? " " + tag("Cluster " + p.cluster, "warn") : "") + "</span>" : ""); }
+  function who(p) { return (p.name ? '<span class="t1">' + esc(p.name) + "</span>" : "") + X.addr(p.addr) + (p.email ? '<span class="t2">' + p.email + (p.cluster ? " " + tag("Cluster " + p.cluster, "warn") : "") + "</span>" : ""); }
   function rules(p) { return '<ul class="rules">' + p.rules.map(function (r) { return "<li><b>" + r.k + '</b><span class="dim">' + r.t + "</span></li>"; }).join("") + "</ul>"; }
 
   function tabs() {
