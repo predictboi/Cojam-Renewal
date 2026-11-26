@@ -43,3 +43,4 @@ Founder decisions for the operating platform (recorded 2026-11-26). The developm
 | Support contact | `help@cojam.app` (shown on the account on hold screen and wherever the app offers help) |
 | Blocked accounts and gas | No exception: a blocked (frozen) account gets no sponsored gas at all. It can still claim staking interest and withdraw principal after the lock, paying its own KAIA |
 | Next work | Admin design and the missing PWA states in parallel with contract development; the Privy spike starts when the founder provides the Privy App ID |
+| Privy | App ID `cmwxqqrt0017p0gl5hi2gewh7` (public, used by the PWA). The App Secret is never written in chat or in the repository: it goes only into the Render environment variable `PRIVY_APP_SECRET` of the platform API service when that service exists |
