@@ -277,6 +277,8 @@ th.num .th-sort { flex-direction: row-reverse; }
 .log { font-size: 13px; }
 .log li { display: grid; grid-template-columns: 132px 64px 150px 1fr auto; gap: var(--s-12); align-items: baseline; padding: var(--s-6) 0; border-bottom: var(--hair); }
 .log time { font-size: 12.5px; color: var(--ink-2); }
+.log .tag { justify-self: start; }
+.seg { flex: none; }
 .log .who { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .log p { min-width: 0; overflow-wrap: anywhere; }
 .log pre { grid-column: 1 / -1; margin: var(--s-4) 0 var(--s-4) 144px; padding: var(--s-10) var(--s-12); border-radius: var(--r-s); background: var(--inset); font-family: var(--font-data); font-size: 12.5px; white-space: pre-wrap; overflow-wrap: anywhere; }

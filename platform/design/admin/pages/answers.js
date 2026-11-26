@@ -6,7 +6,7 @@
   var selId = qs.get("q") || BY, sel = D.answers.filter(function (a) { return a.id === selId; })[0];
   var done = X.is("compensated"), tab = X.is("empty") ? "near" : qs.get("tab") || "all";
   if (done) { sel = Object.assign({}, sel, { state: "Corrected", ai: "r", hits: 1844, corrected: { from: "l", by: "ops@cojam.app", at: "Today 14:41", why: sel.fix.note, inside: false } }); }
-  function ans(a, d) { return d ? '<span class="pk" data-d="' + d + '">' + esc(a[d]) + "</span>" : '<span class="dim">Not set</span>'; }
+  function ans(a, d) { return a.state === "Cancelled" && !d ? '<span class="dim">Voided</span>' : d ? '<span class="pk" data-d="' + d + '">' + esc(a[d]) + "</span>" : '<span class="dim">Not set</span>'; }
   function list() { return D.answers.map(function (a) { return a.id === sel.id ? sel : a; }); }
 
   function table() {
@@ -14,7 +14,7 @@
     all.forEach(function (a) { var t = a.state === "Corrected" ? "corrected" : a.tab; if (counts[t] != null && t !== "all") counts[t]++; });
     var rows = tab === "all" ? all : all.filter(function (a) { return (a.state === "Corrected" ? "corrected" : a.tab) === tab; });
     var seg = '<div class="seg" role="group" aria-label="Filter answers">' + [["all", "All"], ["waiting", "Waiting"], ["set", "Set"], ["corrected", "Corrected"], ["late", "Late"], ["near", "Near deadline"]].map(function (t) { return '<a href="?tab=' + t[0] + '" aria-current="' + (t[0] === tab ? "page" : "false") + '">' + t[1] + ' <span class="c">' + counts[t[0]] + "</span></a>"; }).join("") + "</div>";
-    return '<section class="sec"><div class="sec-head">' + seg + '<span class="sec-note">Questions of the last 2 sets. Answers are set by AI with no approval step; you check, correct and compensate.</span><span class="sec-end"><label class="search" style="width:240px"><span class="sr">Search answers</span>' + ic("search") + '<input class="inp" type="search" placeholder="Search id or text"></label></span></div>' +
+    return '<section class="sec"><div class="sec-head">' + seg + '<span class="sec-note">The last 2 sets.</span><span class="sec-end"><label class="search" style="width:240px"><span class="sr">Search answers</span>' + ic("search") + '<input class="inp" type="search" placeholder="Search id or text"></label></span></div>' +
       X.table({
         caption: "Answers", rows: rows, loading: X.is("loading"), error: X.is("error"), what: "The answer list", cls: "tight", sort: [4, "desc"],
         selected: function (r) { return r.id === sel.id; },
@@ -23,7 +23,7 @@
           { h: "Question", val: function (r) { return r.id; }, cell: function (r) { return '<a class="t1" style="color:inherit" href="?q=' + r.id + '">' + esc(r.title) + '</a><span class="t2">' + r.id + " · set of " + r.set + " · closed " + r.closed + "</span>"; } },
           { h: "AI answer", cell: function (r) { return ans(r, r.ai) + (r.corrected ? '<span class="t2">was ' + esc(r[r.corrected.from]) + "</span>" : ""); } },
           { h: "Confidence", num: 1, val: function (r) { return r.conf || 0; }, cell: function (r) { return r.conf ? r.conf.toFixed(2) + (r.conf < 0.9 && r.state !== "Corrected" ? " " + tag("Low", "warn") : "") : ""; } },
-          { h: "Set at", cell: function (r) { return r.setAt || (r.late ? '<span style="color:var(--warn);font-weight:700">' + r.late + "</span>" : '<span class="dim">Due ' + r.due + "</span>"); } },
+          { h: "Set at", cell: function (r) { return r.setAt || (r.late ? '<span style="color:var(--warn);font-weight:700">' + r.late + "</span>" : (r.due ? '<span class="dim">Due ' + r.due + "</span>" : "")); } },
           { h: "Correction window", val: function (r) { return r.winIn ? 1e6 : 0; }, cell: function (r) { return r.winIn ? "<b>Ends in " + X.cd(r.winIn) + '</b><span class="t2">Nobody is paid yet</span>' : r.winEnds ? '<span class="dim">Ended ' + r.winEnds + "</span>" : ""; } },
           { h: "Hits", num: 1, val: function (r) { return r.hits; }, cell: function (r) { return r.hits ? n(r.hits) + '<span class="t2">' + (r.paid ? "paid" : "pending") + "</span>" : ""; } },
           { h: "Deadline", cell: function (r) { return r.state === "Waiting" || r.state === "Late" ? r.deadline + (r.deadlineIn ? '<span class="t2">in ' + X.cd(r.deadlineIn) + "</span>" : "") : '<span class="dim">' + r.deadline + "</span>"; } },
