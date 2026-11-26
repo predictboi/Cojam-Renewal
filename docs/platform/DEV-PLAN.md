@@ -81,7 +81,7 @@ Pricing (privy.io/pricing, read 2026-11-26) [8]:
 
 An MAU is an authenticated user with a session in the last 30 days [8]. Without a play key, one transaction per swipe would mean at least 5 Privy signatures per player per day: about 477,000 a month at 3,000 daily players, about $4,270 a month in overage on the Developer plans (REVIEW A1). With the play key (section 4) Privy signs only the play key authorisation (about once per device per 30 days) and value actions, about 36,000 signatures a month at 3,000 daily players, inside the 50,000 included (section 4.9). Whether a client side `secp256k1_sign` counts as a billed "signature" is still asked of Privy in writing (spike item 6), but it no longer decides the budget.
 
-Login: **Privy email login only, with a one time code** (DECISIONS, 2026-11-26). No social providers, no external wallet connect [9]. The user enters an email address, Privy sends a 6 digit code, the user types it in the app, and Privy creates the Kaia embedded wallet on the first login. Code length, code lifetime and Privy's send and attempt limits are recorded by the spike (item 5) and copied into the A1 copy; the PWA adds its own 60 second resend timer. Email login has no OAuth redirect, so the iOS standalone redirect risk of social login is gone.
+Login: **Privy email login only, with a one time code** (DECISIONS, 2026-11-26). No social providers, no external wallet connect [9]. The user enters an email address, Privy sends a one time code (6 digits expected; the spike confirms), the user types it in the app, and Privy creates the Kaia embedded wallet on the first login. Code length, code lifetime and Privy's send and attempt limits are recorded by the spike (item 5) and copied into the A1 copy; the PWA adds its own 60 second resend timer. Email login has no OAuth redirect, so the iOS standalone redirect risk of social login is gone.
 
 PWA behaviour.
 
@@ -220,7 +220,7 @@ Both contracts follow `CojamMigration.sol` house style: NatSpec on every item, c
 
 ### 3.2 Points model: decision
 
-**Recommended: the point ledger lives inside `CojamPredict` and is ERC-20 shaped but soulbound.** It exposes `name()` "Cojam Points", `symbol()` "CJP", `decimals()` 0, `totalSupply()`, `balanceOf()`, and emits `Transfer(address(0), user, amount)` on every credit and `Transfer(user, address(0), amount)` on every conversion. `transfer`, `transferFrom` and `approve` exist only to revert with `PointsNonTransferable()`, and `allowance` returns 0.
+**Decided: the point ledger lives inside `CojamPredict` and is ERC-20 shaped but soulbound.** It exposes `name()` "Cojam Points", `symbol()` "CJP", `decimals()` 0, `totalSupply()`, `balanceOf()`, and emits `Transfer(address(0), user, amount)` on every credit and `Transfer(user, address(0), amount)` on every conversion. `transfer`, `transferFrom` and `approve` exist only to revert with `PointsNonTransferable()`, and `allowance` returns 0.
 
 | | Soulbound ERC-20 shape (recommended) | Internal ledger only |
 | --- | --- | --- |
@@ -623,21 +623,59 @@ With the play key, Privy cost is the plan fee only, and gas stays small. Above a
 
 ## 5. Anti abuse
 
-The main economic risk: many social accounts farming points (converted to CT at 1,000P = 1 CT) and inflating the weekly pool, whose size grows with sign ups. A bot answering at random earns on average 100 + 2.5 x 50 = 225P a day per account, about 6.75 CT (about 1,350 KRW) a month, and costs us its gas and its Privy MAU on top.
+The main economic risk: many email accounts farming points (converted to CT at 1,000P = 1 CT) and inflating the weekly pool, whose size grows with sign ups. A bot answering at random earns on average 100 + 2.5 x 50 = 225P a day per account, about 6.75 CT (about 1,350 KRW) a month, and costs us its gas and its Privy MAU on top.
 
-Proposed measures, proportionate to a points product:
+**Email only login makes sybil accounts cheaper.** Social providers carried some identity (phone backed Kakao and LINE accounts, Google and Apple account checks); an email address costs nothing. The email allow list below removes throwaway domains, but a major provider still hands out free addresses, so the registration gate, the conversion wait and caps, the qualified player rule and risk scoring carry more weight than in the first draft.
+
+Measures (all decided: REVIEW B6 and B7, and the DECISIONS row "Email allow list"):
 
 | # | Measure | Where | Cost to honest users |
 | --- | --- | --- | --- |
-| 1 | Registration gate: a wallet earns only after the operator registers it; registration happens on first login after checks (Privy account verified, one embedded wallet per Privy user, provider allow list, no duplicate device fingerprint cluster above a threshold) | Contract `registerPlayer`, API | None visible |
-| 2 | Sponsorship tied to the Privy JWT: the fee payer only co-signs when the bearer's embedded wallet equals the transaction sender | API | None |
-| 3 | Account age before first conversion (`minAccountAge` 7 days) and per user and global daily conversion caps | Contract | A week's wait for the first CT |
-| 4 | Pool size counts **qualified players**, not sign ups: registered, not frozen, played at least 3 days in that week, account older than 7 days; and the pool is capped (`maxWeeklyPool`) | Worker + contract cap | None |
-| 5 | Risk scoring job: clusters by IP hash, device hash, sign up bursts, identical answer sequences, timing patterns; flagged accounts lose sponsorship and can be frozen (never debited) | Worker, AD1 / AD5 | False positives: unfreeze path by owner |
-| 6 | Airdrop winners reviewed by rule: frozen or flagged accounts skipped, next rank moves up | Worker, `airdrop` checks `frozen` | None |
-| 7 | Prefer providers with stronger identity: Kakao (phone backed) and LINE (phone backed) for KR and JP, Google and Apple; avoid X, Discord, Telegram at launch | Privy Dashboard | Slightly fewer login choices |
+| 1 | **Email provider allow list with normalisation** (5.1): only addresses at listed major mail providers can sign up, one normalised address is one player | API (`POST /v1/auth/email-check` before a code is sent, and again in `POST /v1/session` before `registerPlayer`), admin AD6 editor, Postgres | Users of other providers cannot sign up until their provider is added; A1 says so and lists the supported providers |
+| 2 | Registration gate: a wallet earns only after the operator registers it; registration happens on first login after the checks (allow listed domain, normalised address not used by another player, one embedded wallet per Privy user, no duplicate device cluster above a threshold, sign up rate limits of 5.2) | Contract `registerPlayer`, API | None visible; refused accounts see A1 "registration refused" |
+| 3 | Sponsorship tied to the player: the fee payer co-signs value actions only when the bearer's embedded wallet equals the sender, and predicts only from the player's current play key (or wallet) | API | None |
+| 4 | Account age before first conversion (`minAccountAge` 7 days) and per user and global daily conversion caps (50 CT per user per day, 20,000 CT per day in total) | Contract | A week's wait for the first CT |
+| 5 | Pool size counts **qualified players**, not sign ups: registered, not frozen, played at least 3 days in that week, account older than 7 days; and the pool is capped at 10,000 CT (`maxWeeklyPool`) | Worker + contract cap | None |
+| 6 | Risk scoring job: clusters by IP hash, device id, sign up bursts, addresses that differ only by tags or dots on domains we do not normalise, identical answer sequences, timing patterns; flagged accounts lose sponsored gas and can be frozen (never debited) | Worker, AD1 / AD5 | False positives: unfreeze path by owner |
+| 7 | Airdrop winners reviewed by rule: frozen or flagged accounts skipped, next rank moves up | Worker, `airdrop` checks `frozen` | None |
+| 8 | Rate limits on code requests and sign ups per IP and per device (5.2) | API, Privy's own limits | None at human speed |
 
-Need a founder decision (section 11): the registration gate and the freeze power; the qualified player definition and the pool cap; the 7 day wait before first conversion and the caps; which providers; whether flagged accounts keep sponsorship.
+### 5.1 Email allow list and normalisation
+
+The rule (DECISIONS): email login only; sign up is limited to an allow list of major mail providers, editable in the admin; addresses are normalised before the check; one normalised address is one player; the server enforces it before a wallet is registered, whatever Privy itself allows.
+
+Initial list (stored in Postgres table `email_domains`, edited in AD6, cached by the API for 60 s): `gmail.com` (with `googlemail.com` folded into it), `naver.com`, `kakao.com`, `daum.net`, `hanmail.net`, `icloud.com`, `outlook.com`, `hotmail.com`, `yahoo.co.jp`. Each row: domain, display name for the A1 list, normalisation rule (`gmail`, `plus`, `none`), enabled, added by, added at. Every change is written to `audit_log`. Removing a domain stops new sign ups from it; existing players keep playing.
+
+Normalisation, applied in one shared function (`platform/shared/email.ts`) by the PWA (for the message only) and by the API (authoritative):
+
+1. Trim, lower case the whole address, map `googlemail.com` to `gmail.com`.
+2. Rule `gmail`: remove every `.` in the local part and everything from the first `+`.
+3. Rule `plus` (every other listed domain by default): remove everything from the first `+` in the local part.
+4. Reject an address whose local part is empty after this, or that has more than one `@`.
+
+`users.email_normalized` is unique among registered players (stored as a keyed hash `HMAC(EMAIL_HASH_KEY, normalised)` plus the domain, so a database leak does not list addresses). A second Privy account whose normalised address matches a registered player is refused registration with `EMAIL_DUPLICATE`.
+
+What Privy can and cannot do here (docs read 2026-11-26):
+
+* Privy's **allowlist** gates new logins to listed identifiers, but its entries are individual email addresses, phone numbers or wallet addresses; the docs describe no domain entry, so it cannot express "any address at gmail.com". Existing users still log in when they are not on it [20].
+* Privy's **denylist** can block an entire email domain (`emailDomain` entries) or single addresses, through the Dashboard or the API, for email logins and verified OAuth emails [21]. It is a list of what to block, so it cannot express "only these domains" either; we may use it to block domains that show abuse, as a second layer.
+* Neither page mentions plus tag or dot normalisation, so Privy treats `a.b+1@gmail.com` and `ab@gmail.com` as two accounts. Our normalisation is the only guard.
+* Privy's **allowed domains** setting restricts which web origins may use our app id; it does not restrict users [22].
+
+So the allow list is enforced in our API. Because Privy would otherwise still create an account (and count an MAU) for an unlisted domain, the PWA calls `POST /v1/auth/email-check` before it asks Privy to send a code, and shows "This email provider is not supported yet" without contacting Privy. A client that skips the check can still create a Privy account, but it can never be registered as a player, and its wallet gets no sponsorship.
+
+### 5.2 Rate limits on code requests and sign ups
+
+| Limit | Default | Code |
+| --- | --- | --- |
+| `POST /v1/auth/email-check` per IP hash per hour | 10 | `RATE_LIMITED_IP` |
+| Same per device id per hour (a random id the PWA keeps in `[local]`, sent as a header) | 5 | `RATE_LIMITED_DEVICE` |
+| Same per normalised address per hour | 5 | `RATE_LIMITED_EMAIL` |
+| New registrations per IP hash per day | 5 (mobile carrier NAT shares IPs, so this flags for risk scoring above 5 and refuses above 20) | `SIGNUP_RATE_LIMITED` |
+| New registrations per device id | 2 per day, 3 in total | `SIGNUP_RATE_LIMITED` |
+| Global new registrations per hour | 5x the 7 day hourly average, at least 200; above it registrations queue and an alert fires | `SIGNUP_BUSY` |
+
+Privy applies its own limits to code sends and code attempts; the spike records them (item 5) and A1 copies them. Our limits stop scripted code requests through our app; a script calling Privy directly is limited by Privy and still cannot register.
 
 ---
 
@@ -650,13 +688,15 @@ Need a founder decision (section 11): the registration gate and the freeze power
 
 ### 6.2 API
 
-Auth: user endpoints take `Authorization: Bearer <Privy access token>` (verified with Privy's verification key; the user's embedded wallet comes from Privy's user record, cached). Admin endpoints take a token from the separate admin Privy app, plus an allow list of admin user ids and MFA. Public endpoints are CORS limited to `app.cojam.app`, `admin.cojam.app`.
+Auth: user endpoints take `Authorization: Bearer <Privy access token>` (verified with Privy's verification key; the user's embedded wallet and email come from Privy's user record, cached). One exception: a `predict` or `revokePlayKey` sent by a valid play key is sponsored without a token, because the on chain key binding already authorises it; so play continues while a Privy token refreshes or Privy is down. Admin endpoints take a token from a separate admin Privy app with email login, accepted only for addresses on the admin allow list (`admin_users`, REVIEW A7). Public endpoints are CORS limited to `app.cojam.app`, `admin.cojam.app`.
 
 | Endpoint | Purpose | Auth | Screens |
 | --- | --- | --- | --- |
 | `GET /v1/config` | Network, chain id, contract addresses, params, `minAppVersion`, feature flags | public | all |
 | `GET /v1/health` (`?strict=1`) | Liveness, RPC, DB, fee payer balance, indexer lag | public | ops |
-| `POST /v1/session` | First login bootstrap: creates the user row, queues `registerPlayer`, returns registration state | user | A1, A2 |
+| `POST /v1/auth/email-check` `{email}` | Before a code is sent: normalises, checks the allow list and the code request limits (5.1, 5.2); returns `{allowed, reason, supportedProviders}`. Says nothing about whether the address already has an account | public, rate limited | A1 |
+| `POST /v1/session` | Login bootstrap: creates the user row, re-checks the allow list and the normalised address, queues `registerPlayer` (sent within about 10 s), returns `{registration: pending / registered / refused, reason, playKey: {key, expiresAt} or null}` | user | A1, A2 |
+| `GET /v1/session` | Registration and play key state for polling during "Setting up your game" | user | A1, A2 |
 | `GET /v1/me` | Profile, wallet, registration, language, stats | user | P1 |
 | `PATCH /v1/me` | Language, display name masking choice | user | P1 |
 | `GET /v1/today` | Day id, opens and next open time, 5 markets in the user's language, the user's choices (chain plus pending) | user | H1, H2, H3 |
@@ -678,22 +718,25 @@ Auth: user endpoints take `Authorization: Bearer <Privy access token>` (verified
 | `POST /admin/v1/answers/:marketId/correct` | Inside the window: `correctOutcome`; after it: prepares `setCorrectedOutcome` for the owner and a compensation batch | admin | AD4 |
 | `GET /admin/v1/ranking/:weekId`, `POST .../airdrop` | Full ranking, eligibility, planned split; trigger or retry the airdrop job | admin | AD5 |
 | `GET /admin/v1/players?flag=`, `POST .../freeze` | Risk flags, freeze (operator), prepare unfreeze (owner) | admin | AD5 |
+| `GET/POST/PATCH /admin/v1/email-domains` | Email allow list: list, add, enable or disable, change the normalisation rule; sign ups per domain in the last 7 days | admin (owner or operator role) | AD6 |
 | `GET /admin/v1/system` | Fee payer and operator balances and runway, budgets, job queue, indexer lag, RPC, Claude usage and cost, audit log | admin | AD6 |
 
 ### 6.3 Fee payer policy (new allow list, `platform/api/src/feeDelegation/policy.ts`)
 
-Same pipeline as `server/`: decode 0x31 only, one sender signature recovering to `from`, chain id, value 0, canonical calldata, gas caps, simulate with `eth_estimateGas` from the sender, atomic reservation, co-sign, broadcast, settle the real fee. Plus: `from` must equal the bearer's Privy embedded wallet.
+Same pipeline as `server/`: decode 0x31 only, one sender signature recovering to `from`, chain id, value 0, canonical calldata, gas caps, simulate with `eth_estimateGas` from the sender, atomic reservation, co-sign, broadcast, settle the real fee. Plus the sender rule: for `predict` and `revokePlayKey`, `from` must be a play key whose on chain binding is current (`playerOf(from)` valid), or the bearer's Privy wallet (direct path); for every other call, `from` must equal the bearer's Privy embedded wallet. Limits are counted on the resolved player.
 
 | Target | Selector | Extra checks | Gas cap |
 | --- | --- | --- | --- |
-| CojamPredict | `predict(uint256,uint8)` | market is today's, open, not answered (simulation), player registered | 150,000 |
+| CojamPredict | `predict(uint256,uint8)` | sender rule above; market is today's, open, not answered by the player (simulation), player registered and not frozen | 150,000 |
+| CojamPredict | `setPlayKey(address,uint64)` | `from` is the bearer's wallet, player registered (or registration mined in the same session), `expiresAt <= now + 31 days`, at most 3 a day | 120,000 |
+| CojamPredict | `revokePlayKey()` | `from` is the bearer's wallet or that player's current key | 80,000 |
 | CojamPredict | `settle(address,uint32)` | `user == from` | 150,000 |
 | CojamPredict | `convert(uint256)` | multiple of rate, caps left (simulation) | 200,000 |
 | CT | `approve(address,uint256)` | spender == CojamStaking | 120,000 |
 | CojamStaking | `stake(uint256,uint8)` | amount >= minStake | 300,000 |
 | CojamStaking | `claimInterest(uint256)`, `withdraw(uint256)` | position owner == from (simulation) | 200,000 |
 
-Never sponsored: CT `transfer` (W4 user paid withdrawal), any owner or operator function, any other contract or selector, any type other than 0x31. Gas price cap 50 gkei.
+Never sponsored: CT `transfer` (W4: withdrawal is paid by the user in KAIA, per DECISIONS; W3 explains how to deposit KAIA; no sponsored router), any owner or operator function, any other contract or selector, any type other than 0x31. Gas price cap 50 gkei.
 
 ### 6.4 AI pipeline (questions and answers)
 
@@ -703,8 +746,8 @@ Drafting rules (the system prompt and a code validator both enforce them):
 
 * Binary, objective, with one named public resolution source and a second independent source; resolution criteria stated in one sentence with exact time and timezone.
 * `closesAt` must be before anything relevant is knowable: for discrete events at most the event start minus 10 minutes; for continuous values (prices, rates) the question compares two fixed future instants and closes at least 12 hours before the first one is observed, or the gap `resolvesAt - closesAt` is at least 12 hours.
-* Expected probability between 25% and 75% (no near certain questions), resolvable within 48 hours of close.
-* Categories (default mix per day): Crypto 2, Sports 1, Markets / economy 1, Tech / culture 1 (founder to confirm, 11.13). Excluded: elections and politics, wars and violence, disasters, health of named people, private individuals, crimes, anything involving CT or Cojam's own pool, low liquidity tokens anyone could move, adult content, gambling odds.
+* Expected probability between 25% and 75% (no near certain questions). `resolvesAt` at most 24 hours after the day's end, so the answer is set within 48 hours of the day's end (3.1). The 5 resolve times of a day fall in at most 2 time bands (for example the day's end, and the next morning for overnight sports), so per market settle needs about 2 keeper calls per player day.
+* Categories (default mix per day): Crypto 2, Sports 1, Markets / economy 1, Tech / culture 1 (decided default). Excluded: elections and politics, wars and violence, disasters, health of named people, private individuals, crimes, anything involving CT or Cojam's own pool, low liquidity tokens anyone could move, adult content, gambling odds.
 * No duplicate of the last 30 days (embedding free check: normalized text plus entity and date match).
 * Text: question at most 90 characters in EN, choice labels at most 12 characters (fits the card), category chip from a fixed list.
 
@@ -713,13 +756,15 @@ Schedule (UTC; KST = UTC+9):
 | Time | Job |
 | --- | --- |
 | Daily 02:00 | Draft 12 candidates for day D+2 with web search (fresh news and calendars) |
-| Daily 02:30 | Validate (second Claude call with a fresh context and the rules as a checklist, plus code checks), deduplicate, select 5 by category mix; translate the 5 into KO and JA (Claude, glossary from `site/assets/i18n.js` terms); store as `scheduled` |
+| Daily 02:30 | Validate (second Claude call with a fresh context and the rules as a checklist, plus code checks), deduplicate, select 5 by category mix; translate the 5 into KO and JA (Claude, glossary from `site/assets/i18n.js` terms; daily questions get no human review, while UI copy is reviewed per DECISIONS); store as `scheduled` |
 | Daily 12:00 | Publish day D+1 on chain: `createDay(D+1, 5 markets)`; retries every 15 min; alert if not mined by 18:00; at 22:00 fall back to the reserve pool of evergreen questions prepared weekly |
 | Every 5 min | Resolution sweep: markets with `resolvesAt` passed and no outcome |
-| Every 10 min | Settle sweep: days whose 5 outcomes are past `settleDelay`: `settleMany` in batches of 100 for all players of that day |
+| Every 10 min | Settle sweep, per market: every market whose outcome is past `resolvedAt + settleDelay` and that still has unsettled players gets `settleMany` in batches of 100 for its players (one call settles every ready slot of a player's day at once) |
+| Every 10 min | Expiry sweep: `voidExpired` for any market past `dayEnd + 48 h` without an outcome (should never happen; alerts first) |
 | Every 15 min | Correction check: second resolution run for outcomes still inside the window |
-| Monday 00:05 | Close the week in the index; Tuesday 12:00 run `airdrop` once the settle backlog for the week is zero |
-| Hourly | Risk scoring; registration queue every minute |
+| Monday 00:05 | Close the week in the index (K1 shows "Week closed"); Wednesday 12:00 (60 h later, 3.4) run `airdrop` once the settle backlog for the week is zero |
+| Hourly | Risk scoring |
+| Every 10 s | Registration queue: `registerPlayers` for sessions that passed the checks, so "Setting up your game" finishes in seconds |
 | Every minute | Monitors (balances, lag, budgets) |
 
 Resolution:
@@ -728,8 +773,10 @@ Resolution:
 2. Claude run 1: fetch the named sources only (`allowed_domains` set to the question's source domains), return `{outcome: "A"|"B"|"undeterminable", confidence 0..1, evidence: [{url, quote, observedAt}], reasoning_summary}`.
 3. Claude run 2, independent: different prompt order, may use the secondary source. Both runs and the adapter must agree, with confidence at least 0.9 each.
 4. Agreement: `setOutcome`. Evidence (quotes, URLs, fetched text hash, timestamps) stored in `resolutions` and `evidence`, shown on R1 and AD4.
-5. Disagreement or "undeterminable": retry every hour up to 24 hours after `resolvesAt`, then up to 48 hours with alerts; after 48 hours `voidMarket` (no hit points for anyone on that market; completion points are unaffected). Event postponed or cancelled: void.
+5. Disagreement or "undeterminable": retry every hour until 40 hours after the day's end, with alerts from 24 hours; at 40 hours `voidMarket` (no hit points for anyone on that market; completion points are unaffected), leaving 8 hours of margin before the contract's 48 hour deadline, after which only `voidExpired` is possible. Event postponed or cancelled: void.
 6. Inside the settle window a third run checks each outcome again; a disagreement triggers `correctOutcome` only if two of three runs plus the adapter agree on the other answer; otherwise it alerts and waits.
+
+Admin veto (decided): answers and questions need no approval, but an admin may edit, discard, cancel or replace a question until it is published on chain (AD3), re-run a resolution, and trigger a correction (AD4).
 
 Compensation tool (AD4): an admin marks a settled market as wrong; the worker computes users whose on chain choice equals the true outcome, prepares `setCorrectedOutcome` for the owner to sign, then runs `compensate` batches with the operator key. Every step is in `audit_log`.
 
@@ -747,9 +794,12 @@ Polls `eth_getLogs` every 2 s for both contracts and CT transfers to and from kn
 | Sponsorship error rate | above 5% over 10 min, or any `sponsored tx reverted on chain` |
 | Outbox failures reported by clients | above 2% of predicts per hour |
 | Day not on chain | 18:00 UTC for the next day |
-| Outcome missing | 6 h after `resolvesAt` |
+| Outcome missing | 6 h after `resolvesAt`; again at day end + 36 h |
 | Void rate | more than 1 market in 7 days |
-| Settle backlog | any day past `settleDelay + 1 h` with unsettled players |
+| Settle backlog | any market past `resolvedAt + settleDelay + 1 h` with unsettled players |
+| Owner activity | any `ParamsProposed`, `RoleGranted`, `setCorrectedOutcome` or reserve withdrawal (the owner is an EOA: every owner action is announced at once) |
+| Play keys | `setPlayKey` above 3x the 7 day hourly average; sponsored tx reverted with a replaced key |
+| Sign ups | `email-check` refusals per domain, registration refusals by reason |
 | Indexer lag | above 30 blocks |
 | Reserves | conversion reserve under 14 days of conversions plus the next pool; staking `availableRewards` under 30 days of expected new commitments |
 | Risk | sign up burst above 5x the 7 day hourly average |
@@ -770,7 +820,9 @@ Source of truth:
 | Week counters | Chain | Index sorted for K1 |
 | Airdrop payments | Chain | Index |
 | Staking positions | Chain | Index |
-| User profile, language, login provider, risk flags | Postgres | |
+| User profile, language, normalised email hash, risk flags | Postgres | |
+| Play key bindings | Chain (CojamPredict) | Index (`play_keys`) |
+| Email allow list | Postgres (`email_domains`) | |
 | Sponsorship usage, limits, budgets | Postgres | |
 | AI runs, audit log | Postgres | |
 
@@ -778,13 +830,16 @@ Tables (Postgres):
 
 | Table | Key columns |
 | --- | --- |
-| `users` | `id`, `privy_user_id` unique, `wallet` unique, `provider`, `language`, `display_mask`, `created_at`, `registered_tx`, `registered_at`, `frozen`, `risk_score` |
+| `users` | `id`, `privy_user_id` unique, `wallet` unique, `email_domain`, `email_normalized` (keyed hash, unique among registered players), `device_id_first`, `language`, `display_name`, `created_at`, `registration` (pending, registered, refused), `refusal_reason`, `registered_tx`, `registered_at`, `frozen`, `risk_score` |
+| `play_keys` | `key` pk, `wallet`, `expires_at`, `set_tx`, `revoked_tx`, `replaced_by`, `created_at` (from `PlayKeySet` / `PlayKeyRevoked`) |
+| `email_domains` | `domain` pk, `display_name`, `rule` (gmail, plus, none), `enabled`, `added_by`, `added_at` |
+| `auth_checks` | `id`, `email_normalized` (keyed hash), `domain`, `ip_hash`, `device_id`, `result`, `created_at` (code request limits, 5.2) |
 | `markets` | `market_id` pk, `day_id`, `slot`, `category`, `question` jsonb {en, ko, ja}, `choice_a`, `choice_b` jsonb, `closes_at`, `resolves_at`, `sources` jsonb, `criteria`, `content_hash`, `status` (draft, scheduled, published, closed, resolved, voided, corrected), `outcome`, `create_tx`, `outcome_tx` |
 | `market_drafts` | `id`, `target_day`, `payload` jsonb, `validator_result` jsonb, `selected`, `rejected_reason`, `ai_run_id` |
 | `resolutions` | `id`, `market_id`, `run` (1, 2, 3, adapter), `outcome`, `confidence`, `reasoning`, `ai_run_id`, `created_at` |
 | `evidence` | `id`, `resolution_id`, `url`, `quote`, `observed_at`, `fetched_text_sha256`, `fetched_text` (compressed) |
 | `predictions` | `(wallet, market_id)` pk, `choice`, `tx_hash`, `block`, `status` |
-| `user_days` | `(wallet, day_id)` pk, `answered`, `completed`, `settled`, `hits`, `completion_points`, `hit_points` |
+| `user_days` | `(wallet, day_id)` pk, `answered`, `completed`, `settled_mask`, `hits`, `completion_points`, `hit_points` |
 | `points_ledger` | `id`, `wallet`, `kind` (completion, hits, compensation, convert), `amount`, `day_id`, `week_id`, `tx_hash`, `log_index` unique |
 | `week_totals` | `(week_id, wallet)` pk, `points`, `last_credit_block` |
 | `weeks` | `week_id` pk, `qualified_players`, `pool`, `airdrop_tx`, `status` |
@@ -792,11 +847,11 @@ Tables (Postgres):
 | `conversions` | `tx_hash` pk, `wallet`, `points`, `ct` |
 | `stakes` | `(wallet, position_id)` pk, `principal`, `lock_days`, `apr_bps`, `start`, `end`, `claimed`, `closed` |
 | `wallet_transfers` | `tx_hash, log_index` pk, `wallet`, `direction` (in, out), `counterparty`, `amount` |
-| `sponsored_txs` | `sender_tx_hash` pk, `wallet`, `privy_user_id`, `action`, `market_id`, `tx_hash`, `status`, `reserved_wei`, `actual_wei`, `error_code`, `ip_hash`, `created_at` |
+| `sponsored_txs` | `sender_tx_hash` pk, `sender` (play key or wallet), `wallet` (resolved player), `privy_user_id` (null for play key predicts), `action`, `market_id`, `tx_hash`, `status`, `reserved_wei`, `actual_wei`, `error_code`, `ip_hash`, `created_at` |
 | `usage_daily` | `(day, key)` pk, `count`, `spent_wei` (rate limits and budget) |
 | `ai_runs` | `id`, `job`, `model`, `prompt_version`, `input_tokens`, `output_tokens`, `cost_usd`, `stop_reason`, `created_at` |
 | `risk_flags` | `id`, `wallet`, `rule`, `score`, `details` jsonb, `status` |
-| `admin_users` | `privy_user_id` pk, `role` (viewer, operator, owner), `added_by` |
+| `admin_users` | `privy_user_id` pk, `email`, `role` (viewer, operator, owner), `added_by` (the admin allow list; the first owner row is seeded at deploy) |
 | `audit_log` | `id`, `actor`, `action`, `target`, `payload` jsonb, `tx_hash`, `created_at` (append only) |
 | `chain_cursor` | `name` pk, `block` |
 | `pgboss.*` | job queue schema |
@@ -811,18 +866,21 @@ Tables (Postgres):
 | --- | --- |
 | Fee payer key leak | KAIA only, 30 days of runway at most, daily budget, separate from the swap fee payer; later KMS signing (as `docs/FEE-DELEGATION.md` section 6) |
 | Operator key leak | Bounded powers (3.7), every write checked on chain, alerts on any operator tx not initiated by a job, owner revokes the role |
-| Owner key compromise | Safe multisig (recommended), 48 h param delay gives time to react, owner cannot touch principal or points |
-| Relayer or fee payer abuse (draining gas) | Allow list, JWT bound sender, simulation before signing, per wallet, per user, per IP and global limits, balance floor |
-| Replay | 0x31 carries the user nonce and chain id; the server caches sender hashes; path B intents carry deadlines and nonces, `predict` is idempotent by market |
+| Owner key compromise | The owner is the master wallet, an EOA (DECISIONS), so one key is a single point of failure: the key stays only in the founder's wallet apps, never on a server or in Render; the 48 h param delay and the owner activity alert (6.6) give time to react; reserve withdrawals can only go to `treasury`, whose change also waits 48 h; the owner cannot touch principal, committed interest or points; admin role transfer waits 3 days |
+| Fee payer abuse (draining gas) | Allow list, sender rule (bearer's wallet, or a play key bound on chain to a registered player), simulation before signing, per player, per user, per IP and global limits, at most 3 `setPlayKey` a day, balance floor |
+| Play key theft (injected script, malicious extension, someone with the unlocked phone) | The key can only `predict` and revoke itself: it cannot move points or CT and holds no funds. Worst case: the thief picks answers for the victim on open markets until the key expires (at most 30 days as requested, 90 by contract) or is replaced. Mitigations: CSP and no third party scripts (below), key wrapped by a non extractable WebCrypto key, one active key per player so any new setup on the victim's device unbinds the stolen one, `revokePlayKey` on log out |
+| Play key binding abuse | `setPlayKey` only by the player's own wallet; a key serves one player only (`PlayKeyTaken`); a registered player cannot be a key and a bound key cannot be registered; expiry bounded on chain |
+| Two devices ping ponging one key binding | The replaced device does not re-authorise on its own; it shows "Cojam is now set up on another device" and waits for the user (4.2) |
+| Replay | 0x31 carries the sender's nonce (play key or wallet) and chain id; the server caches sender hashes; path B intents carry deadlines and nonces, `predict` is idempotent by market |
 | Answer front running (predicting after the outcome is knowable) | Contract rejects predictions at or after `closesAt`; drafting rules put `closesAt` before any information; `resolvesAt >= closesAt + minResolveGap`; outcomes are set only after close, so a pending `setOutcome` cannot be raced |
 | Wrong AI answer | Two runs plus adapter, settle delay as correction window, compensation verified on chain |
 | Prompt injection through sources | 6.4: data only, domain allow list, schema output, quote verification, no write tools |
-| Modal free signing abused by injected script | Strict CSP, no third party scripts, SRI, fixed call table in the outbox, dependency pinning and `npm audit` in CI |
-| Admin account takeover | Separate Privy app for admin, allow list, MFA, every action in `audit_log`, owner actions need the owner wallet anyway |
-| Sybil farming | Section 5 |
+| Modal free signing abused by injected script | Strict CSP, no third party scripts, SRI, fixed call tables per signer (4.1), dependency pinning and `npm audit` in CI |
+| Admin account takeover | Separate Privy app for admin with email login, accepted only for addresses on the admin allow list (REVIEW A7), 30 minute idle sign out, every action in `audit_log`; owner actions are signed by the master wallet, never by the server, so an admin session alone cannot change params or move reserves |
+| Sybil farming (cheaper with email only login) | Section 5: email provider allow list and normalisation, registration gate, code request and sign up limits, conversion wait and caps, qualified players, risk scoring |
 | Reserve exhaustion | Reverts instead of overdraw, runway alerts, staking reserves interest at stake time |
 | RPC outage | Two providers with failover, health checks, outbox keeps items |
-| Privy outage | Outbox keeps items; reads work from the index; status banner |
+| Privy outage | Picks keep working: play key predicts need no Privy token or signature. Logins, setup and value actions wait; reads work from the index; status banner |
 | Data loss | Render Postgres daily backups plus point in time recovery; index rebuildable from chain |
 
 ### 8.2 Self audit checklist (before mainnet)
@@ -837,10 +895,13 @@ Tables (Postgres):
 * [ ] Reserve math: owner withdrawals can never reach principal or committed interest.
 * [ ] Time math: dayId, weekId, `closesAt` edges at exact boundaries.
 * [ ] Slither clean or every finding explained; storage layout and gas report recorded.
-* [ ] Fee payer allow list tests: every non listed selector, target, type and oversized gas refused.
+* [ ] Fee payer allow list tests: every non listed selector, target, type and oversized gas refused; a play key refused for anything but `predict` and `revokePlayKey`; an expired or replaced key refused.
+* [ ] Play key: `convert`, staking and `setPlayKey` revert when called by a key; one key per player and one player per key hold under fuzzing.
+* [ ] 48 hour rule: `createDay` refuses late `resolvesAt`, `setOutcome` refuses after the deadline, `voidExpired` works for anyone; `airdropDelay >= RESOLVE_DEADLINE + settleDelay`.
+* [ ] Email normalisation unit tests (dots, plus tags, case, `googlemail.com`) and the allow list enforced in both `email-check` and `session`.
 * [ ] CSP and SRI checked in production headers; no secret in any client bundle.
 * [ ] Key map recorded in `contracts/deployments/wallets.platform.json` (addresses only).
-* [ ] External audit (question 11.21).
+* [ ] External audit: open (section 11).
 
 ### 8.3 Test plan
 
@@ -853,8 +914,8 @@ Tables (Postgres):
 | API unit | Policy, decoding, limits, idempotency, JWT binding | `node:test` / Vitest with mocked RPC (as `server/test`) |
 | AI pipeline | Golden set of 50 past questions with known answers; replay resolution; measure agreement and void rate; injection fixtures | Vitest + recorded fixtures |
 | PWA | Outbox state machine (all rows of 4.4, and the play key lifecycle of 4.2) with a fake node; i18n completeness; gesture tests | Vitest + Playwright |
-| E2E on Kairos | Real Privy logins on iPhone and Android, installed PWA, 5 swipes in under 10 s, airplane mode mid swipe, kill app mid outbox, day rollover, conversion, staking full cycle with a 1 hour lock test build | Playwright for desktop parts, manual script for devices, `tools/e2e/` pattern |
-| Soak | 14 real daily cycles on Kairos with 20 to 30 testers | Phase 5 |
+| E2E on Kairos | Real Privy email logins on iPhone and Android (listed and unlisted domains), installed PWA, setup and play key authorisation, 5 swipes in under 10 s, key expiry and re-authorisation, second device replacing the key, storage cleared, airplane mode mid swipe, kill app mid outbox, day rollover, conversion, staking full cycle with a 1 hour lock test build | Playwright for desktop parts, manual script for devices, `tools/e2e/` pattern |
+| Soak | Real daily cycles on Kairos with testers, through phase 5's acceptance criteria | Phase 5 |
 
 ---
 
@@ -879,11 +940,13 @@ The PWA picks the network from build time config, with `?net=kairos` only in non
 | `cojam-app-api` | web, Node 20, Singapore, Starter | `platform` | `app-api.cojam.app` | `npm run start -w api`, health `/v1/health` |
 | `cojam-app-worker` | worker, Node 20, Singapore, Starter, 1 instance | `platform` | none | `npm run worker -w api` |
 | `cojam-app-db` | Postgres 16, Basic | | | backups on |
-| `cojam-ops` (existing) | cron | `contracts` | | new `OPS_TASK=deploy-platform` for the mainnet deploy, same manual trigger and `CONFIRM_MAINNET` pattern |
+| `cojam-ops` (existing) | cron | `contracts` | | new `OPS_TASK=deploy-platform` for the mainnet deploy, same manual trigger and `CONFIRM_MAINNET` pattern; the deploy sets the master wallet as owner and treasury |
+
+DNS on Cloudflare (DECISIONS): `app`, `admin` and `app-api` are CNAME records to the Render services, set to DNS only (grey cloud) so Render issues and renews the TLS certificates and the headers above reach clients unchanged; `cojam.app` and `api.cojam.app` stay as they are.
 
 ### 9.3 Environment variables (names only)
 
-API and worker: `NODE_ENV`, `NETWORK`, `CHAIN_ID`, `KAIA_RPC_URL`, `KAIA_RPC_URL_FALLBACK`, `DATABASE_URL`, `CT_ADDRESS`, `PREDICT_ADDRESS`, `PREDICT_DEPLOY_BLOCK`, `STAKING_ADDRESS`, `STAKING_DEPLOY_BLOCK`, `ALLOWED_ORIGINS`, `PRIVY_APP_ID`, `PRIVY_APP_SECRET`, `PRIVY_VERIFICATION_KEY`, `PRIVY_ADMIN_APP_ID`, `PRIVY_ADMIN_APP_SECRET`, `ADMIN_ALLOWLIST`, `APP_FEE_PAYER_PRIVATE_KEY` (api only), `OPERATOR_PRIVATE_KEY` (worker only), `ANTHROPIC_API_KEY` (worker only), `AI_MODEL` (`claude-opus-5-5`), `AI_MONTHLY_BUDGET_USD`, `MAX_GAS_PRICE_GKEI`, `SPONSOR_PREDICT_PER_DAY`, `SPONSOR_OTHER_PER_DAY`, `SPONSOR_IP_PER_DAY`, `SPONSOR_BURST_PER_MIN`, `DAILY_BUDGET_KAIA`, `MIN_FEE_PAYER_BALANCE_KAIA`, `MIN_OPERATOR_BALANCE_KAIA`, `IP_HASH_SALT`, `SENTRY_DSN`, `ALERT_TELEGRAM_BOT_TOKEN`, `ALERT_TELEGRAM_CHAT_ID`, `ALERT_EMAIL`, `TRUST_PROXY`.
+API and worker: `NODE_ENV`, `NETWORK`, `CHAIN_ID`, `KAIA_RPC_URL`, `KAIA_RPC_URL_FALLBACK`, `DATABASE_URL`, `CT_ADDRESS`, `PREDICT_ADDRESS`, `PREDICT_DEPLOY_BLOCK`, `STAKING_ADDRESS`, `STAKING_DEPLOY_BLOCK`, `ALLOWED_ORIGINS`, `PRIVY_APP_ID`, `PRIVY_APP_SECRET`, `PRIVY_VERIFICATION_KEY`, `PRIVY_ADMIN_APP_ID`, `PRIVY_ADMIN_APP_SECRET`, `ADMIN_OWNER_EMAIL` (seeds the first `admin_users` row), `EMAIL_HASH_KEY`, `PLAY_KEY_TTL_DAYS` (30), `SIGNUP_IP_PER_DAY`, `SIGNUP_DEVICE_PER_DAY`, `EMAIL_CHECK_IP_PER_HOUR`, `EMAIL_CHECK_DEVICE_PER_HOUR`, `APP_FEE_PAYER_PRIVATE_KEY` (api only), `OPERATOR_PRIVATE_KEY` (worker only), `ANTHROPIC_API_KEY` (worker only), `AI_MODEL` (`claude-opus-5-5`), `AI_MONTHLY_BUDGET_USD`, `MAX_GAS_PRICE_GKEI`, `SPONSOR_PREDICT_PER_DAY`, `SPONSOR_OTHER_PER_DAY`, `SPONSOR_IP_PER_DAY`, `SPONSOR_BURST_PER_MIN`, `DAILY_BUDGET_KAIA`, `MIN_FEE_PAYER_BALANCE_KAIA`, `MIN_OPERATOR_BALANCE_KAIA`, `IP_HASH_SALT`, `SENTRY_DSN`, `ALERT_TELEGRAM_BOT_TOKEN`, `ALERT_TELEGRAM_CHAT_ID`, `ALERT_EMAIL`, `TRUST_PROXY`.
 
 Static builds: `VITE_NETWORK`, `VITE_API_URL`, `VITE_PRIVY_APP_ID`, `VITE_SENTRY_DSN`, `VITE_SWAP_URL` (`https://cojam.app/migrate/`), `VITE_RELEASE`.
 
@@ -891,18 +954,19 @@ Static builds: `VITE_NETWORK`, `VITE_API_URL`, `VITE_PRIVY_APP_ID`, `VITE_SENTRY
 
 ```
 standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone === true
-if admin route                    -> not this app
+admin lives on admin.cojam.app    -> never reaches this logic
 else if standalone                -> A1 / H1 flow
 else if ?preview=<signed token>   -> allowed for design review only (non production builds)
 else                              -> G1 Gate:
      Android Chrome / Edge with beforeinstallprompt  -> "Install" button
      iOS Safari                                       -> Share, Add to Home Screen steps with images
-     iOS other browsers / in app browsers (KakaoTalk, LINE, Instagram) -> "Open in Safari" instructions
+     iOS other browsers               -> share menu steps, or "Open in Safari"
+     in app browsers (KakaoTalk, LINE, Instagram) -> "Open in your browser" instructions
      desktop                                          -> QR code to app.cojam.app, plus the swap link
      always                                           -> link to the swap at cojam.app
 ```
 
-The manifest uses `display: standalone`, `start_url: /?source=pwa`, `scope: /`, brand colours `#124CC4` theme, icons from `brand/logo/cojam-mark.svg` on a light tile (the mark needs a light ground at small sizes). In app browsers are detected by user agent because Google OAuth fails there [9].
+The manifest uses `display: standalone`, `start_url: /?source=pwa`, `scope: /`, brand colours `#124CC4` theme, icons from `brand/logo/cojam-mark.svg` on a light tile (the mark needs a light ground at small sizes). In app browsers are detected by user agent because they cannot install a PWA.
 
 ### 9.5 Release and rollback
 
@@ -913,44 +977,29 @@ The manifest uses `display: standalone`, `start_url: /?source=pwa`, `scope: /`, 
 
 ---
 
-## 10. Milestones
+## 10. Phases and acceptance criteria
+
+No dates (DECISIONS: as fast as possible with the founder in the loop). The phases run in this order of dependency; after the spike, phases 1 to 4 run in parallel with agents wherever the inputs exist (the shared ABIs from phase 1 unblock 2 and 3; the spec unblocks 3; the AI pipeline needs only the contracts' `createDay` and `setOutcome`). A phase is done when its acceptance criteria hold, not at a date. The founder checks the result at the end of phases 0, 3 and 5.
 
 | Phase | Work | Acceptance criteria |
 | --- | --- | --- |
-| 0. Spike (1 week) | Minimal installed PWA with Privy on Kairos; `secp256k1_sign` of a 0x31 SigHash; the existing fee payer code co-signs; Kakao custom OAuth; Privy billing question; Kaiascan token display of a soulbound stub | All 8 items of 1.4 recorded with evidence (tx hashes, device videos, latency numbers, Privy's written answer). Decision recorded: path A or path B |
-| 1. Contracts (2 weeks) | CojamPredict, CojamStaking, tests, fuzz, gas report, Kairos deploy, verify | 100% function coverage, invariants pass at 10,000 x 200, measured gas replaces 4.8, Sourcify exact match on Kairos |
-| 2. API, fee payer, indexer, jobs (2 weeks, parallel with 3) | Endpoints of 6.2, policy of 6.3, indexer, operator jobs, monitors, Postgres schema | Fee payer refuses every non listed call in tests; index rebuild from block 0 equals live index; operator jobs idempotent under restart |
-| 3. PWA (3 weeks) | G1 to P1 per the screen spec, outbox, i18n EN / KO / JA, service worker | 5 swipes in under 10 s all mined on Kairos; airplane mode and app kill recover; Lighthouse PWA installable; i18n keys complete in 3 languages |
-| 4. AI pipeline and admin (2 weeks) | Drafting, validation, translation, resolution with evidence, compensation tool; AD0 to AD6 | Golden set: 0 wrong outcomes set, void rate under 5%; 7 consecutive days published automatically on Kairos; every admin action in the audit log |
-| 5. Kairos beta (2 weeks) | 20 to 30 testers, real daily cycles, two weekly airdrops, staking with a test build of short locks | 14 days without manual chain intervention; measured gas and Privy signatures per player; no P1 bugs open; self audit checklist complete |
-| 6. Mainnet | Deploy, fund reserves, register founders, soft launch, then public | Contracts verified; reserves funded per founder plan; monitors live; rollback plan rehearsed |
+| 0. Spike (first, gates everything) | Minimal installed PWA with Privy email login on Kairos; play key creation, `setPlayKey` signed with `secp256k1_sign`, 5 play key predicts; direct path predict; the existing fee payer code co-signs; Privy billing question; Kaiascan token display of a soulbound stub | All 10 items of 1.4 recorded with evidence (tx hashes, device videos, latency numbers, Privy's written answer, Privy's code length, lifetime and limits). Decision recorded: path A or path B for setup and value actions |
+| 1. Contracts | CojamPredict (with play key, per market settle, 48 hour rule), CojamStaking, tests, fuzz, gas report, Kairos deploy, verify | 100% function coverage; invariants of 3.4 and 3.5 pass at 10,000 x 200; measured gas replaces 4.9; Sourcify exact match on Kairos |
+| 2. API, fee payer, indexer, jobs | Endpoints of 6.2, policy of 6.3, email allow list and limits of 5.1 and 5.2, indexer, operator jobs, monitors, Postgres schema | Fee payer refuses every non listed call and every invalid play key in tests; `email-check` and `session` enforce the allow list and normalisation; index rebuild from block 0 equals live index; operator jobs idempotent under restart |
+| 3. PWA | G1 to P1 per the screen spec, setup and play key lifecycle, outbox, i18n EN / KO / JA, service worker | 5 swipes in under 10 s all mined on Kairos; airplane mode, app kill, key expiry, cleared storage and a second device all recover as specified; Lighthouse PWA installable; i18n keys complete in 3 languages |
+| 4. AI pipeline and admin | Drafting, validation, translation, resolution with evidence, compensation tool; AD0 to AD6 including the email allow list editor | Golden set: 0 wrong outcomes set, void rate under 5%; 7 consecutive days published and resolved automatically on Kairos, every market inside the 48 hour rule; every admin action in the audit log; admin sign in refused for addresses off the allow list |
+| 5. Kairos beta | Testers (founder plus invited players), real daily cycles, at least one weekly airdrop, staking with a test build of short locks | 7 consecutive daily cycles and one airdrop without manual chain intervention; measured gas and Privy signatures per player; no P1 bugs open; self audit checklist complete |
+| 6. Mainnet | Deploy with the master wallet as owner and treasury, fund reserves, register founders, soft launch, then public | Contracts verified; reserves funded per the founder's amounts; monitors live; rollback plan rehearsed |
 
 ---
 
 ## 11. Open questions for the founder
 
-1. **Privy cost at scale.** One transaction per swipe means about 5 Privy signatures per player per day; above 50,000 a month Developer plans charge $0.01 each (about $4,270 a month at 3,000 daily players), Enterprise "from $0.001". Accept, negotiate Enterprise early, or revisit after Privy confirms whether client side raw signatures are billed?
-2. **Login providers.** Proposed: Google, Apple, LINE (native), Kakao (custom OAuth). Add or drop any (X, Telegram, Discord)? Is email login excluded entirely?
-3. **Day boundary.** New set at 00:00 UTC = 09:00 KST / JST, week from Monday 09:00 KST. Confirm, or prefer midnight KST?
-4. **Missed days.** A day's unanswered markets expire at the day's end and cannot be caught up later. Confirm.
-5. **Hit points delay.** Hits credited about 6 hours after the answer (the correction window), shown as "pending +50P" before that. Confirm the 6 hours.
-6. **Anti abuse package (section 5):** registration gate and the operator's freeze power; 7 days before the first conversion; conversion caps (50 CT per user per day, 20,000 CT global); flagged accounts lose sponsorship. Accept each?
-7. **Weekly pool.** Count "qualified players" (played 3+ days that week, account 7+ days old) instead of all sign ups, and cap the pool (default 10,000 CT)? Tie rule for equal points: earlier last credit ranks higher, or split the two prizes?
-8. **Staking rules.** Tier by the amount of each position (not the user's total)? No interest after the lock ends and no auto renewal? No early exit at all, or early exit with forfeited interest? A cap on total staked CT?
-9. **User paid withdrawal (W4).** Users need KAIA in their app wallet to withdraw CT. Accept that (W3 explains how to deposit KAIA), or add a small router contract that is sponsored and takes the fee in CT?
-10. **Owner custody.** Kaia Safe multisig (recommended) or an EOA like the master? Who holds the pauser phone wallet?
-11. **Reward wallet and funding.** Use the master wallet or a new reward wallet as treasury? How much CT to fund at launch for conversions and airdrops, and for staking interest (staking reserves each position's full interest up front)?
-12. **Admin veto.** Answers and questions are fully automatic. May admins still cancel a scheduled question or trigger a correction (as designed in AD3 and AD4), or should the admin be read only?
-13. **Question categories and banned topics.** Default mix Crypto 2, Sports 1, Markets 1, Tech / culture 1, with politics, elections and violence excluded. Change?
-14. **Question translations.** Daily questions are machine translated into KO and JA by Claude without human review (UI copy is human reviewed per DECISIONS). Acceptable?
-15. **Voided markets.** A void gives no hit points to anyone and does not affect the 100P completion reward. Confirm.
-16. **Rate changes notice.** Economic params change after a 48 hour on chain delay. Enough?
-17. **Display names on K1.** Masked Privy name or short wallet address? Can users choose?
-18. **Domains.** `admin.cojam.app` and `app-api.cojam.app` acceptable?
-19. **Points on the explorer.** Show points as a soulbound "CJP" token on Kaiascan (recommended), or keep them as an internal ledger?
-20. **Beta.** Who are the 20 to 30 Kairos testers, and how long should the beta run (default 2 weeks)?
-21. **External audit.** Self audit only (as for the swap), or a paid external audit before mainnet given that staking holds user principal?
-22. **Gas budget.** Approve the daily sponsorship budget (default 3 x the 7 day average, at least 10 KAIA) and the fee payer top up size (30 days of runway).
+Everything else asked in draft 1 is decided and written into the body above (REVIEW B3 to B9, B12, B14, the DECISIONS rows, and the proposed defaults that REVIEW section B accepts).
+
+1. **Reward funding amounts at launch.** How much CT the master wallet sends to `CojamPredict` for conversions and airdrops, and to `CojamStaking` for interest (each position's full interest is reserved when it opens, so this sets when S1 shows "Staking is full for now"). Plain transfers, topped up at will; unused reserve comes back only to the treasury.
+2. **External audit.** Staking holds user principal and the master wallet is a single EOA owner: self audit only (as for the swap), or a paid external audit before mainnet?
+3. **Kairos beta testers.** Who besides the founder plays the beta (phase 5 needs real players on real devices, iPhone and Android, KO and JA)?
 
 ---
 
@@ -964,14 +1013,17 @@ The manifest uses `display: standalone`, `start_url: /?source=pwa`, `scope: /`, 
 6. Privy, Policies overview (method list, default deny): https://docs.privy.io/controls/policies/overview
 7. Privy, Manage wallet UIs (`showWalletUIs`, Dashboard confirmation modals, security note): https://docs.privy.io/recipes/react/manage-wallet-UIs
 8. Privy pricing (plans, MAU, signatures, overage): https://privy.io/pricing
-9. Privy, OAuth login methods (native providers including LINE, in app browser warning): https://docs.privy.io/authentication/user-authentication/login-methods/oauth
-10. Privy, Custom OAuth providers: https://docs.privy.io/authentication/user-authentication/login-methods/custom-oauth
+9. Privy, Email login methods (one time code): https://docs.privy.io/authentication/user-authentication/login-methods/email
+10. Not used since social login was dropped on 2026-11-26.
 11. Kaia docs, Fee delegation (SigRLP, SenderTxHashRLP, signature examples): https://docs.kaia.io/build/transactions/fee-delegation/
 12. Kaia docs, Gas abstraction introduction (whitelisted ERC-20 only): https://docs.kaia.io/build/tutorials/ga-tutorial/ga-intro/
 13. Kaia docs, Hard fork history (Prague at block 190,670,000 on 2025-07-17 with EIP-7702 / KIP-228 and KIP-223 calldata pricing): https://docs.kaia.io/misc/kaia-history/
 14. KIP-228, SetCode for EOA: https://kips.kaia.io/KIPs/kip-228
 15. Monad docs, Next.js + Serwist + Privy embedded wallet PWA template: https://docs.monad.xyz/templates/next-serwist-privy-embedded-wallet
-16. Auth0 community, social login from an iOS home screen PWA opens Safari and does not return: https://community.auth0.com/t/login-to-pwa-on-ios-using-social-identity-provider/18109
+16. Not used since social login was dropped on 2026-11-26.
 17. WebKit blog, Full third party cookie blocking and more (home screen web apps count days of use separately): https://webkit.org/blog/10218/full-third-party-cookie-blocking-and-more/
 18. Privy, Server side access recipe (signers): https://docs.privy.io/recipes/wallets/session-signer-use-cases/server-side-access
 19. In repository: `docs/FEE-DELEGATION.md` (fee payer pipeline, gas price measurement, format check on mainnet), `server/src/policy.js`, `@kaiachain/js-ext-core` type definitions (`sigRLP`, `addSenderSig`, `senderTxHashRLP`).
+20. Privy, Allowlist (individual emails, phone numbers or wallets; new users not listed are denied; API to add, remove and list): https://docs.privy.io/user-management/users/managing-users/allowlist
+21. Privy, Denylist (single addresses or whole email domains with `emailDomain` entries; applies to email, SMS, wallet and verified OAuth emails): https://docs.privy.io/user-management/users/managing-users/denylist
+22. Privy, Allowed domains (restricts which origins may use the app id, not which users log in): https://docs.privy.io/recipes/dashboard/allowed-domains

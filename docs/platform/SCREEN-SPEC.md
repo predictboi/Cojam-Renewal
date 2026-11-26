@@ -1,11 +1,11 @@
 # Cojam Daily Prediction: screen specification
 
-Status: draft 1 (2026-11-26), for founder review and the parallel development plan.
-Scope: only `PLAN-SOURCE.md` as changed by `DECISIONS.md`. Where the two disagree, `DECISIONS.md` wins. Anything neither settles is listed in section 9 and is not designed as a feature here.
+Status: draft 2 (2026-11-26). Folds in `REVIEW.md` (sections A and B) and every row of `DECISIONS.md`: Privy email login only with an email provider allow list, the play key ("Setting up your game"), per market settle with the 48 hour rule, one retry policy, the new registration, pending, conversion and staking states, admin sign in with Privy email on an allow list, and the accepted defaults. Agrees with `DEV-PLAN.md` draft 2 on names, numbers and states.
+Scope: only `PLAN-SOURCE.md` as changed by `DECISIONS.md`. Where the two disagree, `DECISIONS.md` wins. What is still open is listed in section 9 and is not designed as a feature here.
 
 Conventions used below:
 
-- **Data source tags**: `[chain]` read from a Kaia contract (prediction, staking, CT token) through the server's RPC or the client; `[api]` Cojam server API on `api.cojam.app`; `[privy]` Privy SDK (session, user, embedded wallet); `[local]` device only (localStorage, IndexedDB, service worker cache).
+- **Data source tags**: `[chain]` read from a Kaia contract (prediction, staking, CT token) through the server's RPC or the client; `[api]` Cojam platform API on `app-api.cojam.app` (the swap's gas API on `api.cojam.app` is separate); `[privy]` Privy SDK (session, user, embedded wallet); `[local]` device only (localStorage, IndexedDB, service worker cache).
 - **Copy**: text in quotes is the English source string. `{name}` is a variable. Every string goes into the EN / KO / JA dictionary; no string is hard coded in markup.
 - **Numbers**: points are whole numbers with thousands separators and a `P` suffix with no space ("1,250P"). CT shows up to 4 decimals with trailing zeros trimmed ("12.5 CT", "0.35 CT"); the full value is in the accessible label. KAIA shows up to 4 decimals. All figures use tabular numerals. Dates use the device locale; times show the device time zone abbreviation the first time they appear on a screen.
 - **Ticker rule**: in the PWA, "CT" always means new CT (`0x91cb3B346C80ff965a9667ba6228834dbedD71a2`). Where old CT can be confused (W3, W4, G1), the copy says "new CT" and shows the full address.
@@ -21,7 +21,7 @@ Conventions used below:
 | --- | --- | --- | --- | --- |
 | (a) PWA | `app.cojam.app`, display mode standalone | Players | Phone first (360 to 430 px), works on tablets | All play: predict, results, ranking, staking, wallet, profile |
 | (b) Gate | `app.cojam.app` in any ordinary browser tab | Visitors | Any | Install the app, or go to the swap at `https://cojam.app/migrate/`. No play, no login |
-| (c) Admin | Desktop web page (host in open question Q20) | Cojam operators | Desktop, 1280 px and up | Watch the AI pipeline, change reward numbers, correct and compensate, run the airdrop, watch wallets and jobs |
+| (c) Admin | `admin.cojam.app`, desktop web page | Cojam operators on the admin allow list | Desktop, 1280 px and up | Watch the AI pipeline, change reward numbers, correct and compensate, run the airdrop, watch wallets and jobs |
 
 ### 1.2 Install gate logic
 
@@ -31,8 +31,8 @@ Runs before anything else on `app.cojam.app`, synchronously in the document head
 standalone = matchMedia('(display-mode: standalone)').matches
           || matchMedia('(display-mode: fullscreen)').matches
           || navigator.standalone === true            // iOS home screen
-if path starts with the admin path        -> Admin (never gated)
-else if standalone                        -> PWA (A1 if no Privy session, else A2 if first run not done, else H1/H2/H3)
+(the admin lives on admin.cojam.app and never reaches this logic)
+if standalone                             -> PWA (A1 if no Privy session; A1 setup panel if the account is not registered or this device has no valid play key; else A2 if first run not done; else H1/H2/H3)
 else                                      -> G1 Gate, variant chosen below
 ```
 
@@ -53,7 +53,8 @@ After `appinstalled` fires (Android), G1 switches to "Installed. Open Cojam from
 ### 1.3 Navigation map
 
 ```
-G1 Gate ──install──> (home screen icon) ──> A1 Login ──> A2 First run ──> Home
+G1 Gate ──install──> (home screen icon) ──> A1 Login (email, code) ──> A2 First run (setup finishes behind it) ──> Home
+A1 ──returning user, no valid play key on this device──> A1 setup panel "Setting up your game" ──> Home
 G1 ──"Swap old CT"──> https://cojam.app/migrate/ (new tab)
 
 Home = H1 Card view | H2 Terminal view  (switch; choice remembered [local])
@@ -80,7 +81,7 @@ Sub screens (W2, W3, W4, P1) open as pushed pages with a back button in the head
 | 1 | "Home" | card stack | H1, H2 or H3 by state | Volt dot while today's set has unanswered questions |
 | 2 | "Results" | check list | R1 | Count of newly set answers since the last visit, max "9+" |
 | 3 | "Ranking" | podium | K1 | none |
-| 4 | "Staking" | lock with arrow | S1 (S2 if the user has stakes) | Dot when any stake has 10 CT or more claimable or an unlocked principal |
+| 4 | "Staking" | lock with arrow | S1 (S2 if the user has stakes) | Dot when a locked stake has 10 CT or more claimable, or a stake has unlocked |
 | 5 | "Wallet" | wallet | W1 | none |
 
 Profile and settings (P1) is reached from the header, not the tab bar, to keep five tabs.
@@ -98,7 +99,17 @@ Profile and settings (P1) is reached from the header, not the tab bar, to keep f
 | Right | Point pill "{points}P" | `[chain]` point balance, refreshed after every confirmed point change and every 30 s while visible | Tap: W1. States below |
 | Right | Profile button (round, initial of display name or a generic person icon) | `[api]` profile | Tap: P1. Label "Profile and settings" |
 
-Point pill states: loading (skeleton pill 64 px wide), ready ("1,250P"), pending increase ("1,250P" with a small spinner and label "Points on the way"), error (last known value plus a muted dot; label "Balance may be out of date").
+Point pill states:
+
+| State | Display | Accessible label |
+| --- | --- | --- |
+| Loading | Skeleton pill 64 px wide | "Loading points" |
+| Ready | "1,250P" (confirmed on chain only) | "1,250 points" |
+| Saving | "1,250P" with a small spinner, while today's fifth pick is not yet mined (the 100P is not added until it is) | "1,250 points. Saving your picks." |
+| Hits pending | "1,250P" plus a small sky tag "+{n}" (hit points inside the 6 hour correction window, not yet credited) | "1,250 points. {n} points on the way, landing about {time}." |
+| Error | Last known value plus a muted dot | "Balance may be out of date" |
+
+Tap opens W1, whose points card spells out the pending hit points and when they land.
 
 Header ground: blue band (`--brand`) with snow text, as the site shell. Safe area: `padding-top: env(safe-area-inset-top)`.
 
@@ -109,7 +120,7 @@ Used for staking, claiming interest, withdrawing principal, converting points, w
 | State | Title | Body | Actions |
 | --- | --- | --- | --- |
 | Review (only W4 and stakes over 10,000 CT) | "Check and confirm" | Summary rows of the action | "Confirm" (primary), "Cancel" |
-| Signing | "Confirm in your Cojam wallet" | "This only takes a moment." | "Cancel" |
+| Signing | "Signing with your Cojam wallet" | "This only takes a moment. No confirmation is needed." | "Cancel" |
 | Step list (when 2 steps: approve then stake) | "Staking {amount} CT" | Steps "1 Allow Cojam to use {amount} CT", "2 Stake {amount} CT", each Waiting / In progress / Done | "Cancel" until step 1 is sent; after that "Hide" (the work continues) |
 | Sending | "Sending to Kaia" | "Usually confirmed in a few seconds." Tx hash chip once known | "Hide" |
 | Success | Per action, see screen | Confirmed amounts, "View on Kaiascan" link | "Done" |
@@ -124,9 +135,10 @@ Ink pill, volt bottom edge, above the tab bar and the safe area, `aria-live="pol
 
 | Event | Copy | Button |
 | --- | --- | --- |
-| Pick failed for good (after quiet retries; never for a retry in progress) | "Your pick on question {n} was not saved." | "Try again" |
-| Points paid | "+{n}P paid." | none |
-| Hit paid after an answer is set | "{n} hits paid: +{p}P." | "See results" |
+| Pick failed for good (only a non retryable failure while the question is open; never for a retry in progress) | "Your pick on question {n} was not saved." | "Try again" |
+| Completion reward confirmed (fifth pick mined) | "+100P paid." | none |
+| Points paid (other confirmed credits) | "+{n}P paid." | none |
+| Hit points landed (after the correction window) | "{n} hits paid: +{p}P." | "See results" |
 | CT arrived (deposit detected) | "{amount} CT arrived in your wallet." | none |
 | Address copied | "Address copied." | none |
 | Update ready | "A new version of Cojam is ready." | "Reload" |
@@ -149,8 +161,8 @@ Detection: `navigator.onLine` plus a failed API heartbeat (2 misses, 10 s apart)
 | Chain RPC down | Balance blocks | "Kaia is not answering right now. Balances may be out of date." | "Try again" |
 | Partial failure | Only the failed block shows the error; other blocks render | as above | per block |
 | Unknown route | Full screen | "This page does not exist." | "Go to Home" |
-| Gas sponsor out of funds (server reports) | Inline on the action | "Free transactions are paused for a moment. Try again in a few minutes." | "Try again" |
-| Reward wallet short (convert, interest, airdrop) | Inline on the action | "Payouts are paused while Cojam refills the reward wallet. Your points and interest are kept." | none |
+| Gas sponsor out of funds (server reports) | Inline on the action; for picks, the H1 banner only (picks keep retrying until the question closes) | "Free transactions are paused for a moment. Try again in a few minutes." | "Try again" |
+| Conversion reserve short (convert, airdrop) | Inline on the action | "Payouts are paused while Cojam refills the reward reserve. Your points are kept." | none |
 
 ### 2.6 Global system screens
 
@@ -158,19 +170,21 @@ Detection: `navigator.onLine` plus a failed API heartbeat (2 misses, 10 s apart)
 | --- | --- | --- | --- |
 | Maintenance | `[api]` status flag `maintenance=true` | Title "Cojam is being updated", body "Predictions and payouts are paused. Your points, stakes and CT are safe on chain. We will be back shortly." Optional admin message line. "Expected back: {time}" if set | "Check again" (re checks; also auto every 60 s) |
 | Update required | `[api]` `minVersion` above the running version | "Update Cojam to keep playing", body "A newer version is needed." | "Update now" (activates the waiting service worker and reloads) |
-| Session expired | Privy token refresh fails | Sheet: "Log in again", body "For your safety you were logged out. Your points and CT are kept." | "Log in" (Privy modal; on success the user returns to the same screen and state) |
+| Session expired | Privy token refresh fails | Sheet: "Log in again", body "For your safety you were logged out. Your points and CT are kept. Picks you already made keep saving." | "Log in" (opens the A1 email and code steps as a sheet; on success the user returns to the same screen and state) |
 
 ### 2.7 Transaction error copy (shared)
 
 | Cause | Copy |
 | --- | --- |
-| User closed the Privy confirm | "You cancelled. Nothing was sent." |
+| User cancelled while signing | "You cancelled. Nothing was sent." |
 | Not enough CT | "You have {balance} CT. Enter {balance} CT or less." |
 | Not enough KAIA for gas (W4 only) | "You need about {fee} KAIA for the network fee. You have {kaia} KAIA." |
 | Reverted on chain | "Kaia rejected this transaction. Nothing was taken from your balance." |
 | Network timeout before send | "We could not reach Kaia. Nothing was sent." |
 | Relayer or fee payer refused | "Cojam could not sponsor this transaction right now. Try again in a minute." |
 | Set closed (picks) | "Today's set has closed. A new set is ready." |
+| Daily conversion limit reached | "You reached today's conversion limit. Try again after {time}." |
+| Staking full | "Staking is full for now. Try a smaller amount or a shorter period, or try again later." |
 | Unknown | "Something went wrong. Nothing was sent." plus a short error code for support |
 
 ---
@@ -193,7 +207,7 @@ Layout top to bottom (blue ground with the 44 px grid, as the landing hero):
 | Hero | Display heading "Predict daily. Earn CT.", lede "Five quick predictions every day. Swipe to pick, earn points, turn them into CT." | static |
 | Preview | A static, non interactive card stack image of a sample prediction, labelled "Example" | static |
 | Install block | Variant content (table below) | UA detection, `beforeinstallprompt` |
-| Rules strip | Three facts: "No fee for predicting, staking or converting", "Log in with a social account", "Points live on Kaia" | static |
+| Rules strip | Three facts: "No fee for predicting, staking or converting", "Log in with your email", "Points live on Kaia" | static |
 | Swap block | Heading "Holding old CT?", body "Swap old CT for new CT first, at cojam.app.", button "Swap old CT" (secondary, opens `https://cojam.app/migrate/` in a new tab) | static |
 | Footer | "Cojam home" link to `https://cojam.app`, © line | static |
 
@@ -215,46 +229,97 @@ Actions: "Install Cojam" calls the deferred prompt; "Copy link" copies `https://
 
 ### A1 Login
 
-**Purpose**: create or resume the Privy account and its Kaia embedded wallet.
+**Purpose**: create or resume the Privy account and its Kaia embedded wallet with an email address and a one time code (Privy email login only; no social providers, no wallet connect), then get the account and this device ready to play.
 **Entry**: first standalone launch, after log out, after session expiry (as a sheet, 2.6).
+
+Two steps on one screen (email, then code), followed by the setup panel when needed.
+
+**Step 1: email**
 
 | Block | Elements | Source |
 | --- | --- | --- |
 | Top | Logo, language select | `[local]` (default from the device language: ko, ja, else en) |
-| Hero | Heading "Log in to play", body "Use a social account. Cojam creates a wallet for you on Kaia." | static |
-| Providers | One button per enabled Privy social provider ("Continue with Google", "Continue with Apple", "Continue with X" and so on; list in Q1) | `[privy]` config |
-| Fine print | "By continuing you agree to the Terms and Privacy Policy." (links shown only once legal pages exist, Q24) | static |
+| Hero | Heading "Log in to play", body "Enter your email. We send you a code. Cojam creates a wallet for you on Kaia." | static |
+| Email field | Label "Email", placeholder "you@example.com", `type="email"`, `inputmode="email"`, `autocomplete="email"`, 16 px text | user |
+| Action | Primary "Send code" | |
+| Supported providers | Disclosure "Which email works?" listing the supported providers by display name ("Gmail, Naver, Kakao, Daum, Hanmail, iCloud, Outlook, Hotmail, Yahoo! JAPAN" at launch) | `[api]` allow list (`supportedProviders`) |
+| Fine print | "By continuing you agree to the Terms and Privacy Policy." (links shown only once legal pages exist; legal is deferred by the founder) | static |
 | Help | Disclosure "What is the Cojam wallet?": "A wallet on Kaia made for your login. It holds your points and CT. Only you can use it." | static |
+
+"Send code" first calls `[api]` `POST /v1/auth/email-check` (allow list, normalisation, request limits), and only then asks Privy to send the code. An unsupported address never reaches Privy.
+
+**Step 2: code**
+
+| Block | Elements | Source |
+| --- | --- | --- |
+| Heading | "Check your email", body "We sent a code to {email}." | static |
+| Code field | Label "Code", one field for the whole code (length from Privy, 6 expected), `inputmode="numeric"`, `autocomplete="one-time-code"`, monospace digits with tabular numerals; submits on its own when the last digit is typed | user |
+| Action | Primary "Log in" | |
+| Resend | Link "Send a new code", disabled for 60 s with the line "You can ask for a new code in {s}s" | `[local]` timer |
+| Change | Link "Use another email" (back to step 1, field kept) | |
+| Tip | "No email? Check your spam or promotions folder." | static |
+
+The pending email and the time the code was sent are kept in `[local]`, so if the app reloads while the user is in Mail, A1 reopens on step 2 with the timer still right.
 
 States:
 
 | State | Display |
 | --- | --- |
-| Idle | Provider buttons enabled |
-| Opening provider | Pressed button shows spinner and "Opening {provider}"; others disabled; "Cancel" link |
+| Idle | Step 1, "Send code" enabled once the field is not empty |
+| Email empty | On "Send code": "Enter your email address." |
+| Email malformed | "This does not look like an email address. Check it and try again." |
+| Provider not supported | Inline note (warn) under the field: title "This email provider is not supported yet", body "To keep Cojam fair, you can sign up with these providers: {list}. Use an address from one of them." The list is the display names from the allow list. No code is sent |
+| Too many code requests | "Too many codes were asked for from this device or network. Wait a few minutes and try again." |
+| Sending code | Button spinner, label "Sending code" |
+| Send failed | "We could not send the code. Try again in a minute." |
+| Code sent | Step 2, resend timer running |
+| Checking code | Button spinner, label "Checking" |
+| Wrong code | Field red edge, "That code is not right. Check the latest email from Cojam and try again." |
+| Code expired | "This code has expired. Send a new code." with the resend link enabled at once |
+| Too many tries | "Too many tries. Wait a few minutes, then send a new code." (Privy's limit; field disabled until then) |
 | Creating wallet (first login) | Full panel: spinner, "Setting up your wallet on Kaia", "This happens once." |
-| Error: provider cancelled | Inline: "Login was cancelled. Pick a way to continue." |
-| Error: provider failed | Inline: "{provider} did not answer. Try again or pick another way." |
-| Error: wallet creation failed | Inline: "We could not set up your wallet. Try again." button "Try again" |
-| Offline | Buttons disabled, helper "Connect to the internet to log in." |
+| Wallet creation failed | "We could not set up your wallet. Try again." button "Try again" |
+| Offline | Fields disabled, helper "Connect to the internet to log in." |
 
-Next: new user, A2; returning user, Home.
+**Setup panel "Setting up your game"**
+
+Runs after the code is accepted whenever the account is not yet registered as a player or this device has no valid play key (first login, new phone, reinstall, cleared storage, iOS eviction, expired key). It registers the account (`[api]` `POST /v1/session`, then the operator's `registerPlayer`) and authorises this device's play key (the Cojam wallet signs `setPlayKey` once, with no prompt). For a new user the panel runs behind A2 and only shows if A2 ends before it does.
+
+| Block | Elements |
+| --- | --- |
+| Title | "Setting up your game" |
+| Body | First login: "This takes a few seconds." Returning user on a new or reset device: "Getting this device ready to play. This happens once per device." |
+| Steps | "1 Create your wallet", "2 Register your account", "3 Get this device ready to play", each Waiting / In progress / Done (steps already done are shown done) |
+
+| State | Display |
+| --- | --- |
+| In progress | Steps as above; no action needed |
+| Registration busy (sign ups queued) | Step 2 reads "Waiting in line. This can take a minute." |
+| Registration refused: email already used | Panel title "We could not register this account", body "This email is already linked to another Cojam account. Log out and log in with the address you used first." Button "Log out" |
+| Registration refused: provider not supported | Same title, body "This email provider is not supported yet. Log out and use an address from: {list}." Button "Log out" |
+| Registration refused: too many sign ups | Same title, body "Too many new accounts were made from this device or network. Try again tomorrow." Buttons "Try again", "Log out" |
+| Registration refused: other checks | Same title, body "This account could not be registered." Button "Log out" |
+| Device setup failed | "We could not get this device ready. Check your connection and try again." Button "Try again" |
+| Done | Panel closes: new user to A2 (or Home if A2 is done), returning user to Home |
+
+Next: new user, A2; returning user, Home (through the setup panel when needed).
 
 ### A2 First run
 
-**Purpose**: explain the loop in three short panels and confirm the language.
+**Purpose**: explain the loop in three short panels and confirm the language, while setup finishes behind it.
 **Entry**: once per account after the first login (`[api]` `onboarded=false`), also from P1 "How Cojam works".
 
 | Block | Elements |
 | --- | --- |
 | Language row (panel 1 only) | Segmented switch "EN" / "한국어" / "日本語", preselected from A1 |
-| Panel 1 | Title "Five predictions a day", body "A new set of 5 opens every 24 hours. Swipe left or right to pick." Illustration: card stack |
-| Panel 2 | Title "Earn points", body "Finish all 5 to get 100P. Each correct pick adds 50P once the answer is set." Values from `[api]` reward settings |
-| Panel 3 | Title "Points to CT", body "Turn every 1,000P into 1 CT. The weekly Top 10 share a CT prize. You never pay a fee to play." |
+| Panel 1 | Title "Five predictions a day", body "A new set of 5 opens every day at {time}. Swipe left or right to pick." ({time} is 09:00 KST in the device's time zone.) Illustration: card stack |
+| Panel 2 | Title "Earn points", body "Finish all 5 to get 100P. Each correct pick adds 50P about 6 hours after the answer is set." Values from `[api]` reward settings |
+| Panel 3 | Title "Points to CT", body "Turn every 1,000P into 1 CT, from 7 days after you join. The weekly Top 10 share a CT prize. You never pay a fee to play." |
+| Setup line | Small line at the bottom of every panel while setup runs: "Setting up your game" with a spinner; "Ready to play" with a check when done |
 | Progress | Three dots, current one volt |
 | Actions | "Next" (primary) on panels 1 and 2, "Start predicting" on panel 3; "Skip" (ghost) top right |
 
-States: saving language fails silently (kept `[local]`, retried later). Swipe between panels plus buttons; panels are a list for screen readers. Done: `[api]` set `onboarded=true`, go to Home.
+States: setup still running when the user taps "Start predicting" or "Skip": the button shows a spinner and "Setting up your game", then goes to Home on its own; setup refused or failed: the A1 setup panel takes over with its refused or failed state; saving language fails silently (kept `[local]`, retried later). Swipe between panels plus buttons; panels are a list for screen readers. Done: `[api]` set `onboarded=true`, go to Home.
 
 ### H1 Home, card view
 
@@ -281,7 +346,7 @@ Swipe and commit rules (component detail in 6.3):
 - Tap on a choice button commits that choice at once (same animation).
 - After commit the next card comes forward; the progress segment for that question turns striped (pending) and then volt on confirmation.
 
-Pick transaction (founder decision, optimistic UI): every swipe or tap sends its own gas sponsored transaction in the background (fee delegation or relayer, see Q2). The next card appears at once; nothing waits for confirmation and no progress sheet is ever shown for a pick. Picks are sent in commit order from a `[local]` queue, so a fast user can have several in flight.
+Pick transaction (founder decision, optimistic UI): every swipe or tap sends its own gas sponsored transaction in the background, signed on this device by its play key (no Cojam wallet signature and no prompt per pick; DEV-PLAN 4). The next card appears at once; nothing waits for confirmation and no progress sheet is ever shown for a pick. Picks are sent in commit order from a `[local]` queue, so a fast user can have several in flight.
 
 Per card sync indicator (small, never blocking):
 
@@ -292,9 +357,20 @@ Per card sync indicator (small, never blocking):
 | Confirmed | Same | Segment turns volt; the line fades out after 1 s |
 | Failed for good | The card itself | See below |
 
-Quiet automatic retry: a failed send (timeout, relayer busy, nonce clash, RPC error) is retried automatically up to 3 times at about 2 s, 5 s and 10 s, with no message. Before each retry the client reads the chain; if the pick is already there it counts as confirmed and is not resent. Retries pause while offline and resume on reconnect if the set is still open.
+Retry policy (one policy, the same as DEV-PLAN 4.7): a failed send (timeout, sponsor busy, nonce clash, RPC error) is retried automatically after about 1, 2, 4, 8, 16 and 30 s, then every 30 s, until the question closes, with no message. Before each retry the client reads the chain; if the pick is already there it counts as confirmed and is not resent. Retries pause while offline and resume on reconnect while the question is still open.
 
-Only if a send keeps failing (all retries used, or a final rejection such as "already picked" mismatch or set closed): the card comes back to the top of the stack as unanswered, its segment returns to empty, and the card carries a short inline note "Not saved. Pick again." plus the toast "Your pick on question {n} was not saved." with "Try again" (2.3). If the set has closed, the card does not come back; the row reads "Not saved: the set closed" (7.1). Focus does not jump to the returned card; the live region announces "Question {n} was not saved. It is back in your stack."
+While it keeps failing (3 failed attempts or 60 s), a slim banner shows above the stack, without stopping the retries: "1 pick is still being saved" (plural "{n} picks are still being saved") with "Retry now".
+
+The card comes back only for a non retryable failure while its question is still open (an unexpected rejection): it returns to the top of the stack as unanswered, its segment returns to empty, and the card carries a short inline note "Not saved. Pick again." plus the toast "Your pick on question {n} was not saved." with "Try again" (2.3). If the question closed before the pick could be saved, the card does not come back; the row reads "Not saved: the question closed" (7.1). Focus does not jump to the returned card; the live region announces "Question {n} was not saved. It is back in your stack."
+
+Play key banners (above the stack; picks made meanwhile stay queued and are sent once the device is ready again):
+
+| Case | Banner | Action |
+| --- | --- | --- |
+| Key expired or revoked, being re-authorised (silent, a few seconds) | "Reconnecting this device" with a spinner | none |
+| Re-authorisation failed | "We could not reconnect this device. Your picks are kept and will be sent." | "Try again" |
+| Key replaced because the account was set up on another device | Panel in place of the stack: title "Cojam is now set up on another device", body "Your account plays on one device at a time. Picks made there count. Play here instead?" | "Play on this device" (re-authorises; the other device then shows this panel) |
+| Privy session expired as well | Session expired sheet (2.6) first, then the reconnect banner | |
 
 States:
 
@@ -304,6 +380,9 @@ States:
 | Ready, none answered | 5 cards in the stack, progress "0/5" |
 | Partly done | Only remaining cards; progress counts committed picks (sending and confirmed); a line above the stack "{n} left today" |
 | Picks syncing | Stack continues normally; striped segments and the pick status lines show what is still sending |
+| Picks still saving after 60 s | Banner "1 pick is still being saved" with "Retry now"; retries continue until the question closes |
+| Reconnecting this device | Banner "Reconnecting this device"; picking stays possible, picks queue |
+| Set up on another device | Panel "Cojam is now set up on another device" with "Play on this device" |
 | Pick failed for good | Card returns as unanswered with "Not saved. Pick again."; progress count drops by one |
 | Fifth pick committed | Go to H3 at once, even while picks are still syncing (H3 reward line rules) |
 | No set published | Empty state: title "Today's set is on its way", body "New predictions open at {time}." with countdown; no cards |
@@ -312,7 +391,7 @@ States:
 | Offline | Cached cards visible, choices disabled, helper "Connect to the internet to pick." |
 
 Actions: commit pick (above); switch to H2 (keeps state); point pill, profile (header).
-Validation: a pick is refused client side when the set is past its close time ("Today's set has closed. A new set is ready."), when the question is already answered on chain ("You already picked on this question."), or offline.
+Validation: a pick is refused client side when its question is past its close time ("This question has closed."), when the set is past its close time ("Today's set has closed. A new set is ready."), when the question is already answered on chain ("You already picked on this question."), or offline.
 
 ### H2 Home, terminal view
 
@@ -332,11 +411,11 @@ Row state cell:
 | --- | --- | --- |
 | Answered, confirmed | "Chose {choice}" with check icon | Row muted (still 4.5:1) |
 | Answered, sending or retrying | "Chose {choice}" with a 12 px spinner (screen reader label "Saving") | Optimistic: the row reads as answered at once |
-| Current (first unanswered) | Button "Pick" (secondary) | Opens the inline choice pair; the plan's "Join" label is replaced by "Pick" because nothing is joined from the user's view (Q3 if the founder prefers "Join") |
+| Current (first unanswered) | Button "Pick" (secondary) | Opens the inline choice pair; the plan's "Join" label is replaced by "Pick" because nothing is joined from the user's view (decided default) |
 | Remaining | "Remaining" muted | Tap makes it current |
 | Failed for good | "Not saved" in down colour plus "Pick again" | Row returns to unanswered and becomes current if no other row is |
 
-Picks in H2 follow the same optimistic rules as H1: tapping a choice marks the row answered at once, sends its own transaction in the background, the next unanswered row opens immediately, quiet retries happen without a message, and only a send that keeps failing returns the row with "Not saved". No progress sheet. Only one row is expanded at a time. Rows answered earlier stay visible here (the list view shows the whole set so the user can see what they picked); the card view shows only the remaining ones, as the plan asks.
+Picks in H2 follow the same optimistic rules, retry policy and play key banners as H1: tapping a choice marks the row answered at once, sends its own transaction in the background, the next unanswered row opens immediately, retries happen without a message until the question closes, and only a non retryable failure returns the row with "Not saved". No progress sheet. Only one row is expanded at a time. Rows answered earlier stay visible here (the list view shows the whole set so the user can see what they picked); the card view shows only the remaining ones, as the plan asks.
 
 States: loading (5 row skeletons), empty and error and offline as H1. When the 5th pick is committed, go to H3 at once (confirmations may still be pending).
 
@@ -349,13 +428,13 @@ States: loading (5 row skeletons), empty and error and offline as H1. When the 5
 | --- | --- | --- |
 | Progress | "5/5"; confirmed segments volt, still syncing segments striped | `[chain]` plus `[local]` queue |
 | Moment | Volt check badge; h1 "Today's 5 predictions done" | |
-| Reward line | While any of the 5 picks is still sending: "Saving your picks. 100P follows." with a small spinner, and the 100P is not added to the point pill. When all 5 are confirmed and the reward is pending: "Paying 100P". On the confirmed reward: "+100P paid", the pill counts up and the toast "+100P paid." fires. If a pick fails for good: the screen returns to H1 or H2 with that card back as unanswered and the line is gone | `[chain]` picks and completion reward event |
+| Reward line | Until the fifth pick's transaction is mined: "Saving your picks. 100P follows." with a small spinner, and the 100P is not added to the point pill. The 100P is credited in that same transaction, so as soon as it is mined and the reward event is read: "+100P paid", the pill counts up and the toast "+100P paid." fires. Never shown before confirmation (REVIEW A4). If a pick fails for good: the screen returns to H1 or H2 with that card back as unanswered and the line is gone | `[chain]` picks and completion reward event |
 | Countdown | Label "Next set in", value "hh : mm : ss" (display type, tabular), screen reader text updated every minute only: "Next set in {h} hours {m} minutes" | `[api]` next open time, server offset |
-| Hit note | "When answers are set you get +50P for each correct pick." | `[api]` hit points value |
-| Today's picks | Compact list of the 5 picks: question (1 line), choice, "Waiting for answer" or "Hit +50P" / "Miss" | `[chain]`, `[api]` |
+| Hit note | "Each correct pick adds +50P about 6 hours after its answer is set. Every answer is set within 48 hours after today's set closes." | `[api]` hit points value, settle delay |
+| Today's picks | Compact list of the 5 picks: question (1 line), choice, then "Waiting for answer", "Hit: +50P lands about {time}", "Hit +50P" or "Miss" | `[chain]`, `[api]` |
 | Actions | Primary "See weekly ranking" (K1); secondary "See results" (R1) | |
 
-States: picks syncing (reward line "Saving your picks. 100P follows."); reward pending; reward confirmed; reward failed (rare: "Your 100P is delayed. It will be paid automatically." no user action, server retries; Q4); countdown at zero: "Loading the new set" then H1 or H2 with a toast "New predictions are open."; offline: countdown keeps running from the cached time, reward line shows last known state.
+States: picks syncing (reward line "Saving your picks. 100P follows."); reward confirmed ("+100P paid"); fifth pick failed for good (back to H1 or H2, see above; there is no separate reward failure because the reward is paid in the fifth pick's transaction); countdown at zero: "Loading the new set" then H1 or H2 with a toast "New predictions are open."; offline: countdown keeps running from the cached time, reward line shows last known state.
 
 ### R1 Results
 
@@ -365,9 +444,9 @@ States: picks syncing (reward line "Saving your picks. 100P follows."); reward p
 | Block | Elements | Source |
 | --- | --- | --- |
 | Title | h1 "Results" | |
-| Summary card | "This week": points earned "{p}P", hits "{h} of {n}", days completed "{d} of 7". "All time": points earned, hit rate | `[api]` aggregates of `[chain]` events |
+| Summary card | "This week": points earned "{p}P", hits "{h} of {n}", days completed "{d} of 7", and when any: "Pending" "+{q}P" (hits still inside the correction window). "All time": points earned, hit rate | `[api]` aggregates of `[chain]` events |
 | Filter | Segmented "All" / "Waiting" / "Set" | `[local]` |
-| Day groups | Newest first. Group header: date, "Completed: +100P" or "{k} of 5 answered", day total "+{p}P" | `[api]` |
+| Day groups | Newest first. Group header: date, "Completed: +100P" or "{k} of 5 answered", day total "+{p}P" (confirmed only) and "+{q}P pending" when any. Each question of a day settles on its own, so a slow question never holds back the others | `[api]` |
 | Result row | Question (2 lines), category chip, "You: {choice}", outcome cell | `[api]` question and answer, `[chain]` pick and payout |
 | Load more | Button "Show earlier days" (pages of 7 days) | `[api]` |
 
@@ -375,13 +454,13 @@ Outcome cell:
 
 | Case | Cell |
 | --- | --- |
-| Waiting for answer | "Waiting for answer" plus expected time "Expected {date time}" |
+| Waiting for answer | "Waiting for answer" plus expected time "Expected {date time}" (always within 48 hours after the day's set closed) |
 | Hit, paid | "Hit" tag (up colour) and "+50P" |
-| Hit, payment pending | "Hit" tag and "+50P on the way" |
+| Hit, pending (inside the 6 hour correction window) | "Hit" tag and "+50P lands about {time}", helper on expand: "Answers can be checked again for 6 hours before points are paid." |
 | Miss | "Miss" tag (neutral, not red: a miss is not an error) |
 | Not answered | "Not answered" muted, no points |
 | Corrected | "Corrected" tag plus line "The first answer was wrong. Corrected on {date}." and the compensation line if any, "+50P added" |
-| Void (Q6) | "Cancelled" tag plus "This question was cancelled. No points either way." |
+| Void | "Cancelled" tag plus "This question was cancelled. No points either way. Your 100P for finishing the day is not affected." (also used when no answer could be set within 48 hours) |
 
 Row tap expands: the answer, the AI's evidence summary (one or two lines) and source links, set time. Source: `[api]`.
 
@@ -395,15 +474,15 @@ States: loading (summary skeleton, 3 group skeletons); empty (no picks yet): tit
 | Block | Elements | Source |
 | --- | --- | --- |
 | Title | h1 "Weekly ranking", sub "Ranked by points earned this week." | |
-| Prize pool card | Label "This week's pool", value "{pool} CT", line "{users} players x 1 CT", "Ends in {d}d {h}h" and the end time; disclosure "How the pool is split" showing ranks 1 to 10 with percent and CT | `[api]` settings and user count, server time |
-| Last week line (Q11) | If the user won last week: "You placed {rank} last week. {amount} CT was sent to your wallet." | `[api]`, `[chain]` |
-| Top 10 list | Row: rank (1 to 10, ties share a rank, 7.5), display name or short address "0x12ab…cdef", points "{p}P", prize "{c} CT". Top 3 get a volt rank badge | `[api]` ranking snapshot, refresh every 60 s while visible |
+| Prize pool card | Label "This week's pool", value "{pool} CT", line "{qualified} qualified players x 1 CT, up to 10,000 CT", "Ends in {d}d {h}h" and the end time (Monday 09:00 KST); disclosure "How the pool works": "Players count when they play on 3 or more days of the week and joined more than 7 days ago. Prizes are sent on Wednesday at 21:00 KST, after every answer of the week is in." plus ranks 1 to 10 with percent and CT | `[api]` settings and qualified count, server time |
+| Last week line | If the user won last week: "You placed {rank} last week. {amount} CT was sent to your wallet." | `[api]`, `[chain]` |
+| Top 10 list | Row: rank (1 to 10, always distinct, 7.5), display name or short address "0x12ab…cdef", points "{p}P", prize "{c} CT". Rows with equal points carry a "Tied" tag. Top 3 get a volt rank badge. Points shown are confirmed; pending hits are not ranked until they land | `[api]` ranking snapshot, refresh every 60 s while visible |
 | Updated stamp | "Updated {n}s ago" | `[api]` |
 | Pinned own row | Fixed above the tab bar: "You", rank "{r}", "{p}P", and "{gap}P to Top 10" | `[api]` |
 
 Own row variants: inside Top 10: row in the list gets a volt edge and the pinned row reads "You are in the Top 10" plus the prize; ranked outside: "{gap}P to Top 10"; no points this week: "No rank yet. Finish today's 5 to get on the board." with button "Play today's set" when the set is open.
 
-States: loading (card skeleton, 10 row skeletons); fewer than 10 ranked players: only filled rows show, prizes of empty ranks show "Not awarded" (Q12); week rolling over: card shows "Week closed. Final ranking is being counted." then the new week; error, offline as usual.
+States: loading (card skeleton, 10 row skeletons); fewer than 10 eligible players: only filled rows show, prizes of empty ranks show "Not awarded" (the unused prize stays in the reward reserve); last week being finalised (Monday 09:00 KST to Wednesday 21:00 KST): a "Last week" tab beside "This week" reads "Week closed. Late answers can still add points until {Wednesday 21:00 KST}, then prizes are sent."; prizes sent: "Prizes sent." with a Kaiascan link; error, offline as usual.
 
 ### S1 Staking, new stake
 
@@ -413,11 +492,11 @@ States: loading (card skeleton, 10 row skeletons); fewer than 10 ranked players:
 | Block | Elements | Source |
 | --- | --- | --- |
 | Title and switch | h1 "Staking", segmented "New stake" / "My stakes ({n})" | `[chain]` stake count |
-| Holdings | "Available" "{balance} CT" and the KRW line (Q9) | `[chain]` CT balance |
+| Holdings | "Available" "{balance} CT"; in Korean only, the KRW line "약 {krw}원" (no fiat in EN and JA) | `[chain]` CT balance, KRW from the swap site's live price source |
 | Amount | Amount input (unit "CT"), "Max" button, helper "Minimum 100 CT" | user |
 | Period | Period selector: 30 / 90 / 180 / 365 days, each showing its rate for the current amount tier | `[chain]` staking rate table |
-| Summary rows | "Tier": "Under 1,000 CT" / "1,000 to 9,999 CT" / "10,000 CT and more"; "Annual rate": "{r}%"; "Interest over {d} days": "{x} CT"; "Unlocks on": "{date}"; "Value": "about {krw} KRW" (Q9) | computed from `[chain]` table, client side |
-| Rules line | "Interest builds every second. You can take interest out from 10 CT. Your CT unlocks after {d} days." | `[chain]` minimums |
+| Summary rows | "Tier" (set by the size of this stake): "Under 1,000 CT" / "1,000 to 9,999 CT" / "10,000 CT and more"; "Annual rate": "{r}%"; "Interest over {d} days": "{x} CT"; "Unlocks on": "{date}"; in Korean only "Value": "약 {krw}원" | computed from `[chain]` table, client side |
+| Rules line | "Interest builds every second until the unlock date, then stops. While locked you can take interest out from 10 CT; after unlock, any amount. Your CT unlocks after {d} days. There is no early exit." | `[chain]` minimums |
 | Action | Primary "Stake {amount} CT" (disabled until valid); note "No fee: Cojam pays the network fee." | |
 | Help | Disclosure "How staking works" with the full rate table | `[chain]` |
 
@@ -430,11 +509,13 @@ Validation (on input, message under the field, field red edge):
 | Below minimum | "The minimum stake is 100 CT." with fix button "Stake 100 CT" when balance allows |
 | Above balance | "You have {balance} CT." with fix button "Use {balance} CT" |
 | Zero balance | Field disabled; note "You have no CT yet. Deposit CT or convert points first." buttons "Deposit" (W3), "Convert points" (W2) |
-| No period chosen | Button stays disabled; helper "Choose a period." (default: 90 days preselected, Q13) |
+| No period chosen | Button stays disabled; helper "Choose a period." (default: 90 days preselected) |
+| Staking full (the interest fund cannot reserve this stake's interest) | Note warn: "Staking is full for now." When some room is left: "Right now you can stake up to {x} CT for {d} days." with fix button "Stake {x} CT"; else "New stakes open again when Cojam adds interest funds." Button disabled |
+| 20 open stakes | Note: "You have 20 open stakes, the most allowed. Withdraw an unlocked stake to open a new one." Button disabled |
 
 Transaction: two steps when allowance is short (approve, stake), one otherwise; sheet 2.2. Success: title "Staked {amount} CT", rows "Unlocks on {date}", "Annual rate {r}%", button "See my stakes" (S2). Review step first when amount is 10,000 CT or more.
 
-States: loading (holdings skeleton, inputs disabled); staking paused by admin or contract (Q14): note "New stakes are paused." button disabled; error; offline.
+States: loading (holdings skeleton, inputs disabled); staking full (above; the full interest of every stake is reserved when it opens, so existing stakes are never affected); staking paused (pause covers new stakes only): note "New stakes are paused. Your stakes keep earning and can be claimed and withdrawn." button disabled; error; offline.
 
 ### S2 My stakes
 
@@ -455,7 +536,7 @@ Action rules:
 | --- | --- | --- |
 | Locked, interest under 10 CT | Disabled, helper "You can claim from 10 CT. {10 minus i} CT to go." | Hidden; line "Unlocks on {date}" |
 | Locked, interest 10 CT or more | Enabled | Hidden |
-| Unlocked | Enabled per Q15 | Enabled: "Withdraw {a} CT" |
+| Unlocked | Enabled for any amount (interest stopped at the unlock date) | Enabled: "Withdraw {a} CT" (pays the principal and all remaining interest) |
 | Closed | none | none |
 
 Transactions through sheet 2.2. Success copy: "Claimed {i} CT interest." / "Withdrew {a} CT. It is in your wallet." Unlock moment: when a card crosses its unlock time while visible, its tag flips to "Unlocked" and the withdraw button appears (no reload).
@@ -470,8 +551,8 @@ States: loading (totals and 2 card skeletons); empty: "No stakes yet", body "Sta
 | Block | Elements | Source |
 | --- | --- | --- |
 | Title | h1 "Wallet" | |
-| Points card | "Points" "{p}P"; line "{p div 1,000} CT ready to convert" when 1,000P or more; button "Convert points" (primary on this screen) | `[chain]` |
-| CT card | "CT" "{c} CT" plus KRW line (Q9); row "Staked" "{s} CT" with chevron to S2 | `[chain]` |
+| Points card | "Points" "{p}P" (confirmed); row "On the way" "+{q}P, lands about {time}" when hit points are pending; line "{p div 1,000} CT ready to convert" when 1,000P or more; button "Convert points" (primary on this screen) | `[chain]`, `[api]` pending hits |
+| CT card | "CT" "{c} CT", in Korean only the KRW line "약 {krw}원"; row "Staked" "{s} CT" with chevron to S2 | `[chain]` |
 | KAIA card | "KAIA" "{k} KAIA"; helper "Only needed to withdraw CT to another wallet." | `[chain]` native balance |
 | Address | Label "Your Cojam wallet on Kaia", address chip with full address in monospace, copy and "View on Kaiascan" | `[privy]` |
 | Actions | "Deposit" and "Withdraw" (secondary, side by side) | |
@@ -491,7 +572,7 @@ States: loading (card skeletons); zero balances shown as "0P", "0 CT", "0 KAIA" 
 | Balance | "Available" "{p}P" | `[chain]` |
 | Amount | Input in points, unit "P", "Max" (largest multiple of 1,000 at or under the balance), step hint "In steps of 1,000P" | user |
 | Result | "You get" "{n} CT" (large) | computed from `[chain]` rate |
-| Rows | "Rate": "1,000P = 1 CT"; "Minimum": "1,000P"; "Fee": "None. Cojam pays the network fee." | `[chain]` settings |
+| Rows | "Rate": "1,000P = 1 CT"; "Minimum": "1,000P"; "Daily limit": "50 CT a day. {left} CT left today."; "Fee": "None. Cojam pays the network fee." | `[chain]` settings and today's conversions |
 | Rank note | "Converting does not change your weekly rank." | static |
 | Action | Primary "Convert {p}P to {n} CT" | |
 
@@ -503,8 +584,12 @@ Validation:
 | Not a multiple of 1,000 | "Convert in steps of 1,000P. Try {floor}P." fix button "Use {floor}P" |
 | Above balance | "You have {p}P." fix button "Use {max}P" |
 | Balance under 1,000P | Input disabled; empty state "You need 1,000P to convert. You have {p}P, {gap}P to go." button "Play today's set" |
+| Account younger than 7 days | Input disabled; note "New accounts wait 7 days before the first conversion. You can convert from {date time}." Points keep growing meanwhile |
+| Above the personal daily limit | "You can convert {left} CT more today, which is {leftP}P." fix button "Use {leftP}P" |
+| Personal daily limit used up | Input disabled; note "You reached today's limit of 50 CT. You can convert again after {time}." ({time} is the next 09:00 KST) |
+| Everyone's daily limit reached (20,000 CT a day in total) | Input disabled; note "Today's conversions are used up for everyone. Try again after {time}." |
 
-Success: "Converted {p}P to {n} CT." rows "Points left {x}P", "CT balance {y} CT". Reward wallet short: 2.5 copy, button disabled.
+Success: "Converted {p}P to {n} CT." rows "Points left {x}P", "CT balance {y} CT". Conversion reserve short: 2.5 copy, button disabled.
 
 ### W3 Deposit
 
@@ -534,7 +619,7 @@ States: loading (QR skeleton square, address skeleton); address unavailable (Pri
 | --- | --- | --- |
 | Header | Back, title "Withdraw CT" | |
 | Gas note (always) | "Withdrawals are not sponsored. You pay a small network fee in KAIA." Line "Your KAIA: {k} KAIA" | `[chain]` |
-| To | Field "To address" with paste button and an inline QR scan button (camera, Q17) | user |
+| To | Field "To address" with paste button (no QR scan at launch) | user |
 | Amount | Amount input in CT with "Max", "Available {c} CT" | `[chain]` |
 | Fee row | "Network fee" "about {fee} KAIA" | `[chain]` gas estimate |
 | Action | Primary "Withdraw {amount} CT" leads to the review sheet | |
@@ -563,29 +648,31 @@ States: loading; offline; Max subtracts nothing (fee is KAIA, not CT).
 | Block | Elements | Source |
 | --- | --- | --- |
 | Header | Back, title "Profile" | |
-| Account | Login method "Logged in with {provider}" and the account email or handle as Privy returns it; wallet address chip (short form, copy) | `[privy]` |
+| Account | "Logged in as {email}" (the full address, shown to the user only); wallet address chip (short form, copy) | `[privy]` |
+| This device | "Ready to play on this device" with "until {date}" (the play key's expiry; renewed on its own); or "Not set up on this device" with button "Set up this device" (runs the A1 setup panel); or "Set up on another device" with "Play on this device" | `[chain]` play key, `[local]` |
 | Display name | Field "Name in the ranking", helper "Shown to everyone on the weekly ranking. Leave empty to show your short address."; button "Save name" | `[api]` |
 | Language | Segmented "EN" / "한국어" / "日本語" (applies at once) | `[local]` and `[api]` |
 | View | Segmented "Card view" / "Terminal view" (same setting as the Home switch) | `[local]` |
 | Help | "How Cojam works" (opens A2 panels), "How answers are set" (disclosure: "An AI checks public sources after each question closes and sets the answer automatically. If an answer turns out wrong, Cojam corrects it and pays the points owed.") | static |
 | Links | "Swap old CT" (cojam.app/migrate/), "Cojam website" (cojam.app), Terms and Privacy when they exist (Q24) | static |
-| Log out | Button "Log out" (secondary, down colour text) with confirm sheet "Log out of Cojam?" body "Your points and CT stay in your wallet. Log in with the same account to see them again." buttons "Log out", "Cancel" | `[privy]` |
+| Log out | Button "Log out" (secondary, down colour text) with confirm sheet "Log out of Cojam?" body "Your points and CT stay in your wallet. This device stops playing for you until you log in again with the same email." buttons "Log out", "Cancel". Log out revokes this device's play key and deletes it | `[privy]`, `[chain]` |
 | Version | "Version {x}" and "Check for update" | service worker |
 
-Display name validation: 2 to 20 characters; letters, numbers, spaces, `_` and `.`; Hangul and kana allowed; no leading or trailing space; must not look like an address (`0x` followed by hex) or contain "cojam" or "admin" (case blind). Messages: "Use 2 to 20 characters.", "Use letters, numbers, spaces, _ or . only.", "This name looks like an address or staff name. Pick another.", "This name is taken." (if uniqueness is required, Q18). Success toast "Name saved."
+Display name validation: 2 to 20 characters; letters, numbers, spaces, `_` and `.`; Hangul and kana allowed; no leading or trailing space; must not look like an address (`0x` followed by hex) or contain "cojam" or "admin" (case blind). Names are not unique; a basic word list blocks offensive names, and admins can reset a name. Messages: "Use 2 to 20 characters.", "Use letters, numbers, spaces, _ or . only.", "This name looks like an address or staff name. Pick another.", "This name is not allowed. Pick another." Success toast "Name saved."
 
 ---
 
 ## 4. Admin screens
 
-Shared admin frame: desktop layout, left side nav (Dashboard, Reward settings, Questions, Answers, Ranking and airdrop, System), top bar with environment badge ("Mainnet" in ink, "Test" in warn), signed in admin, "Sign out". Every page has an updated stamp. Every change that writes on chain shows the signer, the transaction and the result in the shared log viewer. Language: English only (Q21).
+Shared admin frame: desktop layout, left side nav (Dashboard, Reward settings, Questions, Answers, Ranking and airdrop, System), top bar with environment badge ("Mainnet" in ink, "Test" in warn), signed in admin, "Sign out". Every page has an updated stamp. Every change that writes on chain shows the signer, the transaction and the result in the shared log viewer. Owner actions (reward settings, corrected outcomes after the window, unfreeze, reserve withdrawals) are built by the admin and signed and paid by the owner, the master wallet `0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb`, connected in the browser for that one transaction; the server never signs them. Operator actions (freeze, correction inside the window, airdrop retry) are sent by the operator key through the worker. Language: English only.
 
 ### AD0 Admin sign in
 
 | Block | Elements |
 | --- | --- |
-| Card | Title "Cojam admin", body "Sign in with an approved account." Button "Sign in" (method in Q20) |
-| Errors | "This account is not approved for the admin." / "Sign in failed. Try again." |
+| Card | Title "Cojam admin", body "Sign in with an approved email." Email field and "Send code", then the code field and "Sign in" (Privy email login, a separate admin Privy app) |
+| Allow list | Only addresses in the admin allow list (`admin_users`, roles viewer, operator, owner) get a session; the allow list is managed in AD6 by an owner role |
+| Errors | "This email is not approved for the admin." / "That code is not right." / "This code has expired. Send a new code." / "Sign in failed. Try again." |
 | Session | Idle sign out after 30 minutes: "You were signed out after 30 minutes without activity." |
 
 ### AD1 Dashboard
@@ -604,19 +691,24 @@ Form, grouped. Each field shows current value, the new value input and where it 
 
 | Field | Initial | Rule | Error copy |
 | --- | --- | --- | --- |
-| Completion points | 100 | integer 0 to 10,000 | "Enter a whole number from 0 to 10,000." |
-| Points per hit | 50 | integer 0 to 10,000 | same |
-| Conversion rate | 1,000P = 1 CT | points per CT, integer 1 or more | "Enter how many points make 1 CT." |
-| Minimum conversion | 1,000P | integer, a multiple of the rate | "The minimum must be a multiple of the rate." |
-| Reward wallet address | (address) | 0x address, checksum | "Enter a valid Kaia address." |
-| Weekly pool per user | 1 CT | number 0 or more | "Enter 0 or more." |
+| Completion points | 100 | integer 0 to 1,000 | "Enter a whole number from 0 to 1,000." |
+| Points per hit | 50 | integer 0 to 1,000 | same |
+| Conversion rate | 1,000P = 1 CT | points per CT, integer 100 to 100,000 | "Enter how many points make 1 CT, from 100 to 100,000." |
+| Minimum conversion | 1,000P | a multiple of the rate, up to 1,000,000 | "The minimum must be a multiple of the rate." |
+| Conversion limit per user per day | 50 CT | 1 to 10,000 | "Enter 1 to 10,000." |
+| Conversion limit per day, everyone | 20,000 CT | 100 to 1,000,000 | "Enter 100 to 1,000,000." |
+| Wait before the first conversion | 7 days | 0 to 30 days | "Enter 0 to 30 days." |
+| Correction window (settle delay) | 6 hours | 0 to 48 hours | "Enter 0 to 48 hours." |
+| Treasury | master wallet `0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb` | 0x address, checksum | "Enter a valid Kaia address." |
+| Weekly pool per qualified player | 1 CT | number 0 or more (server setting) | "Enter 0 or more." |
+| Weekly pool cap | 10,000 CT | 0 to 1,000,000 | "Enter 0 to 1,000,000." |
 | Top 10 split | 30, 20, 15, 10, 7, 5, 4, 3, 3, 3 | 10 percentages, each 0 to 100, sum exactly 100, non increasing | "The split must add up to 100%. Now {s}%." / "A lower rank cannot get more than a higher rank." |
-| Staking rate table | the 4 x 3 table | percent 0 to 100, two decimals | "Enter a rate from 0 to 100." |
+| Staking rate table | the 4 x 3 table | percent 0 to 50, two decimals | "Enter a rate from 0 to 50." |
 | Staking tiers | 1,000 and 10,000 CT | ascending | "Tier limits must go up." |
-| Minimum stake | 100 CT | number above 0 | "Enter more than 0." |
-| Minimum interest claim | 10 CT | number 0 or more | "Enter 0 or more." |
+| Minimum stake | 100 CT | 1 to 100,000 | "Enter 1 to 100,000." |
+| Minimum interest claim | 10 CT | 0 to 1,000 | "Enter 0 to 1,000." |
 
-Flow: "Review changes" shows a diff table (old, new, effective from), then "Apply changes". Effective from rules are Q22. Pending on chain changes show the transaction state. Save fails: "Not saved: {reason}. Nothing changed."
+Flow: "Review changes" shows a diff table (old, new, effective from), then "Sign with the owner wallet". Effective from: prediction contract values apply 48 hours after the owner's proposal (announced on chain), then the owner applies them; staking values apply to new stakes at once and never change an open stake; server settings apply at once. Pending on chain changes show the transaction state and the time they can be applied. Save fails: "Not saved: {reason}. Nothing changed."
 
 ### AD3 Questions
 
@@ -625,20 +717,20 @@ Flow: "Review changes" shows a diff table (old, new, effective from), then "Appl
 | Calendar strip | Next 14 days, each with "{n}/5" filled; days under 5 marked amber |
 | Toolbar | "Assign 5 per day" (fills empty slots from the AI queue for the next 14 days), "Add question", filter by state, search |
 | Table | Publish day, slot (1 to 5), question, choices (left / right), category, closes at, answer due, state chip, source ("AI" or "Manual"), actions |
-| AI queue | Drafts not yet scheduled, with AI's resolve rule and suggested source; row actions "Schedule", "Edit", "Discard" (Q7) |
-| Question form | Question (max 120 characters), left choice and right choice (max 16 each), category (list), publish day and slot, closes at (default: set close), answer due, resolve rule (how the answer is decided), sources (URLs), languages KO and JA (AI drafted, editable) |
+| AI queue | Drafts not yet scheduled, with AI's resolve rule and suggested source; row actions "Schedule", "Edit", "Discard" (allowed until the day is published on chain; no approval step) |
+| Question form | Question (max 90 characters, the card limit), left choice and right choice (max 12 each), category (list), publish day and slot, closes at (default: set close), answer due (at most 24 hours after the set closes, so the answer is set within 48 hours), resolve rule (how the answer is decided), sources (URLs), languages KO and JA (AI drafted, editable) |
 
 State chips: "Draft", "Scheduled", "Live", "Closed", "Answer set", "Corrected", "Cancelled".
-Validation: "A day can hold 5 questions." / "Both choices are needed." / "Answer due must be after the close time." / "Add at least one source." / "Live questions cannot be edited." (only cancel, Q6).
+Validation: "A day can hold 5 questions." / "Both choices are needed." / "Answer due must be after the close time." / "Answer due must be within 24 hours after the set closes." / "Add at least one source." / "Live questions cannot be edited." (only cancel, which voids the question: no hit points, the pick still counts toward the 5).
 
 ### AD4 Answers
 
 | Block | Elements |
 | --- | --- |
-| List | Questions after close: question, closed at, AI answer, confidence if the AI gives one, set at, hits, state chip; filter "Waiting", "Set", "Corrected", "Late" |
+| List | Questions after close: question, closed at, AI answer, confidence if the AI gives one, set at, correction window ends at, hits paid or pending, deadline (set close plus 48 hours), state chip; filter "Waiting", "Set", "Corrected", "Late" (past due), "Near deadline" (less than 8 hours to the 48 hour deadline, after which the question is cancelled) |
 | Detail | Question and resolve rule; AI answer; evidence: sources with link, quoted text, fetched time; on chain set transaction; pick counts per choice; hits paid |
 | Log | Log viewer of the AI run: prompts, tool calls, retries, errors, timestamps |
-| Correction tool | "Correct this answer": choose the right answer, reason (required), preview impact table ("{a} players who picked {right} will get +{p}P", "{b} players were paid for {wrong}: {policy per Q5}"), "Apply correction". Writes the corrected answer and the compensation, records everything in the log |
+| Correction tool | "Correct this answer": choose the right answer, reason (required), preview impact table ("{a} players who picked {right} will get +{p}P", "{b} players were paid for {wrong}: they keep their points"), "Apply correction". Inside the correction window the operator key replaces the answer before anyone is paid; after it, the owner wallet signs the corrected answer and the operator pays the compensation. Records everything in the log |
 | Retry | For failed or late runs: "Run AI again" |
 
 Errors: "Give a reason for the correction." / "This answer is already being corrected." / "Correction failed: {reason}. Nothing was paid."
@@ -648,20 +740,22 @@ Errors: "Give a reason for the correction." / "This answer is already being corr
 | Block | Elements |
 | --- | --- |
 | Week selector | This week, past weeks |
-| Pool | Users counted, pool per user, pool total, split table with CT per rank |
-| Ranking table | Rank, display name, address (full, copy), points this week, prize CT, tie note |
-| Airdrop | Status: "Not due", "Ready", "Sending", "Sent", "Failed"; transaction link per payout; button "Send airdrop" when manual (Q10); reward wallet balance check: "Reward wallet has {x} CT, this airdrop needs {y} CT." |
+| Pool | Qualified players (played 3 or more days, account older than 7 days, not frozen), pool per player, pool total (capped at 10,000 CT), split table with CT per rank |
+| Ranking table | Rank, display name, address (full, copy), points this week, prize CT, tie note ("Tied: reached {p}P first"), flags; row action "Reset name" |
+| Airdrop | Automatic on Wednesday 12:00 UTC (21:00 KST), after every answer of the week is in. Status: "Not due", "Waiting for late answers", "Ready", "Sending", "Sent", "Failed"; transaction link per payout; button "Retry airdrop" only after a failure; reserve check: "The reward reserve has {x} CT, this airdrop needs {y} CT." |
 | Export | "Download CSV" |
 
 ### AD6 System
 
 | Block | Elements |
 | --- | --- |
-| Wallets | Gas wallet (address, KAIA balance, days of runway at the current spend, alert threshold field); reward wallet (address, CT balance, owed conversions, owed interest, next airdrop, runway) |
-| Relayer | Queue length, sent in the last hour, failures, median confirm time, last error |
-| Jobs | Table: question publisher, AI drafter, AI answer setter, ranking aggregator, airdrop sender, deposit watcher; columns last run, result, next run, "Run now" |
+| Wallets | Gas wallet (fee payer: address, KAIA balance, days of runway at the current spend, alert threshold field); operator wallet (KAIA, runway); prediction reserve (CT balance, conversions per day, next airdrop, runway); staking interest fund (available, committed interest, principal held); treasury and owner (the master wallet address) |
+| Sponsorship | Sponsored in the last hour by action (predict, play key setup, value actions), refusals by code, median confirm time, play keys set today, last error |
+| Email allow list | Table of supported providers: domain, display name (shown in A1), normalisation rule ("Gmail: dots and +tags removed", "+tags removed", "None"), enabled switch, sign ups in the last 7 days, refusals in the last 7 days; "Add provider" form (domain, display name, rule); every change asks for a reason and is written to the log. Validation: "Enter a domain like example.com." / "This domain is already listed." Removing or disabling a provider stops new sign ups only; existing players keep playing. Edit rights: owner and operator roles |
+| Admin allow list | Approved admin emails and roles; add and remove (owner role only) |
+| Jobs | Table: question publisher, AI drafter, AI answer setter, registration queue, settle sweep (per question), ranking aggregator, airdrop sender, deposit watcher; columns last run, result, next run, "Run now" |
 | Chain | RPC endpoint health, block height lag |
-| App | Running version, minimum version field, maintenance switch with message and expected end (needed for 2.6; Q23) |
+| App | Running version, minimum version field, maintenance switch with message and expected end (needed for 2.6) |
 | Log viewer | All events, filter by job and level |
 
 Status chips: "Healthy", "Slow", "Failing", "Off".
