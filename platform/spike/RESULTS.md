@@ -16,8 +16,22 @@ Transactions (Kairos): setPlayKey `0x7237791a43dfbad20dc6976fa689b35cc16af2c885f
 
 Conclusion so far: the Privy embedded wallet signs raw Kaia fee delegated transactions without any prompt, and the play key path works end to end on a real phone.
 
+## Run 2: Android, installed app (2026-11-26 17:14 UTC)
+Same phone, launched from the home screen icon (display mode `standalone`, launched from `pwa`), second launch.
+
+| Check | Result |
+| --- | --- |
+| Session found on launch | yes (`sessionRestoredOnLaunch: true`) |
+| Play key found on launch (IndexedDB) | yes, the same key as run 1 |
+| Email login inside the installed app (leaving for Mail and coming back) | ok, no prompt; the report also shows a fresh code login 20 s after the code was sent, so a login was done again in this run |
+| `setPlayKey` by the Privy wallet, sponsored | ok, no prompt, sign 1,273 ms (first signature after launch), total 3,713 ms |
+| Five raw signatures | ok, no prompt, median 313 ms |
+| Five predicts by the play key | ok, nonce order, 5 points to the player; about 630 ms per sponsor request, all mined in 5,566 ms |
+| Direct predict, user paid transfer | ok, no prompt |
+
+Notes: the first Privy signature after a cold launch is slower (about 1.3 s, the wallet iframe warming up), later ones about 0.3 s. Sponsor requests were slower than in run 1 (about 630 ms against 400 ms): free Render instance plus the public RPC node.
+
 ## Still to run
-- Android installed app (standalone), including whether the session and the play key are found on relaunch.
 - iPhone: Safari tab, then the installed app (leaving for Mail to read the code, relaunch).
 - Relaunch after a day and after 7 days.
 - Privy's written answer on billing for raw signatures and email logins.
