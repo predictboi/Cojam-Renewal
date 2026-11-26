@@ -26,3 +26,4 @@ Founder decisions for the operating platform (recorded 2026-11-26). The developm
 | Schedule | Ignore the plan's dates: build as fast as possible with the founder in the loop |
 | Deploy | Render; DNS on Cloudflare |
 | Still open | Reward funding amounts at launch (conversions, airdrops, staking interest); external audit before mainnet |
+| Email allow list | Email only login stays. Sign up is limited to an allow list of major mail providers (for example gmail.com, naver.com, kakao.com, daum.net, hanmail.net, icloud.com, outlook.com, hotmail.com, yahoo.co.jp; editable in the admin); other domains see a clear message. Addresses are normalised before the check (lower case, Gmail dots and plus tags removed, plus tags removed elsewhere) and one normalised address is one player. Enforced by the server before a wallet is registered as a player, whatever Privy itself allows |
