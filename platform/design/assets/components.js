@@ -76,6 +76,11 @@
     search: '<circle cx="11" cy="11" r="6.500"/><path d="M16 16l4 4"/>',
     refresh: '<path d="M19 12a7 7 0 1 1-2.300-5.200"/><path d="M19 4.500v4h-4"/>',
     inbox: '<path d="M4 13.500l2.500-8h11l2.500 8"/><path d="M4 13.500V18a1.500 1.500 0 0 0 1.500 1.500h13A1.500 1.500 0 0 0 20 18v-4.500h-5a3 3 0 0 1-6 0z"/>',
+    coin: '<circle cx="12" cy="12" r="8.500"/><path d="M9.500 8h3.500a2 2 0 0 1 0 4h-3.500zM9.500 12h4a2 2 0 0 1 0 4h-4zM9.500 8v8M11 6.500V8M11 16v1.500"/>',
+    chart: '<path d="M4 19h16"/><path d="M5 15l4-4 3 3 6-7"/><path d="M14 7h4v4"/>',
+    sun: '<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.600 5.600l1.400 1.400M17 17l1.400 1.400M18.400 5.600L17 7M7 17l-1.400 1.400"/>',
+    ball: '<circle cx="12" cy="12" r="8.500"/><path d="M12 8.500l3.300 2.400-1.300 3.900h-4l-1.300-3.900zM12 3.500v5M20 10.500l-4.700.400M17 19l-3-4.200M7 19l3-4.200M4 10.500l4.700.400"/>',
+    film: '<rect x="4" y="5" width="16" height="14" rx="2.500"/><path d="M8 5v14M16 5v14M4 9.500h4M4 14.500h4M16 9.500h4M16 14.500h4"/>',
     spark: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.500 2.500M15.500 15.500L18 18M18 6l-2.500 2.500M8.500 15.500L6 18"/>'
   };
   C.icon = function (name, size, cls) {
@@ -170,18 +175,24 @@
   /* a question card (used by the deck, the gate preview and the library) */
   C.qcard = function (q, o) {
     o = o || {};
-    var id = q.id, qt = t(id + ".q");
-    return '<article class="qcard" data-q="' + q.n + '" data-pos="' + (o.pos || 0) + '" role="group" tabindex="' + (o.static ? "-1" : "0") + '" aria-label="' + esc(t("h.qn", { n: q.n }) + ": " + qt) + '">' +
+    var id = q.id, qt = t(id + ".q"), img = o.noimg ? "" : q.img;
+    /* every question carries a picture (4:5, subject in the top 55%); with none, the card draws the category on the blue grid */
+    var media = img ? '<div class="qimg"><img src="' + img + '" alt="" width="800" height="1000" decoding="async" draggable="false"></div>' :
+      '<div class="qimg qimg--fallback"><span class="qimg-tile">' + ic(CAT_ICON[q.cat] || "spark", 64) + "</span></div>";
+    return '<article class="qcard' + (o.top ? " qcard--top" : "") + '" data-q="' + q.n + '" data-pos="' + (o.pos || 0) + '" role="group" tabindex="' + (o.static ? "-1" : "0") + '" aria-label="' + esc(t("h.qn", { n: q.n }) + ": " + qt) + '">' +
+      media + '<span class="qtint" aria-hidden="true"></span>' +
       '<span class="qstamp qstamp--l" aria-hidden="true">' + t(id + ".l") + '</span><span class="qstamp qstamp--r" aria-hidden="true">' + t(id + ".r") + "</span>" +
-      '<div class="qcard-top">' + C.tag(t("cat." + q.cat)) + "<span>" + t("h.qn", { n: q.n }) + "</span></div>" +
-      "<h2 tabindex=\"-1\">" + qt + "</h2>" +
+      '<div class="qcard-top"><span class="qchip">' + t("cat." + q.cat) + '</span><span class="qchip qchip--n">' + t("h.qn", { n: q.n }) + "</span></div>" +
+      '<div class="qcard-body"><h2 tabindex="-1">' + qt + "</h2>" +
       (o.failed ? '<p class="qcard-note">' + ic("warn", 16) + t("h.notsaved") + "</p>" : "") +
       '<div class="qcard-meta"><span>' + ic("search", 14) + "<span>" + t("h.answer", { rule: t(id + ".rule") }) + "</span></span><span>" + ic("clock", 14) + "<span>" + t("h.ai", { time: t(id + ".time") }) + "</span></span></div>" +
       '<div class="choices">' +
       '<button type="button" class="choice" data-dir="l"' + (o.disabled ? " disabled" : "") + (o.static ? ' tabindex="-1"' : "") + ' aria-label="' + esc(t("h.pick.aria", { choice: t(id + ".l"), q: qt })) + '">' + ic("left", 18) + "<span>" + t(id + ".l") + "</span></button>" +
       '<button type="button" class="choice" data-dir="r"' + (o.disabled ? " disabled" : "") + (o.static ? ' tabindex="-1"' : "") + ' aria-label="' + esc(t("h.pick.aria", { choice: t(id + ".r"), q: qt })) + '"><span>' + t(id + ".r") + "</span>" + ic("right", 18) + "</button>" +
-      "</div></article>";
+      "</div></div></article>";
   };
+  var CAT_ICON = { crypto: "coin", markets: "chart", weather: "sun", sports: "ball", culture: "film" };
+  C.thumb = function (q) { return '<span class="trow-thumb" aria-hidden="true">' + (q.img ? '<img src="' + q.img + '" alt="" width="52" height="52" loading="lazy">' : ic(CAT_ICON[q.cat] || "spark", 24)) + "</span>"; };
 
   /* ---------- shell ---------- */
   var TABS = [
@@ -456,34 +467,50 @@
     o = o || {};
     function live() { return $$(".qcard:not(.is-out)", root); }
     function layout() {
-      live().forEach(function (c, i) { c.setAttribute("data-pos", i < 3 ? i : "x"); c.style.transform = ""; if (i === 0) c.removeAttribute("inert"); else c.setAttribute("inert", ""); });
+      live().forEach(function (c, i) {
+        c.setAttribute("data-pos", i < 4 ? i : "x"); c.style.transform = ""; c.style.transition = "";
+        if (i === 0) c.removeAttribute("inert"); else c.setAttribute("inert", "");
+        if (i === 1 || i === 2) { var im = $("img", c); if (im && im.decode) im.decode().catch(function () {}); }   /* decoded before it reaches the front */
+      });
     }
-    function feedback(card, dx) {
-      var w = card.offsetWidth, k = Math.max(-1, Math.min(1, dx / w));
-      card.style.transform = "translateX(" + dx + "px)" + (reduce ? "" : " rotate(" + (k * 8).toFixed(2) + "deg)");
+    function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
+    function paint(card, k) {   /* k: travel as a share of the card width, -1 to 1 */
       var hot = Math.abs(k) >= 0.2 ? (k > 0 ? "r" : "l") : "";
       $$(".choice", card).forEach(function (b) { b.classList.toggle("is-hot", b.getAttribute("data-dir") === hot); });
+      $(".qtint", card).style.opacity = Math.min(0.42, Math.abs(k) * 1.1);
       $(".qstamp--l", card).style.opacity = k < 0 ? Math.min(1, -k * 3.2) : 0;
       $(".qstamp--r", card).style.opacity = k > 0 ? Math.min(1, k * 3.2) : 0;
     }
-    function reset(card) { card.classList.remove("is-drag"); card.style.transform = ""; $$(".choice", card).forEach(function (b) { b.classList.remove("is-hot"); }); $$(".qstamp", card).forEach(function (s) { s.style.opacity = 0; }); }
-    function commit(card, dir) {
-      if (o.disabled && o.disabled()) { reset(card); if (o.onBlocked) o.onBlocked(); return; }
+    function feedback(card, dx, dy) {
+      var w = card.offsetWidth, k = Math.max(-1, Math.min(1, dx / w));
+      card.style.transform = "translate(" + dx + "px," + (dy * 0.18).toFixed(1) + "px)" + (reduce ? "" : " rotate(" + (k * 8).toFixed(2) + "deg)");
+      paint(card, k);
+      return k;
+    }
+    function reset(card) { card.classList.remove("is-drag"); card.style.transform = ""; paint(card, 0); }
+    /* throw: the card leaves on its side with the speed of the release; the deck advances with a spring (CSS, on data-pos) */
+    function commit(card, dir, v, dx, dy) {
       if (card.classList.contains("is-out")) return;
+      if (o.disabled && o.disabled()) { reset(card); if (o.onBlocked) o.onBlocked(); return; }
+      var w = card.offsetWidth, sign = dir === "r" ? 1 : -1, dist = innerWidth * 0.5 + w - Math.abs(dx || 0);
+      var ms = reduce ? 200 : Math.round(Math.max(190, Math.min(380, dist / Math.max(v || 0, 1.6))));
       card.classList.remove("is-drag"); card.classList.add("is-out"); card.setAttribute("data-pos", "out");
-      card.style.transform = reduce ? "" : "translateX(" + (dir === "r" ? 120 : -120) + "%) rotate(" + (dir === "r" ? 14 : -14) + "deg)";
-      $(dir === "r" ? ".qstamp--r" : ".qstamp--l", card).style.opacity = 1;
-      try { if (navigator.vibrate) navigator.vibrate(10); } catch (e) {}
+      paint(card, sign * 0.5);
+      card.style.transition = reduce ? "" : "transform " + ms + "ms cubic-bezier(0.3, 0.55, 0.4, 1), opacity " + ms + "ms cubic-bezier(0.6, 0, 0.9, 0.4)";
+      void card.offsetWidth;
+      if (!reduce) card.style.transform = "translate(" + sign * (innerWidth * 0.5 + w) + "px," + ((dy || 0) * 0.4 + 30).toFixed(0) + "px) rotate(" + sign * 22 + "deg)";
+      card.style.opacity = 0;
+      buzz(12);
       var n = +card.getAttribute("data-q");
       layout();
       var next = live()[0]; if (next) { var h = $("h2", next); if (h) h.focus({ preventScroll: true }); }
-      setTimeout(function () { card.remove(); }, reduce ? 0 : 260);
+      setTimeout(function () { card.remove(); }, ms + 40);
       if (o.onCommit) o.onCommit(n, dir, live().length);
     }
     var drag = null, swallow = 0;
     root.addEventListener("pointerdown", function (e) {
       var card = e.target.closest('.qcard[data-pos="0"]'); if (!card || card.classList.contains("is-out") || (e.pointerType === "mouse" && e.button !== 0)) return;
-      drag = { card: card, x: e.clientX, y: e.clientY, id: e.pointerId, lock: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
+      drag = { card: card, x: e.clientX, y: e.clientY, id: e.pointerId, lock: false, armed: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
     });
     root.addEventListener("pointermove", function (e) {
       if (!drag || e.pointerId !== drag.id) return;
@@ -495,30 +522,39 @@
       }
       e.preventDefault();
       drag.pts.push({ x: e.clientX, t: e.timeStamp }); if (drag.pts.length > 6) drag.pts.shift();
-      feedback(drag.card, dx);
+      var k = feedback(drag.card, dx, dy), armed = Math.abs(k) >= 0.35;
+      if (armed !== drag.armed) { drag.armed = armed; if (armed) buzz(5); }   /* a light tick when the release would commit */
     });
     function end(e) {
       if (!drag || e.pointerId !== drag.id) return;
       var d = drag; drag = null; if (!d.lock) return;
       swallow = Date.now();
-      var dx = e.clientX - d.x, w = d.card.offsetWidth, a = d.pts[0], b = d.pts[d.pts.length - 1], v = b.t > a.t ? Math.abs(b.x - a.x) / (b.t - a.t) : 0;
+      var dx = e.clientX - d.x, dy = e.clientY - d.y, w = d.card.offsetWidth, a = d.pts[0], b = d.pts[d.pts.length - 1], v = b.t > a.t ? Math.abs(b.x - a.x) / (b.t - a.t) : 0;
       var k = Math.abs(dx) / w;
-      if (e.type !== "pointercancel" && (k >= 0.35 || (v >= 0.5 && k >= 0.15))) commit(d.card, dx > 0 ? "r" : "l"); else reset(d.card);
+      if (e.type !== "pointercancel" && (k >= 0.35 || (v >= 0.5 && k >= 0.15))) commit(d.card, dx > 0 ? "r" : "l", v, dx, dy); else reset(d.card);
     }
     root.addEventListener("pointerup", end); root.addEventListener("pointercancel", end);
     root.addEventListener("click", function (e) {
       var b = e.target.closest(".choice"); if (!b || b.disabled) return;
       if (Date.now() - swallow < 250) { e.preventDefault(); return; }
       var card = b.closest(".qcard"); if (card.getAttribute("data-pos") !== "0") return;
-      b.classList.add("is-hot"); commit(card, b.getAttribute("data-dir"));
+      commit(card, b.getAttribute("data-dir"), 0, 0, 0);   /* a tap plays the same throw */
     });
     root.addEventListener("keydown", function (e) {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       var card = live()[0]; if (!card || !card.contains(document.activeElement)) return;
-      e.preventDefault(); commit(card, e.key === "ArrowRight" ? "r" : "l");
+      e.preventDefault(); commit(card, e.key === "ArrowRight" ? "r" : "l", 0, 0, 0);
     });
     layout();
-    return { layout: layout, live: live, add: function (html) { root.insertAdjacentHTML("afterbegin", html); layout(); } };
+    return { layout: layout, live: live };
+  };
+  /* payoff: a short burst of pieces from an element (day done, success) */
+  App.burst = function (el, count) {
+    if (reduce || !el) return;
+    var b = document.createElement("span"); b.className = "burst"; b.setAttribute("aria-hidden", "true"); count = count || 16;
+    for (var i = 0; i < count; i++) { var a = (i / count) * Math.PI * 2 + Math.random() * 0.4, r = 56 + Math.random() * 54;
+      b.innerHTML += '<i style="--n:' + i + ";--x:" + (Math.cos(a) * r).toFixed(0) + "px;--y:" + (Math.sin(a) * r - 10).toFixed(0) + "px;--r:" + Math.round(Math.random() * 360) + 'deg"></i>'; }
+    el.appendChild(b); setTimeout(function () { b.remove(); }, 1100);
   };
 
   /* ---------- QR code: byte mode, error correction Q, versions 1 to 6 (enough for a URL or an address) ---------- */

@@ -191,25 +191,40 @@ img, svg { display: block; flex: none; }
 .card--ink .live-dot { background: var(--volt); }
 @keyframes blink { 50% { opacity: 0.35; } }
 
-/* ---------- swipe card stack ---------- */
-.deck { position: relative; display: grid; margin: var(--s-4) var(--s-6) var(--s-12) 0; }
-.qcard { grid-area: 1 / 1; position: relative; color: var(--ink); display: flex; flex-direction: column; gap: var(--s-10); min-height: 296px; padding: var(--s-16); border: var(--edge); border-radius: var(--r-card); background: var(--surface); box-shadow: var(--shadow-card); touch-action: pan-y; user-select: none; -webkit-user-select: none; will-change: transform; transform-origin: 50% 110%;
-  transition: transform var(--dur-release) var(--ease-spring), opacity var(--dur-base) var(--ease-out), box-shadow var(--dur-fast) var(--ease); }
-.qcard[data-pos="0"] { z-index: 3; }
-.qcard[data-pos="out"] { z-index: 4; }
-.qcard[data-pos="1"] { z-index: 2; transform: translateY(12px) rotate(2.4deg) scale(0.97); background: var(--sky); box-shadow: none; }
-.qcard[data-pos="2"] { z-index: 1; transform: translateY(20px) rotate(-2.6deg) scale(0.94); background: var(--brand-tint); box-shadow: none; }
-.qcard:not([data-pos="0"], [data-pos="out"]) > * { visibility: hidden; }
+/* ---------- swipe card stack: image led cards in a physical deck ----------
+   The front card is sharp and carries the hard drop; the next three sit behind it, offset, rotated, scaled and veiled.
+   Motion is transform and opacity only; will-change on the front card only. */
+.deck { position: relative; display: grid; margin: var(--s-8) var(--s-10) var(--s-24); }
+.qcard { grid-area: 1 / 1; position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: space-between; min-height: clamp(372px, calc(100dvh - 412px), 470px); border: var(--edge); border-radius: var(--r-card); background: var(--ink); color: var(--snow); overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; transform-origin: 50% 125%;
+  transition: transform var(--dur-deck) var(--ease-spring), opacity var(--dur-base) var(--ease-out); }
+.qcard::after { content: ""; position: absolute; inset: 0; z-index: 6; background: var(--snow); opacity: 0; pointer-events: none; transition: opacity var(--dur-deck) var(--ease-out); }
+.qcard[data-pos="0"] { z-index: 4; will-change: transform; box-shadow: var(--shadow-deck); }
+.qcard[data-pos="1"] { z-index: 3; transform: translate(11px, 10px) rotate(4deg) scale(0.96); }
+.qcard[data-pos="2"] { z-index: 2; transform: translate(-11px, 17px) rotate(-5deg) scale(0.92); }
+.qcard[data-pos="3"] { z-index: 1; transform: translate(5px, 24px) rotate(8deg) scale(0.88); }
+.qcard[data-pos="1"]::after { opacity: 0.45; }
+.qcard[data-pos="2"]::after { opacity: 0.66; }
+.qcard[data-pos="3"]::after { opacity: 0.82; }
 .qcard[data-pos="x"] { display: none; }
+.qcard[data-pos="out"] { z-index: 5; pointer-events: none; }
+.qcard:not([data-pos="0"], [data-pos="out"]) > :not(.qimg) { visibility: hidden; }
+.qcard:not([data-pos="0"], [data-pos="out"]) .qimg { filter: blur(1.5px); }
 .qcard.is-drag { transition: none; cursor: grabbing; }
-.qcard.is-out { opacity: 0; transition: transform var(--dur-base) var(--ease-out), opacity var(--dur-base) var(--ease-out); pointer-events: none; }
-.qcard-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-8); font-size: var(--fs-13); color: var(--ink-2); font-weight: var(--fw-semi); }
-.qcard h2 { font-size: var(--fs-20); line-height: 1.32; letter-spacing: -0.015em; margin-top: var(--s-2); outline: none; }
-.qcard-meta { display: grid; gap: var(--s-4); margin-top: auto; font-size: var(--fs-13); color: var(--ink-2); }
+.qimg { position: absolute; inset: 0; z-index: 0; background: var(--band); }
+.qimg img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; pointer-events: none; }
+.qimg--fallback { display: grid; justify-items: center; align-content: start; padding-top: 22%; color: var(--ink); }
+.qimg-tile { display: grid; place-items: center; width: 132px; height: 132px; border: var(--edge); border-radius: 50%; background: var(--volt); box-shadow: 6px 6px 0 var(--ink); }
+.qtint { position: absolute; inset: 0; z-index: 1; background: var(--volt); opacity: 0; pointer-events: none; }
+.qcard-top { position: relative; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: var(--s-8); padding: var(--s-12); }
+.qchip { display: inline-flex; align-items: center; gap: var(--s-4); padding: var(--s-4) var(--s-10); border-radius: var(--r-pill); background: var(--snow); color: var(--ink); border: var(--edge-thin); font-size: var(--fs-13); font-weight: var(--fw-heavy); line-height: 1.35; white-space: nowrap; }
+.qchip--n { background: var(--chip-on-img); border-color: transparent; color: var(--snow); font-weight: var(--fw-bold); }
+.qcard-body { position: relative; z-index: 3; display: grid; gap: var(--s-10); padding: 56px var(--s-12) var(--s-12); background: var(--card-scrim); }
+.qcard h2 { font-size: var(--fs-20); line-height: 1.3; letter-spacing: -0.015em; outline: none; color: var(--snow); }
+@media (min-width: 380px) { .qcard h2 { font-size: 22px; } }
+.qcard-meta { display: grid; gap: var(--s-2); font-size: var(--fs-13); color: var(--on-brand-2); }
 .qcard-meta span { display: flex; gap: var(--s-6); align-items: flex-start; }
 .qcard-meta svg { margin-top: 2px; }
 .qcard-note { display: flex; align-items: center; gap: var(--s-6); padding: var(--s-6) var(--s-10); border-radius: var(--r-control); background: var(--down-tint); color: var(--down); font-size: var(--fs-13); font-weight: var(--fw-bold); }
-.qcard-final { font-size: var(--fs-13); color: var(--ink-2); }
 .choices { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-10); }
 .choice { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-6); min-height: 54px; padding: 0 var(--s-10); border: var(--edge); border-radius: var(--r-pill); background: var(--surface); color: var(--ink); font-size: var(--fs-16); font-weight: var(--fw-heavy); line-height: 1.15; box-shadow: 0 3px 0 var(--ink); margin-bottom: 3px;
   transition: transform var(--dur-release) var(--ease-spring), background-color var(--dur-fast) var(--ease), box-shadow var(--dur-release) var(--ease-out); }
@@ -217,9 +232,19 @@ img, svg { display: block; flex: none; }
 .choice.is-hot { background: var(--volt); transform: scale(1.04); }
 .choice.is-pressed { background: var(--volt); transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); transition-duration: var(--dur-press); }
 .choice[disabled] { background: var(--inset); border-color: var(--line-strong); color: var(--ink-2); box-shadow: none; cursor: not-allowed; }
-.qstamp { position: absolute; top: 46px; z-index: 2; padding: var(--s-6) var(--s-12); border: var(--edge); border-radius: var(--r-control); background: var(--volt); color: var(--on-volt); font-family: var(--font-display); font-weight: var(--fw-black); font-stretch: var(--wide); font-size: var(--fs-20); line-height: 1; text-transform: uppercase; opacity: 0; pointer-events: none; box-shadow: 3px 3px 0 var(--ink); }
+.qstamp { position: absolute; top: 58px; z-index: 4; padding: var(--s-8) var(--s-12); border: var(--edge); border-radius: var(--r-control); background: var(--volt); color: var(--on-volt); font-family: var(--font-display); font-weight: var(--fw-black); font-stretch: var(--wide); font-size: var(--fs-24); line-height: 1; text-transform: uppercase; opacity: 0; pointer-events: none; box-shadow: 4px 4px 0 var(--ink); max-width: 70%; }
 .qstamp--l { right: var(--s-16); transform: rotate(8deg); }
 .qstamp--r { left: var(--s-16); transform: rotate(-8deg); }
+/* the other layout tried for the founder: image on top, text on snow below (kept in the library for comparison) */
+.qcard--top { background: var(--surface); color: var(--ink); }
+.qcard--top .qimg { position: relative; flex: 1 1 0; min-height: 150px; border-bottom: var(--edge); }
+.qcard--top .qcard-top { position: absolute; top: 0; left: 0; right: 0; }
+.qcard--top .qcard-body { padding: var(--s-12); background: var(--surface); }
+.qcard--top h2 { color: var(--ink); }
+.qcard--top .qcard-meta { color: var(--ink-2); }
+.trow .qcard-meta { color: var(--ink-2); }
+.trow-thumb { width: 52px; height: 52px; border: var(--edge-thin); border-radius: var(--r-control); overflow: hidden; background: var(--band); color: var(--volt); display: grid; place-items: center; }
+.trow-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 12%; }
 .hint { display: flex; align-items: center; justify-content: center; gap: var(--s-8); font-size: var(--fs-13); color: var(--ink-2); text-align: center; }
 .sync { display: grid; gap: var(--s-4); }
 .sync li { display: flex; align-items: center; gap: var(--s-8); font-size: var(--fs-13); color: var(--ink-2); transition: opacity var(--dur-slow) var(--ease); }
@@ -230,7 +255,7 @@ img, svg { display: block; flex: none; }
 
 /* ---------- terminal rows ---------- */
 .term { border: var(--edge); border-radius: var(--r-card); background: var(--surface); overflow: hidden; }
-.trow { display: grid; grid-template-columns: 36px 1fr; column-gap: var(--s-10); padding: var(--s-12) var(--s-16); border-top: var(--hair); }
+.trow { display: grid; grid-template-columns: 30px 1fr 52px; column-gap: var(--s-10); padding: var(--s-12) var(--s-16); border-top: var(--hair); }
 .trow:first-child { border-top: 0; }
 .trow-n { font-family: var(--font-display); font-weight: var(--fw-black); font-stretch: var(--wide); font-size: var(--fs-18); line-height: 1.5; color: var(--brand); }
 .trow-q { font-size: var(--fs-15); font-weight: var(--fw-bold); line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -259,6 +284,15 @@ img, svg { display: block; flex: none; }
 .done-badge { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; background: var(--volt); color: var(--on-volt); border: var(--edge); box-shadow: 0 4px 0 var(--ink); }
 .done-badge.is-pop { animation: badge var(--dur-count) var(--ease-spring) both; }
 @keyframes badge { from { transform: scale(0.3) rotate(-30deg); opacity: 0; } }
+.burst { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
+.burst i { position: absolute; left: -5px; top: -5px; width: 10px; height: 10px; border-radius: 3px; background: var(--volt); border: 1.5px solid var(--ink); opacity: 0; animation: burst var(--dur-burst) var(--ease-out) both; animation-delay: calc(var(--n) * 12ms); }
+.burst i:nth-child(3n) { background: var(--sky); border-radius: 50%; }
+.burst i:nth-child(4n) { background: var(--snow); width: 7px; height: 14px; }
+@keyframes burst { 0% { transform: translate(0, 0) scale(0.4); opacity: 1; } 70% { opacity: 1; } 100% { transform: translate(var(--x), var(--y)) rotate(var(--r)) scale(1); opacity: 0; } }
+.done-badge { position: relative; }
+.reward.is-pop { animation: pop var(--dur-slow) var(--ease-spring) both; }
+.day5--lg.is-wave i { animation: wave var(--dur-count) var(--ease-spring) both; animation-delay: calc(var(--i) * var(--stagger)); }
+@keyframes wave { 40% { transform: translateY(-8px) scale(1.06); } }
 .reward { display: inline-flex; align-items: center; gap: var(--s-8); min-height: 36px; padding: var(--s-6) var(--s-12); border-radius: var(--r-field); line-height: 1.35; background: var(--band-chip); color: var(--on-brand); font-size: var(--fs-14); font-weight: var(--fw-bold); justify-self: start; }
 .reward.is-paid { background: var(--volt); color: var(--on-volt); box-shadow: inset 0 0 0 1.5px var(--ink); font-weight: var(--fw-heavy); }
 
@@ -501,7 +535,7 @@ img, svg { display: block; flex: none; }
 :lang(ko) .gate h1, :lang(ja) .gate h1 { line-height: 1.08; letter-spacing: -0.02em; }
 .gate-lede { color: var(--on-brand-2); font-size: var(--fs-16); max-width: 34ch; }
 .gate-demo { position: relative; padding: var(--s-4) var(--s-8) var(--s-20) 0; }
-.gate-demo .qcard { min-height: 0; transform: rotate(-2deg); }
+.gate-demo .qcard { min-height: 380px; transform: rotate(-2deg); box-shadow: var(--shadow-card); }
 .gate-demo .qcard-back { position: absolute; inset: var(--s-4) var(--s-8) var(--s-20) 0; border: var(--edge); border-radius: var(--r-card); background: var(--sky); transform: rotate(3deg) translateY(10px); }
 .sticker { position: absolute; z-index: 4; right: -2px; top: -14px; padding: var(--s-6) var(--s-12); border: var(--edge); border-radius: var(--r-control); background: var(--volt); color: var(--on-volt); font-family: var(--font-display); font-weight: var(--fw-black); font-stretch: var(--wide); font-size: var(--fs-14); text-transform: uppercase; transform: rotate(6deg); box-shadow: 3px 3px 0 var(--ink); }
 .panel { border: var(--edge); border-radius: var(--r-card); background: var(--snow); color: var(--ink); padding: var(--s-20) var(--s-16); display: grid; gap: var(--s-16); box-shadow: var(--shadow-card); margin-right: var(--s-6); }
@@ -609,4 +643,6 @@ img, svg { display: block; flex: none; }
   *, *::before, *::after { animation: none !important; transition-duration: 0.01ms !important; }
   .spin { animation: spin 1.6s linear infinite !important; }
   .btn.is-pressed, .choice.is-pressed, .seg-btn.is-pressed { transform: none; }
+  .qcard { transition: opacity 200ms linear !important; }   /* cross fade, no throw */
+  .burst { display: none; }
 }

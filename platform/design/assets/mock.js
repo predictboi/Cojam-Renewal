@@ -25,11 +25,11 @@
     providerNames: "Gmail, Naver, Kakao, Daum, Hanmail, iCloud, Outlook, Hotmail, Yahoo! JAPAN",
     emailProviders: ["gmail.com", "naver.com", "kakao.com", "daum.net", "hanmail.net", "icloud.com", "outlook.com", "hotmail.com", "yahoo.co.jp"],
     set: [
-      { n: 1, id: "q1", cat: "crypto" },
-      { n: 2, id: "q2", cat: "markets" },
-      { n: 3, id: "q3", cat: "weather" },
-      { n: 4, id: "q4", cat: "sports" },
-      { n: 5, id: "q5", cat: "crypto" }
+      { n: 1, id: "q1", img: "assets/img/q1-bitcoin.svg", cat: "crypto" },
+      { n: 2, id: "q2", img: "assets/img/q2-dollar-won.svg", cat: "markets" },
+      { n: 3, id: "q3", img: "assets/img/q3-seoul-weather.svg", cat: "weather" },
+      { n: 4, id: "q4", img: "assets/img/q4-football.svg", cat: "sports" },
+      { n: 5, id: "q5", img: "assets/img/q5-kaia.svg", cat: "crypto" }
     ],
     untilNextSet: untilNextSet, untilWeekEnd: untilWeekEnd,
     rates: { 30: [8, 9, 10], 90: [12, 13, 14], 180: [18, 19, 20], 365: [25, 26, 27] },

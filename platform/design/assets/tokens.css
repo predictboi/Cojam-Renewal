@@ -85,7 +85,8 @@
   /* ---------- shadow ---------- */
   --shadow-hard: 0 4px 0 var(--ink);        /* volt buttons: a hard ink drop that presses down */
   --shadow-hard-down: 0 1px 0 var(--ink);
-  --shadow-card: 5px 5px 0 var(--ink);      /* the live question card and sheets */
+  --shadow-card: 5px 5px 0 var(--ink);
+  --shadow-deck: 0 18px 30px -14px rgba(11, 21, 48, 0.55), 5px 5px 0 var(--ink);   /* the front card of the deck: a hard drop plus soft depth */      /* the live question card and sheets */
   --shadow-toast: 0 4px 0 var(--volt);
   --shadow-tab: 0 -1px 0 var(--line);
   --shadow-stage: 0 0 0 1px var(--ink-line), 0 30px 80px rgba(0, 0, 0, 0.5);
@@ -96,6 +97,8 @@
   /* ---------- pattern ---------- */
   --band: linear-gradient(var(--grid-line) 1px, transparent 1px) -1px -1px / 44px 44px, linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) -1px -1px / 44px 44px, var(--brand);
   --stripes: repeating-linear-gradient(-45deg, var(--volt) 0 5px, transparent 5px 10px);
+  --card-scrim: linear-gradient(180deg, rgba(11, 21, 48, 0) 0, rgba(11, 21, 48, 0.82) 52px, rgba(11, 21, 48, 0.96) 132px);   /* behind the question on an image card: white text starts at 52px, so it never sits on less than 82% ink (5.9:1 over pure volt, more elsewhere) */
+  --chip-on-img: rgba(11, 21, 48, 0.78);
   --stripes-ink: repeating-linear-gradient(-45deg, var(--ink) 0 2px, transparent 2px 7px);
 
   /* ---------- motion: transform and opacity, 120 to 400 ms ---------- */
@@ -109,6 +112,8 @@
   --dur-base: 240ms;
   --dur-slow: 320ms;
   --dur-count: 400ms;
+  --dur-deck: 420ms;         /* the next card rises, straightens and sharpens */
+  --dur-burst: 700ms;
   --dur-stripes: 1.2s;
   --stagger: 50ms;
   --press-scale: 0.97;

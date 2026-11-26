@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="assets/components.css">
 </head>
 <body>
-<!-- H1 Home, card view. States: (none) ready, partial, syncing, slow, failed, reconnect, reconnectfail, otherdevice, loading, empty, closed, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<!-- H1 Home, card view. States: (none) ready, noimage (fallback card), imagetop (the other layout), partial, syncing, slow, failed, reconnect, reconnectfail, otherdevice, loading, empty, closed, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -40,8 +40,8 @@
     return C.seg([{ label: t("h.view.card"), href: "home-cards.html", on: true }, { label: t("h.view.term"), href: "home-terminal.html" + (S ? "?state=" + S : "") }], { label: t("h.view.label") });
   }
   function body() {
-    if (S === "loading") return viewSwitch() + '<div class="deck" aria-busy="true"><div class="qcard" data-pos="0"><div class="qcard-top">' + C.skel("72px", "24px", "border-radius:999px") + C.skel("88px") + "</div>" +
-      C.skel("100%", "20px") + C.skel("92%", "20px") + C.skel("60%", "20px") + '<div class="qcard-meta">' + C.skel("80%") + C.skel("66%") + '</div><div class="choices">' + C.skel("100%", "54px", "border-radius:999px") + C.skel("100%", "54px", "border-radius:999px") + '</div></div></div><p class="sr-only" role="status">' + t("common.loading") + "</p>";
+    if (S === "loading") return viewSwitch() + '<div class="deck" aria-busy="true"><div class="qcard qcard--top" data-pos="0"><div class="qimg"></div><div class="qcard-top">' + C.skel("72px", "24px", "border-radius:999px") + C.skel("88px", "24px", "border-radius:999px") +
+      '</div><div class="qcard-body">' + C.skel("92%", "20px") + C.skel("60%", "20px") + '<div class="qcard-meta">' + C.skel("80%") + C.skel("66%") + '</div><div class="choices">' + C.skel("100%", "54px", "border-radius:999px") + C.skel("100%", "54px", "border-radius:999px") + '</div></div></div></div><p class="sr-only" role="status">' + t("common.loading") + "</p>";
     if (S === "empty") return viewSwitch() + C.empty({ icon: "clock", title: t("h.empty.h"), body: t("h.empty.b", { time: t("time.kst9") }), extra: '<p class="fig fig--md" data-cd="' + M.untilNextSet() + '"></p>' });
     if (S === "closed") return viewSwitch() + C.empty({ icon: "refresh", title: t("h.closed"), action: C.btn(t("h.closed.btn"), { kind: "primary", href: "home-cards.html" }) });
     if (S === "error") return viewSwitch() + C.error();
@@ -50,7 +50,7 @@
     if (S === "failed") cards.sort(function (a, b) { return (a.n === 2 ? -1 : 0) - (b.n === 2 ? -1 : 0); });
     return viewSwitch() +
       (App.offline ? C.note("warn", t("h.offline")) : "") + C.playBanner(S) +
-      '<div class="deck" id="deck">' + cards.slice().reverse().map(function (q) { return C.qcard(q, { failed: S === "failed" && q.n === 2, disabled: App.offline }); }).join("") + "</div>" +
+      '<div class="deck" id="deck">' + cards.slice().reverse().map(function (q) { return C.qcard(q, { failed: S === "failed" && q.n === 2, disabled: App.offline, noimg: S === "noimage" && q.n === 1, top: S === "imagetop" }); }).join("") + "</div>" +
       '<ul class="sync" id="sync" aria-label="' + t("common.saving") + '">' + pending.map(function (n) { return syncLine(n, "r"); }).join("") + "</ul>" +
       '<p class="hint" id="hint">' + t("h.hint") + (S === "" ? " " + t("h.final") : "") + "</p>";
   }

@@ -48,12 +48,12 @@
     var n = q.n, p = picks[n], id = q.id, num = '<span class="trow-n" aria-hidden="true">0' + n + "</span>", tag = C.tag(t("cat." + q.cat));
     if (p && p.sync !== "fail") {
       return '<li class="trow is-done">' + num + '<div><p class="trow-q">' + t(id + ".q") + '</p><div class="trow-foot">' + tag + '<span class="trow-state">' +
-        (p.sync === "saving" ? '<span class="spin"></span><span class="sr-only">' + t("common.saving") + "</span>" : C.icon("check", 16)) + t("h.t.chose", { choice: t(id + "." + p.dir) }) + "</span></div></div></li>";
+        (p.sync === "saving" ? '<span class="spin"></span><span class="sr-only">' + t("common.saving") + "</span>" : C.icon("check", 16)) + t("h.t.chose", { choice: t(id + "." + p.dir) }) + "</span></div></div>" + C.thumb(q) + "</li>";
     }
     var failed = p && p.sync === "fail";
     if (n === current) {
       return '<li class="trow is-open' + (failed ? " is-fail" : "") + '">' + num + '<div><h2 class="trow-q" tabindex="-1" id="open-q">' + t(id + ".q") + '</h2><div class="trow-foot">' + tag +
-        (failed ? '<span class="trow-state">' + C.icon("warn", 16) + t("h.t.notsaved") + "</span>" : "") + "</div></div>" +
+        (failed ? '<span class="trow-state">' + C.icon("warn", 16) + t("h.t.notsaved") + "</span>" : "") + "</div></div>" + C.thumb(q) +
         '<div class="trow-body"><div class="qcard-meta"><span>' + C.icon("search", 14) + "<span>" + t("h.answer", { rule: t(id + ".rule") }) + "</span></span><span>" + C.icon("clock", 14) + "<span>" + t("h.ai", { time: t(id + ".time") }) + "</span></span></div>" +
         '<div class="choices">' + ["l", "r"].map(function (d) {
           return '<button type="button" class="choice" data-pick="' + n + '" data-dir="' + d + '"' + (App.offline ? " disabled" : "") + ' aria-label="' + App.esc(t("h.pick.aria", { choice: t(id + "." + d), q: t(id + ".q") })) + '">' + (d === "l" ? C.icon("left", 18) : "") + "<span>" + t(id + "." + d) + "</span>" + (d === "r" ? C.icon("right", 18) : "") + "</button>";
@@ -61,7 +61,7 @@
     }
     return '<li class="trow' + (failed ? " is-fail" : "") + '">' + num + '<div><p class="trow-q">' + t(id + ".q") + '</p><div class="trow-foot">' + tag +
       (failed ? '<span class="trow-state">' + C.icon("warn", 16) + t("h.t.notsaved") + "</span>" : "") +
-      C.btn(failed ? t("h.t.again") : t("h.t.pick"), { sm: true, cls: "btn-quiet", attrs: 'data-open="' + n + '"' }) + "</div></div></li>";
+      C.btn(failed ? t("h.t.again") : t("h.t.pick"), { sm: true, cls: "btn-quiet", attrs: 'data-open="' + n + '"' }) + "</div></div>" + C.thumb(q) + "</li>";
   }
   function list() { return M.set.map(row).join(""); }
   function body() {
