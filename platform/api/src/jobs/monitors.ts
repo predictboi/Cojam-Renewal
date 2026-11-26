@@ -32,6 +32,27 @@ export async function runMonitors(ctx: JobContext): Promise<void> {
     ]);
     reserves.availableRewards = avail.toString();
     reserves.totalPrincipal = principal.toString();
+    const st = ctx.contracts.staking;
+    const read = (functionName: string, args: unknown[] = []) => client.readContract({ address: st, abi: cojamStakingAbi, functionName, args } as never) as Promise<unknown>;
+    const [rates, t0, t1, minStake, minClaim, maxOpen, maxTotal, maxUser] = await Promise.all([
+      read('rates'),
+      read('tierThresholds', [0n]),
+      read('tierThresholds', [1n]),
+      read('minStake'),
+      read('minClaim'),
+      read('maxOpenPositions'),
+      read('maxTotalPrincipal'),
+      read('maxUserPrincipal'),
+    ]);
+    await setState(db as never, STATE_KEYS.stakingParams, json({
+      rates: (rates as readonly (readonly (number | bigint)[])[]).map((r) => r.map(Number)),
+      tiers: [t0, t1],
+      minStake,
+      minClaim,
+      maxOpenPositions: maxOpen,
+      maxTotalPrincipal: maxTotal,
+      maxUserPrincipal: maxUser,
+    }));
   }
   await setState(db as never, STATE_KEYS.reserves, reserves);
   const opBal = await client.getBalance({ address: ctx.sender.address });

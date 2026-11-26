@@ -31,6 +31,10 @@ describe('retry policy (4.7)', () => {
     for (const c of ['NETWORK', 'RATE_LIMITED_BURST', 'RATE_LIMITED_IP']) expect(classify(c)).toBe('retry');
     expect(classify('HTTP_502', 502)).toBe('retry');
     expect(classify('SOMETHING_NEW', 400)).toBe('fail');
+    // codes this table does not name follow the API's own retryable flag (platform/shared/src/errors.ts)
+    expect(classify('STAKING_FULL', 409, true)).toBe('retry');
+    expect(classify('SIMULATION_FAILED', 400, false)).toBe('fail');
+    expect(classify('PAUSED', 503)).toBe('retry');
   });
   it('surfaces after 3 attempts or 60 s', () => {
     expect(shouldSurface(2, 1000, 30_000)).toBe(false);

@@ -9,6 +9,7 @@ import { Html, Shell } from '../ui/kit';
 import { useHold, useOffline, usePreset } from '../state/app';
 import { live, toast } from '../state/ui';
 import { DESIGN } from '../api/mock';
+import { CONFIG } from '../config';
 
 export default function Invite() {
   const st = usePreset();
@@ -26,7 +27,8 @@ export default function Invite() {
   const head = '<div class="inv-hero"><h1><span class="inv-pct" aria-hidden="true">' + rate + '<small>%</small></span><span class="inv-line">' + t('inv.hero.line', { r: rate }) + '</span></h1>' +
     '<p class="inv-sub">' + t('inv.hero.sub') + '</p>' +
     '<div class="inv-ex" role="img" aria-label="' + esc(t('inv.ex.sr', { a: day, b: cut })) + '"><div><span>' + t('inv.ex.friend') + '</span><b>+' + F.pts(day) + '</b></div>' + icon('right', 20) + '<div><span>' + t('inv.ex.you') + '</span><b>+' + F.pts(cut) + '</b></div></div></div>';
-  const c = V?.code || DESIGN.invite.code, link = V?.link || DESIGN.invite.link, linkShort = V?.linkShort || DESIGN.invite.linkShort;
+  const M = CONFIG.mockApi; // the design's sample code shows only in mock mode while the read is loading
+  const c = V?.code || (M ? DESIGN.invite.code : ''), link = V?.link || (M ? DESIGN.invite.link : ''), linkShort = V?.linkShort || (M ? DESIGN.invite.linkShort : '');
   const codeSec = held
     ? '<section class="sec inv-code" aria-labelledby="code-h"><h2 class="lbl" id="code-h">' + t('inv.code.h') + '</h2>' + hold(t('hold.invite')) + '</section>'
     : '<section class="sec inv-code" aria-labelledby="code-h"><h2 class="lbl" id="code-h">' + t('inv.code.h') + '</h2>' + code(c, { id: 'code', done: st === 'copied' }) +

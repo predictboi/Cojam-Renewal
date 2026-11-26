@@ -13,7 +13,7 @@ import { outbox, hasOutbox, kick, slowCount, useOutbox, viewOf } from '../chain/
 import { UNDO_MS } from '../chain/outbox/policy';
 import { usePlay, playHere, retryReconnect } from '../state/play';
 import { useWalletStore } from '../wallet/wallet';
-import { HomeHead, useSlots, useFreshReset, playBannerHtml, holdPanel, otherDevicePanel, emptySet, closedSet, takeLeft, noteLeft, type Slot } from './HomeCards';
+import { HomeHead, useSlots, usePresetConfirm, useFreshReset, playBannerHtml, holdPanel, otherDevicePanel, emptySet, closedSet, takeLeft, noteLeft, type Slot } from './HomeCards';
 import { errorNote } from '../ui/h';
 
 export default function HomeList() {
@@ -28,9 +28,10 @@ export default function HomeList() {
   const player = useWalletStore((s) => s.address);
   const slots = useSlots(today.data, st === 'syncing' || st === 'slow' ? 'syncing-list' : st);
   // list presets: q1 answered, q2 picked and saving (syncing, slow) or failed
+  const confirmed = usePresetConfirm(st, st === 'syncing' ? [[2, 1700]] : []);
   const presetRow = (s: Slot): Slot => {
     if (!st || st === 'fresh' || st === 'partial0' || st === 'hold') return s;
-    if (s.m.n === 2 && (st === 'syncing' || st === 'slow')) return { ...s, seg: 'pend', answered: true };
+    if (s.m.n === 2 && (st === 'syncing' || st === 'slow')) return { ...s, seg: confirmed.includes(2) ? 'done fill' : 'pend', answered: true };
     if (s.m.n === 2 && st === 'failed') return { ...s, seg: 'fail', answered: false };
     if (s.m.n === 2) return { ...s, seg: 'done', answered: true };
     return s;

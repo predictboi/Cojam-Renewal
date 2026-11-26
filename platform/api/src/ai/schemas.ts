@@ -9,6 +9,12 @@ import { z } from 'zod';
 export const CATEGORIES = ['Crypto', 'Markets', 'Weather', 'Sports', 'Culture'] as const;
 export type Category = (typeof CATEGORIES)[number];
 
+/** Category in the worker's spelling whatever the case stored (the API serves it lower case). */
+export function normCategory(c: string): Category | null {
+  const hit = CATEGORIES.find((x) => x.toLowerCase() === c.trim().toLowerCase());
+  return hit ?? null;
+}
+
 export const LANGS = ['en', 'ko', 'ja'] as const;
 export type Lang = (typeof LANGS)[number];
 

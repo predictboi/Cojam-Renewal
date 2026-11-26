@@ -10,6 +10,7 @@ import { loadConfig, kaiaToWei } from '../config/index.ts';
 import { createPool } from '../db/index.ts';
 import { migrate } from '../db/migrate.ts';
 import { AnthropicProvider } from '../ai/anthropic.ts';
+import { FakeProvider } from '../ai/fake.ts';
 import { CategoryIllustrationGenerator } from '../ai/images.ts';
 import type { AiProvider } from '../ai/provider.ts';
 import { DEFAULT_SETTINGS, type JobContext, type WorkerSettings } from '../jobs/context.ts';
@@ -92,9 +93,18 @@ async function main() {
     minFeePayerBalanceWei: kaiaToWei(cfg.env.MIN_FEE_PAYER_BALANCE_KAIA),
     feePayerAddress: (process.env.APP_FEE_PAYER_ADDRESS?.toLowerCase() as Address | undefined) ?? null,
     aiMonthlyBudgetUsd: cfg.env.AI_MONTHLY_BUDGET_USD,
+    imageBaseUrl: cfg.env.IMAGE_BASE_URL,
   });
   let ai: AiProvider;
-  if (cfg.env.ANTHROPIC_API_KEY && settings.aiEnabled) {
+  // Dev only: the deterministic fake AI (drafts valid questions, answers by market id parity) for local
+  // end to end runs. Refused in production.
+  const fakeAi = process.env.AI_PROVIDER === 'fake';
+  if (fakeAi && cfg.isProduction) throw new Error('AI_PROVIDER=fake is refused when NODE_ENV=production');
+  if (fakeAi) {
+    ai = new FakeProvider((id) => (id % 2 === 0 ? 'A' : 'B'));
+    settings.aiEnabled = true;
+    log.warn('AI_PROVIDER=fake: the deterministic fake AI drafts and answers (dev only)');
+  } else if (cfg.env.ANTHROPIC_API_KEY && settings.aiEnabled) {
     ai = new AnthropicProvider({ apiKey: cfg.env.ANTHROPIC_API_KEY, model: cfg.env.AI_MODEL });
   } else {
     settings.aiEnabled = false;
@@ -115,6 +125,17 @@ async function main() {
     settings,
     now: () => Math.floor(Date.now() / 1000),
   };
+  // Dev only: follow the chain clock (a local node whose time is moved forward) instead of the wall clock.
+  if (process.env.WORKER_CLOCK === 'chain') {
+    if (cfg.isProduction) throw new Error('WORKER_CLOCK=chain is refused when NODE_ENV=production');
+    let chainTs = Math.floor(Date.now() / 1000);
+    const refresh = async () => {
+      chainTs = Number((await client.getBlock({ blockTag: 'latest' })).timestamp);
+    };
+    await refresh();
+    setInterval(() => void refresh().catch(() => undefined), 1_000).unref();
+    ctx.now = () => chainTs;
+  }
 
   const indexer = new Indexer(db, client, { predict, staking: staking ?? null, ct, deployBlock: cfg.deployBlocks.predict, range: intEnv('INDEXER_RANGE', 2_000), minRange: 10, confirmations: intEnv('INDEXER_CONFIRMATIONS', 0) }, log.child({ part: 'indexer' }));
   indexer.onOwnerActivity = async (items) => {

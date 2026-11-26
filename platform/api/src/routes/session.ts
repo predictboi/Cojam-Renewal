@@ -10,7 +10,7 @@ import { sql, audit, type Db } from "../db/index.ts";
 import type { User } from "../db/types.ts";
 import type { RouteKit } from "../server/app.ts";
 import { ApiError } from "../server/errors.ts";
-import { emailHash } from "../server/hash.ts";
+import { emailHash, emailShapeHash } from "../server/hash.ts";
 import { peekCount, takeSlots, utcDay, utcHour, LimitHit } from "../server/limits.ts";
 import type { AuthedUser } from "../auth/index.ts";
 import { checkEmail } from "./public.ts";
@@ -141,7 +141,7 @@ async function createOrLoad(kit: RouteKit, auth: AuthedUser, ip: string | null, 
     user = await db.transaction().execute(async (trx) => {
       const u = await trx
         .insertInto("users")
-        .values({ ...base, email_domain: check.domain, email_hash: hash, registration: "pending" })
+        .values({ ...base, email_domain: check.domain, email_hash: hash, email_shape_hash: emailShapeHash(hashKey, check.normalised), registration: "pending" })
         .returningAll()
         .executeTakeFirstOrThrow();
       await trx.insertInto("registration_requests").values({ kind: "register", wallet: auth.wallet! }).execute();

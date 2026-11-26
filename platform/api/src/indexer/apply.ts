@@ -5,7 +5,7 @@
 
 import { sql, type Transaction } from 'kysely';
 import { hexToString, type Hex } from 'viem';
-import { weekOf } from '../../../shared/src/time.ts';
+import { dayIdOf, weekOf } from '../../../shared/src/time.ts';
 import type { WorkerDatabase } from '../worker/db.ts';
 
 export type Tx = Transaction<WorkerDatabase>;
@@ -32,6 +32,8 @@ export interface ApplyContext {
   settlesAt: Map<number, number>;
   /** Owner and role activity found in the range, raised as alerts after commit. */
   ownerActivity: { event: string; txHash: string; args: Record<string, unknown> }[];
+  /** Day of the last ranked credit seen in a transaction: an invite bonus belongs to that credit's day. */
+  creditDay?: Map<string, number>;
 }
 
 const lc = (a: unknown) => String(a).toLowerCase();
@@ -174,6 +176,7 @@ export async function applyLog(tx: Tx, l: DecodedLog, ctx: ApplyContext): Promis
       const amount = num(a.amount);
       const weekId = num(a.weekId);
       const dayId = num(a.dayId);
+      (ctx.creditDay ??= new Map()).set(l.txHash, dayId);
       const inserted = await tx
         .insertInto('points_ledger')
         .values({ wallet, kind, amount, day_id: dayId, week_id: weekId, ranked: true, tx_hash: l.txHash, log_index: l.logIndex, block: l.blockNumber, block_time: ts(l.blockTime) })
@@ -221,9 +224,10 @@ export async function applyLog(tx: Tx, l: DecodedLog, ctx: ApplyContext): Promis
       return;
     }
     case 'ReferralPaid': {
+      const day = ctx.creditDay?.get(l.txHash) ?? dayIdOf(l.blockTime);
       const inserted = await tx
         .insertInto('points_ledger')
-        .values({ wallet: lc(a.referrer), kind: 'referral', amount: num(a.amount), source_wallet: lc(a.player), ranked: false, tx_hash: l.txHash, log_index: l.logIndex, block: l.blockNumber, block_time: ts(l.blockTime) })
+        .values({ wallet: lc(a.referrer), kind: 'referral', amount: num(a.amount), source_wallet: lc(a.player), day_id: day, week_id: weekOf(dayIdOf(l.blockTime)), ranked: false, tx_hash: l.txHash, log_index: l.logIndex, block: l.blockNumber, block_time: ts(l.blockTime) })
         .onConflict((oc) => oc.columns(['tx_hash', 'log_index']).doNothing())
         .returning('id')
         .executeTakeFirst();
@@ -235,7 +239,7 @@ export async function applyLog(tx: Tx, l: DecodedLog, ctx: ApplyContext): Promis
     case 'WelcomePaid': {
       const inserted = await tx
         .insertInto('points_ledger')
-        .values({ wallet: lc(a.player), kind: 'welcome', amount: num(a.amount), source_wallet: lc(a.referrer), day_id: num(a.dayId), ranked: false, tx_hash: l.txHash, log_index: l.logIndex, block: l.blockNumber, block_time: ts(l.blockTime) })
+        .values({ wallet: lc(a.player), kind: 'welcome', amount: num(a.amount), source_wallet: lc(a.referrer), day_id: num(a.dayId), week_id: weekOf(num(a.dayId)), ranked: false, tx_hash: l.txHash, log_index: l.logIndex, block: l.blockNumber, block_time: ts(l.blockTime) })
         .onConflict((oc) => oc.columns(['tx_hash', 'log_index']).doNothing())
         .returning('id')
         .executeTakeFirst();

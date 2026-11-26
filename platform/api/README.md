@@ -27,9 +27,9 @@ The API never sends operator transactions. It writes rows the worker consumes:
 | `registration_requests` (`register`) | `POST /v1/session` passed the sign up checks; `referrer` set when a valid code came along (also updated by a later redeem while still `queued`) | `registerPlayers(wallets, referrers)`, then set `users.registration`, `registered_at`, `registered_tx` |
 | `registration_requests` (`set_referrer`) | `POST /v1/invite/redeem` (or a code on `POST /v1/session`) after registration, inside 24 h | `setReferrers` |
 | `freezes` (`freeze` / `unfreeze`, status `queued`) | admin block / unblock (block also sets `users.frozen = true` at once, so sponsorship stops before the chain catches up) | `setFrozen(wallet, bool, reason)`; the indexer sets `users.frozen` from `PlayerFrozen` |
-| `operator_requests` | admin: `question_replace`, `void_market`, `image_regenerate`, `image_upload_check`, `resolve_rerun`, `correct_outcome`, `compensate` (after the owner signed `setCorrectedOutcome`), `airdrop` | the matching job |
+| `operator_requests` | admin: `question_replace`, `void_market`, `image_regenerate`, `image_upload_check`, `resolve_rerun`, `correct_outcome`, `compensate` (after the owner signed `setCorrectedOutcome`), `airdrop` | the matching job; the row's `target` is the market or week id. Also `run_job` (target = a job name from `src/jobs/schedule.ts`) to run a scheduled job now. See WORKER.md |
 
-Index conventions the read endpoints rely on: a market is shown to players once its `status` is `published` (set when `DayCreated` is mined) or later (`closed`, `resolved`, `voided`, `corrected`); `outcome`, `resolved_at` and `settles_at` mirror `OutcomeSet`; `image_url` (or `image_key` under `IMAGE_BASE_URL`) is the card image and `<key without extension>.thumb.webp` the thumbnail; `points_ledger.day_id` and `week_id` come from `PointsCredited` (and the day of `ReferralPaid` / `WelcomePaid`); `week_totals.last_completion_at` is the block time of the player's last completion credit that week (the tie break); `users.registered_at` is the block time of `PlayerRegistered` (it starts the 24 hour invite window).
+Index conventions the read endpoints rely on: a market is shown to players once its `status` is `published` (set when `DayCreated` is mined) or later (`closed`, `resolved`, `voided`, `corrected`); `outcome`, `resolved_at` and `settles_at` mirror `OutcomeSet`; `image_url` (or `image_key` under `IMAGE_BASE_URL`) is the card image and `<key without extension>.thumb.webp` the thumbnail (the category illustration fallback is an `image_url` path served by the PWA, with no key and so no thumbnail); `left` is outcome 1 and `right` outcome 2 (`platform/shared/src/content.ts`, which also defines the content hash); `points_ledger.day_id` and `week_id` come from `PointsCredited` (and the day of `ReferralPaid` / `WelcomePaid`); `week_totals.last_completion_at` is the block time of the player's last completion credit that week (the tie break); `users.registered_at` is the block time of `PlayerRegistered` (it starts the 24 hour invite window).
 
 The worker writes snapshots the API reads from `app_state` (keys in `STATE_KEYS`, `src/db/index.ts`): CojamPredict params, reserves, balances, indexer status, staking params, job summary, Claude usage. Every read endpoint also works without them (live chain reads or defaults).
 
@@ -69,7 +69,10 @@ npm run typecheck
 
 The API tests use a real Postgres: `test/globalSetup.ts` migrates a template database once per run (unique name per run) and every test file clones it, so files run in parallel. Set `TEST_PG_URL` (default `postgres://cojam:cojam@localhost:5432/postgres`; the role needs `CREATEDB`). The chain, the RPC and Privy are stubs (`test/api/helpers.ts`). `kaia-encoding.test.ts` proves our 0x31 sender and fee payer signatures are byte identical to `@kaiachain/ethers-ext`, the encoder proven on mainnet and in the spike.
 
-## Deploy (Render, later)
+## Deploy (Render)
+
+Blueprint: `render.platform.yaml` at the repository root (API, worker, Postgres, PWA static site).
+
 
 * `cojam-app-api`: web service, root `platform/api` (needs `platform/shared` in the checkout), build `npm ci`, start `npm run start:api`, health check `/v1/health`. Migrations run on start (advisory lock, safe with the worker starting at the same time).
 * `cojam-app-worker`: `npm run start:worker`, one instance.

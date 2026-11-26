@@ -118,7 +118,7 @@ export interface QualifyInput {
   registered: boolean;
   frozen: boolean;
   registeredAt: number; // unix seconds
-  daysPlayed: number; // days of the week with at least one prediction
+  daysPlayed: number; // completed days of the week (all 5 answered)
 }
 
 export interface PoolRules {
@@ -138,8 +138,8 @@ export const DEFAULT_POOL_RULES: PoolRules = {
 };
 
 /**
- * Qualified players (REVIEW B7): registered, not frozen, played 3 or more days of the week, account
- * older than 7 days at the week's end. Pool = qualified x 1 CT, capped by the server cap and the on
+ * Qualified players (founder default, 2026-11-26): registered, not frozen, at least 3 completed days
+ * (all 5 answered) in the week, account older than 7 days at the week's end. Pool = qualified x 1 CT, capped by the server cap and the on
  * chain `maxWeeklyPool`.
  */
 export function computePool(players: QualifyInput[], weekEndTs: number, rules: PoolRules = DEFAULT_POOL_RULES) {

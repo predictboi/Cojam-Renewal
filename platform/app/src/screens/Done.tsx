@@ -2,7 +2,7 @@
 // "Saving your last pick" while any of the five is not mined, then "+100P added to your points" with the pop and burst.
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useToday, useWallet } from '../api';
+import { useMe, useToday, useWallet } from '../api';
 import { t } from '../i18n';
 import { esc, F, reduceMotion } from '../lib/fmt';
 import { btn, day5, icon, pick } from '../ui/h';
@@ -20,6 +20,7 @@ export default function Done() {
   const nav = useNavigate();
   const today = useToday();
   const wallet = useWallet();
+  const meQ = useMe();
   const items = useOutbox((s) => s.items);
   const td = today.data;
   const dayItems = items.filter((i) => td && i.dayId === td.dayId);
@@ -106,8 +107,8 @@ export default function Done() {
   const secs = st === 'zero' ? 0 : Math.max(0, Math.round(((td?.nextOpenAt ?? Date.now()) - Date.now()) / 1000));
   const body = btn(t('d.rank'), { kind: 'primary', block: true, href: '/ranking', iconEnd: 'right' }) +
     '<p class="watch" id="next">' + (st === 'zero' ? '<span class="spin"></span><span>' + t('d.loading') + '</span>' :
-      icon('clock', 16) + '<span>' + t('d.next') + '</span> <b class="clock-inline" id="clock" data-cd="' + secs + '"' + (td ? ' data-cd-end="' + td.nextOpenAt + '"' : '') + ' aria-hidden="true"></b><span class="sr-only" data-cd-sr></span>') + '</p>' +
-    (wel ? '<p class="done-welnote">' + t('d.wel.note', { name: '<b translate="no">' + esc(td?.inviterName || DESIGN.invite.by) + '</b>', w: W }) + '</p>' : '') +
+      icon('clock', 16) + '<span>' + t('d.next') + '</span> <b class="clock-inline" id="clock"' + (td ? ' data-cd="' + secs + '" data-cd-end="' + td.nextOpenAt + '"' : '') + ' aria-hidden="true"></b><span class="sr-only" data-cd-sr></span>') + '</p>' +
+    (wel ? '<p class="done-welnote">' + t('d.wel.note', { name: '<b translate="no">' + esc(td?.inviterName || meQ.data?.referrer?.name || (CONFIG.mockApi ? DESIGN.invite.by : '')) + '</b>', w: W }) + '</p>' : '') +
     '<section class="sec sec-rule done-picks"><div class="sect-h"><h2 class="sect-h">' + t('d.picks') + '</h2><a class="linkish" href="/results">' + t('d.results') + '</a></div>' +
     '<div class="done-wait">' + (waiting ? '<p class="done-wait-n">' + t('d.waitn', { n: waiting }) + '</p>' : '') + '<div class="plain-note"><p>' + t('d.hit.1') + '</p><p>' + t('d.hit.2') + '</p></div></div>' +
     '<ul class="list">' + picks.map((p, i) => {

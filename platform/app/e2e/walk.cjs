@@ -47,7 +47,7 @@ const ok = (name, cond, extra) => { results.push([cond ? 'PASS' : 'FAIL', name, 
     pg.on('console', (m) => { if (m.type() === 'error' && !/fonts\.googleapis|jsdelivr|net::ERR/.test(m.text())) errs.push('console: ' + m.text()); });
     // the first visit sets the standalone override (non production builds) and the language
     await pg.goto(B + '/?standalone=1&lang=' + lang); await sleep(800);
-    for (const [name, route, states] of SCREENS) {
+    for (const [name, route, states] of process.env.FLOW_ONLY ? [] : SCREENS) {
       for (const st of states) {
         errs = [];
         let url = route;
@@ -74,7 +74,8 @@ const ok = (name, cond, extra) => { results.push([cond ? 'PASS' : 'FAIL', name, 
     const cnt = () => pg.evaluate(() => +document.querySelector('#cnt').textContent);
     const box = () => pg.evaluate(() => { const r = document.querySelector('.qcard[data-pos="0"]').getBoundingClientRect(); return { x: r.x, y: r.y, w: r.width, h: r.height }; });
     errs = [];
-    await pg.goto(B + '/?state=fresh'); await sleep(1500);
+    try {
+    await pg.goto(B + '/?state=fresh'); await pg.waitForSelector('.qcard[data-pos="0"] .choice', { timeout: 8000 }).catch(() => {}); await sleep(800);
     ok(lang + ' flow: fresh deck shows question 1 in front', (await front()) === 1, await front());
     let c = await box();
     await drag(c.x + c.w / 2, c.y + c.h * 0.35, c.w * 0.25);           // short drag: springs back
@@ -113,6 +114,10 @@ const ok = (name, cond, extra) => { results.push([cond ? 'PASS' : 'FAIL', name, 
     await pg.goto(B + '/'); await sleep(1200);
     ok(lang + ' flow: home after the day shows the finished panel', await pg.locator('.home-fin').count() === 1);
     ok(lang + ' flow: no errors during the flow', errs.length === 0, errs.join(' | '));
+    } catch (e) {
+      ok(lang + ' flow: completed without an exception', false, e.message.split('\n')[0] + ' at ' + pg.url());
+      await pg.screenshot({ path: path.join(OUT, lang, 'flow-error.png') }).catch(() => {});
+    }
     await ctx.close();
   }
   await b.close();

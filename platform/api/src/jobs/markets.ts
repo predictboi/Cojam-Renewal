@@ -9,17 +9,18 @@
 
 import { sql } from 'kysely';
 import { stringToHex, type Hex } from 'viem';
-import { dayEnd, dayOpensAt, resolveDeadline } from '../../../shared/src/time.ts';
+import { canCreateDay, dayEnd, dayOpensAt, LATE_CREATE_MARGIN_SECONDS, resolveDeadline } from '../../../shared/src/time.ts';
 import { contentHash } from '../ai/contentHash.ts';
 import { draftDay, fillFromReserve, type AiDeps } from '../ai/draft.ts';
+import { prepareImage } from '../ai/images.ts';
 import { recheckMarket, resolveMarket, RETRY_EVERY_SEC, type ResolveDeps } from '../ai/resolve.ts';
 import { audit } from '../db/index.ts';
 import { cojamPredictAbi, readPredictParams, type Address } from '../worker/chain.ts';
 import { SimulationRevert } from '../worker/sender.ts';
 import type { JobContext } from './context.ts';
 
-/** createDay refuses a day with less than this left before its end. */
-export const LATE_CREATE_MARGIN_SEC = 3600;
+/** createDay refuses a day with less than this left before its end (shared time rule). */
+export const LATE_CREATE_MARGIN_SEC = LATE_CREATE_MARGIN_SECONDS;
 
 const b32 = (s: string): Hex => stringToHex(s.slice(0, 31), { size: 32 });
 const unix = (d: Date | string | null) => (d ? Math.floor(new Date(d).getTime() / 1000) : 0);
@@ -46,7 +47,7 @@ export async function publishDay(ctx: JobContext, dayId: number): Promise<Publis
   const now = ctx.now();
   // createDay is accepted before the open, or late while at least 1 hour of the day remains
   // (contract change "late day creation"); a late day is playable from the block that creates it.
-  if (now + LATE_CREATE_MARGIN_SEC > dayEnd(dayId)) {
+  if (!canCreateDay(dayId, now)) {
     await ctx.alerts.raise(`day-missed:${dayId}`, 'critical', `Day ${dayId} was never published`, 'createDay is refused in the last hour of the day: the day has no questions.');
     return 'too_late';
   }
@@ -66,6 +67,12 @@ export async function publishDay(ctx: JobContext, dayId: number): Promise<Publis
   if (rows.length < 5 || rows.map((r) => r.slot).join() !== '0,1,2,3,4') {
     await ctx.alerts.raise(`day-incomplete:${dayId}`, late || hourUtc >= ctx.settings.publishAlertHourUtc ? 'critical' : 'warn', `Day ${dayId} has ${rows.length} of 5 questions`, 'The day cannot be published until all 5 slots are scheduled.');
     return 'incomplete';
+  }
+  // Every published question has an image decision: generate (or fall back) for any still pending.
+  for (const r of rows.filter((x) => x.image_state === 'pending')) {
+    await prepareImage({ db: ctx.db, provider: ctx.ai, generator: ctx.images.generator, store: ctx.images.store, log: ctx.log }, r.market_id).catch((e) =>
+      ctx.log.warn('publish: image preparation failed', { marketId: r.market_id, error: (e as Error).message }),
+    );
   }
   const closesAt = dayEnd(dayId);
   const inputs = [];

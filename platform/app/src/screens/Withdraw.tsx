@@ -67,7 +67,7 @@ export default function Withdraw() {
     try { s = await navigator.clipboard.readText(); } catch { /* */ }
     setTo((s || (/[?&]state=/.test(location.search) ? GOOD : '')).trim());
   };
-  const onClick = (e: React.MouseEvent) => { const f = (e.target as Element).closest('[data-fix]'); if (f) setAmt(F.dec(+f.getAttribute('data-fix')!)); };
+  useEffect(() => { const h = (e: MouseEvent) => { const f = (e.target as Element).closest?.('[data-fix]'); if (f) setAmt(F.dec(+f.getAttribute('data-fix')!)); }; document.addEventListener('click', h); return () => document.removeEventListener('click', h); }, []);
   const toMsg = e1 ? '<span>' + t(e1) + '</span>' : v ? '<span class="row">' + icon('check', 16) + t('x.addr.ok') + '</span><span class="addr-v" translate="no">' + F.groups(v) + '</span>' : '';
   const pin = (
     <div className="pin pin--act">
@@ -78,7 +78,7 @@ export default function Withdraw() {
   );
   return (
     <Shell tab="wallet" back="/wallet" title={t('x.title')} pin={pin} pts={loading ? 'loading' : ''}>
-      <div style={{ display: 'contents' }} onClick={onClick}>
+      <>
         {offline && <Html as="div" style={{ display: 'contents' }} html={note('warn', t('x.offline'))} />}
         <p className="lead">{t('x.gas')}</p>
         <section className="msec">
@@ -96,7 +96,7 @@ export default function Withdraw() {
         </section>
         <Html as="section" className="msec mend" html={rows([[t('x.kaia'), F.kaia(kaia)], [t('x.fee'), t('x.fee.v', { f: fee })], [t('dp.net'), t('dp.net.v')]])} />
         <div id="kaia-note" dangerouslySetInnerHTML={{ __html: noKaia ? note('error', t('x.e.kaia', { f: fee, k: F.dec(kaia) }), btn(t('x.fix.kaia'), { sm: true, href: '/deposit' })) : '' }} />
-      </div>
+      </>
     </Shell>
   );
 }

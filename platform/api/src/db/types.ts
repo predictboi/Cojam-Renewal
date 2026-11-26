@@ -35,6 +35,8 @@ export interface UsersTable {
   risk_score: ColumnType<number, number | undefined, number>;
   risk_clear_until: Timestamp | null;
   pending_invite_code: string | null;
+  /** Keyed hash of the email local part shape (worker migration 0900), for the look alike risk rule. */
+  email_shape_hash: string | null;
   created_at: DefaultTimestamp;
   updated_at: DefaultTimestamp;
 }
@@ -172,6 +174,9 @@ export interface MarketsTable {
   outcome_tx: string | null;
   replaced_by: number | null;
   draft_id: number | null;
+  /** Worker migration 0900: when the deciding fact is observed, and discrete or continuous. */
+  observes_at: Timestamp | null;
+  kind: string | null;
   created_at: DefaultTimestamp;
   updated_at: DefaultTimestamp;
 }

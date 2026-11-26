@@ -9,7 +9,7 @@ import type { JobContext } from './context.ts';
 import { correctionCheck, expirySweep, publishDay, resolutionSweep, settleSweep } from './markets.ts';
 import { runMonitors } from './monitors.ts';
 import { riskCheck } from '../risk/check.ts';
-import { closeWeek, runAirdrop } from './weekly.ts';
+import { closeWeek, refreshWeekPool, runAirdrop } from './weekly.ts';
 
 export interface CronJob {
   name: string;
@@ -19,7 +19,8 @@ export interface CronJob {
 }
 
 export const CRON_JOBS: CronJob[] = [
-  { name: 'draft', cron: '0 2,8 * * *', what: 'Draft and validate candidates for D+1..D+horizon, select 5, prepare images (02:00, catch up 08:00)', run: draftJob },
+  { name: 'draft', cron: '0 9 * * *', what: 'Keep the next 7 days filled: draft, validate, select 5, prepare images (09:00 UTC = 18:00 KST)', run: draftJob },
+  { name: 'draft-catchup', cron: '0 15 * * *', what: 'Second drafting pass for days still short (00:00 KST)', run: draftJob },
   { name: 'images', cron: '30 3 * * *', what: 'Images for scheduled questions still pending', run: imagesJob },
   {
     name: 'publish',
@@ -44,6 +45,15 @@ export const CRON_JOBS: CronJob[] = [
     cron: '*/15 * * * *',
     what: 'Airdrop of the last ended week once weekEnd + airdropDelay passed (Wed 12:00 UTC) and the backlog is empty',
     run: (ctx) => runAirdrop(ctx, weekOf(dayIdOf(ctx.now())) - 1),
+  },
+  {
+    name: 'week-pool',
+    cron: '*/5 * * * *',
+    what: 'Running pool of the current and the last week (weeks.pool: qualified players x 1 CT, capped)',
+    run: async (ctx) => {
+      const w = weekOf(dayIdOf(ctx.now()));
+      return { current: await refreshWeekPool(ctx, w), last: await refreshWeekPool(ctx, w - 1) };
+    },
   },
   { name: 'risk', cron: '0 * * * *', what: 'Hourly risk check over accounts active in 14 days', run: (ctx) => riskCheck(ctx, { run: 'hourly' }) },
   { name: 'monitors', cron: '* * * * *', what: 'Snapshots for the API and alert conditions', run: runMonitors },

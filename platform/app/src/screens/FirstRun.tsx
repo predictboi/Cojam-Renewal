@@ -2,7 +2,7 @@
 // control, and the setup line ("Setting up your game" until the device is ready to play).
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '../api';
 import { ApiError } from '../api/errors';
 import { LANGS, LANG_NAMES, setLang, t, useLang, type Lang } from '../i18n';
@@ -26,6 +26,8 @@ export default function FirstRun() {
   const exit = from === 'profile' ? '/profile' : '/';
   const [n, setN] = useState(+st >= 1 && +st <= 3 ? +st : st === 'settingup' ? 3 : 1);
   const V = DESIGN.invite;
+  const session = useQuery({ queryKey: ['session'], queryFn: api.session, enabled: !CONFIG.mockApi });
+  const ownCode = session.data?.invite.code || '';
   const PRESET: Record<string, string> = { 'code-valid': V.code, 'code-unknown': 'KAIA999', 'code-own': V.self, 'code-linked': V.code, 'code-offline': V.code };
   const [codeOpen, setCodeOpen] = useState(/^code/.test(st) || !!savedInvite());
   const [code, setCode] = useState(PRESET[st] || savedInvite() || '');
@@ -53,25 +55,37 @@ export default function FirstRun() {
   };
   useEffect(() => { if (ready && waiting) void leave(); }, [ready, waiting]);
 
+  const mapErr = (c: string) => (c === 'INVITE_SHORT' ? 'o.code.short' : c === 'INVITE_OWN' ? 'o.code.own' : c === 'NETWORK' ? 'o.code.offline' : 'o.code.unknown');
+  // Apply only checks the code (GET /v1/invite/lookup); the link is made once, when the player moves on with it (redeem)
   const check = async (then?: () => void, now?: boolean) => {
     const v = norm(code); setCode(v); if (!v || cs.kind === 'checking') return;
     if (offline) return setCs({ kind: 'error', key: 'o.code.offline' });
+    if (v.length < 6) return setCs({ kind: 'error', key: 'o.code.short' });
+    if (v === (CONFIG.mockApi ? V.self : ownCode)) return setCs({ kind: 'error', key: 'o.code.own' });
     if (!now) setCs({ kind: 'checking' });
     try {
-      // binding is final: the server checks the code and links the inviter once (POST /v1/invite/redeem)
-      const r = await api.inviteRedeem(v);
+      const r = await api.inviteLookup(v);
+      if (!r.valid) return setCs({ kind: 'error', key: 'o.code.unknown' });
       setCs({ kind: 'ok', name: r.inviterName }); then?.();
-    } catch (e) {
+    } catch (e) { setCs({ kind: 'error', key: mapErr((e as ApiError).code) }); }
+  };
+  /** binding is final: POST /v1/invite/redeem, once, when the player leaves the first panel with a checked code */
+  const redeemed = useRef(false);
+  const redeem = async (): Promise<boolean> => {
+    if (redeemed.current) return true;
+    try { const r = await api.inviteRedeem(norm(code)); redeemed.current = true; setCs({ kind: 'linked', name: r.inviterName }); return true; }
+    catch (e) {
       const c = (e as ApiError).code;
-      if (c === 'INVITE_ALREADY_LINKED') return setCs({ kind: 'linked', name: String((e as ApiError).extra?.inviterName || '') });
-      setCs({ kind: 'error', key: c === 'INVITE_SHORT' ? 'o.code.short' : c === 'INVITE_OWN' ? 'o.code.own' : c === 'INVITE_TOO_LATE' || c === 'INVITE_LIMIT' ? 'o.code.unknown' : c === 'NETWORK' ? 'o.code.offline' : 'o.code.unknown' });
+      if (c === 'INVITE_ALREADY_LINKED') { redeemed.current = true; setCs({ kind: 'linked', name: String((e as ApiError).extra?.inviterName || '') }); return true; }
+      setCs({ kind: 'error', key: mapErr(c) }); return false;
     }
   };
   const preChecked = useRef(false);
   useEffect(() => { if (!preChecked.current && PRESET[st] && st !== 'code-linked') { preChecked.current = true; void check(undefined, true); } }, []);
   const go = (i: number) => { if (i < 1) return; if (i > 3) { void leave(); return; } setN(i); setTimeout(() => (document.querySelector('[data-panel="' + i + '"] h1') as HTMLElement | null)?.focus({ preventScroll: true }), 0); };
-  const next = () => {
-    if (n === 1 && codeOpen && code && cs.kind !== 'ok' && cs.kind !== 'linked') { if (cs.kind === 'error') (document.getElementById('code') as HTMLInputElement | null)?.focus(); else void check(() => go(2)); return; }
+  const next = async () => {
+    if (n === 1 && codeOpen && code && cs.kind !== 'ok' && cs.kind !== 'linked') { if (cs.kind === 'error') (document.getElementById('code') as HTMLInputElement | null)?.focus(); else void check(async () => { if (await redeem()) go(2); }); return; }
+    if (n === 1 && codeOpen && cs.kind === 'ok' && !(await redeem())) return;
     go(n + 1);
   };
   const closeCode = () => { setCode(''); setCs({ kind: 'help' }); setCodeOpen(false); };

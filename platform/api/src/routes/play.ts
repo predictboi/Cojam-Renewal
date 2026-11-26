@@ -106,7 +106,7 @@ export function registerPlayRoutes(app: FastifyInstance, kit: RouteKit): void {
       markets: markets.map((m) => ({
         marketId: m.market_id,
         slot: m.slot,
-        category: m.category,
+        category: m.category.toLowerCase(),
         text: marketTexts(m),
         ...imageUrls(m, base),
         closesAt: toUnix(m.closes_at)!,
@@ -148,7 +148,7 @@ export function registerPlayRoutes(app: FastifyInstance, kit: RouteKit): void {
     return {
       marketId: m.market_id,
       slot: m.slot,
-      category: m.category,
+      category: m.category.toLowerCase(),
       text: marketTexts(m),
       thumbUrl: imageUrls(m, base).thumbUrl,
       myChoice: choice,
@@ -286,7 +286,7 @@ export function registerPlayRoutes(app: FastifyInstance, kit: RouteKit): void {
       marketId: m.market_id,
       dayId: m.day_id,
       slot: m.slot,
-      category: m.category,
+      category: m.category.toLowerCase(),
       status: m.status,
       text: marketTexts(m),
       imageUrl: imageUrls(m, base).imageUrl,

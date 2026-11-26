@@ -48,12 +48,14 @@ export default function Convert() {
     onSuccess: () => setVal(''),
   });
   useEffect(() => {
+    if (!d) return;
     const show = ({ signing: 'signing', sending: 'sending', success: 'success', failed: 'failed' } as const)[st as 'signing'];
     if (show) showTx(show, txCfg(valid ? v : 1000));
     return () => { if (show) useTx.setState({ pending: false }); };
-  }, [st]);
+  }, [st, !!d]);
 
-  const onClick = (e: React.MouseEvent) => { const f = (e.target as Element).closest('[data-fix]'); if (f) setVal(F.int(+f.getAttribute('data-fix')!)); };
+  // the fix buttons sit inside HTML strings: one delegated listener (no wrapper box, so .pg:has(> .mgrow) still applies)
+  useEffect(() => { const h = (e: MouseEvent) => { const f = (e.target as Element).closest?.('[data-fix]'); if (f) setVal(F.int(+f.getAttribute('data-fix')!)); }; document.addEventListener('click', h); return () => document.removeEventListener('click', h); }, []);
   let body: React.ReactNode;
   const short = !loading && bal < min && !held;
   if (short) {
@@ -64,7 +66,7 @@ export default function Convert() {
     if (wait && d?.convert.firstConvertAt) { const dt = d.convert.firstConvertAt, secs = (dt - Date.now()) / 1000; waitNote = note('sky', t('c.wait.b', { date: '<b>' + F.date(dt, true) + '</b>' }) + '<br><b>' + t('c.wait.left', { d: Math.floor(secs / 86400), h: Math.floor((secs % 86400) / 3600) }) + '</b>'); }
     const notes = waitNote + (capLeft === 0 && d ? note('warn', t('c.cap.hit', { time: t('time.kst9') })) : '') + (capGlobal ? note('warn', t('c.cap.global', { time: t('time.kst9') })) : '') + (paused ? note('warn', t('c.paused')) : '') + (offline ? note('warn', t('w.offline')) : '') + (held ? hold(t('hold.convert')) : '');
     body = (
-      <div style={{ display: 'contents' }} onClick={onClick}>
+      <>
         {notes && <Html as="div" style={{ display: 'contents' }} html={notes} />}
         <section className="msec">
           <AmountField id="amt" label={t('c.amount')} unit="P" mode="numeric" value={val} onChange={setVal} disabled={blocked} error={!!err}
@@ -72,7 +74,7 @@ export default function Convert() {
         </section>
         <section className="msec mgrow"><div className="mhero"><h2 className="lbl">{t('c.get')}</h2><p className="fig" id="get" aria-live="polite" dangerouslySetInnerHTML={{ __html: F.dec(n) + '<small>CT</small>' }} /></div></section>
         <Html as="section" className="msec" html={rows([[t('c.rate'), '1,000P = 1 CT'], [t('c.minimum'), '1,000P'], [t('c.capleft'), t('c.capof', { n: capLeft })], [t('c.fee'), t('c.fee.v')]])} />
-      </div>
+      </>
     );
   }
   const pin = short ? null : (

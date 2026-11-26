@@ -137,6 +137,9 @@ export class FakeProvider implements AiProvider {
   private handlers = new Map<string, Handler>();
   private answers = new Map<number, Resolution['outcome']>();
 
+  /** `defaultAnswer` answers markets with no `setAnswer` (dev runs of the worker); otherwise undeterminable. */
+  constructor(private defaultAnswer?: (marketId: number) => Resolution['outcome']) {}
+
   on(job: string, h: Handler): this {
     this.handlers.set(job, h);
     return this;
@@ -174,7 +177,7 @@ export class FakeProvider implements AiProvider {
     }
     if (req.job.startsWith('resolve_')) {
       const id = Number(meta.marketId);
-      const outcome = this.answers.get(id) ?? 'undeterminable';
+      const outcome = this.answers.get(id) ?? this.defaultAnswer?.(id) ?? 'undeterminable';
       const url = 'https://www.binance.com/en/trade/BTC_USDT';
       const quote = `Final result for market ${id}: ${outcome}`;
       return {

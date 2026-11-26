@@ -13,7 +13,7 @@ import type { Logger } from '../worker/log.ts';
 import { contentHash } from './contentHash.ts';
 import { DRAFT_SYSTEM, PROMPT_VERSIONS, VALIDATE_SYSTEM, draftUser, validateUser } from './prompts.ts';
 import { AiOutputError, runLogged, type AiProvider } from './provider.ts';
-import { CHECKLIST, draftSetJson, draftSetZ, draftZ, validationJson, validationZ, type Category, type Draft } from './schemas.ts';
+import { CHECKLIST, draftSetJson, draftSetZ, draftZ, normCategory, validationJson, validationZ, type Category, type Draft } from './schemas.ts';
 import { selectFive, type Candidate } from './select.ts';
 import { categoryMix, checkDraft, parseIsoWithOffset, type RecentQuestion } from './validate.ts';
 
@@ -144,8 +144,8 @@ function freeSlotsOf(taken: { slot: number }[]): number[] {
 function remainingMix(dayId: number, taken: { category: string }[]): Record<Category, number> {
   const mix = categoryMix(dayId);
   for (const t of taken) {
-    const c = t.category as Category;
-    if (mix[c] > 0) mix[c]--;
+    const c = normCategory(t.category);
+    if (c && mix[c] > 0) mix[c]--;
   }
   return mix;
 }

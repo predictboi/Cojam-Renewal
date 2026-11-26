@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { emailShapeHash } from '../../src/server/hash.ts';
 import { emptyFacts, identicalAnswers, localPartShape, reasonToBytes32, scoreAccount, type AccountFacts } from '../../src/risk/rules.ts';
 
 const W = '0x00000000000000000000000000000000000000aa';
@@ -89,6 +90,11 @@ describe('helpers', () => {
   it('local part shape folds digits and separators', () => {
     expect(localPartShape('hana123')).toBe(localPartShape('hana7'));
     expect(localPartShape('je.ju21')).toBe('jeju#');
+  });
+  it('the API writes the shape hash the look alike rule compares', () => {
+    expect(emailShapeHash('k', 'hana12@gmail.com')).toBe(emailShapeHash('k', 'hana7@gmail.com'));
+    expect(emailShapeHash('k', 'hana12@gmail.com')).not.toBe(emailShapeHash('k', 'hana12@naver.com'));
+    expect(emailShapeHash('k', 'hana12@gmail.com')).not.toBe(emailShapeHash('k2', 'hana12@gmail.com'));
   });
   it('reason codes fit bytes32', () => {
     const b = reasonToBytes32('risk:device');

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   dayIdOf, dayOpensAt, dayEnd, weekOf, weekEnd, weekStart, weekFirstDay, marketId, marketIdsOfDay, dayOfMarket,
-  slotOfMarket, isDayOpen, canCreateDay, resolveDeadline, airdropOpensAt, kstDate, kstDateTime, dayLabelKst,
+  slotOfMarket, isDayOpen, canCreateDay, isLateCreation, resolveDeadline, airdropOpensAt, kstDate, kstDateTime, dayLabelKst,
   dayIdFromKstDate, kstParts,
 } from "../src/time.ts";
 
@@ -62,7 +62,14 @@ test("open and create rules", () => {
   assert.equal(isDayOpen(d, dayEnd(d) - 1), true);
   assert.equal(isDayOpen(d, dayEnd(d)), false);
   assert.equal(canCreateDay(d, dayOpensAt(d) - 1), true);
-  assert.equal(canCreateDay(d, dayOpensAt(d)), false);
+  // Late creation: still accepted after the open while at least 1 hour of the day remains.
+  assert.equal(canCreateDay(d, dayOpensAt(d)), true);
+  assert.equal(isLateCreation(d, dayOpensAt(d)), true);
+  assert.equal(isLateCreation(d, dayOpensAt(d) - 1), false);
+  assert.equal(canCreateDay(d, dayEnd(d) - 3600), true);
+  assert.equal(canCreateDay(d, dayEnd(d) - 3599), false);
+  assert.equal(isLateCreation(d, dayEnd(d) - 3599), false);
+  assert.equal(canCreateDay(d, dayEnd(d) + 86400), false);
   assert.equal(airdropOpensAt(1), weekEnd(1) + 60 * 3600);
 });
 

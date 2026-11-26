@@ -119,8 +119,20 @@ export function secondsUntilDayEnd(dayId: Int, unix: Int = nowSeconds()): number
 }
 
 /** `createDay` must be mined strictly before the day opens. */
+/** `createDay` refuses a day with less than this left before its end (late creation rule). */
+export const LATE_CREATE_MARGIN_SECONDS = 3_600;
+
+/**
+ * `createDay` is accepted before the day opens, or late after it opened while at least 1 hour remains before
+ * its end (`unix + 1 h <= dayEnd`, PredictLogic.createDay); never for a past day.
+ */
 export function canCreateDay(dayId: Int, unix: Int = nowSeconds()): boolean {
-  return toInt(unix, "unix") < dayOpensAt(dayId);
+  return toInt(unix, "unix") + LATE_CREATE_MARGIN_SECONDS <= dayEnd(dayId);
+}
+
+/** True when a `createDay` at `unix` would be a late creation (the day is already open). */
+export function isLateCreation(dayId: Int, unix: Int = nowSeconds()): boolean {
+  return toInt(unix, "unix") >= dayOpensAt(dayId) && canCreateDay(dayId, unix);
 }
 
 // ---------- KST display helpers ----------

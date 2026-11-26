@@ -38,7 +38,13 @@ export function useFreshReset(st: string) {
 
 /* one market's state on Home: chain answer, held pick, saving, saved, failed */
 export interface Slot { m: Market; q: Q; item?: OutboxItem; seg: string; answered: boolean }
-export function useSlots(today: Today | undefined, st: string): Slot[] {
+/** design presets: picks that were already being sent when the screen opened confirm after a moment (not "slow") */
+export function usePresetConfirm(st: string, plan: [number, number][]): number[] {
+  const [done, setDone] = useState<number[]>([]);
+  useEffect(() => { const ts = plan.map(([n, ms]) => setTimeout(() => setDone((d) => [...d, n]), ms)); return () => ts.forEach(clearTimeout); }, [st]);
+  return done;
+}
+export function useSlots(today: Today | undefined, st: string, confirmed: number[] = []): Slot[] {
   const items = useOutbox((s) => s.items);
   const { lang } = useLang();
   return useMemo(() => {
@@ -53,11 +59,11 @@ export function useSlots(today: Today | undefined, st: string): Slot[] {
       if (v === 'held' || v === 'saving') { seg = 'pend'; answered = true; }
       if (v === 'saved') { seg = 'done fill'; answered = true; }
       if (v === 'failed' && !m.choice.chain) seg = 'fail';
-      if (P.sending?.includes(m.n)) { seg = 'pend'; answered = true; }
+      if (P.sending?.includes(m.n)) { seg = confirmed.includes(m.n) ? 'done fill' : 'pend'; answered = true; }
       if (P.fail === m.n) seg = 'fail';
       return { m, q: qOf(m), item, seg, answered };
     });
-  }, [today, items, st, lang]);
+  }, [today, items, st, lang, confirmed.length]);
 }
 
 export function HomeHead({ view, count, segs, loading, noClock, endsAt }: { view: 'card' | 'term'; count: number; segs: string[]; loading?: boolean; noClock?: boolean; endsAt?: number }) {
@@ -99,7 +105,8 @@ export default function HomeCards() {
   const items = useOutbox((s) => s.items);
   const player = useWalletStore((s) => s.address);
   const { lang } = useLang();
-  const slots = useSlots(today.data, st);
+  const confirmed = usePresetConfirm(st, st === 'syncing' ? [[2, 2600], [3, 4000]] : []);
+  const slots = useSlots(today.data, st, confirmed);
   const count = slots.filter((s) => s.answered).length;
   const segs = slots.map((s) => s.seg);
   const dayItems = items.filter((i) => today.data && i.dayId === today.data.dayId);
@@ -238,7 +245,7 @@ export default function HomeCards() {
           <DeckEnd count={count} held={held} deckLeft={deckRef} onFinish={finishNow} />
           <Cards cards={deckCards} failedN={st === 'failed' ? 2 : undefined} offline={offline} noimgN={undefined} top={st === 'imagetop'} />
         </div>
-        <PickBar held={held} items={dayItems} slots={slots} count={count} offline={offline} onUndo={undo} sendingPreset={st === 'syncing' ? 3 : st === 'slow' ? 2 : 0} />
+        <PickBar held={held} items={dayItems} slots={slots} count={count} offline={offline} onUndo={undo} sendingPreset={st === 'syncing' ? (confirmed.includes(3) ? 0 : 3) : st === 'slow' ? 2 : 0} />
       </>
     );
   }

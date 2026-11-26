@@ -33,7 +33,8 @@ export interface Contracts {
   ct: Address;
 }
 
-/** On chain parameters of CojamPredict the jobs need, read fresh (they change only after a 48 h delay). */
+/** CojamPredict params() in the same shape as the API's `PredictParams` (src/chain/index.ts), so the
+ * worker's `app_state` snapshot can be read by the API as is. */
 export interface PredictParams {
   completionPoints: number;
   hitPoints: number;
@@ -41,9 +42,14 @@ export interface PredictParams {
   welcomePoints: number;
   settleDelay: number;
   pointsPerCT: number;
+  minConvertPoints: number;
+  maxConvertCtPerUserPerDay: number;
+  maxConvertCtPerDay: number;
+  minAccountAge: number;
   minResolveGap: number;
   maxWeeklyPool: number; // whole CT
   airdropDelay: number;
+  treasury: Address;
   splitBps: number[];
 }
 
@@ -57,9 +63,14 @@ export async function readPredictParams(client: PublicClient, predict: Address):
     welcomePoints: n('welcomePoints'),
     settleDelay: n('settleDelay'),
     pointsPerCT: n('pointsPerCT'),
+    minConvertPoints: n('minConvertPoints'),
+    maxConvertCtPerUserPerDay: n('maxConvertCtPerUserPerDay'),
+    maxConvertCtPerDay: n('maxConvertCtPerDay'),
+    minAccountAge: n('minAccountAge'),
     minResolveGap: n('minResolveGap'),
     maxWeeklyPool: n('maxWeeklyPool'),
     airdropDelay: n('airdropDelay'),
+    treasury: String(p.treasury).toLowerCase() as Address,
     splitBps: (p.splitBps as readonly (number | bigint)[]).map(Number),
   };
 }

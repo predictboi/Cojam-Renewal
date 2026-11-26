@@ -4,7 +4,7 @@ import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-
 import { useQueryClient } from '@tanstack/react-query';
 import { CONFIG } from './config';
 import { useConfig, useMe } from './api';
-import { setTokenSource } from './api/client';
+import { setSessionEmail, setTokenSource } from './api/client';
 import { setChainConfig } from './chain/chain';
 import { startPlay } from './state/play';
 import { useNet } from './state/app';
@@ -14,7 +14,7 @@ import { LiveRegion, SheetRoot, Toasts } from './ui/kit';
 import { sheet } from './state/ui';
 import { aiSheetHtml } from './ui/h';
 import { qOf } from './ui/qcard';
-import { t, useLang } from './i18n';
+import { setLang, t, useLang } from './i18n';
 import { useTxNav } from './ui/tx';
 import { loadPlayKey, playKeyValid } from './chain/playKey';
 import { useRegisterSW } from 'virtual:pwa-register/react';
@@ -89,6 +89,12 @@ function Guard({ children }: { children: ReactNode }) {
   const [keyOk, setKeyOk] = useState<boolean | null>(CONFIG.mockApi ? true : null);
   const me = useMe(w.authenticated);
   useEffect(() => { setTokenSource(() => walletApi().getAccessToken()); }, []);
+  useEffect(() => { setSessionEmail(w.email); }, [w.email]);
+  // a new device: the language saved on the account applies until the player picks one here (never the device language)
+  useEffect(() => {
+    let local: string | null = null; try { local = localStorage.getItem('cjp.lang'); } catch { /* */ }
+    if (!local && me.data && me.data.language !== 'en') setLang(me.data.language);
+  }, [me.data?.language]);
   useEffect(() => {
     if (CONFIG.mockApi || !w.authenticated || !w.address) return;
     void loadPlayKey().then((k) => setKeyOk(!!k && playKeyValid(k) && k.player === w.address!.toLowerCase()));

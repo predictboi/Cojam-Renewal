@@ -7,7 +7,7 @@ import { sql } from 'kysely';
 import { dayEnd, dayIdFromKstDate } from '../../../shared/src/time.ts';
 import { draftDay, fillFromReserve, type AiDeps } from '../../src/ai/draft.ts';
 import { fakeDraft, fakeDrafts, FakeProvider } from '../../src/ai/fake.ts';
-import { CategoryIllustrationGenerator, prepareImage, type ImageGenerator, type ImageStore } from '../../src/ai/images.ts';
+import { CategoryIllustrationGenerator, checkUploadedImage, imageInfo, prepareImage, type ImageGenerator, type ImageStore } from '../../src/ai/images.ts';
 import { resolveMarket } from '../../src/ai/resolve.ts';
 import { silentLogger } from '../../src/worker/log.ts';
 import { createWorkerDb, postgresAvailable, type TestDb } from './helpers/env.ts';
@@ -133,5 +133,25 @@ run('AI pipeline on Postgres', () => {
     expect(g.image_url).toMatch(/^https:\/\/img\.cojam\.app\/q\//);
     // The image check got the picture as a vision input.
     expect(fake.calls.filter((c) => c.job === 'image_check').every((c) => c.images?.length === 1)).toBe(true);
+  });
+  it('checks an uploaded image (format, 4:5, size, vision) before switching the question to it', async () => {
+    await draftDay(deps, THU);
+    const id = THU * 5 + 3;
+    const png = (w: number, h: number) => {
+      const b = Buffer.alloc(64);
+      b.writeUInt32BE(0x89504e47, 0);
+      b.writeUInt32BE(w, 16);
+      b.writeUInt32BE(h, 20);
+      return b;
+    };
+    expect(imageInfo(png(800, 1000))).toEqual({ width: 800, height: 1000, mediaType: 'image/png' });
+    const serve = (buf: Buffer) => (async () => new Response(buf)) as unknown as typeof fetch;
+    const bad = await checkUploadedImage({ db: t.db, provider: fake, log: silentLogger, aiEnabled: true, fetchImpl: serve(png(1000, 1000)) }, id, { imageKey: 'q/up.png', baseUrl: 'https://img.cojam.app' });
+    expect(bad.accepted).toBe(false);
+    expect(bad.reasons.join()).toMatch(/not 4:5/);
+    const good = await checkUploadedImage({ db: t.db, provider: fake, log: silentLogger, aiEnabled: true, fetchImpl: serve(png(1600, 2000)) }, id, { imageKey: 'q/up.png', baseUrl: 'https://img.cojam.app' });
+    expect(good.accepted).toBe(true);
+    const m = await t.db.selectFrom('markets').select(['image_state', 'image_key']).where('market_id', '=', id).executeTakeFirstOrThrow();
+    expect(m).toEqual({ image_state: 'replaced', image_key: 'q/up.png' });
   });
 });

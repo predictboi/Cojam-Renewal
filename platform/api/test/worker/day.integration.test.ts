@@ -263,19 +263,25 @@ run('compressed day on Hardhat + Postgres', () => {
 
   it('owner records a corrected answer after the window; compensation batches pay the right players once', async () => {
     const id = D * 5 + 1;
-    // The admin asks for a correction after the window: the worker prepares the owner transaction.
-    await t.db.insertInto('operator_requests').values({ kind: 'correct_outcome', target: String(id), payload: JSON.stringify({ marketId: id, outcome: 1 }), requested_by: 'ops@cojam.app' }).execute();
+    // The admin asks for a correction after the window, as src/routes/admin.ts writes it: the target is the
+    // market id; the worker prepares the owner transaction, and a `compensate` request waits for it.
+    await t.db.insertInto('operator_requests').values({ kind: 'correct_outcome', target: String(id), payload: JSON.stringify({ outcome: 1, reason: 'wrong source' }), requested_by: 'ops@cojam.app' }).execute();
     expect(await processOperatorRequests(ctx)).toBe(1);
     const req = await t.db.selectFrom('operator_requests').select(['status', 'result']).executeTakeFirstOrThrow();
     expect(req.status).toBe('done');
     const ownerTx = (req.result as { ownerTx: { to: Address; data: Hex } }).ownerTx;
+    const comp0 = await t.db.insertInto('operator_requests').values({ kind: 'compensate', target: String(id), payload: JSON.stringify({ outcome: 1, awaitingOwnerTx: true }), requested_by: 'ops@cojam.app' }).returning('id').executeTakeFirstOrThrow();
+    await processOperatorRequests(ctx);
+    expect((await t.db.selectFrom('operator_requests').select('status').where('id', '=', comp0.id).executeTakeFirstOrThrow()).status).toBe('queued');
     const h = await d.ownerWallet.sendTransaction({ to: ownerTx.to, data: ownerTx.data, account: d.owner, chain: chainFor(31337, [node.url]) });
     await d.client.waitForTransactionReceipt({ hash: h });
     await index();
     expect((await t.db.selectFrom('markets').select(['corrected_outcome', 'status']).where('market_id', '=', id).executeTakeFirstOrThrow()).corrected_outcome).toBe(1);
     const before = await balance(W[2]);
-    const c = await compensationSweep(ctx);
-    expect(c.users).toBe(3); // P3, P4 and P8 picked 1 on slot 1
+    await processOperatorRequests(ctx);
+    const done = await t.db.selectFrom('operator_requests').select(['status', 'result']).where('id', '=', comp0.id).executeTakeFirstOrThrow();
+    expect(done.status).toBe('done');
+    expect((done.result as { users: number }).users).toBe(3); // P3, P4 and P8 picked 1 on slot 1
     await index();
     expect(await balance(W[2])).toBe(before + 50 + 0); // P3's inviter gets 5, P3 gets 50
     expect((await compensationSweep(ctx)).users).toBe(0);
@@ -331,7 +337,7 @@ run('compressed day on Hardhat + Postgres', () => {
   it('monitors write snapshots and stay quiet on a healthy system', async () => {
     await runMonitors(ctx);
     const keys = (await t.db.selectFrom('app_state').select('key').execute()).map((r) => r.key).sort();
-    expect(keys).toEqual(expect.arrayContaining(['predict.params', 'chain.reserves', 'chain.balances', 'indexer.status', 'ai.usage']));
+    expect(keys).toEqual(expect.arrayContaining(['predict.params', 'chain.reserves', 'chain.balances', 'indexer.status', 'ai.usage', 'staking.params']));
     const open = await t.db.selectFrom('worker_alerts').select(['key']).where('resolved_at', 'is', null).where('key', 'in', ['indexer-lag', 'settle-backlog', 'operator-balance']).execute();
     expect(open).toEqual([]);
   }, 60_000);

@@ -48,7 +48,7 @@ export async function qualifyInputs(ctx: JobContext, weekId: number): Promise<Qu
   const first = weekFirstDay(weekId);
   const rows = await sql<{ wallet: string; registered_at: Date | null; frozen: boolean; registration: string; days: number }>`
     SELECT u.wallet, u.registered_at, u.frozen, u.registration,
-           (SELECT count(*)::int FROM user_days d WHERE d.wallet = u.wallet AND d.day_id BETWEEN ${first} AND ${first + 6} AND d.answered > 0) AS days
+           (SELECT count(*)::int FROM user_days d WHERE d.wallet = u.wallet AND d.day_id BETWEEN ${first} AND ${first + 6} AND d.completed) AS days
     FROM users u
     WHERE u.wallet IS NOT NULL AND u.registration = 'registered'`.execute(ctx.db);
   return rows.rows.map((r) => ({
@@ -156,4 +156,28 @@ export async function runAirdrop(ctx: JobContext, weekId: number, opts: { force?
     await ctx.alerts.raise(`airdrop-failed:${weekId}`, 'critical', `Week ${weekId} airdrop failed`, (e as Error).message.slice(0, 500));
     throw e;
   }
+}
+
+/**
+ * The week's running pool for K1 and AD5 (`weeks.pool`, `weeks.qualified_players`): qualified players x
+ * 1 CT, capped at the server cap and the on chain maxWeeklyPool. Refreshed every 5 minutes for the
+ * current and the last week until the airdrop freezes it.
+ */
+export async function refreshWeekPool(ctx: JobContext, weekId: number): Promise<{ qualified: number; pool: bigint } | null> {
+  const row = await ctx.db.selectFrom('weeks').select('status').where('week_id', '=', weekId).executeTakeFirst();
+  if (row && (row.status === 'airdropped' || row.status === 'airdrop_pending')) return null;
+  const params = await readPredictParams(ctx.client, ctx.contracts.predict);
+  const q = computePool(await qualifyInputs(ctx, weekId), weekEnd(weekId), {
+    perPlayerCt: ctx.settings.poolPerPlayerWei,
+    serverCapCt: ctx.settings.poolCapWei,
+    chainMaxWeeklyPoolWholeCt: BigInt(params.maxWeeklyPool),
+    minDaysPlayed: ctx.settings.poolMinDaysPlayed,
+    minAccountAgeSec: ctx.settings.poolMinAccountAgeSec,
+  });
+  await ctx.db
+    .insertInto('weeks')
+    .values({ week_id: weekId, status: ctx.now() >= weekEnd(weekId) ? 'closed' : 'open', qualified_players: q.qualified, pool: q.pool.toString() })
+    .onConflict((oc) => oc.column('week_id').doUpdateSet({ qualified_players: q.qualified, pool: q.pool.toString(), updated_at: new Date() }))
+    .execute();
+  return { qualified: q.qualified, pool: q.pool };
 }

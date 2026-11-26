@@ -75,17 +75,18 @@ export default function Staking() {
   };
   // design review presets of the sheet
   useEffect(() => {
+    if (!w.data) return;
     const show = ({ review: 'review', signing: 'signing', steps: 'steps2', sending: 'sending', slow: 'slow', success: 'success', failed: 'failed' } as const)[st as 'review'];
     if (show) showTx(show, txCfg(a && valid ? a : 500));
     if (st === 'hidden') showTx('sending', txCfg(500), true);
     return () => { if (show || st === 'hidden') useTx.setState({ pending: false }); };
-  }, [st]);
+  }, [st, !!w.data]);
 
   const onClick = (e: React.MouseEvent) => {
     const f = (e.target as Element).closest('[data-fix]'); if (f) setVal(F.dec(+f.getAttribute('data-fix')!));
   };
   const hq = held ? '?state=hold' : '';
-  const openN = (w.data?.openStakes ?? DESIGN.stakes.length) + (st === 'hold' ? 1 : 0);
+  const openN = (w.data?.openStakes ?? 0) + (st === 'hold' ? 1 : 0);
   const goLabel = busy ? null : valid ? t('s.btn', { a: F.dec(a) }) : t(held ? 'hold.stake.btn' : 's.btn.idle');
   const pin = st === 'error' || w.isError ? null : (
     <div className="pin pin--act">

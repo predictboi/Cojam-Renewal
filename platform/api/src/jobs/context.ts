@@ -21,7 +21,7 @@ export interface WorkerSettings {
   /** Weekly pool per qualified player and server cap, CT base units. */
   poolPerPlayerWei: bigint;
   poolCapWei: bigint;
-  /** Qualified player rule (REVIEW B7): days played in the week and account age at the week's end. */
+  /** Qualified player rule (founder default 2026-11-26): completed days (all 5 answered) in the week, account age at the week's end. */
   poolMinDaysPlayed: number;
   poolMinAccountAgeSec: number;
   riskBlockAt: number;
@@ -35,10 +35,12 @@ export interface WorkerSettings {
   minFeePayerBalanceWei: bigint;
   feePayerAddress: Address | null;
   aiMonthlyBudgetUsd: number;
+  /** Public base URL of the image store (uploaded images are fetched from it for the check). */
+  imageBaseUrl: string;
 }
 
 export const DEFAULT_SETTINGS: WorkerSettings = {
-  draftHorizonDays: 2,
+  draftHorizonDays: 7,
   draftCandidates: 12,
   registerBatch: 100,
   settleBatch: 100,
@@ -57,6 +59,7 @@ export const DEFAULT_SETTINGS: WorkerSettings = {
   minFeePayerBalanceWei: 10n * 10n ** 18n,
   feePayerAddress: null,
   aiMonthlyBudgetUsd: 300,
+  imageBaseUrl: 'https://img.cojam.app',
 };
 
 export interface JobContext {

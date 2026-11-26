@@ -114,7 +114,7 @@ export default function Profile() {
     setSavedName(name); toast(t('p.name.saved'));
     void qc.invalidateQueries({ queryKey: ['me'] });
   };
-  const ownCode = inv.data?.code || DESIGN.invite.code;
+  const ownCode = inv.data?.code || (CONFIG.mockApi ? DESIGN.invite.code : '');
   const codePreset: Record<string, string> = { 'code-valid': 'DALGONA4', 'code-unknown': 'KAIA999', 'code-own': ownCode, 'code-offline': 'DALGONA4' };
   const signedUp = d ? Date.parse(d.signedUpAt) : 0;
   const within = !!d && !d.referrer && Date.now() - signedUp < 24 * 3600000;
