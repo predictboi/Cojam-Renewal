@@ -30,7 +30,7 @@ export function useLiveStatus(): { st: [string, string]; counts: Record<string, 
   const pp = usePendingParams(!CONFIG.mock);
   const alerts: { level: string; code: string; message: string }[] = ov.data?.alerts || [];
   const crit = alerts.filter((a) => a.level === 'critical').length, warn = alerts.length - crit;
-  let st: [string, string] = ov.isError ? ['warn', 'Status unknown'] : crit ? ['down', crit + (crit === 1 ? ' alert' : ' alerts') + ' need action'] : warn ? ['warn', warn + (warn === 1 ? ' warning' : ' warnings')] : ['ok', 'All systems normal'];
+  let st: [string, string] = ov.isError ? ['warn', 'Status unknown'] : crit ? ['down', crit + (crit === 1 ? ' alert needs' : ' alerts need') + ' action'] : warn ? ['warn', warn + (warn === 1 ? ' warning' : ' warnings')] : ['ok', 'All systems normal'];
   if (app.data?.maintenance?.on && st[0] !== 'down') st = ['warn', 'Maintenance mode is on'];
   const dayN = alerts.filter((a) => a.code === 'DAY_INCOMPLETE').length;
   const ansN = (ov.data?.answersNeedingAttention || []).length;

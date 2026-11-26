@@ -147,10 +147,10 @@ export async function liveDash() {
   const daily: number[][] = [];
   const labels: string[] = [];
   for (let d = det.dayId - 29; d <= det.dayId; d++) { const r = (det.daily || []).find((x: any) => x.day_id === d); daily.push([r?.players ?? 0, r?.completed ?? 0]); labels.push(T.dd(d * 86400) + ' ' + T.long(d * 86400).split(' ')[2]); }
-  const alerts = (dash.alerts || []).map((a: any) => { const l = ALERT_LINK[a.code] || [a.level === 'critical' ? 'down' : 'warn', '/system', 'Open System']; return [a.level === 'critical' ? 'down' : l[0], a.level === 'critical' ? 'Act now' : 'Soon', esc(a.message) + '.', '', l[1], l[2]]; });
+  const alerts = (dash.alerts || []).map((a: any) => { const l = ALERT_LINK[a.code] || [a.level === 'critical' ? 'down' : 'warn', '/system', 'Open System']; return [a.level === 'critical' ? 'down' : l[0], a.level === 'critical' ? 'Act now' : 'Soon', esc(String(a.message).replace(/Day (\d+)/, (_m: string, d: string) => T.dayLong(+d * 86400))) + '.', '', l[1], l[2]]; });
   const invitedToday = det.invites.linkedToday;
   return {
-    now: { dayEndsIn: Math.max(0, det.dayEndsAt - now), dayLong: T.dayLong(det.dayOpensAt), dayEndLabel: T.wd(det.dayEndsAt) + ' ' + T.hm(det.dayEndsAt), week: det.weekId },
+    now: { dayOfWeek: ((det.dayId + 3) % 7) + 1, dayEndsIn: Math.max(0, det.dayEndsAt - now), dayLong: T.dayLong(det.dayOpensAt), dayEndLabel: T.wd(det.dayEndsAt) + ' ' + T.hm(det.dayEndsAt), week: det.weekId },
     alerts,
     today,
     play: { players: dash.players.activeToday, completed: dash.players.completedToday, picks: det.picksToday, undone: null, hitsPaid: pr.hitPoints ? Math.round((k.hits?.today ?? 0) / pr.hitPoints) : 0, settled: det.settledToday },
@@ -174,7 +174,7 @@ export default function Dashboard() {
   if (!CONFIG.mock) X.state = loading ? 'loading' : error ? 'error' : '';
   const VM = D || EMPTY;
   if (error && !D) (VM as any).errorText = error.message;
-  const sub = CONFIG.mock ? VM.now.day + ' · day 4 of week ' + VM.now.week : T.long(nowS()) + ' · week ' + (VM.now?.week ?? '');
+  const sub = CONFIG.mock ? VM.now.day + ' · day 4 of week ' + VM.now.week : VM.now?.dayLong ? VM.now.dayLong + ' · day ' + VM.now.dayOfWeek + ' of the week' : T.long(nowS());
   return <Shell page="index" title="Dashboard" sub={sub} states={['calm', 'loading', 'error']} html={render(VM)} loading={loading} error={!!error} updatedAt={updatedAt} onRefresh={() => void q.refetch()} />;
 }
 const EMPTY: any = { now: { dayEndsIn: 0, dayLong: '', dayEndLabel: '', week: '' }, alerts: [], today: [], play: { players: 0, completed: 0, picks: 0, undone: null, hitsPaid: 0 }, users: {}, daily: [], dailyLabels: [], points: {}, rules: {}, convert: {}, reserves: [], staking: {}, invites: {}, abuse: {}, log: [] };
