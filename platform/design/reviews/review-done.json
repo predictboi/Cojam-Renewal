@@ -1,0 +1,14 @@
+{
+  "screen": "done.html?state=moment",
+  "design": {"Hierarchy": 7, "Layout": 7, "Spacing": 7, "Type": 8, "Colour": 6, "Consistency": 7, "Density": 6, "Copy": 6, "Mobile": 7, "Finish": 7},
+  "design_total": 68,
+  "usability": {"Status": 4, "Real world": 3, "User control": 3, "Consistency": 3, "Error prevention": 3, "Recognition": 3, "Flexibility": 2, "Minimal design": 2, "Error recovery": 3, "Help": 3},
+  "usability_total": 29,
+  "fixes": [
+    {"rank": 1, "element": "Toast '+100P가 지급됐어요.' shown on load", "problem": "Third repeat of the reward message; it covers list rows 2 and 3 for 4 to 5 seconds.", "change": "Remove the toast in the moment state; let the chip carry it and count the header pill up from 1,250P to 1,350P."},
+    {"rank": 2, "element": "Header check badge, five tick tiles and the +100P chip", "problem": "Seven lime objects in one viewport, so the primary button does not stand out.", "change": "Keep lime on the five ticks and the primary button; make the badge white with an ink tick and the chip white on ink."},
+    {"rank": 3, "element": "Rows of the 'Today's picks' list", "problem": "Questions are cut after one line, hiding the threshold; '정답 대기 중' repeats five times.", "change": "Allow 2 lines per question, show the waiting status once in the section header, use the right column for the pick."},
+    {"rank": 4, "element": "Countdown card", "problem": "No next step for tomorrow; no reminder or share.", "change": "Add a secondary action under it: notify me at 09:00."},
+    {"rank": 5, "element": "EN h1 'TODAY'S 5 PREDICTIONS DONE'", "problem": "Wraps to 3 lines and makes the header 285px tall.", "change": "Shorten to 'ALL 5 DONE'."}
+  ]
+}

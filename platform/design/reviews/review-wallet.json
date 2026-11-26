@@ -1,0 +1,14 @@
+{
+  "screen": "wallet.html",
+  "design": {"Hierarchy": 6, "Layout": 7, "Spacing": 7, "Type": 7, "Colour": 6, "Consistency": 6, "Density": 7, "Copy": 6, "Mobile": 6, "Finish": 7},
+  "design_total": 65,
+  "usability": {"Status": 3, "Real world": 3, "User control": 3, "Consistency": 3, "Error prevention": 1, "Recognition": 2, "Flexibility": 3, "Minimal design": 3, "Error recovery": 2, "Help": 2},
+  "usability_total": 25,
+  "fixes": [
+    {"rank": 1, "element": "Second address block '여기서 CT는 새 CT예요' and its copy button", "problem": "The token contract address looks and copies exactly like the wallet address, with the same toast; pasting it as a deposit address loses funds.", "change": "Move it into a collapsed token info disclosure, label it as a contract not to send to, and give it its own toast text."},
+    {"rank": 2, "element": "Block '내 Cojam 지갑 (Kaia)'", "problem": "Last on the page; copy button at y 754 at 390x844 and off screen at 360x780.", "change": "Move it under the header as one compact row with a text copy button."},
+    {"rank": 3, "element": "Icon only copy and explorer buttons, 13px address", "problem": "No visible label; address small for eye verification.", "change": "Add the word '복사' to the copy button and raise the address to 15px."},
+    {"rank": 4, "element": "Copy toast", "problem": "Covers the address block and the tick it confirms; does not say which address.", "change": "Confirm in place on the button and name the address in the toast."},
+    {"rank": 5, "element": "'포인트 전환' button and the lime points figure in the ink card", "problem": "Primary button lacks the ink edge and offset shadow used elsewhere; lime display figure breaks the lime rule; conversion rate not stated.", "change": "Use the standard primary button style, make the figure white, state '1,000P = 1 CT'."}
+  ]
+}

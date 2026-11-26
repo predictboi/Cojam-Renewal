@@ -1,0 +1,14 @@
+{
+  "screen": "login.html (and login.html?state=unsupported)",
+  "design": {"Hierarchy": 8, "Layout": 6, "Spacing": 7, "Type": 8, "Colour": 8, "Consistency": 7, "Density": 7, "Copy": 6, "Mobile": 7, "Finish": 7},
+  "design_total": 71,
+  "usability": {"Status": 3, "Real world": 3, "User control": 3, "Consistency": 3, "Error prevention": 2, "Recognition": 3, "Flexibility": 2, "Minimal design": 3, "Error recovery": 3, "Help": 3},
+  "usability_total": 28,
+  "fixes": [
+    {"rank": 1, "element": ".fine paragraph (a.fine)", "problem": "Terms and privacy policy are plain text, not links; KO wording is stiff.", "change": "Link both documents and rewrite the sentence."},
+    {"rank": 2, "element": "emailErr() and the #prov-note note", "problem": "A typo such as gmial.com gets the unsupported provider note with no suggestion; the note stays while the address is corrected.", "change": "Detect near matches and offer a one tap correction; clear the note on input."},
+    {"rank": 3, "element": "Caption under #email and the 'Which email works?' help row", "problem": "The provider rule is hidden until the player fails, then the list shows twice.", "change": "Show a quiet caption with the main providers before submit and remove the help row."},
+    {"rank": 4, "element": "h1 and .auth-lede on the code and setup steps", "problem": "They still tell the player to enter an email; a 3 digit code is called wrong instead of incomplete.", "change": "Swap headline and lede per step and add a length message for short codes."},
+    {"rank": 5, "element": ".auth-main and the empty lower 40% of the screen", "problem": "Large empty ground; plainer than the landing; field not focused on load.", "change": "Add one landing style element in the space and focus #email on load."}
+  ]
+}

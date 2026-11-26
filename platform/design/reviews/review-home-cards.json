@@ -1,0 +1,14 @@
+{
+  "screen": "home-cards.html",
+  "design": {"Hierarchy": 7, "Layout": 6, "Spacing": 7, "Type": 7, "Colour": 6, "Consistency": 7, "Density": 7, "Copy": 7, "Mobile": 6, "Finish": 6},
+  "design_total": 66,
+  "usability": {"Status": 3, "Real world": 3, "User control": 1, "Consistency": 3, "Error prevention": 1, "Recognition": 3, "Flexibility": 3, "Minimal design": 3, "Error recovery": 1, "Help": 2},
+  "usability_total": 23,
+  "fixes": [
+    {"rank": 1, "element": "App.deck click and keydown handlers, assets/components.js lines 537 to 547", "problem": "Two taps 120ms apart answer two questions, five quick taps finish the day, a held arrow key answers all five, and picks are final with no undo.", "change": "Ignore input for 400ms after a commit, return on e.repeat, and hold each pick 4 seconds with an Undo button in the #sync line before sending it."},
+    {"rank": 2, "element": "paint() in App.deck, .qstamp and .choice.is-hot", "problem": "At a 30% drag the stamp is fully opaque and the button is lime, but release snaps back because the commit needs 35%.", "change": "Drive full stamp opacity and the hot button from the armed flag at the commit threshold; cap the stamp at 0.4 opacity below it."},
+    {"rank": 3, "element": "#hint paragraph and the .ph header block", "problem": "The picks are final warning is clipped by the tab bar at KO 360, hidden in EN 390, cut in JA 390; the page overflows the viewport by 12 to 50px.", "change": "Move the warning into the card under the buttons, drop .ph-sub and put the countdown on the counter row so the screen fits without scroll."},
+    {"rank": 4, "element": "assets/img/q3-seoul-weather.svg, q4-football.svg, q5-kaia.svg and .qcard h2", "problem": "Labels inside the art (10°C, KAIA, 3+) collide with the headline, the category chip and the buttons; a 4 line question buries the image.", "change": "Remove text from the art, keep the focal object in the top 45%, clamp h2 to 3 lines with a step down to 18px."},
+    {"rank": 5, "element": "keydown listener in App.deck and the focus ring on .qcard .choice", "problem": "Arrow keys do nothing until 7 Tab presses put focus inside the card; the blue focus ring on the ink card is about 2.6:1.", "change": "Listen on document when no other control has focus; make the ring white or lime."}
+  ]
+}
