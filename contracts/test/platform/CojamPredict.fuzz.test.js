@@ -367,6 +367,15 @@ async function runOne(seed) {
         await send(count > 0, "settleMany", () => predict.settleMany(users, day), () => { for (const u of users) applyFor(u); });
       }
     }],
+    [4, async function resolver() {
+      // the AI keeper: resolve every market whose resolve time has come
+      for (const [id, m] of M.markets) {
+        const t = BigInt(await time.latest()) + 1n;
+        if (m.outcome !== 0 || t < m.resolvesAt || t >= (id / 5n + 1n) * DAY + DEADLINE || r.chance(0.2)) continue;
+        const o = r.chance(0.1) ? 3 : 1 + r.int(2);
+        await send(true, "resolver setOutcome", () => op.setOutcome(id, o), () => { m.outcome = o; m.resolvedAt = now; m.settlesAt = now + M.params.settleDelay; });
+      }
+    }],
     [3, async function keeper() {
       const t = BigInt(await time.latest()) + 1n;
       const day = t / DAY - 1n - BigInt(r.int(3));
@@ -447,7 +456,7 @@ async function runOne(seed) {
         M.bal.set(s.address, bal - pts); M.supply -= pts; add(M.convUser, uKey, ctAmt); add(M.convDay, day, ctAmt); M.reserve -= ctAmt;
       });
     }],
-    [2, async function airdrop() {
+    [4, async function airdrop() {
       await tick(); now -= 1n; await time.setNextBlockTimestamp(now + 1n);
       const t = now + 1n;
       const w = weekOf(t / DAY) - 1n - BigInt(r.int(2));
@@ -457,8 +466,8 @@ async function runOne(seed) {
         .sort((x, y) => (x.s.points !== y.s.points ? (x.s.points > y.s.points ? -1 : 1) : x.s.last !== y.s.last ? (x.s.last < y.s.last ? -1 : 1) : BigInt(x.a) < BigInt(y.a) ? -1 : 1));
       let winners = scores.slice(0, 10).map((x) => x.a);
       let ordered = true;
-      if (winners.length >= 2 && r.chance(0.2)) { [winners[0], winners[1]] = [winners[1], winners[0]]; ordered = false; }
-      const pool = r.chance(0.1) ? M.params.pool + 1n : BigInt(r.int(2000)) * E18;
+      if (winners.length >= 2 && r.chance(0.1)) { [winners[0], winners[1]] = [winners[1], winners[0]]; ordered = false; }
+      const pool = r.chance(0.05) ? M.params.pool + 1n : BigInt(r.int(2000)) * E18;
       const amounts = winners.map((_, i) => (pool * M.params.split[i]) / 10000n);
       const total = amounts.reduce((x, y) => x + y, 0n);
       const ok = t >= (w * 7n + 4n) * DAY + M.params.airdropDelay && !M.airdropDone.has(w) && winners.length > 0 && ordered && pool <= M.params.pool && M.reserve >= total;

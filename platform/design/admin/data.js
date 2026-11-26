@@ -262,11 +262,11 @@
   ];
   D.answerAudit = [
     { t: "Thu 12:05:02", who: "Settle sweep", lv: "info", msg: "Paid 1,233 hits on Q-1124-5 (61,650 P) and 2,160 P invite bonus.", tx: TX("settle-1124-5") },
+    { t: "Thu 10:40:27", who: "ops@cojam.app", lv: "info", msg: "Corrected Q-1124-2 from 2 or fewer to 3 or more inside the window. Reason: A goal in stoppage time. The first fetch read the score at 90:00.", tx: TX("fix-1124-2") },
     { t: "Thu 10:10:04", who: "Settle sweep", lv: "info", msg: "Paid 803 hits on Q-1124-4 (40,150 P) and 1,400 P invite bonus.", tx: TX("settle-1124-4") },
     { t: "Thu 09:02:11", who: "Answer setter", lv: "info", msg: "Set Q-1125-1 to No. Confidence 0.99, 2 sources agree. Window ends 15:02.", tx: TX("ans-1125-1") },
     { t: "Thu 04:10:19", who: "Answer setter", lv: "warn", msg: "Set Q-1124-4 to No. Confidence 0.71, 1 source. Flagged for review.", tx: TX("ans-1124-4") },
     { t: "Wed 16:14:40", who: "Answer setter", lv: "error", msg: "Q-1124-1: source date mismatch after 3 retries. No answer set.", json: '{ "question": "Q-1124-1", "attempts": 4, "last": { "url": "https://indexes.nikkei.co.jp/en/nkave", "status": 200, "parsed_date": "2026-11-25", "expected_date": "2026-11-24" }, "action": "stopped" }' },
-    { t: "Thu 10:40:27", who: "ops@cojam.app", lv: "info", msg: "Corrected Q-1124-2 from 2 or fewer to 3 or more inside the window. Reason: A goal in stoppage time. The first fetch read the score at 90:00.", tx: TX("fix-1124-2") },
     { t: "Tue 09:52:03", who: "ops@cojam.app", lv: "info", msg: "Voided Q-1124-3. Reason: The meeting was moved to next week after the question went live.", tx: TX("void-1124-3") }
   ];
 
