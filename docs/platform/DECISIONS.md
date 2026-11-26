@@ -19,3 +19,4 @@ Founder decisions for the operating platform (recorded 2026-11-26). The developm
 | Deposits | Existing holders send new CT from their own wallet (Kaia Wallet and others) to their Privy wallet address; the PWA needs a deposit screen |
 | Answer setting | Fully automatic by AI, no human approval step. Markets are point markets, so the risk is small; a wrong answer is checked afterwards and compensated |
 | Points | On chain and non transferable: no transfer, no approve, no transferFrom between holders. Balances change only through the platform contracts (earning, predicting, payouts, point to token conversion) |
+| Prediction transactions | One transaction per swipe, sent in the background. The next card shows at once without waiting for confirmation (optimistic). Failed sends retry quietly and surface only if they keep failing |
