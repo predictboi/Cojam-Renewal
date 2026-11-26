@@ -45,7 +45,7 @@
       '<a class="linkish" id="scan" translate="no" href="https://kaiascan.io/address/' + a + '" target="_blank" rel="noopener" aria-label="' + App.esc(t("w.scan")) + '">Kaiascan' + C.icon("ext", 16) + "</a></div>" +
       '<p class="addr-note">' + t("w.addr.note") + "</p></section>" +
       /* 3. points are second in size. What is still on the way is a state, so it is an outlined chip. Convert has room above it and is the one primary action. */
-      '<section class="msec" aria-labelledby="pt-h"><div class="mhero"><h2 class="lbl" id="pt-h">' + t("w.points") + '</h2><p class="fig mfig-2" id="pt-fig">' + F.int(pts) + "<small>P</small></p></div>" +
+      '<section class="msec" aria-labelledby="pt-h"><div class="mhero"><h2 class="lbl" id="pt-h">' + t("w.points") + '</h2><p class="fig mfig-2" id="pt-fig">' + F.int(pts) + "</p></div>" +
       '<p class="mline">' + (canCt ? t("w.ready", { n: canCt }) : t("w.notyet", { g: F.int(1000 - pts) })) + "</p>" +
       (S === "" || off ? '<p class="wpend">' + C.tag(t("w.onway")) + "<span>" + t("w.pendinghit", { p: u.pendingHit, time: "22:10" }) + "</span></p>" : "") +
       '<div class="wconvert">' + C.btn(t("w.convert"), { kind: "primary", block: true, href: "convert.html" + (S === "new" || S === "zero" ? "?state=short" : ""), disabled: off }) + "</div></section>" +
