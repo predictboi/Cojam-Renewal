@@ -90,18 +90,18 @@ The 13 invariants of DEV-PLAN 3.4 and 3.9 hold, with two restated by later decis
 | --- | --- | --- |
 | `predict` by play key, first of the day | 58,975 | about 74,000 |
 | `predict` by play key, second to fourth | 41,875 | about 55,000 |
-| `predict` fifth, later day, no inviter | 65,405 | 80,000 to 95,000 |
-| `predict` fifth, later day, invited (bonus) | 80,582 | 95,000 to 110,000 |
-| `predict` fifth, first completed day of the player, no inviter | 100,380 | 80,000 to 95,000 |
-| `predict` fifth, invited, first completed day (bonus and welcome) | 123,045 | 101,000 to 116,000 |
-| `predict` fifth, the very first credit of the contract (once ever) | 119,858 | |
+| `predict` fifth, later day, no inviter | 65,454 | 80,000 to 95,000 |
+| `predict` fifth, later day, invited (bonus) | 80,631 | 95,000 to 110,000 |
+| `predict` fifth, first completed day of the player, no inviter | 100,429 | 80,000 to 95,000 |
+| `predict` fifth, invited, first completed day (bonus and welcome) | 123,094 | 101,000 to 116,000 |
+| `predict` fifth, the very first credit of the contract (once ever) | 119,907 | |
 | `setPlayKey` first / renew | 74,002 / 37,083 | about 85,000 |
 | `settleMany` per user, no hits (batch of 50) | 12,260 | about 30,000 |
-| `settleMany` per user, 5 hits, half invited (batch of 50) | 34,694 | 30,000 to 45,000 |
+| `settleMany` per user, 5 hits, half invited (batch of 50) | 34,483 | 30,000 to 45,000 |
 | `settle` single user, 5 hits | 72,610 | |
-| `compensate` per user (batch of 50, half invited) | 49,901 | |
+| `compensate` per user (batch of 50, half invited) | 49,689 | |
 | `convert` (first of the day for the user and globally, first CT to the user) | 124,768 | about 95,000 |
-| `airdrop` 10 winners (10 first time CT holders) | 406,096 | |
+| `airdrop` 10 winners (10 first time CT holders) | 407,004 | |
 | `createDay` | 272,070 | |
 | `registerPlayer` / with inviter | 50,417 / 60,610 | |
 | `setOutcome` | 34,788 | |
