@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/screens/money.css">
 </head>
 <body>
-<!-- S1 Staking, new stake. States: (none) 500 CT for 90 days, empty, below, above, zero, big, paused, full, fullnone, max20, loading, review, signing, steps, sending, slow, success, failed, hidden (a stake is pending and its sheet is closed: the button is the status), error, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<!-- S1 Staking, new stake. States: (none) 500 CT for 90 days, empty, below, above, zero, big, paused, full, fullnone, max20, loading, review, signing, steps, sending, slow, success, failed, hidden (a stake is pending and its sheet is closed: the button is the status), error, offline, hold (account on hold: no new stakes). Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -27,19 +27,20 @@
   var bal = S === "zero" ? 0 : S === "big" || S === "review" ? 25000 : M.user.ct, period = 90;
   var initial = { empty: "", below: "50", above: "5,000", zero: "", big: "12,000", review: "12,000", loading: "" }[S];
   if (initial === undefined) initial = "500";
-  var blocked = S === "paused" || S === "fullnone" || S === "max20" || S === "zero" || S === "loading" || App.state === "offline";
+  var blocked = S === "paused" || S === "fullnone" || S === "max20" || S === "zero" || S === "loading" || App.state === "offline" || S === "hold";
   var room = S === "full" ? 300 : Infinity;   /* what the interest fund can still reserve for this period */
-  var PERIODS = [30, 90, 180, 365];
+  var PERIODS = [30, 90, 180, 365], HQ = S === "hold" ? "?state=hold" : "";   /* on hold, the two tabs keep the state */
   function tier(a) { return a >= 10000 ? 2 : a >= 1000 ? 1 : 0; }
 
   function head() { return '<div class="ph-top"><h1>' + t("s.title") + "</h1></div>"; }
   /* two pages, so two tabs standing on the ink rule (a filter would be the segmented control); the open stakes are a real count, in a chip */
-  function sw() { return '<nav class="mtabs" id="sw" aria-label="' + App.esc(t("s.switch")) + '"><a href="staking.html" aria-current="page">' + t("s.new") + '</a><a href="stakes.html">' + t("s.tab.mine") + '<span class="mtabs-n" id="sw-n">' + M.stakes.length + "</span></a></nav>"; }
+  function sw() { return '<nav class="mtabs" id="sw" aria-label="' + App.esc(t("s.switch")) + '"><a href="staking.html' + HQ + '" aria-current="page">' + t("s.new") + '</a><a href="stakes.html' + HQ + '">' + t("s.tab.mine") + '<span class="mtabs-n" id="sw-n">' + M.stakes.length + "</span></a></nav>"; }
   function avail() { return t("s.avail") + ' <b id="avail">' + F.ct(bal) + "</b>"; }
   function body() {
     if (S === "error") return sw() + C.error();
     return sw() +
       (S === "paused" ? C.note("warn", t("s.paused")) : "") + (S === "fullnone" ? C.note("warn", t("s.full") + " " + t("s.full.none")) : "") + (S === "max20" ? C.note("warn", t("s.max20"), C.btn(t("s.mine", { n: 20 }), { sm: true, href: "stakes.html" })) : "") + '<div id="full-note"></div>' + (App.offline ? C.note("warn", t("s.offline")) : "") +
+      (S === "hold" ? C.hold(t("hold.stake"), { action: C.btn(t("s.tab.mine"), { sm: true, href: "stakes.html?state=hold", iconEnd: "right", id: "hold-mine" }) }) : "") +
       (S === "zero" ? C.note("", t("s.zero"), '<div class="row">' + C.btn(t("w.deposit"), { sm: true, href: "deposit.html" }) + C.btn(t("w.convert"), { sm: true, href: "convert.html" }) + "</div>") : "") +
       '<section class="msec" id="form">' +
       C.amount({ id: "amt", label: t("s.amount"), unit: "CT", value: initial, disabled: blocked, side: S === "loading" ? C.skel("110px", "12px") : avail(), msg: t("s.min") }) +
@@ -72,7 +73,7 @@
     var inp = $("#amt"); if (inp) inp.value = "";
     refresh();
   }
-  var act = S === "error" ? "" : C.actbar(C.btn("", { kind: "primary", block: true, id: "go", disabled: true }), t("s.fee"));
+  var act = S === "error" ? "" : C.actbar(C.btn("", { kind: "primary", block: true, id: "go", disabled: true }), S === "hold" ? "" : t("s.fee"));
   App.mount({ tab: "stake", docTitle: t("s.title"), head: head(), body: body(), pin: act, pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
     var inp = $("#amt"); if (!inp) return;
     var msg = $("#amt-msg"), box = inp.closest(".field-box"), go = $("#go"); if (!go) return;
@@ -108,7 +109,7 @@
       var kr = $("#sum-k"); kr.hidden = !(App.isKo && shown); kr.textContent = shown ? F.krw(interest) : "";
       $("#rules").innerHTML = C.icon("lock", 18) + "<span>" + t("s.rules", { date: F.dateLong(M.ahead(period)) }) + "</span>";
       go.disabled = !valid || !!pending; go.classList.toggle("is-busy", !!pending);
-      go.innerHTML = (pending ? '<span class="spin"></span>' : "") + "<span>" + (pending ? pending : valid ? t("s.btn", { a: F.dec(a) }) : t("s.btn.idle")) + "</span>";
+      go.innerHTML = (pending ? '<span class="spin"></span>' : "") + "<span>" + (pending ? pending : valid ? t("s.btn", { a: F.dec(a) }) : t(S === "hold" ? "hold.stake.btn" : "s.btn.idle")) + "</span>";
       return valid && !pending ? a : 0;
     }
     refresh = update;

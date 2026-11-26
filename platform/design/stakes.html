@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/screens/money.css">
 </head>
 <body>
-<!-- S2 My stakes. States: (none), claimable, unlocking (flips while you watch), claim (success sheet), loading, empty, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<!-- S2 My stakes. States: (none), claimable, unlocking (flips while you watch), claim (success sheet), loading, empty, error, offline, hold (account on hold: claim and withdraw work, the fee is paid in KAIA), hold-nokaia (on hold with too little KAIA for the fee). Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -26,7 +26,8 @@
   var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$;
   var DAY = 86400000, YEAR = 365 * 86400;
   var stakes = M.stakes.slice();
-  if (S === "claimable" || S === "claim") stakes.unshift(M.stakeBig);
+  var hold = /^hold/.test(S), kaia = S === "hold-nokaia" ? 0.0004 : M.user.kaia, noKaia = hold && kaia < M.fee, HQ = hold ? "?state=hold" : "";
+  if (S === "claimable" || S === "claim" || hold) stakes.unshift(M.stakeBig);
   if (S === "unlocking") stakes[0] = { id: "u", amount: 1000, days: 90, rate: 13, start: new Date(Date.now() - 90 * DAY + 6000) };
   function calc(s) {
     var el = Math.min((Date.now() - s.start) / 1000, s.days * 86400), per = s.amount * s.rate / 100 / YEAR;
@@ -38,14 +39,16 @@
 
   function head() { return '<div class="ph-top"><h1>' + t("s.title") + "</h1></div>"; }
   /* two pages, so two tabs standing on the ink rule; the number of open stakes is a real count, in a chip */
-  function sw() { return '<nav class="mtabs" id="sw" aria-label="' + App.esc(t("s.switch")) + '"><a href="staking.html">' + t("s.new") + '</a><a href="stakes.html" aria-current="page">' + t("s.tab.mine") + '<span class="mtabs-n">' + (S === "empty" ? 0 : stakes.length) + "</span></a></nav>"; }
+  function sw() { return '<nav class="mtabs" id="sw" aria-label="' + App.esc(t("s.switch")) + '"><a href="staking.html' + HQ + '">' + t("s.new") + '</a><a href="stakes.html' + (hold ? "?state=" + S : "") + '" aria-current="page">' + t("s.tab.mine") + '<span class="mtabs-n">' + (S === "empty" ? 0 : stakes.length) + "</span></a></nav>"; }
   function out(s) { return Math.round((s.amount + calc(s).interest) * 1e4) / 1e4; }
   /* one stake is one section under the ink rule: what is locked and its state, how far along it is, what it has earned, and the action when there is one */
+  /* on hold the player pays the network fee: the line under each action says so, and with too little KAIA the action is off */
+  var feeLine = hold ? '<p class="hold-why" data-fee-line>' + C.icon("info", 16) + "<span>" + t("hold.fee.line") + " (" + t("x.fee.v", { f: M.fee }) + ")</span></p>" : "";
   function card(s) {
     var c = calc(s), actions;
     /* the button states everything that leaves the stake: principal plus interest, and the line under it shows the two parts */
-    if (c.unlocked) actions = '<div class="mstake-acts" data-actions>' + C.btn(t("m.withdraw", { a: F.dec(out(s), 4) }), { kind: "primary", block: true, attrs: 'data-wd="' + s.id + '"', disabled: App.offline }) + '<p class="tiny muted center">' + t("m.withint", { p: F.dec(s.amount), i: F.dec(c.interest, 4) }) + "</p></div>";
-    else if (c.interest >= M.minClaim) actions = '<div class="mstake-acts" data-actions>' + C.btn(t("m.claim", { i: F.dec(c.interest, 2) }), { block: true, attrs: 'data-claim="' + s.id + '"', disabled: App.offline }) + "</div>";
+    if (c.unlocked) actions = '<div class="mstake-acts" data-actions>' + C.btn(t("m.withdraw", { a: F.dec(out(s), 4) }), { kind: "primary", block: true, attrs: 'data-wd="' + s.id + '"', disabled: App.offline || noKaia }) + '<p class="tiny muted center">' + t("m.withint", { p: F.dec(s.amount), i: F.dec(c.interest, 4) }) + "</p>" + feeLine + "</div>";
+    else if (c.interest >= M.minClaim) actions = '<div class="mstake-acts" data-actions>' + C.btn(t("m.claim", { i: F.dec(c.interest, 2) }), { block: true, attrs: 'data-claim="' + s.id + '"', disabled: App.offline || noKaia }) + feeLine + "</div>";
     /* under the 10 CT minimum there is nothing to press, so there is no button: only how far it is */
     else actions = '<p class="mstake-gap" data-actions>' + t("m.claim.gap", { g: F.dec(M.minClaim - c.interest, 2) }) + "</p>";
     return '<article class="msec stake mstake" data-stake="' + s.id + '"><div class="mstake-top"><div><p class="fig">' + F.dec(s.amount) + '<small>CT</small></p><p class="small muted">' + t("m.card.period", { d: s.days, r: s.rate }) + "</p></div>" +
@@ -60,9 +63,11 @@
     if (S === "empty") return sw() + C.empty({ icon: "lock", title: t("m.empty.h"), body: t("m.empty.b"), action: C.btn(t("m.empty.btn"), { kind: "primary", href: "staking.html" }) });
     if (S === "loading") return sw() + '<section class="msec" aria-busy="true">' + C.skel("90px") + C.skel("170px", "44px") + C.skel("70%", "22px") + "</section>" + [1, 2].map(function () { return '<article class="msec" aria-busy="true">' + C.skel("120px", "28px") + C.skel("100%", "14px") + C.skel("100%") + C.skel("100%", "44px") + "</article>"; }).join("");
     return sw() +
+      (hold ? C.hold(t("hold.stakes")) + (noKaia ? C.note("error", t("hold.nokaia", { f: M.fee, k: F.dec(kaia, 4) }), C.btn(t("x.fix.kaia"), { sm: true, href: "deposit.html", id: "get-kaia" })) : "") : "") +
       /* the total leads; under it the two interest figures side by side, both to four places, as on every other screen, so they read as one pair (the first one ticks) */
       '<section class="msec" id="total"><div class="mhero"><h2 class="lbl">' + t("m.staked") + '</h2><p class="fig">' + F.dec(total) + "<small>CT</small></p></div>" +
-      '<div class="stats mstats"><div class="stat"><b><span data-tick="' + sofar + "|" + perAll + '">' + fix4(sofar) + "</span></b><span>" + t("m.sofar") + ' (CT)</span></div><div class="stat"><b>' + fix4(claimable) + "</b><span>" + t("m.claimable") + " (CT)</span></div></div></section>" +
+      '<div class="stats mstats"><div class="stat"><b><span data-tick="' + sofar + "|" + perAll + '">' + fix4(sofar) + "</span></b><span>" + t("m.sofar") + ' (CT)</span></div><div class="stat"><b>' + fix4(claimable) + "</b><span>" + t("m.claimable") + " (CT)</span></div></div>" +
+      (hold ? C.rows([[t("x.kaia"), F.kaia(kaia)], [t("x.fee"), t("x.fee.v", { f: M.fee })]]) : "") + "</section>" +
       stakes.map(card).join("") +
       C.help(t("m.closed.q", { n: M.stakesClosed.length }), M.stakesClosed.map(function (s) { return '<div class="mclosed"><div class="row-between"><span>' + F.ct(s.amount) + ", " + t("m.card.period", { d: s.days, r: s.rate }) + "</span>" + C.tag(t("m.closed"), "line") + '</div><p class="tiny">' + t("m.paidout", { a: F.dec(s.paid, 2) }) + "</p></div>"; }).join(""));
   }
@@ -71,8 +76,10 @@
   App.mount({ tab: "stake", docTitle: t("s.title"), head: head(), body: body(), badges: { home: "dot", results: 2, stake: "dot" }, after: function () {
     document.addEventListener("click", function (e) {
       var c = e.target.closest("[data-claim]"), w = e.target.closest("[data-wd]");
-      if (c) { var s = find(c.getAttribute("data-claim")), i = F.dec(calc(s).interest, 2); App.tx.run({ label: t("m.chip.claim", { i: i }), success: { title: t("m.ok.claim", { i: i }) } }); }
-      if (w) { var s2 = find(w.getAttribute("data-wd")), a = F.dec(out(s2), 4); App.tx.run({ label: t("m.chip.wd", { a: a }), success: { title: t("m.ok.wd", { a: a }) }, onDone: function () { var el = $('[data-stake="' + s2.id + '"]'); if (el) el.remove(); } }); }
+      /* on hold every claim and withdrawal is reviewed first: the sheet states the fee, who pays it and the KAIA balance */
+      function rv(title, amount) { return hold ? { title: title, rows: [[t("x.amount"), amount], [t("x.fee"), t("x.fee.v", { f: M.fee })], [t("x.kaia"), F.kaia(kaia)]], note: t("hold.fee.line") + ". " + t("hold.fee.rv"), confirm: t("tx.confirm") } : null; }
+      if (c) { var s = find(c.getAttribute("data-claim")), i = F.dec(calc(s).interest, 2); App.tx.run({ label: t("m.chip.claim", { i: i }), review: rv(t("m.claim", { i: i }), F.ct(calc(s).interest)), success: { title: t("m.ok.claim", { i: i }) } }); }
+      if (w) { var s2 = find(w.getAttribute("data-wd")), a = F.dec(out(s2), 4); App.tx.run({ label: t("m.chip.wd", { a: a }), review: rv(t("m.withdraw", { a: a }), F.ct(out(s2))), success: { title: t("m.ok.wd", { a: a }) }, onDone: function () { var el = $('[data-stake="' + s2.id + '"]'); if (el) el.remove(); } }); }
     });
     if (S === "claim") App.tx.show("success", { label: "", success: { title: t("m.ok.claim", { i: "263.01" }) } });
     if (S === "unlocking") setTimeout(function () {   /* the unlock moment: tag flips and the withdraw button appears, no reload */

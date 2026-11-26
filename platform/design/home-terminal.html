@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/screens/home.css">
 </head>
 <body>
-<!-- H2 Home, terminal view. States: (none) two answered (or the picks made in this tab; with all five answered it is the finished home, which links to day done), fresh (the explicit reset), syncing, slow, failed, reconnect, reconnectfail, otherdevice, loading, empty, closed, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<!-- H2 Home, terminal view. States: (none) two answered (or the picks made in this tab; with all five answered it is the finished home, which links to day done), fresh (the explicit reset), syncing, slow, failed, reconnect, reconnectfail, otherdevice, loading, empty, closed, error, offline, hold (account on hold). Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -36,7 +36,7 @@
   var fin = live && sess.picked() === 5;
   /* picks made in this tab (in either view) carry over; with none, the plain screen shows its two sample picks */
   if (live && sess.picked()) M.set.forEach(function (id, i) { if (sess.data.picks[id]) picks[i + 1] = { dir: sess.data.picks[id], sync: "ok" }; });
-  else if (S !== "fresh" && S !== "partial0") { picks[1] = { dir: "r", sync: "ok" }; picks[2] = { dir: "l", sync: S === "syncing" || S === "slow" ? "saving" : "ok" }; }
+  else if (S !== "fresh" && S !== "partial0" && S !== "hold") { picks[1] = { dir: "r", sync: "ok" }; picks[2] = { dir: "l", sync: S === "syncing" || S === "slow" ? "saving" : "ok" }; }
   if (S === "failed") picks[2] = { dir: "l", sync: "fail" };
   var current = null;
   var noSet = S === "empty" || S === "closed" || S === "error" || S === "loading" || S === "otherdevice";
@@ -49,7 +49,7 @@
   function head() {
     var c = S === "loading" ? 0 : count();
     var sw = C.viewSwitch("term", S === "fresh" ? "" : S);
-    var cd = S === "empty" || S === "closed" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet());
+    var cd = S === "empty" || S === "closed" || S === "hold" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet());
     return '<div class="ph-top"><h1>' + t("h.title") + "</h1>" + sw + "</div>" +
       '<div class="ph-line"><span class="ph-count"><span id="cnt">' + c + "</span><small>/5</small></span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs(), { band: true, id: "day5" }) + cd + "</div>";
   }
@@ -82,11 +82,13 @@
     if (S === "closed") return viewSwitch() + C.empty({ icon: "refresh", title: t("h.closed"), action: C.btn(t("h.closed.btn"), { kind: "primary", href: "home-terminal.html" }) });
     if (S === "error") return viewSwitch() + C.error();
     if (S === "otherdevice") return viewSwitch() + C.otherDevice();
+    /* account on hold: the list is replaced by the same short panel as on the card view */
+    if (S === "hold") return C.empty({ icon: "pause", title: t("hold.home.h"), body: t("hold.home.b"), action: C.btn(t("hold.home.btn"), { href: "system.html?state=blocked", iconEnd: "right", id: "hold-more" }) });
     return viewSwitch() + (App.offline ? C.note("warn", t("h.offline")) : "") + C.playBanner(S) + '<ol class="term" id="term">' + list() + '</ol><div class="term-end" id="term-end" hidden></div>';
   }
   current = firstOpen();
   App.store.set("view", "term");
-  App.mount({ tab: "home", docTitle: t("h.title"), head: head(), body: body(), badges: { home: fin ? 0 : "dot", results: 2 }, after: function () {
+  App.mount({ tab: "home", docTitle: t("h.title"), head: head(), body: body(), badges: { home: fin || S === "hold" ? 0 : "dot", results: 2 }, after: function () {
     var term = $("#term"), lastPick = 0; if (!term) return;
     if (S === "failed") App.toast(t("h.toast.fail", { n: 2 }), { btn: t("common.retry") });
     if (leftSaved) App.toast(leftSaved > 1 ? t("h.left.savedn", { n: leftSaved }) : t("h.left.saved"));

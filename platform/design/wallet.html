@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="assets/screens/invite.css">
 </head>
 <body>
-<!-- W1 Wallet. States: (none), new (under 1,000P), zero, loading, error (Kaia not answering), offline. Add ?lang=en|ko|ja. Mock data only. -->
+<!-- W1 Wallet. States: (none), new (under 1,000P), zero, loading, error (Kaia not answering), offline, hold (account on hold: Convert is off with the reason, Withdraw works and the fee is paid in KAIA). Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -26,26 +26,26 @@
 (function () {
   var t = App.t, F = App.fmt, S = App.state, M = MOCK, u = M.user;
   var pts = S === "zero" ? 0 : S === "new" ? 450 : u.points, ct = S === "zero" ? 0 : u.ct, staked = S === "zero" ? 0 : u.staked, kaia = S === "zero" ? 0 : u.kaia;
-  var off = App.state === "offline";
+  var off = App.state === "offline", hold = S === "hold";
   function head() { return '<div class="ph-top"><h1>' + t("w.title") + "</h1></div>"; }
   function body() {
     if (S === "loading") return '<section class="msec" aria-busy="true">' + C.skel("90px") + C.skel("200px", "44px") + '<div class="acts">' + C.skel("100%", "44px") + C.skel("100%", "44px") + "</div></section>" +
       '<section class="msec" aria-busy="true">' + C.skel("150px") + C.skel("100%", "44px") + C.skel("100%", "44px") + '</section><section class="msec" aria-busy="true">' + C.skel("60px") + C.skel("140px", "28px") + C.skel("100%") + '</section><p class="sr-only" role="status">' + t("common.loading") + "</p>";
     var canCt = Math.floor(pts / 1000), a = u.address;
     /* 1. CT is the one hero figure. Deposit and withdraw are the two secondary buttons. */
-    return (off ? C.note("warn", t("w.offline")) : "") +
+    return (off ? C.note("warn", t("w.offline")) : "") + (hold ? C.hold(t("hold.wallet")) : "") +
       '<section class="msec" aria-labelledby="ct-h">' + (S === "error" ? C.note("warn", t("e.rpc"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" })) : "") +
       '<div class="mhero"><h2 class="lbl" id="ct-h">' + t("w.avail") + '</h2><p class="fig" id="ct-fig">' + F.dec(ct) + "<small>CT</small></p>" + (App.isKo ? '<p class="sub">' + F.krw(ct) + "</p>" : "") + "</div>" +
       /* whose balance it is: the short address as a chip that copies the full one; "Updated" sits opposite, because it is this balance that is live */
       '<div class="wid">' + C.addr(a, { id: "copy-addr" }) + C.stamp(S === "error" ? 48 : 6) + "</div>" +
-      '<div class="acts">' + C.btn(t("w.deposit"), { href: "deposit.html", icon: "download", disabled: off }) + C.btn(t("w.withdraw"), { href: "withdraw.html", icon: "share", disabled: off }) + "</div>" +
+      '<div class="acts">' + C.btn(t("w.deposit"), { href: "deposit.html", icon: "download", disabled: off }) + C.btn(t("w.withdraw"), { href: "withdraw.html", icon: "share", disabled: off, id: "wd" }) + "</div>" +
       '<div class="list"><a class="wrow" href="stakes.html"><span>' + t("w.staked") + '</span><b id="staked">' + F.dec(staked) + ' <small>CT</small></b><span class="wrow-go"><span class="sr-only">' + t("s.mine", { n: M.stakes.length }) + '</span><span aria-hidden="true">' + M.stakes.length + "</span>" + C.icon("chev", 16) + "</span></a>" +
-      '<div class="wrow"><span>KAIA</span><b>' + F.dec(kaia, 4) + " <small>KAIA</small></b><small>" + t("w.kaia.note") + "</small></div></div></section>" +
+      '<div class="wrow"><span>KAIA</span><b>' + F.dec(kaia, 4) + " <small>KAIA</small></b><small>" + t(hold ? "hold.kaia.note" : "w.kaia.note") + "</small></div></div></section>" +
       /* 2. points are second in size. What is still on the way is a state, so it is an outlined chip. Convert has room above it and is the one primary action. */
       '<section class="msec" aria-labelledby="pt-h"><div class="mhero"><h2 class="lbl" id="pt-h">' + t("w.points") + '</h2><p class="fig mfig-2" id="pt-fig">' + F.int(pts) + "</p></div>" +
       '<p class="mline">' + (canCt ? t("w.ready", { n: canCt }) : t("w.notyet", { g: F.int(1000 - pts) })) + "</p>" +
-      (S === "" || off ? '<p class="wpend">' + C.tag(t("w.onway")) + "<span>" + t("w.pendinghit", { p: u.pendingHit, time: "22:10" }) + "</span></p>" : "") +
-      '<div class="wconvert">' + C.btn(t("w.convert"), { kind: "primary", block: true, href: "convert.html" + (S === "new" || S === "zero" ? "?state=short" : ""), disabled: off }) + "</div>" +
+      (S === "" || off || hold ? '<p class="wpend">' + C.tag(t("w.onway")) + "<span>" + t("w.pendinghit", { p: u.pendingHit, time: "22:10" }) + "</span></p>" : "") +
+      '<div class="wconvert">' + C.btn(t("w.convert"), { kind: "primary", block: true, href: "convert.html" + (S === "new" || S === "zero" ? "?state=short" : ""), disabled: off || hold, id: "convert" }) + (hold ? '<p class="hold-why" id="convert-why">' + C.icon("pause", 16) + "<span>" + t("hold.convert.reason") + "</span></p>" : "") + "</div>" +
       /* the invite bonus earned this week, as a row to the invite screen. It sits under Convert, so the primary action stays where it was on the first screen */
       '<a class="inv-row winv" id="to-invite" href="invite.html?from=wallet"><span class="inv-row-t"><b>' + t("w.invite") + "</b><small>" + t("inv.entry.sub", { r: M.invite.rate }) + '</small></span><span class="inv-row-go">+' + F.pts(S === "zero" || S === "new" ? 0 : M.invite.week) + C.icon("chev", 16) + "</span></a></section>" +
       /* 3. the token contract is reference only (the full address with its QR is on the deposit screen): collapsed, labelled as an address you must not send to, with its own toast */

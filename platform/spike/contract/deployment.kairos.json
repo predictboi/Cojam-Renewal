@@ -1,0 +1,12 @@
+{
+  "network": "kairos",
+  "chainId": 1001,
+  "contract": "SpikePredict",
+  "address": "0x5064CD6b484d3A1B9a2f3A27c364370ffAa39f58",
+  "deployTx": "0x952726923d02a7a6cde86b1bc54c698161ba8aec64d2db708721957649306d73",
+  "block": 234064610,
+  "deployer": "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+  "compiler": "0.8.28+commit.7893614a.Emscripten.clang",
+  "deployedAt": "2026-11-26T16:06:42.072Z",
+  "explorer": "https://kairos.kaiascan.io/address/0x5064CD6b484d3A1B9a2f3A27c364370ffAa39f58"
+}

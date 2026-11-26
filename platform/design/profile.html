@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/screens/invite.css">
 </head>
 <body>
-<!-- P1 Profile and settings. States: (none), nameerror, nameword, notset, otherdevice, saved, logout, session, update. Add ?lang=en|ko|ja. Mock data only. -->
+<!-- P1 Profile and settings. States: (none), nameerror, nameword, notset, otherdevice, saved, logout, session, update, hold (account on hold: a status row that links to the explanation). Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -42,6 +42,8 @@
     var a = M.user.address;
     return ident() +
       '<section class="sec"><h2 class="sect-h">' + t("p.account") + '</h2><div class="list">' +
+      /* account on hold: the status leads the account section, as a row to the full explanation */
+      (S === "hold" ? '<a class="rowlink" id="hold-row" href="system.html?state=blocked">' + '<span><b>' + t("hold.t") + "</b><small>" + t("hold.profile.sub") + "</small></span>" + C.tag(t("hold.tag"), "", "pause") + C.icon("chev", 18) + "</a>" : "") +
       '<div class="prow">' + C.icon("mail", 20) + '<p class="grow">' + t("p.login", { email: '<b translate="no">' + M.user.email + "</b>" }) + "</p></div>" +
       '<div class="prow-addr"><p class="lbl">' + t("w.addr") + "</p>" + C.addr(a) + "</div>" +
       linkRow(t("w.scan"), "https://kaiascan.io/address/" + a, true) +

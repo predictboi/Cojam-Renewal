@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/screens/invite.css">
 </head>
 <body>
-<!-- G1 Gate. States: (none) picks android or desktop by width, android, accepted, dismissed, android-manual, ios, ios-other, inapp, inapp-ios, desktop, generic, installed, invited (an invite link opened in a browser). Add ?lang=en|ko|ja. Mock data only. -->
+<!-- G1 Gate. States: (none) picks android or desktop by width, android, accepted, dismissed, android-manual, ios, ios-other, inapp, inapp-ios, desktop, generic, installed, invited (an invite link opened in a browser), invited-noname (the inviter's name could not be loaded), invited-ios-other, invited-inapp, invited-inapp-ios (the same variants reached from an invite link: "Copy link" copies the invite link). Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -26,10 +26,23 @@
   var t = App.t, S = App.state, M = MOCK, $ = App.$;
   var wide = matchMedia("(min-width: 900px) and (pointer: fine)").matches;
   var v = S || (wide ? "desktop" : "android");
+  /* reached from an invite link: the invite block leads the panel, and every "Copy link" on the screen copies the invite link (with its code), never the plain app address */
+  var inv = /^invited/.test(v), base = inv ? v.replace(/^invited-?/, "") : v, noName = base === "noname";
+  if (noName) base = "";
   var manual = [[t("g.manual.1"), "more"], [t("g.manual.2"), "addhome"], [t("g.manual.3"), "phone"]];
   var ios = [[t("g.ios.1"), "share"], [t("g.ios.2"), "addhome"], [t("g.ios.3"), "phone"]];
-  var copy = C.btn(t("g.copy"), { block: true, icon: "copy", attrs: 'data-copy="' + M.appUrl + '" data-toast="' + App.esc(t("g.copied")) + '"' });
+  var copy = C.btn(t("g.copy"), { block: true, icon: "copy", attrs: 'id: "copylink", attrs: 'data-copy="' + (inv ? M.invite.link : M.appUrl) + '" data-toast="' + App.esc(t(inv ? "g.inv.copied" : "g.copied")) + '"' });
+  /* who invited, the code as a copy block, what to do with it and what the friend gets. Without a name the headline is "You were invited": the code is what matters */
+  function invBlock() {
+    return '<div class="gate-inv"><h2>' + (noName ? t("g.inv.h.anon") : t("g.inv.h", { name: '<b translate="no">' + App.esc(M.invite.by) + "</b>" })) + "</h2>" + C.code(M.invite.code, { id: "inv-code", label: t("g.inv.code") }) +
+      "<p>" + t("g.inv.b") + '</p><p class="gate-inv-get">' + t("g.inv.get", { w: M.invite.welcome }) + "</p></div>";
+  }
   function panel() {
+    if (inv && base) return invBlock() + variant(base).replace("<h2>", "<h3>").replace("</h2>", "</h3>");
+    if (inv) return invBlock() + "<h3>" + t("g.manual.h") + "</h3>" + C.steps(wide ? manual : ios);
+    return variant(v);
+  }
+  function variant(v) {
     switch (v) {
       case "android": return "<h2>" + t("g.install.h") + '</h2><p class="muted">' + t("g.install.b") + "</p>" + C.btn(t("g.android.btn"), { kind: "primary", block: true, icon: "download", id: "install" });
       case "accepted": return C.note("ok", t("g.android.accepted"));
@@ -42,10 +55,6 @@
       case "desktop": return "<h2>" + t("g.desk.h") + '</h2><p class="muted">' + t("g.desk.body") + "</p>" + C.qr(M.qrUrl, t("g.qr.alt")) + '<p class="center mono" translate="no">app.cojam.app</p>' + copy;
       case "generic": return "<h2>" + t("g.desk.h") + "</h2>" + C.qr(M.qrUrl, t("g.qr.alt")) + C.help(t("g.gen.ios"), C.steps(ios)) + C.help(t("g.gen.android"), C.steps(manual));
       case "installed": return C.note("ok", t("g.installed"));
-      /* an invite link opened in a browser: the installed app cannot read anything from here, so the code is shown to be copied and carried over by hand.
-         Who invited, the code as a copy block, what to do with it and what the friend gets; the install steps follow in the same panel */
-      case "invited": return '<div class="gate-inv"><h2>' + t("g.inv.h", { name: '<b translate="no">' + App.esc(M.invite.by) + "</b>" }) + "</h2>" + C.code(M.invite.code, { id: "inv-code", label: t("g.inv.code") }) +
-        "<p>" + t("g.inv.b") + '</p><p class="gate-inv-get">' + t("g.inv.get", { w: M.invite.welcome }) + "</p></div><h3>" + t("g.manual.h") + "</h3>" + C.steps(wide ? manual : ios);
     }
     return "";
   }
@@ -54,8 +63,8 @@
   var raw = '<div class="topnote" role="note">' + C.icon("shield", 16) + "<span>" + t("g.top") + "</span></div>" +
     '<div class="gate"><div class="gate-bar">' + C.logo() + C.lang() + "</div>" +
     '<div class="gate-col"><div class="stack-12"><h1>' + t("g.h1") + '</h1><p class="gate-lede">' + t("g.lede") + "</p></div>" +
-    (v === "invited" ? "" : demo) + "</div>" +
-    '<div class="gate-col"><section class="panel" aria-live="polite" id="panel">' + panel() + "</section>" + (v === "invited" ? demo : "") +
+    (inv ? "" : demo) + "</div>" +
+    '<div class="gate-col"><section class="panel" aria-live="polite" id="panel">' + panel() + "</section>" + (inv ? demo : "") +
     '<ul class="facts"><li>' + C.icon("bolt", 20) + t("g.fact.1") + "</li><li>" + C.icon("mail", 20) + t("g.fact.2") + "</li><li>" + C.icon("shield", 20) + t("g.fact.3") + "</li></ul>" +
     '<section class="gate-swap"><h2>' + t("g.swap.h") + "</h2><p>" + t("g.swap.body") + "</p>" + C.btn(t("g.swap.btn"), { href: "https://cojam.app/migrate/", ext: true, iconEnd: "ext" }) + "</section></div>" +
     '<footer class="gate-foot"><a href="https://cojam.app">' + t("hd.home") + "</a><span>© 2026 Cojam</span></footer></div>" +

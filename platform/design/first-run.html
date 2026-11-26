@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/screens/invite.css">
 </head>
 <body>
-<!-- A2 First run. States: 1 (default), 2, 3, settingup (setup still running when the last button is tapped), code (the invite code field open), code-valid, code-unknown, code-own. Add ?lang=en|ko|ja. Mock data only. -->
+<!-- A2 First run. States: 1 (default), 2, 3, settingup (setup still running when the last button is tapped), code (the invite code field open), code-valid, code-unknown, code-own, code-linked (this account already has an inviter: read only), code-offline (the code cannot be checked without a connection). Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -36,7 +36,7 @@
 "</div></li>";
   }
   /* the optional invite code, on the first panel only, so it adds no screen. Closed it is one text link; open it is the field (capitals, data face) with Apply inside and Skip beside the label */
-  var V = M.invite, PRESET = { "code-valid": V.code, "code-unknown": "KAIA999", "code-own": V.self }, codeOpen = /^code/.test(S), codeOk = "";
+  var V = M.invite, PRESET = { "code-valid": V.code, "code-unknown": "KAIA999", "code-own": V.self, "code-linked": V.code, "code-offline": V.code }, codeOpen = /^code/.test(S), codeOk = "";
   function codeBox() {
     return '<div class="onb-code" id="codebox"' + (n === 1 && from !== "profile" ? "" : " hidden") + '><button type="button" class="onb-code-open" id="code-open"' + (codeOpen ? " hidden" : "") + ">" + t("o.code.q") + C.icon("down", 18) + "</button>" +
       '<div class="onb-code" id="code-form"' + (codeOpen ? "" : " hidden") + '><div class="onb-code-top"><label for="code">' + t("o.code.q") + "<small>" + t("o.code.opt") + '</small></label><button type="button" class="onb-code-skip" id="code-skip">' + t("o.code.skip") + "</button></div>" +
@@ -77,8 +77,14 @@
       say("ok", C.icon("check", 16) + "<span>" + t("o.code.ok", { name: '<b translate="no">' + App.esc(V.known[v]) + "</b>", w: V.welcome }) + "</span>");
       if (then) then();
     }
+    /* offline: nothing can be checked, so the code stays in the field and the line says what to do; "Continue without a code" is still there */
+    var offline = S === "code-offline";
+    /* already linked: the inviter was fixed earlier, so the field is read only, there is nothing to apply and the line names the inviter */
+    function linked() { codeOk = V.code; inp.readOnly = true; box.classList.add("is-ok"); apply.hidden = true; $("#code-skip").hidden = true;
+      say("ok", C.icon("check", 16) + "<span>" + t("o.code.linked", { name: '<b translate="no">' + App.esc(V.known[V.code]) + "</b>" }) + "</span>"); }
     function check(then, now) {
       var v = norm(inp.value); inp.value = v; if (!v || checking) return;
+      if (offline) return fail("o.code.offline");
       if (now) return settle(v, then);
       checking = true; apply.disabled = true; box.classList.remove("is-error"); say("", '<span class="spin"></span><span>' + t("o.code.checking") + "</span>");
       setTimeout(function () { settle(v, then); }, 500);
@@ -90,7 +96,7 @@
     inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); check(); } });
     apply.addEventListener("click", function () { if (codeOk) { idle(); inp.focus(); inp.select(); } else check(); });
     msg.addEventListener("click", function (e) { if (e.target.closest("#code-without")) { closeCode(); go(n + 1); } });
-    idle(); if (PRESET[S]) check(null, true);
+    idle(); if (S === "code-linked") linked(); else if (PRESET[S]) check(null, true);
     /* Next on the first panel: a code that was typed but not applied is checked first; a wrong one keeps the player here, with "Continue without a code" under the field */
     $("#next").addEventListener("click", function () {
       if (n === 1 && !form.hidden && inp.value && !codeOk) { if (box.classList.contains("is-error")) inp.focus(); else check(function () { go(2); }); return; }

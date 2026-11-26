@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/screens/rank.css">
 </head>
 <body>
-<!-- K1 Weekly ranking. States: (none) outside the Top 10, top10, unranked, winner, short, lastweek (being finalised), sent (prizes sent), loading, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<!-- K1 Weekly ranking. States: (none) outside the Top 10, top10, unranked, winner, short, lastweek (being finalised), sent (prizes sent), loading, error, offline, hold (account on hold: your row says no prize can be received). Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -62,7 +62,8 @@
   function gap(g) { return t(g > 0 ? "k.gap.up" : g < 0 ? "k.gap.down" : "k.gap.same", { n: F.int(Math.abs(g)) }); }
   function row(r) {
     return '<li class="krow' + (r.me ? " is-me" : "") + '" data-rank="' + r.rank + '"><span class="krow-rank">' + rankNo(r.rank) + "</span>" +
-      '<div class="grow"><p class="krow-name">' + name(r) + (r.me ? C.tag(t("k.you"), "ink") : "") + '</p><p class="krow-pts">' + F.pts(r.pts) + "</p></div>" +
+      '<div class="grow"><p class="krow-name">' + name(r) + (r.me ? C.tag(t("k.you"), "ink") + (S === "hold" ? C.tag(t("hold.tag"), "", "pause") : "") : "") + '</p><p class="krow-pts">' + F.pts(r.pts) + "</p></div>" +
+      (r.me && S === "hold" ? '<p class="krow-gap" id="hold-row">' + t("hold.rank.row") + "</p>" : "") +
       (r.prize === undefined ? "" : '<p class="krow-prize">' + prize(r.prize) + "<small>CT</small></p>") +
       (r.gap === undefined || r.me ? "" : '<p class="krow-gap">' + gap(r.gap) + "</p>") + "</li>";
   }
@@ -98,6 +99,7 @@
     if (w === "last") return bar(31, t("k.you"), t("k.final.h"), 1200, t("k.lastweek"));
     if (S === "unranked") return '<aside class="pin pin--wide" id="pin" aria-label="' + t("k.you") + '"><div class="pin-main"><b>' + t("k.none") + "</b></div>" + C.btn(t("k.play"), { sm: true, href: "home-cards.html", cls: "btn-onink" }) + "</aside>";
     if (S === "top10") return bar(7, t("k.in"), t("k.prize", { c: "51.36" }), 1150, t("r.week"));
+    if (S === "hold") return bar(me.rank, t("k.you"), t("hold.rank.pin"), me.pts, t("r.week"));
     return bar(me.rank, t("k.you"), t("k.gap", { gap: F.int(me.gap) }), me.pts, t("r.week"));
   }
   /* the pinned bar jumps to the "Around you" block under rank 10 */
@@ -120,6 +122,7 @@
   function view(w) {
     var note = "";
     if (w === "last") note = S === "sent" ? C.note("ok", t("k.sent") + ' <a href="https://kaiascan.io/" target="_blank" rel="noopener">' + t("w.scan") + "</a>") : C.note("sky", t("k.closed", { time: t("k.final.time") }));
+    else if (S === "hold") note = C.hold(t("hold.rank"));
     else if (S === "winner") note = C.note("sky", t("k.last", { rank: 4, amount: "119.60" }));
     return note + pool(w) + '<section class="sec sec-rule"><div class="sect-h"><h2 class="sect-h">' + t("k.top") + "</h2>" + (S === "loading" || w === "last" ? "" : '<span class="live"><span class="live-dot"></span><span data-stamp="12">' + t("common.updated", { n: 12 }) + "</span></span>") + "</div>" +
       list(w) + '<p class="tie-line">' + C.icon("info", 16) + "<span>" + t("k.tie") + "</span></p></section>" + around(w);

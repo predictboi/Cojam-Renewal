@@ -117,6 +117,7 @@
     podiumOn: '<path d="M9 20V9h6v11z" fill="currentColor"/><path d="M3 20v-6h6v6z" fill="currentColor"/><path d="M15 20v-8h6v8z" fill="currentColor"/><path d="M2 20h20"/>',
     lockOn: '<rect x="5" y="11" width="14" height="9" rx="2.500" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><path d="M12 14.500v2" stroke="var(--snow)"/>',
     walletOn: '<path d="M4 7.500A2.500 2.500 0 0 1 6.500 5H17v3"/><rect x="4" y="8" width="16" height="11" rx="2.500" fill="currentColor"/><path d="M15.500 13.500h1.500" stroke="var(--snow)"/>',
+    pause: '<circle cx="12" cy="12" r="8.500"/><path d="M10 9v6M14 9v6"/>',
     undo: '<path d="M9 7L4.500 11.500 9 16"/><path d="M4.500 11.500H14a5 5 0 0 1 0 10h-2"/>',
     spark: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.500 2.500M15.500 15.500L18 18M18 6l-2.500 2.500M8.500 15.500L6 18"/>'
   };
@@ -204,6 +205,14 @@
     function g(v, u) { return '<div class="clock-g"><span>' + v + "</span><small>" + t(u) + "</small></div>"; }
     return '<div class="clock" data-cd="' + secs + '" data-cd-fmt="clock"' + (id ? ' id="' + id + '"' : "") + ' aria-hidden="true">' + g(p[0], "d.u.h") + "<i>:</i>" + g(p[1], "d.u.m") + "<i>:</i>" + g(p[2], "d.u.s") + "</div>" +
       '<p class="sr-only" data-cd-sr>' + t("d.next.sr", { h: +p[0], m: +p[1] }) + "</p>";
+  };
+  /* the on hold notice, one component on every screen: white ground, 2 px ink outline, ink icon. The title "Account on hold", what it means on this screen,
+     and the link to the full explanation (system.html?state=blocked). o.action adds a control under the text; o.more === false drops the link. */
+  App.hold = /^hold/.test(App.state);
+  C.hold = function (html, o) {
+    o = o || {};
+    return '<div class="hold" role="status">' + ic("pause", 20) + '<div class="hold-body"><b class="hold-t">' + t("hold.t") + "</b><p>" + html + "</p>" + (o.action || "") +
+      (o.more === false ? "" : '<a class="hold-more" href="system.html?state=blocked">' + t("hold.more") + ic("chev", 16) + "</a>") + "</div></div>";
   };
   /* slim banner above the stack or list: text, optional spinner, optional action */
   C.banner = function (text, o) {
@@ -420,6 +429,7 @@
         var rv = cfg.review;
         h = "<h2>" + (rv.title || t("tx.review.h")) + "</h2>" + C.rows(rv.rows) +
           (rv.check ? '<label class="check"><input type="checkbox" id="tx-check"><span>' + rv.check + "</span></label>" : "") +
+          (rv.note ? '<p class="sheet-warn" id="tx-note">' + ic("info", 18) + "<span>" + rv.note + "</span></p>" : "") +
           (rv.warn ? '<p class="sheet-warn">' + ic("lock", 18) + "<span>" + rv.warn + "</span></p>" : "") +
           '<div class="sheet-acts">' + C.btn(rv.confirm || t("tx.confirm"), { kind: "primary", block: true, attrs: "data-tx=\"confirm\"", disabled: !!rv.check, id: "tx-confirm" }) + C.btn(t("common.cancel"), { kind: "ghost", block: true, attrs: "data-tx=\"cancel\"" }) + "</div>";
       } else if (state === "signing") {

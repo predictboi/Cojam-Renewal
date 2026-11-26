@@ -33,30 +33,30 @@
 (function () {
   var FLOWS = [
     { h: "Start here", p: "The walk through a new player takes, in order.", items: [
-      ["G1", "Gate", "gate.html", ["android", "accepted", "dismissed", "android-manual", "ios", "ios-other", "inapp", "inapp-ios", "desktop", "generic", "installed", "invited"]],
+      ["G1", "Gate", "gate.html", ["android", "accepted", "dismissed", "android-manual", "ios", "ios-other", "inapp", "inapp-ios", "desktop", "generic", "installed", "invited", "invited-noname", "invited-ios-other", "invited-inapp", "invited-inapp-ios"]],
       ["A1", "Login", "login.html", ["empty", "bademail", "typo", "unsupported", "toomany", "sendfail", "sending", "code", "verifying", "wrong", "short", "expired", "tries", "setup", "returning", "busy", "walletfail", "devicefail", "refused-used", "refused-provider", "refused-many", "refused", "offline"]],
-      ["A2", "First run", "first-run.html", ["1", "2", "3", "settingup", "code", "code-valid", "code-unknown", "code-own"]]
+      ["A2", "First run", "first-run.html", ["1", "2", "3", "settingup", "code", "code-valid", "code-unknown", "code-own", "code-linked", "code-offline"]]
     ] },
     { h: "Play", p: "Today's five predictions, both views, and the day done moment.", items: [
-      ["H1", "Home, card view", "home-cards.html", ["fresh", "noimage", "imagetop", "partial", "syncing", "slow", "failed", "reconnect", "reconnectfail", "otherdevice", "loading", "empty", "closed", "error", "offline"]],
-      ["H2", "Home, terminal view", "home-terminal.html", ["fresh", "syncing", "slow", "failed", "reconnect", "reconnectfail", "otherdevice", "loading", "empty", "closed", "error", "offline"]],
+      ["H1", "Home, card view", "home-cards.html", ["fresh", "noimage", "imagetop", "partial", "syncing", "slow", "failed", "reconnect", "reconnectfail", "otherdevice", "loading", "empty", "closed", "error", "offline", "hold"]],
+      ["H2", "Home, terminal view", "home-terminal.html", ["fresh", "syncing", "slow", "failed", "reconnect", "reconnectfail", "otherdevice", "loading", "empty", "closed", "error", "offline", "hold"]],
       ["H3", "Day done", "done.html", ["moment", "saving", "results", "zero", "welcome", "offline"]],
       ["R1", "Results", "results.html", ["loading", "empty", "nowaiting", "noset", "error", "offline"]],
-      ["K1", "Weekly ranking", "ranking.html", ["top10", "unranked", "winner", "short", "lastweek", "sent", "loading", "error", "offline"]]
+      ["K1", "Weekly ranking", "ranking.html", ["top10", "unranked", "winner", "short", "lastweek", "sent", "loading", "error", "offline", "hold"]]
     ] },
     { h: "Staking", p: "Open a stake, watch interest, claim and withdraw. Sheet states are listed on S1.", items: [
-      ["S1", "New stake", "staking.html", ["empty", "below", "above", "zero", "big", "paused", "full", "fullnone", "max20", "loading", "review", "signing", "steps", "sending", "slow", "success", "failed", "hidden", "error", "offline"]],
-      ["S2", "My stakes", "stakes.html", ["claimable", "unlocking", "claim", "loading", "empty", "error", "offline"]]
+      ["S1", "New stake", "staking.html", ["empty", "below", "above", "zero", "big", "paused", "full", "fullnone", "max20", "loading", "review", "signing", "steps", "sending", "slow", "success", "failed", "hidden", "error", "offline", "hold"]],
+      ["S2", "My stakes", "stakes.html", ["claimable", "unlocking", "claim", "loading", "empty", "error", "offline", "hold", "hold-nokaia"]]
     ] },
     { h: "Wallet", p: "Balances, convert, deposit and withdraw.", items: [
-      ["W1", "Wallet", "wallet.html", ["new", "zero", "loading", "error", "offline"]],
-      ["W2", "Convert points", "convert.html", ["empty", "step", "above", "min", "short", "wait", "cap", "capglobal", "paused", "signing", "sending", "success", "failed", "loading", "offline"]],
+      ["W1", "Wallet", "wallet.html", ["new", "zero", "loading", "error", "offline", "hold"]],
+      ["W2", "Convert points", "convert.html", ["empty", "step", "above", "min", "short", "wait", "cap", "capglobal", "paused", "signing", "sending", "success", "failed", "loading", "offline", "hold"]],
       ["W3", "Deposit", "deposit.html", ["arrived", "loading", "error", "offline"]],
       ["W4", "Withdraw CT", "withdraw.html", ["filled", "bad", "sum", "own", "contract", "nokaia", "review", "signing", "sending", "success", "failed", "loading", "offline"]]
     ] },
-    { h: "Account and system", p: "Profile, session and the full screen system states.", items: [
-      ["P1", "Profile and settings", "profile.html", ["nameerror", "nameword", "notset", "otherdevice", "saved", "logout", "session", "update"]],
-      ["I1", "Invite friends", "invite.html", ["empty", "loading", "error", "offline", "copied", "shared"]],
+    { h: "Account and system", p: "Profile, session and the full screen system states. An account on hold: SYS blocked is the explanation, and the hold chip on H1, H2, K1, S1, S2, W1, W2, P1 and I1 is what each screen shows.", items: [
+      ["P1", "Profile and settings", "profile.html", ["nameerror", "nameword", "notset", "otherdevice", "saved", "logout", "session", "update", "hold"]],
+      ["I1", "Invite friends", "invite.html", ["empty", "loading", "error", "offline", "copied", "shared", "hold"]],
       ["SYS", "System screens", "system.html", ["maintenance", "update", "offline", "notfound", "blocked"]]
     ] },
     { h: "Library", p: "Tokens and every component with its variants.", items: [["LIB", "Component library", "components.html", []]] }

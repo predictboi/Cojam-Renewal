@@ -13,6 +13,8 @@ Rules for everyone:
 - Exactly three button looks: primary (lime, ink edge, offset shadow), secondary (2 px ink outline, white ground, medium radius, no shadow), text link. No grey filled buttons.
 - One segmented pattern: 2 px ink outline track, current segment filled ink with white text. Where a control navigates to another page it reads as tabs or links, not as a filter.
 - Major sections are separated by a 2 px ink line; light hairlines only between rows inside a list.
+- The offset shadow belongs to the primary button and to the single main object of a screen: the prediction card on home and the login panel on login (it is the one object on that screen, so it keeps its offset shadow). Nothing else carries one.
+- An account on hold is announced by one notice component on every screen (`C.hold`: white ground, 2 px ink outline, ink icon, the title "Account on hold", the reason for that screen, a link to `system.html?state=blocked`). Controls that are off say why in one line; nothing dead is left on the screen.
 - Key figures use the display numerals. Ink outlined number blocks or chips in the landing's style only for real counts, ranks, steps or states. No decoration without a job, no gradients, glow, glass or emoji.
 - Copy: plain, native in KO and JA (not literal), no " - " or " — " as a sentence break.
 

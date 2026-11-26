@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/screens/home.css">
 </head>
 <body>
-<!-- H1 Home, card view. Each pick can be undone for 3 seconds (the bar under the deck), then it is sent. States: (none) ready (continues the picks already made in this tab; with all five answered it is the finished home, which links to day done), fresh (a clean set; the explicit reset), noimage (fallback card), imagetop (the other layout), partial, syncing, slow, failed, reconnect, reconnectfail, otherdevice, loading, empty, closed, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<!-- H1 Home, card view. Each pick can be undone for 3 seconds (the bar under the deck), then it is sent. States: (none) ready (continues the picks already made in this tab; with all five answered it is the finished home, which links to day done), fresh (a clean set; the explicit reset), noimage (fallback card), imagetop (the other layout), partial, syncing, slow, failed, reconnect, reconnectfail, otherdevice, loading, empty, closed, error, offline, hold (account on hold). Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -48,7 +48,7 @@
   /* one header pattern: title row (with the view switch), then one status row: counter, day progress, time left */
   function head() {
     var sw = C.viewSwitch("card", S);
-    var cd = S === "empty" || S === "closed" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet());
+    var cd = S === "empty" || S === "closed" || S === "hold" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet());
     return '<div class="ph-top"><h1>' + t("h.title") + "</h1>" + sw + "</div>" +
       '<div class="ph-line"><span class="ph-count"><span id="cnt">' + (S === "loading" ? "0" : count) + "</span><small>/5</small></span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs, { band: true, id: "day5" }) + cd + "</div>";
   }
@@ -59,6 +59,8 @@
     if (S === "closed") return C.empty({ icon: "refresh", title: t("h.closed"), action: C.btn(t("h.closed.btn"), { kind: "primary", href: "home-cards.html" }) });
     if (S === "error") return C.error();
     if (S === "otherdevice") return C.otherDevice();
+    /* account on hold: no deck and no answer buttons, so nothing on the screen is dead. One short panel says why and links to the full explanation */
+    if (S === "hold") return C.empty({ icon: "pause", title: t("hold.home.h"), body: t("hold.home.b"), action: C.btn(t("hold.home.btn"), { href: "system.html?state=blocked", iconEnd: "right", id: "hold-more" }) });
     if (fin) return '<div class="deck is-empty home-fin"><div class="deck-end"><div class="end-ring" aria-hidden="true"><svg class="ring" viewBox="0 0 92 92"><circle class="trk" cx="46" cy="46" r="40"/><circle class="run" cx="46" cy="46" r="40"/></svg>' + C.icon("check", 32) + "</div>" +
       "<h2>" + t("h.end.h") + "</h2><p>" + t("h.fin.b") + "</p>" + C.btn(t("h.fin.btn"), { kind: "primary", href: sess.data.paid ? "done.html" : "done.html?state=moment", iconEnd: "right" }) + "</div></div>";
     var cards = Q.filter(function (q) { return answered.indexOf(q.n) < 0; });
@@ -72,7 +74,7 @@
       '<div class="pickbar" id="pickbar"></div>';
   }
 
-  App.mount({ tab: "home", cls: "is-home" + (App.offline ? " is-offline" : ""), docTitle: t("h.title"), head: head(), body: body(), badges: { home: 5 - count ? "dot" : 0, results: 2 }, after: function () {
+  App.mount({ tab: "home", cls: "is-home" + (App.offline ? " is-offline" : ""), docTitle: t("h.title"), head: head(), body: body(), badges: { home: 5 - count && S !== "hold" ? "dot" : 0, results: 2 }, after: function () {
     var deckEl = $("#deck"); if (!deckEl) return;
     var day5 = $("#day5"), cnt = $("#cnt"), bar = $("#pickbar");
     if (S === "failed") { App.toast(t("h.toast.fail", { n: 2 }), { btn: t("common.retry") }); }
