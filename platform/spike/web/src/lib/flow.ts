@@ -1,7 +1,7 @@
 // The spike steps c, d and e as plain async functions, shared by the PWA (src/App.tsx) and the Node
 // end to end check against Kairos (test/e2e-kairos.ts). No DOM and no React here.
 
-import { Wallet } from 'ethers';
+import type { BaseWallet } from 'ethers';
 import { signFdCall, spikeAbi, type SignatureInfo } from './kaiaTx.ts';
 import { ethCall, getGasPrice, getNonce, sponsor, waitReceipt, type Receipt } from './rpc.ts';
 
@@ -34,7 +34,7 @@ export async function gasPrice(ctx: Ctx): Promise<bigint> {
 }
 
 /** A local key as a HashSigner (ethers SigningKey; returns r || s || v with v 27/28). */
-export function localSigner(w: Wallet, label: string): HashSigner {
+export function localSigner(w: BaseWallet, label: string): HashSigner {
   return {
     address: w.address,
     label,

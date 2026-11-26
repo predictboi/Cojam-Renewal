@@ -15,7 +15,7 @@
     return '<nav class="cal" aria-label="Schedule, next 14 days">' + D.days.map(function (d) {
       var k = d.far ? "far" : d.n < 5 || d.img < d.n ? "warn" : "", pips = "";
       for (var i = 0; i < 5; i++) pips += '<i data-s="' + (i >= d.n ? "none" : i >= d.img ? "noimg" : "") + '"></i>';
-      var m = d.far ? (d.n ? "Drafting" : "Not drafted yet") : d.n < 5 ? (5 - d.n) + " missing" : d.img < d.n ? (d.n - d.img) + " without image" : "All with image";
+      var m = d.far ? (d.n ? "Drafting" : "Not drafted") : d.n < 5 ? (5 - d.n) + " missing" : d.img < d.n ? (d.n - d.img) + " no image" : "5 images";
       return '<a href="' + (D.dayLong[d.id] ? url(d.id) : "#") + '"' + (d.id === day ? ' aria-current="true"' : "") + (k ? ' data-k="' + k + '"' : "") + ' aria-label="' + d.d + ": " + d.n + " of 5 questions, " + m + '"><span class="d">' + (d.tag ? "<b>" + d.tag + "</b> " : "") + d.d + '</span><span class="n">' + d.n + '<small>/5</small></span><span class="m">' + m + '</span><span class="pips" aria-hidden="true">' + pips + "</span></a>";
     }).join("") + "</nav>" +
       '<p class="hint" style="margin-top:8px">Each bar is one of the day\'s 5 slots: filled, filled without an image (striped), or empty. The drafter runs daily at 18:00 KST and keeps the next 7 days full; later days are not expected to be filled yet. A day is written on chain at 08:30 KST and goes live at 09:00.</p>';
@@ -66,7 +66,7 @@
   }
   function langCol(q, l, editable) {
     var t = q[l], L = LIM[l], over = X.is("edit") && l === "ko";
-    var title = over ? "오늘 닛케이 225 지수는 4만 선을 넘겨서 장을 마감할 수 있을까요?" : t.title;
+    var title = over ? "오늘 닛케이 225 지수는 과연 4만 선을 넘겨서 장을 마감할 수 있을까요?" : t.title;
     function f(id, label, val, max, rowsN) {
       var c = len(val), left = max - c, cid = id + "-" + l;
       var cnt = '<span class="cnt"' + (left < 0 ? " data-over" : "") + ' data-count="' + cid + '">' + (editable ? (left < 0 ? -left + " over" : left + " left") : c + " of " + max) + "</span>";
@@ -83,7 +83,7 @@
       ["ok", "Can be decided from a public source", q.src[0].replace(/^https:\/\/(www\.)?/, "").split("/")[0]],
       ["ok", "Closes before the outcome can be known", "Closes " + q.closes + ", answer due " + q.due],
       ["ok", "Answer due within 24 hours after the set closes", ""],
-      [bad ? "fail" : "ok", bad ? "Text does not fit the card in Korean" : "Text fits the card in all three languages", bad ? "Question 3 over" : ""],
+      [bad ? "fail" : "ok", bad ? "Text does not fit the card in Korean" : "Text fits the card in all three languages", bad ? "Question 2 over" : ""],
       ["ok", "Not a repeat of the last 7 days", ""],
       [q.imgState === "Rejected by check" ? "fail" : "ok", q.imgState === "Rejected by check" ? "Image rejected: lettering that reads as a film title" : "Image: no real people, logos, trademarks or lettering", q.imgState === "Rejected by check" ? "Fallback in use" : ""]
     ];
@@ -91,8 +91,8 @@
       (live ? X.btn("Void this question", { link: 1, danger: 1, act: "void", arg: q.id, write: 1 }) : X.btn("Cancel question", { link: 1, danger: 1, act: "cancelq", arg: q.id, write: 1 }) + X.btn("Swap with a draft", { act: "swap", arg: q.id, write: 1 }) + X.btn("Save changes", { primary: 1, act: "toast", arg: "Saved " + q.id + ". The three language texts and times are stored.", write: 1, disabled: bad })) + "</span></div>";
     var meta = '<div class="cols cols-2 split" style="margin-top:24px"><div>' + X.kv([
       ["Category", editable ? '<select class="inp" style="width:180px" aria-label="Category">' + ["Crypto", "Markets", "Weather", "Sports", "Culture"].map(function (c) { return "<option" + (c === q.cat ? " selected" : "") + ">" + c + "</option>"; }).join("") + "</select>" : q.cat],
-      ["Closes", editable ? '<input class="inp" style="width:180px" aria-label="Closes at, KST" value="' + q.closes + '"> <span class="hint">KST. Default is the set close, 09:00 next day.</span>' : q.closes + " KST" + (q.closesIn ? ' <span class="dim">in ' + X.cd(q.closesIn) + "</span>" : "")],
-      ["Answer due", editable ? '<input class="inp" style="width:180px" aria-label="Answer due, KST" value="' + q.due + '"> <span class="hint">KST. At most 24 hours after the set closes.</span>' : q.due + " KST"],
+      ["Closes", editable ? '<input class="inp" style="width:180px" aria-label="Closes at, KST" value="' + q.closes + '"><span class="hint" style="display:block;margin-top:4px">KST. Default is the set close, 09:00 next day.</span>' : q.closes + " KST" + (q.closesIn ? ' <span class="dim">in ' + X.cd(q.closesIn) + "</span>" : "")],
+      ["Answer due", editable ? '<input class="inp" style="width:180px" aria-label="Answer due, KST" value="' + q.due + '"><span class="hint" style="display:block;margin-top:4px">KST. At most 24 hours after the set closes.</span>' : q.due + " KST"],
       ["Resolve rule", editable ? '<textarea class="inp" rows="3" aria-label="Resolve rule">' + esc(q.resolve) + "</textarea>" : esc(q.resolve)],
       ["Source", q.src.map(function (s) { return editable ? '<input class="inp" aria-label="Source URL" value="' + esc(s) + '">' : '<a href="' + esc(s) + '" target="_blank" rel="noopener">' + esc(s) + "</a>"; }).join("")]
     ]) + '</div><div><div class="sec-head" style="min-height:0"><h3 class="sub" style="margin:0">AI checks</h3><span class="sec-end">Confidence <b class="num-d" style="font-size:16px;margin-left:6px">' + q.conf.toFixed(2) + '</b></span></div><ul class="chk">' + checks.map(function (c) { return '<li data-s="' + c[0] + '">' + ic(c[0] === "ok" ? "ok" : "no") + "<span>" + c[1] + '</span><span class="v">' + c[2] + "</span></li>"; }).join("") + "</ul>" +
