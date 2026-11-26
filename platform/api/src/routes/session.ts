@@ -213,6 +213,15 @@ export function registerSessionRoutes(app: FastifyInstance, kit: RouteKit): void
       .executeTakeFirst();
     const settled = days.reduce((a, d) => a + popcount(d.settled_mask), 0);
     const hits = days.reduce((a, d) => a + d.hits, 0);
+    // Results badge: answered markets whose answer was set after the player last opened Results (none before the
+    // first answer of all; capped at 99). A first visit counts everything decided in the last 7 days.
+    const mark = await deps.db.selectFrom("user_marks").select("results_seen_at").where("user_id", "=", user.id).executeTakeFirst();
+    const seen = mark?.results_seen_at ?? new Date(deps.now() - 7 * 86400_000);
+    const fresh = w
+      ? await sql<{ n: number }>`
+          SELECT count(*)::int AS n FROM predictions p JOIN markets m ON m.market_id = p.market_id
+          WHERE p.wallet = ${w} AND m.resolved_at IS NOT NULL AND m.resolved_at > ${seen}`.execute(deps.db)
+      : { rows: [{ n: 0 }] };
     return {
       id: user.id,
       wallet: (user.wallet as Address) ?? null,
@@ -225,6 +234,8 @@ export function registerSessionRoutes(app: FastifyInstance, kit: RouteKit): void
       frozen: user.frozen,
       supportEmail: deps.config.supportEmail,
       createdAt: toUnix(user.created_at)!,
+      newResults: Math.min(99, fresh.rows[0]?.n ?? 0),
+      resultsSeenAt: toUnix(mark?.results_seen_at),
       stats: {
         daysPlayed: days.filter((d) => d.answered > 0).length,
         daysCompleted: days.filter((d) => d.completed).length,
@@ -253,6 +264,7 @@ export function registerSessionRoutes(app: FastifyInstance, kit: RouteKit): void
         .nullable()
         .optional(),
       onboarded: z.boolean().optional(),
+      resultsSeen: z.literal(true).optional(),
     })
     .strict();
   app.patch("/v1/me", async (req): Promise<MeResponse> => {
@@ -262,6 +274,14 @@ export function registerSessionRoutes(app: FastifyInstance, kit: RouteKit): void
     if (body.language !== undefined) set.language = body.language;
     if (body.displayName !== undefined) set.display_name = body.displayName;
     if (body.onboarded !== undefined) set.onboarded = body.onboarded;
+    if (body.resultsSeen) {
+      const at = new Date(deps.now());
+      await deps.db
+        .insertInto("user_marks")
+        .values({ user_id: user.id, results_seen_at: at })
+        .onConflict((oc) => oc.column("user_id").doUpdateSet({ results_seen_at: at, updated_at: at }))
+        .execute();
+    }
     const updated = await deps.db.updateTable("users").set(set).where("id", "=", user.id).returningAll().executeTakeFirstOrThrow();
     return meBody(updated);
   });

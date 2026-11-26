@@ -114,6 +114,17 @@ const schema = z.object({
   MIN_OPERATOR_BALANCE_KAIA: num(5),
   /** KRW per CT for the Korean staking quote (optional; omitted from the quote when unset). */
   KRW_PER_CT: num(0),
+  /** Public RPC endpoint handed to the PWA (GET /v1/config rpcUrl). Default: the public Kaia endpoint of NETWORK. */
+  PUBLIC_RPC_URL: optStr,
+  /** Block explorer base URL handed to the PWA. Default: kaiascan of NETWORK. */
+  EXPLORER_URL: optStr,
+  /** Estimated KAIA fee of one user paid transaction, shown before a CT transfer or an on hold claim. */
+  USER_TX_FEE_KAIA: num(0.005),
+  /** Maintenance fallback when app_state has no "app.maintenance" row: 1 shows the maintenance screen. */
+  MAINTENANCE: bool,
+  /** Maintenance message (plain text, shown in every language) and the expected end, ISO 8601 or unix seconds. */
+  MAINTENANCE_MESSAGE: optStr,
+  MAINTENANCE_BACK_AT: optStr,
 
   // Worker
   OPERATOR_PRIVATE_KEY: privateKey,

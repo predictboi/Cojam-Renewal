@@ -39,10 +39,15 @@ export function registerWalletRoutes(app: FastifyInstance, kit: RouteKit): void 
     ]);
     const staked = deps.config.addresses.staking ? ((await chainTry(() => c.stakingPrincipalOf(wallet))) ?? 0n) : 0n;
     let pendingHits = 0;
+    let landsAt: number | null = null;
     for (const d of [today, today - 1, today - 2, today - 3]) {
       const p = await chainTry(() => c.pendingHits(wallet, d));
-      if (p) pendingHits += Number(p.points);
+      if (p && p.points > 0n) {
+        pendingHits += Number(p.points);
+        if (p.landsAt > 0 && (landsAt === null || p.landsAt < landsAt)) landsAt = p.landsAt;
+      }
     }
+    const paused = (await chainTry(() => c.predictPaused())) ?? false;
     const rate = BigInt(params.pointsPerCT);
     const userLeft = max0(BigInt(params.maxConvertCtPerUserPerDay) * CT - convUser);
     const globalLeft = max0(BigInt(params.maxConvertCtPerDay) * CT - convAll);
@@ -56,13 +61,14 @@ export function registerWalletRoutes(app: FastifyInstance, kit: RouteKit): void 
     else if (allowedFrom !== null && nowMs / 1000 < allowedFrom) blocked = "ACCOUNT_TOO_NEW";
     else if (userLeft === 0n || globalLeft === 0n) blocked = "DAILY_CAP_REACHED";
     else if (maxPts < BigInt(params.minConvertPoints)) blocked = "BELOW_MINIMUM";
-    if (blocked) maxPts = 0n;
+    if (blocked || paused) maxPts = 0n;
     return {
       address: wallet,
       ctWei: ct.toString(),
       kaiaWei: kaia.toString(),
       points: Number(points),
       pendingHitPoints: pendingHits,
+      pendingHitLandsAt: landsAt,
       stakedWei: staked.toString(),
       conversion: {
         pointsPerCT: params.pointsPerCT,
@@ -73,6 +79,7 @@ export function registerWalletRoutes(app: FastifyInstance, kit: RouteKit): void 
         globalCapLeftWei: globalLeft.toString(),
         allowedFrom,
         blockedReason: blocked,
+        paused,
       },
       krwPerCt: env.KRW_PER_CT > 0 ? env.KRW_PER_CT : null,
     };
@@ -185,6 +192,7 @@ export function registerWalletRoutes(app: FastifyInstance, kit: RouteKit): void 
       claimedWei: p.claimed.toString(),
       claimableWei: p.claimable.toString(),
       closed: p.closed,
+      paidWei: p.closed ? (p.principal + p.claimed).toString() : null,
       canClaim: !p.closed && p.claimable > 0n && (nowS >= p.end || p.claimable >= state.minClaim),
       canWithdraw: !p.closed && nowS >= p.end,
     }));

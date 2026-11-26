@@ -145,8 +145,10 @@ export class StubChain implements ChainReader {
   async dayOf(w: Address, d: number) {
     return this.days.get(`${w.toLowerCase()}:${d}`) ?? { answered: 0, choices: [0, 0, 0, 0, 0], completed: false, settledMask: 0, hits: 0 };
   }
-  async pendingHits() {
-    return { points: 0n, landsAt: 0 };
+  pending = new Map<string, { points: bigint; landsAt: number }>();
+  paused = false;
+  async pendingHits(w: Address, d: number) {
+    return this.pending.get(`${w.toLowerCase()}:${d}`) ?? { points: 0n, landsAt: 0 };
   }
   async params() {
     this.guard();
@@ -168,7 +170,7 @@ export class StubChain implements ChainReader {
     return 0n;
   }
   async predictPaused() {
-    return false;
+    return this.paused;
   }
   async stakingQuote(amount: bigint, lockIndex: number) {
     const rates = [

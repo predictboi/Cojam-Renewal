@@ -1,5 +1,7 @@
 // R1 Results (platform/design/results.html): this week, all time and pending, then each day with a mark per question.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { CONFIG } from '../config';
 import { useResults } from '../api';
 import { api } from '../api';
 import { currentLang, t } from '../i18n';
@@ -24,6 +26,14 @@ export default function Results() {
   const L = currentLang();
   const loading = st === 'loading' || q.isPending;
   useEffect(() => { setMore([]); setCursorDone(false); }, [q.dataUpdatedAt]);
+  // opening Results clears the tab badge (PATCH /v1/me resultsSeen), once per visit
+  const qc = useQueryClient();
+  const seen = useRef(false);
+  useEffect(() => {
+    if (seen.current || st || CONFIG.mockApi || !q.data) return;
+    seen.current = true;
+    void api.patchMe({ resultsSeen: true }).then(() => qc.invalidateQueries({ queryKey: ['me'] })).catch(() => { seen.current = false; });
+  }, [q.data, st]);
 
   const summary = () => {
     if (loading) return '<section class="sec" aria-busy="true"><div class="tri">' + [1, 2, 3].map(() => '<div class="tri-c">' + skel('72px', '26px') + skel('60px', '12px', 'margin-top:6px') + '</div>').join('') + '</div></section>';
@@ -56,7 +66,11 @@ export default function Results() {
     const set = r.outcome === 'hit' || r.outcome === 'pend' || r.outcome === 'miss' || r.outcome === 'corr';
     let m = '';
     const ans = r.answer || (r.outcome === 'miss' ? (r.choice === 'r' ? 'l' : 'r') : r.choice) || 'r';
-    if (set) m += '<span><b>' + t('r.x.answer') + ':</b> ' + esc(ans === 'l' ? tx.left : tx.right) + '</span><span><b>' + t('r.x.evidence') + ':</b> ' + t('p.evidence') + '</span><span><b>' + t('r.x.setat') + ':</b> ' + F.date(r.setAt || date, true) + '</span>';
+    // the evidence of the deciding run (GET /v1/results evidenceUrl) as a link; the design's sentence without one
+    const ev = r.evidenceUrl && /^https:\/\//.test(r.evidenceUrl)
+      ? '<a class="linkish" href="' + esc(r.evidenceUrl) + '" target="_blank" rel="noopener" translate="no">' + esc(new URL(r.evidenceUrl).hostname.replace(/^www\./, '')) + icon('ext', 14) + '</a>'
+      : t('p.evidence');
+    if (set) m += '<span><b>' + t('r.x.answer') + ':</b> ' + esc(ans === 'l' ? tx.left : tx.right) + '</span><span><b>' + t('r.x.evidence') + ':</b> ' + ev + '</span><span><b>' + t('r.x.setat') + ':</b> ' + F.date(r.setAt || date, true) + '</span>';
     if (r.outcome === 'pend') m += '<span>' + t('r.o.pend.help') + '</span>';
     if (r.outcome === 'corr') m += '<span>' + t('r.o.corr.line', { date: F.date(r.correctedAt || date) }) + ' ' + t('r.o.added') + '</span>';
     if (r.outcome === 'void') m += '<span>' + t('r.o.void.line') + '</span>';
@@ -71,7 +85,8 @@ export default function Results() {
       '<div class="rrow-more rs-more" id="' + id + '"' + (isOpen ? '' : ' hidden') + '>' + m + (r.outcome === 'void' ? '' : '<button type="button" class="linkish" data-how="' + id + '">' + t('h.ai.h') + icon('chev', 16) + '</button>') + '</div></li>';
   }
   function group(g: ResultDay, gi: number): string {
-    const ago = Math.round((Date.now() - g.date) / 86400000);
+    // by day id (a day opens 09:00 KST = 00:00 UTC, dayId = unix / 86400), not by elapsed hours
+    const ago = g.dayId ? Math.floor(Date.now() / 86400000) - g.dayId : Math.round((Date.now() - g.date) / 86400000);
     const label = ago === 0 ? t('common.today') : ago === 1 ? t('common.yesterday') : F.weekday(g.date);
     const n: Record<string, number> = { hit: 0, miss: 0, wait: 0, off: 0 }; g.rows.forEach((r) => n[MARK[r.outcome]]++);
     const shown = g.rows.filter((r) => filter === 'all' || (r.outcome === 'wait' ? 'wait' : 'set') === filter).length;

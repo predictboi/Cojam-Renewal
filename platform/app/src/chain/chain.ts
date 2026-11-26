@@ -23,6 +23,9 @@ const C = () => {
   return cfg;
 };
 const rpcUrl = () => cfg?.rpcUrl || CONFIG.chain.rpc;
+/** Gas limit for a sponsored action: the fee payer's cap from GET /v1/config (above it the API refuses with
+ *  GAS_LIMIT_TOO_HIGH), else the local table. Kaia charges the gas used, not the limit. */
+const gasOf = (action: string): bigint => { const v = cfg?.gasLimits?.[action]; return v ? BigInt(v) : GAS[action]; };
 
 let gp: { v: bigint; at: number } | null = null;
 async function gasPrice(): Promise<bigint> {
@@ -52,7 +55,7 @@ export function realOutboxDeps(onKeyProblem: (c: string) => void, onFrozen: () =
       const k = await loadPlayKey();
       if (!k || k.address.toLowerCase() !== keyAddr.toLowerCase()) throw new Error('play key changed');
       const { raw } = await signFdCall(
-        { chainId: C().chainId, from: keyAddr, to: C().contracts.predict, data: playKeyCall.predict(BigInt(item.marketId), item.choice), nonce, gasLimit: GAS.predict, gasPrice: await gasPrice() },
+        { chainId: C().chainId, from: keyAddr, to: C().contracts.predict, data: playKeyCall.predict(BigInt(item.marketId), item.choice), nonce, gasLimit: gasOf('predict'), gasPrice: await gasPrice() },
         (h) => signWithPlayKey(k, h as Hex),
       );
       return raw;
@@ -124,7 +127,7 @@ export async function sponsored(action: keyof typeof GAS, to: Address, data: Hex
   const from = useWalletStore.getState().address;
   if (!from) throw new Error('No wallet');
   const nonce = await getNonce(rpcUrl(), from);
-  const { raw } = await signFdCall({ chainId: C().chainId, from, to, data, nonce, gasLimit: GAS[action], gasPrice: await gasPrice() }, (h) => walletApi().signHash(h as Hex));
+  const { raw } = await signFdCall({ chainId: C().chainId, from, to, data, nonce, gasLimit: gasOf(action), gasPrice: await gasPrice() }, (h) => walletApi().signHash(h as Hex));
   p.signed?.();
   const { txHash } = await api.sponsor(raw);
   p.sent?.(txHash);
@@ -211,7 +214,7 @@ export async function revokePlayKey(): Promise<void> {
   if (!CONFIG.mockApi && cfg) {
     try {
       const nonce = await getNonce(rpcUrl(), k.address);
-      const { raw } = await signFdCall({ chainId: cfg.chainId, from: k.address, to: cfg.contracts.predict, data: playKeyCall.revoke(), nonce, gasLimit: GAS.revokePlayKey, gasPrice: await gasPrice() }, (h) => signWithPlayKey(k, h as Hex));
+      const { raw } = await signFdCall({ chainId: cfg.chainId, from: k.address, to: cfg.contracts.predict, data: playKeyCall.revoke(), nonce, gasLimit: gasOf('revokePlayKey'), gasPrice: await gasPrice() }, (h) => signWithPlayKey(k, h as Hex));
       await api.sponsor(raw, { auth: false });
     } catch (e) { console.warn('revokePlayKey', e); }
   }

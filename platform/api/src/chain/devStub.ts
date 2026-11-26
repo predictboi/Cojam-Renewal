@@ -3,10 +3,10 @@
 // (users, play_keys, predictions, points_ledger, stakes); a sponsored transaction is "mined" at once by applying
 // its effect to the same tables the indexer fills (predict, setPlayKey, revokePlayKey, convert). Balances of CT
 // and KAIA are fixed demo figures. Nothing here is used by the real services.
-import { decodeFunctionData, keccak256, type Address, type Hex } from "viem";
+import { decodeFunctionData, encodeFunctionResult, keccak256, toHex, type Address, type Hex } from "viem";
 import { parseTransaction } from "@kaiachain/js-ext-core";
 import { sql, type Db } from "../db/index.ts";
-import { cojamPredictAbi } from "./abi.ts";
+import { cojamPredictAbi, cojamStakingAbi } from "./abi.ts";
 import type { ChainReader, RawRpc, StakingPositionView } from "./index.ts";
 import { DEFAULT_PARAMS } from "../routes/common.ts";
 import { dayOfMarket, weekOf } from "../../../shared/src/time.ts";
@@ -72,8 +72,26 @@ export function createDevStubChain(db: Db, feePayer?: () => Address | undefined)
       for (const p of preds) choices[p.market_id % 5] = p.choice;
       return { answered: preds.length, choices, completed: preds.length === 5, settledMask: ud?.settled_mask ?? 0, hits: ud?.hits ?? 0 };
     },
-    async pendingHits() {
-      return { points: 0n, landsAt: 0 };
+    async pendingHits(w, d) {
+      // Hits on resolved markets of the day whose settle time is still ahead (the indexer view of pendingHits).
+      const rows = await db
+        .selectFrom("predictions as p")
+        .innerJoin("markets as m", "m.market_id", "p.market_id")
+        .select(["p.choice", "m.outcome", "m.corrected_outcome", "m.settles_at"])
+        .where("p.wallet", "=", lc(w))
+        .where("p.day_id", "=", d)
+        .execute();
+      let points = 0n;
+      let landsAt = 0;
+      for (const r of rows) {
+        const out = r.corrected_outcome ?? r.outcome;
+        const at = r.settles_at ? Math.floor(r.settles_at.getTime() / 1000) : 0;
+        if ((out === 1 || out === 2) && out === r.choice && at > nowS()) {
+          points += BigInt(DEFAULT_PARAMS.hitPoints);
+          if (!landsAt || at < landsAt) landsAt = at;
+        }
+      }
+      return { points, landsAt };
     },
     async params() {
       return DEFAULT_PARAMS;
@@ -147,7 +165,8 @@ export function createDevStubChain(db: Db, feePayer?: () => Address | undefined)
     try {
       call = decodeFunctionData({ abi: cojamPredictAbi, data: p.data ?? p.input });
     } catch {
-      return; // staking or CT call: no stub effect
+      await applyStaking(from, p.data ?? p.input, txHash);
+      return;
     }
     const b = ++block;
     if (call.functionName === "predict") {
@@ -192,16 +211,106 @@ export function createDevStubChain(db: Db, feePayer?: () => Address | undefined)
     }
   }
 
+  /** stake, claimInterest and withdraw on CojamStaking (approve on CT has no stub effect). */
+  async function applyStaking(from: string, data: Hex, txHash: string) {
+    let call: { functionName: string; args?: readonly unknown[] };
+    try {
+      call = decodeFunctionData({ abi: cojamStakingAbi, data });
+    } catch {
+      return;
+    }
+    const b = ++block;
+    if (call.functionName === "stake") {
+      const amount = call.args![0] as bigint;
+      const lockIndex = Number(call.args![1]);
+      const q = await chain.stakingQuote(amount, lockIndex);
+      const last = await db.selectFrom("stakes").select(sql<number>`coalesce(max(position_id), -1)`.as("m")).where("wallet", "=", from).executeTakeFirst();
+      const id = Number(last?.m ?? -1) + 1;
+      await db
+        .insertInto("stakes")
+        .values({ wallet: from, position_id: id, principal: amount.toString(), lock_index: lockIndex, lock_days: LOCK_DAYS[lockIndex], apr_bps: q.aprBps, max_interest: q.interest.toString(), start_at: new Date(), end_at: new Date(q.end * 1000), stake_tx: txHash })
+        .execute();
+      await db
+        .insertInto("wallet_transfers")
+        .values({ tx_hash: txHash, log_index: 0, wallet: from, direction: "out", counterparty: ZERO, amount: amount.toString(), kind: "stake", block: b, block_time: new Date() })
+        .onConflict((oc) => oc.doNothing())
+        .execute();
+    } else if (call.functionName === "claimInterest" || call.functionName === "withdraw") {
+      const id = Number(call.args![0] as bigint);
+      const pos = await chain.stakingPosition(from as Address, id);
+      if (!pos || pos.closed) return;
+      const claimed = (pos.claimed + pos.claimable).toString();
+      await db
+        .updateTable("stakes")
+        .set(call.functionName === "withdraw" ? { claimed, closed: true, withdraw_tx: txHash } : { claimed })
+        .where("wallet", "=", from)
+        .where("position_id", "=", id)
+        .execute();
+    }
+  }
+
+  /** Pending nonce of a sender: the highest nonce the fee payer accepted from it, plus one. */
+  async function nonceOf(a: string): Promise<number> {
+    const r = await db
+      .selectFrom("sponsored_txs")
+      .select(sql<number | null>`max(nonce)`.as("n"))
+      .where("sender", "=", lc(a))
+      .where("status", "in", ["broadcast", "uncertain", "mined", "reverted"])
+      .executeTakeFirst();
+    return r?.n === null || r?.n === undefined ? 0 : Number(r.n) + 1;
+  }
+
+  /** eth_call against CojamPredict for the reads the PWA makes (dayOf, playKeyOf, playerOf, pendingHits). */
+  async function ethCall(data: Hex): Promise<Hex> {
+    const call = decodeFunctionData({ abi: cojamPredictAbi, data });
+    const out = (functionName: string, result: unknown) => encodeFunctionResult({ abi: cojamPredictAbi, functionName, result } as never);
+    const args = (call.args ?? []) as readonly unknown[];
+    switch (call.functionName) {
+      case "dayOf": {
+        const d = await chain.dayOf(args[0] as Address, Number(args[1]));
+        return out("dayOf", [d.answered, d.choices, d.completed, d.settledMask, d.hits]);
+      }
+      case "playKeyOf": {
+        const k = await chain.playKeyOf(args[0] as Address);
+        return out("playKeyOf", [k.key, BigInt(k.expiresAt)]);
+      }
+      case "playerOf": {
+        const k = await chain.playerOf(args[0] as Address);
+        return out("playerOf", [k.player, BigInt(k.expiresAt), k.valid]);
+      }
+      case "pendingHits": {
+        const h = await chain.pendingHits(args[0] as Address, Number(args[1]));
+        return out("pendingHits", [h.points, BigInt(h.landsAt)]);
+      }
+      default:
+        throw new Error(`dev stub chain does not answer eth_call ${call.functionName}`);
+    }
+  }
+
   const rpc: RawRpc = async (method, params) => {
     if (method === "eth_estimateGas") return "0xea60";
+    if (method === "eth_chainId") return toHex(1001);
+    if (method === "eth_blockNumber") return toHex(block);
+    if (method === "eth_gasPrice") return toHex(25_000_000_000n);
+    if (method === "eth_getBalance") return toHex(await chain.kaiaBalance(params[0] as Address));
+    if (method === "eth_getTransactionCount") return toHex(await nonceOf(params[0] as string));
+    if (method === "eth_call") return ethCall((params[0] as { data: Hex }).data);
     if (method === "kaia_sendRawTransaction") {
       const raw = params[0] as Hex;
       const hash = keccak256(raw);
       await apply(raw, hash);
-      receipts.set(hash, { status: "0x1", gasUsed: "0xea60", effectiveGasPrice: "0x666a3d400", blockNumber: `0x${block.toString(16)}`, logs: [] });
+      receipts.set(hash, { status: "0x1", gasUsed: "0xea60", effectiveGasPrice: "0x666a3d400", blockNumber: `0x${block.toString(16)}`, transactionIndex: "0x0", logs: [] });
       return hash;
     }
-    if (method === "kaia_getTransactionReceipt") return receipts.get(params[0] as string) ?? null;
+    if (method === "kaia_getTransactionReceipt" || method === "eth_getTransactionReceipt") {
+      const hit = receipts.get(params[0] as string);
+      if (hit) return hit;
+      // After an API restart: a transaction the fee payer recorded as sent counts as mined.
+      const row = await db.selectFrom("sponsored_txs").select("status").where("tx_hash", "=", params[0] as string).executeTakeFirst();
+      if (row && ["broadcast", "uncertain", "mined"].includes(row.status))
+        return { status: "0x1", gasUsed: "0xea60", effectiveGasPrice: "0x5d21dba00", blockNumber: `0x${block.toString(16)}`, transactionIndex: "0x0", logs: [] };
+      return null;
+    }
     throw new Error(`dev stub chain does not support ${method}`);
   };
 

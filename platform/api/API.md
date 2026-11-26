@@ -35,9 +35,19 @@ Network, contracts, the fee payer, gas limits for 0x31 transactions, contract pa
   "params": { "completionPoints": 100, "hitPoints": 50, "referralBps": 1000, "welcomePoints": 100, "pointsPerCT": 1000, "minConvertPoints": 1000, "maxConvertCtPerUserPerDay": 50, "maxConvertCtPerDay": 20000, "minAccountAgeSeconds": 604800, "settleDelaySeconds": 21600, "maxWeeklyPoolCt": 10000, "splitBps": [3000,2000,1500,1000,700,500,400,300,300,300] },
   "staking": null,
   "time": { "now": 1795715734, "dayId": 20783, "dayOpensAt": 1795651200, "dayEndsAt": 1795737600, "weekId": 2969 },
-  "features": { "invites": true, "staking": true, "conversion": true, "krwDisplay": false }
+  "features": { "invites": true, "staking": true, "conversion": true, "krwDisplay": false },
+  "rpcUrl": "https://public-en-kairos.node.kaia.io", "explorerUrl": "https://kairos.kaiascan.io",
+  "krwPerCt": null, "userTxFeeWei": "5000000000000000",
+  "maintenance": { "on": false, "message": null, "backAt": null },
+  "emailProviders": [ { "domain": "gmail.com", "name": "Gmail" }, { "domain": "naver.com", "name": "Naver" } ],
+  "stakingLimits": { "maxOpenPositions": 20, "maxUserPrincipalWei": "1000000000000000000000000", "maxTotalPrincipalWei": "1850000000000000000000000", "paused": false }
 }
 ```
+
+* `rpcUrl`: the public JSON-RPC the PWA reads from (`PUBLIC_RPC_URL`, default the public Kaia endpoint of `NETWORK`; never the API's own provider URL). With `DEV_CHAIN=stub` it is `<this API>/dev/rpc` (below). `explorerUrl`: `EXPLORER_URL`, default kaiascan of the network.
+* `krwPerCt`: `KRW_PER_CT` (KRW is shown in Korean only), null when unset. `userTxFeeWei`: `USER_TX_FEE_KAIA` (default 0.005), the estimate shown before a user paid transaction (CT transfer, or a claim or withdrawal while on hold).
+* `maintenance`: the `app_state` row `app.maintenance` (`{ "on": true, "message": { "en": "…", "ko": "…" } | "plain text", "backAt": unix seconds | ISO }`), else the env fallback `MAINTENANCE=1`, `MAINTENANCE_MESSAGE`, `MAINTENANCE_BACK_AT`. The admin switch `POST /admin/v1/app` writes the same row (`message` plain text, `endsAt`, read as `backAt` when it is an ISO time or unix seconds).
+* `emailProviders`: the enabled allow list (A1 caption and typo help). `stakingLimits`: the staking snapshot, else a live read (60 s cache), else the launch defaults (20 open stakes, 1,000,000 CT per address, 1,850,000 CT in total).
 
 `gasLimits` are the fee payer's caps: put them in the transaction as the gas limit (Kaia charges the gas used, not the limit). `staking` fills once the worker writes its snapshot.
 
@@ -109,11 +119,11 @@ Same body without `inviteResult`, for polling during "Setting up your game". Whi
 }
 ```
 
-`NOT_REGISTERED` (403) before the first `POST /v1/session`.
+`NOT_REGISTERED` (403) before the first `POST /v1/session`. Also `"newResults": 3, "resultsSeenAt": 1795700000`: answered markets whose answer was set since the player last opened Results (the tab badge, at most 99; before the first visit, the last 7 days count).
 
 ### PATCH /v1/me
 
-Request (any subset) `{ "language": "ko", "displayName": "minji", "onboarded": true }`. `displayName` is 2 to 20 characters or `null`. Unknown fields are refused (400). Answers the `GET /v1/me` body.
+Request (any subset) `{ "language": "ko", "displayName": "minji", "onboarded": true, "resultsSeen": true }` (`resultsSeen: true` when Results opens: stores `user_marks.results_seen_at` and resets `newResults`). `displayName` is 2 to 20 characters or `null`. Unknown fields are refused (400). Answers the `GET /v1/me` body.
 
 ---
 
@@ -144,6 +154,7 @@ Request (any subset) `{ "language": "ko", "displayName": "minji", "onboarded": t
 * `published: false` with no markets before the day is on chain.
 * `completion` after the fifth answer is credited: `{ "points": 100, "welcomePoints": 100, "creditedTx": "0x…" }`.
 * `imageUrl` null means the category fallback.
+* `inviterName`: the public name of the player's inviter (the welcome note on day done), null without one.
 
 ### GET /v1/results?cursor=&limit=
 
@@ -170,7 +181,7 @@ Days the player took part in, newest first, 7 per page (`limit` up to 14). `curs
 }
 ```
 
-`result`: `pending`, `hit`, `miss`, `void`, `unanswered`. `hitState`: `credited` (settled), `pending` (resolved, lands at `landsAt`), `none`. Summary points are prediction points only (the invite bonus has its own line per day).
+Each row also has `resolvesAt` (when the answer is expected); `evidenceUrl` is the first evidence link of the deciding resolution run, else the primary source. Each day has `inviteFriends`, the number of friends whose points made that day's invite bonus. `result`: `pending`, `hit`, `miss`, `void`, `unanswered`. `hitState`: `credited` (settled), `pending` (resolved, lands at `landsAt`), `none`. Summary points are prediction points only (the invite bonus has its own line per day).
 
 ### GET /v1/markets/:id
 
@@ -202,7 +213,7 @@ Accounts on hold are left out of the prize ranks (the players below move up). Ti
 }
 ```
 
-On hold: `"me": { "rank": null, "points": 1500, "gapToTenth": null, "noPrize": true }`. `poolWei` is the worker's figure for the week, else an estimate (1 CT per ranked player, capped at `maxWeeklyPool`). `status`: `open`, `closed` (after the week's end), `airdropped`.
+On hold: `"me": { "rank": null, "points": 1500, "gapToTenth": null, "noPrize": true }`. Also `"airdropTx"` (the week's airdrop transaction: the caller's own row, else the week's, null before it is sent) and `"lastWeek": { "weekId": 2968, "rank": 4, "prizeWei": "119600000000000000000", "txHash": "0x…" }` (the caller's prize in the week before the one asked for, from the airdrop rows; null without one). `poolWei` is the worker's figure for the week, else an estimate (1 CT per ranked player, capped at `maxWeeklyPool`). `status`: `open`, `closed` (after the week's end), `airdropped`.
 
 ---
 
@@ -221,7 +232,7 @@ Live chain reads.
 }
 ```
 
-`blockedReason`: `NOT_REGISTERED`, `FROZEN`, `ACCOUNT_TOO_NEW` (until `allowedFrom`), `DAILY_CAP_REACHED`, `BELOW_MINIMUM`. Errors: `RPC_UNAVAILABLE` (503).
+Also `pendingHitLandsAt` (when the earliest pending hit points land, null with none) and `conversion.paused` (CojamPredict is paused: `maxPointsNow` is 0 for everyone). `blockedReason`: `NOT_REGISTERED`, `FROZEN`, `ACCOUNT_TOO_NEW` (until `allowedFrom`), `DAILY_CAP_REACHED`, `BELOW_MINIMUM`. Errors: `RPC_UNAVAILABLE` (503).
 
 ### GET /v1/wallet/history?cursor=&limit=
 
@@ -260,7 +271,7 @@ From the index (deposits and withdrawals of CT, conversions, airdrops, staking).
 }
 ```
 
-`canClaim`: while locked at least `minClaim`, after the lock any amount. An account on hold claims and withdraws with its own KAIA (no sponsored gas).
+`canClaim`: while locked at least `minClaim`, after the lock any amount. `paidWei` on a closed position: principal plus all interest paid over its life (null while open). An account on hold claims and withdraws with its own KAIA (no sponsored gas).
 
 ---
 
@@ -332,6 +343,12 @@ Error codes: shape `DECODE_FAILED`, `TX_TYPE_NOT_ALLOWED`, `SENDER_SIGNATURE_INV
 ```
 
 `status`: `pending`, `mined`, `reverted`, `unknown` (released before broadcast). `result` decodes `Predicted`, `PointsCredited`, `WelcomePaid`, `Converted`, `PlayKeySet`, `Staked`, `InterestClaimed`, `Withdrawn`. `TX_NOT_FOUND` (404) for an unknown hash.
+
+---
+
+## Dev only: POST /dev/rpc
+
+Registered only with `DEV_CHAIN=stub` (refused in production). A JSON-RPC endpoint for the PWA's reads against the stub chain: `eth_chainId`, `eth_blockNumber`, `eth_gasPrice`, `eth_getBalance`, `eth_getTransactionCount` (the highest nonce the fee payer accepted from the sender, plus one), `eth_call` on CojamPredict (`dayOf`, `playKeyOf`, `playerOf`, `pendingHits`), `eth_estimateGas`, `kaia_getTransactionReceipt`. Sends are refused (`-32601`): transactions go through `POST /v1/tx/sponsor` as in production. `GET /v1/config` points `rpcUrl` here in that mode.
 
 ---
 

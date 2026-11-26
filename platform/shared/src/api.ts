@@ -53,6 +53,20 @@ export interface ConfigResponse {
     minClaimWei: string;
     maxUserPrincipalWei: string;
   } | null;
+  /** Public JSON-RPC endpoint the PWA reads from (nonces, receipts, eth_call). Never the API's own provider key. */
+  rpcUrl: string;
+  /** Block explorer base URL without a trailing slash (`<explorerUrl>/tx/<hash>`, `<explorerUrl>/address/<a>`). */
+  explorerUrl: string;
+  /** KRW per CT for the Korean reference figures (shown in Korean only), null when not configured. */
+  krwPerCt: number | null;
+  /** Estimate of the KAIA fee of one user paid transaction (CT transfer, or a claim or withdrawal while on hold), base units. */
+  userTxFeeWei: string;
+  /** Planned maintenance: the PWA shows the maintenance screen while `on`. Set in app_state (`app.maintenance`) or by env. */
+  maintenance: { on: boolean; message: Partial<Record<Lang, string>> | null; backAt: number | null };
+  /** The email allow list in list order (A1 caption and typo help). */
+  emailProviders: { domain: string; name: string }[];
+  /** Staking limits (the staking snapshot, a live read, or the launch defaults). */
+  stakingLimits: { maxOpenPositions: number; maxUserPrincipalWei: string; maxTotalPrincipalWei: string | null; paused: boolean };
   time: { now: number; dayId: number; dayOpensAt: number; dayEndsAt: number; weekId: number };
   features: { invites: boolean; staking: boolean; conversion: boolean; krwDisplay: boolean };
 }
@@ -132,6 +146,10 @@ export interface MeResponse {
   frozen: boolean;
   supportEmail: string;
   createdAt: number;
+  /** Result rows decided (answer set) since the player last opened Results (`PATCH /v1/me { resultsSeen: true }`): the tab badge. */
+  newResults: number;
+  /** When the player last opened Results, null before the first time. */
+  resultsSeenAt: number | null;
   stats: {
     daysPlayed: number;
     daysCompleted: number;
@@ -146,6 +164,8 @@ export interface PatchMeRequest {
   language?: Lang;
   displayName?: string | null;
   onboarded?: boolean;
+  /** true: the player opened Results now (resets newResults). */
+  resultsSeen?: true;
 }
 
 // ---------------------------------------------------------------- play
@@ -179,6 +199,8 @@ export interface TodayResponse {
   answered: number;
   completed: boolean;
   completion: { points: number; welcomePoints: number; creditedTx: string | null } | null;
+  /** Public name of the player's inviter (welcome note on day done), null without one. */
+  inviterName: string | null;
 }
 
 export type ResultOutcome = "pending" | "hit" | "miss" | "void" | "unanswered";
@@ -198,7 +220,10 @@ export interface ResultRow {
   hitState: "credited" | "pending" | "none";
   /** When the hit points land (settle time), unix seconds. */
   landsAt: number | null;
+  /** When the answer is expected (the market's resolve time), unix seconds. */
+  resolvesAt: number;
   resolvedAt: number | null;
+  /** Evidence of the deciding resolution run, else the primary source. */
   evidenceUrl: string | null;
 }
 export interface ResultDay {
@@ -213,6 +238,8 @@ export interface ResultDay {
   welcomePoints: number;
   /** Invite bonus credited to this player for points friends earned on this day (own line, not ranked). */
   inviteBonus: number;
+  /** Number of friends whose points earned this day's invite bonus. */
+  inviteFriends: number;
   rows: ResultRow[];
 }
 export interface ResultsResponse {
@@ -267,6 +294,10 @@ export interface RankingResponse {
   /** Rows around the caller (2 above, 2 below) when outside the top 10. */
   around: RankingRow[];
   tieBreak: "earlier_last_completion";
+  /** The week's airdrop transaction (the caller's own row when they won, else the first sent row), null before it is sent. */
+  airdropTx: string | null;
+  /** The caller's prize in the week before this one, null when they won nothing. */
+  lastWeek: { weekId: number; rank: number; prizeWei: string; txHash: string | null } | null;
 }
 
 // ---------------------------------------------------------------- wallet
@@ -277,6 +308,8 @@ export interface WalletResponse {
   kaiaWei: string;
   points: number;
   pendingHitPoints: number;
+  /** When the earliest pending hit points land (settle time), null with none pending. */
+  pendingHitLandsAt: number | null;
   stakedWei: string;
   conversion: {
     pointsPerCT: number;
@@ -289,6 +322,8 @@ export interface WalletResponse {
     /** First time conversion is allowed (registeredAt + minAccountAge), null before registration. */
     allowedFrom: number | null;
     blockedReason: "NOT_REGISTERED" | "FROZEN" | "ACCOUNT_TOO_NEW" | "BELOW_MINIMUM" | "DAILY_CAP_REACHED" | null;
+    /** CojamPredict is paused: conversion is off for everyone until it is unpaused. */
+    paused: boolean;
   };
   krwPerCt: number | null;
 }
@@ -341,6 +376,8 @@ export interface StakingPosition {
   claimedWei: string;
   claimableWei: string;
   closed: boolean;
+  /** Closed positions: principal plus all interest paid over the position's life; null while open. */
+  paidWei: string | null;
   /** Claimable now: while locked at least minClaim, after the lock any amount. */
   canClaim: boolean;
   canWithdraw: boolean;

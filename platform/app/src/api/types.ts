@@ -12,8 +12,10 @@ export type Localized<T> = Record<Lang, T>;
 export interface AppConfig {
   network: 'kaia' | 'kairos' | 'local';
   chainId: number;
-  rpcUrl: string;                       // NEW: the RPC the PWA reads from (dedicated provider, 4.8)
-  explorer: string;                     // NEW: kaiascan base URL
+  rpcUrl: string;                       // the RPC the PWA reads from (GET /v1/config rpcUrl)
+  explorer: string;                     // kaiascan base URL (explorerUrl)
+  /** Gas limit per action for 0x31 transactions: the fee payer's caps (GET /v1/config gasLimits). */
+  gasLimits?: Record<string, number>;
   contracts: { ct: Address; predict: Address; staking: Address };
   params: {
     completionPoints: number; hitPoints: number; pointsPerCT: number; minConvertPoints: number;
@@ -23,6 +25,7 @@ export interface AppConfig {
     tierThresholds: number[];           // [1000, 10000] CT
     ratesPct: Record<string, number[]>; // NEW shape: { "30": [8, 9, 10], ... } percent per tier
     playKeyTtlDays: number;             // NEW: 30
+    maxUserPrincipal?: number;          // CT, open principal per address (stakingLimits)
   };
   minAppVersion: string;
   flags: {
@@ -69,6 +72,7 @@ export interface Market {
   category: 'crypto' | 'markets' | 'weather' | 'sports' | 'culture';
   imageUrl: string | null;
   closesAt: number;                     // unix ms
+  resolvesAt?: number;                  // unix ms: when the answer is expected
   text: Localized<QText>;
   choice: { chain: 0 | 1 | 2 };         // 1 = left (choice A), 2 = right (choice B)
 }

@@ -68,4 +68,6 @@ export const STATE_KEYS = {
   jobs: "worker.jobs",
   /** Claude usage this month { costUsd, runs }. */
   aiUsage: "ai.usage",
+  /** Planned maintenance { on: boolean, message?: { en?, ko?, ja? } | string, backAt?: unix seconds | ISO }; wins over the MAINTENANCE env. */
+  maintenance: "app.maintenance",
 } as const;

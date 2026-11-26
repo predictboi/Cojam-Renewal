@@ -9,7 +9,17 @@ import type {
   AppConfig, Dir, InviteInfo, Lang, Market, Me, Position, Positions, QText, Ranking, RankRow, ResultDay, ResultRow, Results,
   SessionState, Today, WalletInfo, Address, Localized,
 } from '../types';
-import M from './design-mock.json';
+import RAW from './design-mock.json';
+import { MOCK_QUESTIONS, MOCK_RESULTS_DAY0 } from './questions';
+
+// The design's data with compliant questions (questions.ts); today's set shows no outcome yet, the pending hit moves to
+// yesterday's set (p2, answer set at 15:40, the +50P lands 6 hours later).
+const M = {
+  ...RAW,
+  questions: MOCK_QUESTIONS as unknown as typeof RAW.questions,
+  results: RAW.results.map((d, i) => i === 0 ? { ...d, pending: 0, rows: MOCK_RESULTS_DAY0.map((r) => ({ ...r })) }
+    : i === 1 ? { ...d, pending: 50, rows: d.rows.map((r) => (r.q === 'p2' ? { ...r, c: 'r', out: 'pend', at: '21:40' } : r)) } : d) as unknown as typeof RAW.results,
+};
 
 const DAY = 86400000;
 const now = () => Date.now();
@@ -113,7 +123,7 @@ function wallet(): WalletInfo {
   return {
     address: M.user.address as Address, ct: Math.round(ct * 1e4) / 1e4, kaia, points: points(),
     staked: zero ? 0 : M.user.staked + c.stakes.reduce((a, s) => a + s.amount, 0), openStakes: st === 'max20' ? 20 : M.stakes.length + c.stakes.length,
-    pendingHit: { points: M.user.pendingHit, landsAt: todayAt(22, 10) },
+    pendingHit: { points: M.user.pendingHit, landsAt: todayAt(21, 40) },
     convert: { pointsPerCT: 1000, min: 1000, capLeftCt: st === 'cap' ? 0 : 50, capPerDayCt: 50, globalCapLeft: st === 'capglobal' ? 0 : 20000, firstConvertAt: st === 'wait' ? ahead(3.4) : null, paused: st === 'paused' && /convert/.test(path) },
     inviteWeek: zero || st === 'new' ? 0 : M.invite.week,
   };
@@ -173,7 +183,7 @@ function results(): Results {
       return { marketId: r.q, category: q.cat as Market['category'], text: tx, choice: r.c, outcome: r.out as ResultRow['outcome'], expectedAt: hm(r.exp), landsAt: hm(r.at), setAt: ago(g.day), answer: r.out === 'miss' ? (r.c === 'r' ? 'l' : 'r') : r.c || undefined };
     }),
   }));
-  return { summary: { week: { points: M.week.pts, hits: M.week.hits, answered: M.week.answered }, all: { points: M.all.pts, hitRate: M.all.rate }, pending: { points: M.user.pendingHit, landsAt: todayAt(22, 10) } }, days: out, nextCursor: st === 'empty' ? null : 'more' };
+  return { summary: { week: { points: M.week.pts, hits: M.week.hits, answered: M.week.answered }, all: { points: M.all.pts, hitRate: M.all.rate }, pending: { points: M.user.pendingHit, landsAt: todayAt(21, 40) } }, days: out, nextCursor: st === 'empty' ? null : 'more' };
 }
 const moreDay: ResultDay = (() => {
   const rows: [string, Dir, string][] = [['p5', 'r', 'hit'], ['p2', 'r', 'hit'], ['p6', 'l', 'miss'], ['p7', 'r', 'miss'], ['p3', 'l', 'miss']];

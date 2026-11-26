@@ -11,7 +11,9 @@
     "preview": "vite preview",
     "test": "vitest run",
     "i18n": "node scripts/gen-i18n.mjs",
-    "e2e": "node e2e/walk.cjs"
+    "e2e": "node e2e/walk.cjs",
+    "build:devapi": "tsc --noEmit && vite build --mode devapi",
+    "e2e:live": "node e2e/live.cjs"
   },
   "dependencies": {
     "@kaiachain/js-ext-core": "2.1.0",

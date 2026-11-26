@@ -1,7 +1,10 @@
 // Mock wallet mode: the app runs without Privy (tests, VITE_WALLET_MOCK=1). A random local key stands in for the
 // embedded wallet; the email code is any 6 digits except 000000 (wrong) and 111111 (expired).
+// Dev user mode (CONFIG.devUser, against a local API with AUTH_DEV_BYPASS=1): the key is the API's devWalletKey(name),
+// so signatures recover to the wallet the API gives that dev user and sponsored transactions pass the sender rule.
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
-import type { Address, Hex } from 'viem';
+import { keccak256, toHex, type Address, type Hex } from 'viem';
+import { CONFIG } from '../config';
 import { useWalletStore } from './wallet';
 import { DESIGN } from '../api/mock';
 import { sleep } from '../lib/fmt';
@@ -15,9 +18,13 @@ function save(v: ReturnType<typeof load>) { try { localStorage.setItem(K, JSON.s
 
 export function installMockWallet() {
   const st = load();
-  // the design shows its own player address everywhere; signatures come from the local key
-  const shown = DESIGN.user.address as Address;
+  // a literal false in production builds (MODE is 'production'), so the dev key code is dropped there
+  const dev = import.meta.env.MODE !== 'production' ? CONFIG.devUser.trim().toLowerCase() : '';
+  if (dev) st.pk = keccak256(toHex('cojam-dev-wallet:' + dev));
   const acct = privateKeyToAccount(st.pk);
+  // the design shows its own player address everywhere; signatures come from the local key (dev user: its own address)
+  const shown = (dev ? acct.address : DESIGN.user.address) as Address;
+  if (dev && !st.email) st.email = dev.includes('@') ? dev : dev + '@gmail.com';
   let pendingEmail: string | null = null;
   const set = (auth: boolean) => {
     st.auth = auth; save(st);

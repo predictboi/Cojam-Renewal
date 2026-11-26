@@ -33,5 +33,8 @@ export const useToday = () => useQuery({ queryKey: useKey('today'), queryFn: api
 export const useWallet = () => useQuery({ queryKey: useKey('wallet'), queryFn: api.wallet, refetchInterval: 30_000 });
 export const useResults = () => useQuery({ queryKey: useKey('results'), queryFn: () => api.results() });
 export const useRanking = (week: 'current' | 'last') => useQuery({ queryKey: useKey('ranking', week), queryFn: () => api.ranking(week), refetchInterval: 30_000 });
+/** The server's quote for an amount and lock (capacity: the caps and the interest the contract can still cover). */
+export const useQuote = (amount: number, lock: number, enabled: boolean) =>
+  useQuery({ queryKey: useKey('quote', amount, lock), queryFn: () => api.stakingQuote(amount, lock), enabled, staleTime: 30_000, retry: 0 });
 export const usePositions = () => useQuery({ queryKey: useKey('positions'), queryFn: api.positions });
 export const useInvite = () => useQuery({ queryKey: useKey('invite'), queryFn: api.invite });

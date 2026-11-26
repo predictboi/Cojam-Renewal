@@ -17,7 +17,7 @@ export interface Api {
   createSession(inviteCode?: string): Promise<SessionState>;
   session(): Promise<SessionState>;
   me(): Promise<Me>;
-  patchMe(p: Partial<{ language: Lang; name: string; onboarded: boolean }>): Promise<Me>;
+  patchMe(p: Partial<{ language: Lang; name: string; onboarded: boolean; resultsSeen: true }>): Promise<Me>;
   today(): Promise<Today>;
   invite(): Promise<InviteInfo>;
   inviteLookup(code: string): Promise<InviteLookup>;
@@ -35,10 +35,21 @@ type TokenFn = () => Promise<string | null>;
 let tokenFn: TokenFn = async () => null;
 export function setTokenSource(fn: TokenFn) { tokenFn = fn; }
 
+/** A random id this browser keeps (the API's sign up limits, X-Device-Id: 8 to 64 of A-Z a-z 0-9 _ -). */
+function deviceId(): string | null {
+  try {
+    let v = localStorage.getItem('cjp.device');
+    if (!v) { v = Array.from(crypto.getRandomValues(new Uint8Array(16)), (b) => b.toString(16).padStart(2, '0')).join(''); localStorage.setItem('cjp.device', v); }
+    return v;
+  } catch { return null; }
+}
+
 async function call<T>(method: string, path: string, body?: unknown, auth = true): Promise<T> {
-  const headers: Record<string, string> = { accept: 'application/json' };
+  const headers: Record<string, string> = { accept: 'application/json', 'x-app-version': CONFIG.appVersion };
+  const dev = deviceId(); if (dev) headers['x-device-id'] = dev;
   if (body !== undefined) headers['content-type'] = 'application/json';
-  if (auth) { const tok = await tokenFn().catch(() => null); if (tok) headers.authorization = 'Bearer ' + tok; }
+  if (auth && CONFIG.devUser) headers['x-dev-user'] = CONFIG.devUser; // local API with AUTH_DEV_BYPASS=1 only
+  else if (auth) { const tok = await tokenFn().catch(() => null); if (tok) headers.authorization = 'Bearer ' + tok; }
   let res: Response;
   try {
     res = await fetch(CONFIG.apiUrl + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
@@ -76,7 +87,7 @@ export const httpApi: Api = {
     return A.me(m, lastEmail, { invite: inv, ranking: rk });
   },
   patchMe: async (p) => {
-    const body: W.PatchMeRequest = { language: p.language, onboarded: p.onboarded, displayName: p.name === undefined ? undefined : p.name || null };
+    const body: W.PatchMeRequest = { language: p.language, onboarded: p.onboarded, displayName: p.name === undefined ? undefined : p.name || null, resultsSeen: p.resultsSeen };
     const m = await call<W.MeResponse>('PATCH', '/v1/me', body);
     return A.me(m, lastEmail);
   },

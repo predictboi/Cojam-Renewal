@@ -58,12 +58,14 @@ Dev identities (only with `AUTH_DEV_BYPASS=1`, which `loadConfig` refuses when `
 * Player: header `X-Dev-User: minji` instead of a Privy token. The wallet is derived from the name (`devIdentity`, `devWalletKey` in `src/auth/privy.ts`), the email is `<name>@gmail.com` unless the name contains `@`.
 * Admin: header `X-Dev-Admin: dev@cojam.app` (seeded as owner).
 * `npx tsx scripts/dev-play.ts minji http://localhost:8080` authorises a play key and answers today's five markets through `/v1/tx/sponsor`.
+* The stub chain also answers the PWA's JSON-RPC reads at `POST /dev/rpc` (`GET /v1/config` hands that URL out as `rpcUrl`), and applies `stake`, `claimInterest` and `withdraw` to `stakes`. The dev seed's question texts (`platform/shared/src/devQuestions.ts`) follow the timing rule; a rerun of `npm run dev:seed` also resets minji (name, language, hold, inviter, play key, sponsorship counters).
+* The PWA against this API: `cd platform/app && npm run build:devapi && npx vite preview --mode devapi --port 4181` (start the API with `ALLOWED_ORIGINS` including `http://localhost:4181`), then `node e2e/live.cjs` walks every screen at 390x844 in EN and KO.
 
 ## Tests
 
 ```
 npm test            # API and worker suites
-npm run test:api    # API only (101 tests)
+npm run test:api    # API only (111 tests)
 npm run typecheck
 ```
 

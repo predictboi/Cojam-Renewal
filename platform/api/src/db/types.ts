@@ -435,6 +435,13 @@ export interface SchemaMigrationsTable {
   applied_at: DefaultTimestamp;
 }
 
+/** Migration 0004: marks the PWA sets per player (results_seen_at for the Results badge). */
+export interface UserMarksTable {
+  user_id: number;
+  results_seen_at: Timestamp | null;
+  updated_at: DefaultTimestamp;
+}
+
 export interface Database {
   users: UsersTable;
   registration_requests: RegistrationRequestsTable;
@@ -467,6 +474,7 @@ export interface Database {
   audit_log: AuditLogTable;
   operator_requests: OperatorRequestsTable;
   app_state: AppStateTable;
+  user_marks: UserMarksTable;
   schema_migrations: SchemaMigrationsTable;
 }
 

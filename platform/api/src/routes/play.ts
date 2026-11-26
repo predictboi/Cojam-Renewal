@@ -51,6 +51,17 @@ export function registerPlayRoutes(app: FastifyInstance, kit: RouteKit): void {
       .execute();
   }
 
+  /** First evidence link of each market's latest decisive resolution run. */
+  async function evidenceUrls(ids: number[]): Promise<Map<number, string>> {
+    if (!ids.length) return new Map();
+    const r = await sql<{ market_id: number; url: string }>`
+      SELECT DISTINCT ON (r.market_id) r.market_id, e.url
+      FROM resolutions r JOIN evidence e ON e.resolution_id = r.id
+      WHERE r.market_id IN (${sql.join(ids)}) AND r.outcome IN ('A', 'B', 'void')
+      ORDER BY r.market_id, r.created_at DESC, e.id ASC`.execute(deps.db);
+    return new Map(r.rows.map((x) => [Number(x.market_id), x.url]));
+  }
+
   // ------------------------------------------------------------ today
   app.get("/v1/today", async (req): Promise<TodayResponse> => {
     const { user, wallet } = await requirePlayer(kit, req);
@@ -93,6 +104,8 @@ export function registerPlayRoutes(app: FastifyInstance, kit: RouteKit): void {
       .where("kind", "in", ["completion", "welcome"])
       .execute();
     const completionRow = credits.find((c) => c.kind === "completion");
+    const ref = await deps.db.selectFrom("referrals").select("inviter").where("invitee", "=", wallet).executeTakeFirst();
+    const inviter = ref ? await deps.db.selectFrom("users").select(["display_name", "wallet"]).where("wallet", "=", ref.inviter).executeTakeFirst() : undefined;
     const answered = Math.max(ud?.answered ?? 0, chosen.size);
     const completed = Boolean(ud?.completed) || (ids.length === 5 && chosen.size === 5);
 
@@ -123,13 +136,14 @@ export function registerPlayRoutes(app: FastifyInstance, kit: RouteKit): void {
             creditedTx: completionRow.tx_hash,
           }
         : null,
+      inviterName: ref ? publicName(inviter, ref.inviter) : null,
     };
   });
 
   // ------------------------------------------------------------ results
   const resultsQuery = z.object({ cursor: z.string().regex(/^\d+$/).optional(), limit: z.coerce.number().int().min(1).max(14).optional() });
 
-  function rowOf(m: Market, choice: Choice | null, settledMask: number, hitPoints: number, nowS: number): ResultRow {
+  function rowOf(m: Market, choice: Choice | null, settledMask: number, hitPoints: number, nowS: number, evidence?: Map<number, string>): ResultRow {
     const outcome = (m.outcome ?? null) as 1 | 2 | 3 | null;
     const settled = (settledMask >> m.slot) & 1;
     let result: ResultRow["result"] = "pending";
@@ -158,8 +172,9 @@ export function registerPlayRoutes(app: FastifyInstance, kit: RouteKit): void {
       hitPoints: pts,
       hitState,
       landsAt: hitState === "pending" ? (settlesAt !== null && settlesAt > nowS ? settlesAt : settlesAt) : null,
+      resolvesAt: toUnix(m.resolves_at)!,
       resolvedAt: toUnix(m.resolved_at),
-      evidenceUrl: (m.sources as any[])?.[0]?.url ?? null,
+      evidenceUrl: evidence?.get(m.market_id) ?? (m.sources as any[])?.[0]?.url ?? null,
     };
   }
 
@@ -198,9 +213,22 @@ export function registerPlayRoutes(app: FastifyInstance, kit: RouteKit): void {
           .execute()
       : [];
     const sumOf = (d: number, k: string) => Number(ledger.find((l) => l.day_id === d && l.kind === k)?.s ?? 0);
+    const friendRows = dayIds.length
+      ? await deps.db
+          .selectFrom("points_ledger")
+          .select(["day_id", sql<number>`count(DISTINCT source_wallet)::int`.as("n")])
+          .where("wallet", "=", wallet)
+          .where("kind", "=", "referral")
+          .where("day_id", "in", dayIds)
+          .groupBy("day_id")
+          .execute()
+      : [];
+    const evidence = await evidenceUrls(markets.filter((m) => m.resolved_at).map((m) => m.market_id));
 
     const days: ResultDay[] = page.map((ud) => {
-      const rows = markets.filter((m) => m.day_id === ud.day_id).map((m) => rowOf(m, choiceOf.get(m.market_id) ?? null, ud.settled_mask, params.hitPoints, nowS));
+      const rows = markets
+        .filter((m) => m.day_id === ud.day_id)
+        .map((m) => rowOf(m, choiceOf.get(m.market_id) ?? null, ud.settled_mask, params.hitPoints, nowS, evidence));
       return {
         dayId: ud.day_id,
         weekId: weekOf(ud.day_id),
@@ -212,6 +240,7 @@ export function registerPlayRoutes(app: FastifyInstance, kit: RouteKit): void {
         hitPointsPending: rows.filter((r) => r.hitState === "pending").reduce((a, r) => a + r.hitPoints, 0),
         welcomePoints: sumOf(ud.day_id, "welcome"),
         inviteBonus: sumOf(ud.day_id, "referral"),
+        inviteFriends: Number(friendRows.find((f) => f.day_id === ud.day_id)?.n ?? 0),
         rows,
       };
     });
@@ -309,7 +338,22 @@ export function registerPlayRoutes(app: FastifyInstance, kit: RouteKit): void {
     const { user, wallet } = await requirePlayer(kit, req);
     const nowMs = deps.now();
     const weekId = raw === "current" ? weekOf(currentDayId(nowMs)) : Number(raw);
-    return buildRanking(kit, weekId, { wallet, frozen: user.frozen }, nowMs);
+    const r = await buildRanking(kit, weekId, { wallet, frozen: user.frozen }, nowMs);
+    const drops = await deps.db
+      .selectFrom("airdrop_rows")
+      .select(["week_id", "rank", "wallet", "amount", "tx_hash", "skipped_reason"])
+      .where("week_id", "in", [weekId, weekId - 1])
+      .orderBy("rank")
+      .execute();
+    const week = await deps.db.selectFrom("weeks").select("airdrop_tx").where("week_id", "=", weekId).executeTakeFirst();
+    const thisWeek = drops.filter((d) => d.week_id === weekId);
+    const mineNow = thisWeek.find((d) => d.wallet === wallet && d.tx_hash);
+    const prev = drops.find((d) => d.week_id === weekId - 1 && d.wallet === wallet && !d.skipped_reason && d.amount && d.amount !== "0");
+    return {
+      ...r,
+      airdropTx: mineNow?.tx_hash ?? week?.airdrop_tx ?? thisWeek.find((d) => d.tx_hash)?.tx_hash ?? null,
+      lastWeek: prev ? { weekId: weekId - 1, rank: prev.rank, prizeWei: String(prev.amount), txHash: prev.tx_hash } : null,
+    };
   });
 }
 
@@ -320,7 +364,7 @@ export async function buildRanking(
   me: { wallet: Address; frozen: boolean } | null,
   nowMs: number,
   topN = 10,
-): Promise<RankingResponse & { all?: never }> {
+): Promise<Omit<RankingResponse, "airdropTx" | "lastWeek">> {
   const { db } = kit.deps;
   const params = (await predictParams(db, kit.deps.chain, nowMs)) ?? DEFAULT_PARAMS;
   const ranked = await sql<{ wallet: string; points: number; rank: number; display_name: string | null }>`

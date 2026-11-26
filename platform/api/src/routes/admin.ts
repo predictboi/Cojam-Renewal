@@ -16,6 +16,7 @@ import { buildRanking } from "./play.ts";
 import { currentDayId, dayEnd, weekOf, weekFirstDay } from "../../../shared/src/time.ts";
 import type { AuthedAdmin } from "../auth/index.ts";
 import { kaiaToWei } from "../config/index.ts";
+import { registerAdminExtraRoutes } from "./adminExtra.ts";
 
 const MASTER_WALLET = "0xd9da67b7dcf94c2837d55614a430ea4ff477ecab";
 const CT = 10n ** 18n;
@@ -53,6 +54,8 @@ export function registerAdminRoutes(app: FastifyInstance, kit: RouteKit): void {
       .executeTakeFirstOrThrow();
     return { requestId: r.id, status: r.status };
   };
+  // Endpoints added for the admin web app (platform/admin): staking and reserve owner txs, maintenance, AI queue, jobs.
+  registerAdminExtraRoutes(app, kit, { owner, unsignedPredict: unsigned, operatorRequest });
   const get = (path: string, role: "viewer" | "operator" | "owner", handler: (req: FastifyRequest, admin: AuthedAdmin) => Promise<unknown>) =>
     app.get(path, async (req) => handler(req, await kit.authAdmin(req, role)));
   const post = (path: string, role: "viewer" | "operator" | "owner", handler: (req: FastifyRequest, admin: AuthedAdmin) => Promise<unknown>) =>
@@ -472,12 +475,28 @@ export function registerAdminRoutes(app: FastifyInstance, kit: RouteKit): void {
     const ids = rows.map((r) => r.market_id);
     const runs = ids.length ? await db.selectFrom("resolutions").selectAll().where("market_id", "in", ids).orderBy("created_at").execute() : [];
     const ev = runs.length ? await db.selectFrom("evidence").select(["resolution_id", "url", "quote", "observed_at"]).where("resolution_id", "in", runs.map((r) => r.id)).execute() : [];
+    // Picks per side and how many of those players were invited (the admin's correction impact table).
+    const sides = ids.length
+      ? await sql<{ market_id: number; choice: number; n: number; invited: number }>`
+          SELECT p.market_id, p.choice, count(*)::int AS n, count(r.invitee)::int AS invited
+          FROM predictions p LEFT JOIN referrals r ON r.invitee = p.wallet
+          WHERE p.market_id IN (${sql.join(ids)}) GROUP BY p.market_id, p.choice`.execute(db)
+      : { rows: [] as { market_id: number; choice: number; n: number; invited: number }[] };
+    const side = (id: number, c: number) => sides.rows.find((x) => x.market_id === id && x.choice === c);
     return {
       answers: rows.map((m) => ({
         marketId: m.market_id,
         dayId: m.day_id,
         slot: m.slot,
         title: (m.content as any)?.en?.title,
+        left: (m.content as any)?.en?.left ?? null,
+        right: (m.content as any)?.en?.right ?? null,
+        rule: (m.content as any)?.en?.rule ?? null,
+        criteria: m.criteria,
+        closesAt: toUnix(m.closes_at),
+        outcomeTx: m.outcome_tx,
+        picks: { left: side(m.market_id, 1)?.n ?? 0, right: side(m.market_id, 2)?.n ?? 0 },
+        invited: { left: side(m.market_id, 1)?.invited ?? 0, right: side(m.market_id, 2)?.invited ?? 0 },
         status: m.status,
         resolvesAt: toUnix(m.resolves_at),
         outcome: m.outcome,
@@ -545,7 +564,37 @@ export function registerAdminRoutes(app: FastifyInstance, kit: RouteKit): void {
     const rows = await db.selectFrom("airdrop_rows").selectAll().where("week_id", "=", weekId).orderBy("rank").execute();
     const onHold = await sql<{ wallet: string; points: number }>`
       SELECT t.wallet, t.points FROM week_totals t JOIN users u ON u.wallet = t.wallet WHERE t.week_id = ${weekId} AND u.frozen ORDER BY t.points DESC LIMIT 50`.execute(db);
-    return { ...r, airdrop: rows, onHoldExcluded: onHold.rows };
+    // For the admin screen: every ranked row with its wallet, the week row, what the airdrop still waits for.
+    const full = await sql<{ wallet: string; points: number; rank: number; display_name: string | null; last_completion_at: Date | null }>`
+      SELECT t.wallet, t.points, u.display_name, t.last_completion_at,
+             row_number() OVER (ORDER BY t.points DESC, t.last_completion_at ASC NULLS LAST, t.wallet ASC)::int AS rank
+      FROM week_totals t LEFT JOIN users u ON u.wallet = t.wallet
+      WHERE t.week_id = ${weekId} AND t.points > 0 AND coalesce(u.frozen, false) = false
+      ORDER BY rank LIMIT 50`.execute(db);
+    const ranked = await sql<{ n: number }>`
+      SELECT count(*)::int AS n FROM week_totals t LEFT JOIN users u ON u.wallet = t.wallet WHERE t.week_id = ${weekId} AND t.points > 0 AND coalesce(u.frozen, false) = false`.execute(db);
+    const weekRow = await db.selectFrom("weeks").selectAll().where("week_id", "=", weekId).executeTakeFirst();
+    const first = weekFirstDay(weekId);
+    const backlog = await sql<{ open: number; total: number; settled: number }>`
+      SELECT count(*) FILTER (WHERE outcome IS NULL AND status IN ('published', 'closed'))::int AS open,
+             count(*) FILTER (WHERE status NOT IN ('draft', 'scheduled', 'cancelled'))::int AS total,
+             count(*) FILTER (WHERE outcome IS NOT NULL)::int AS settled
+      FROM markets WHERE day_id BETWEEN ${first} AND ${first + 6}`.execute(db);
+    const lastRequest = await db.selectFrom("operator_requests").selectAll().where("kind", "=", "airdrop").where("target", "=", String(weekId)).orderBy("id", "desc").executeTakeFirst();
+    const params = (await predictParams(db, deps.chain, nowMs)) ?? DEFAULT_PARAMS;
+    const reserve = await chainTry(() => deps.chain.reserve());
+    return {
+      ...r,
+      airdrop: rows,
+      onHoldExcluded: onHold.rows,
+      rows: full.rows.map((x) => ({ ...x, last_completion_at: toUnix(x.last_completion_at) })),
+      rankedPlayers: ranked.rows[0]?.n ?? 0,
+      week: weekRow ? { ...weekRow, closed_at: toUnix(weekRow.closed_at), updated_at: toUnix(weekRow.updated_at) } : null,
+      backlog: backlog.rows[0],
+      airdropDueAt: (first + 7) * 86400 + params.airdropDelay,
+      lastRequest: lastRequest ?? null,
+      reserveWei: reserve === null ? null : reserve.toString(),
+    };
   });
 
   post("/admin/v1/ranking/:weekId/airdrop", "operator", async (req, admin) => {
@@ -575,9 +624,25 @@ export function registerAdminRoutes(app: FastifyInstance, kit: RouteKit): void {
     const lastFreeze = wallets.length
       ? await db.selectFrom("freezes").selectAll().where("wallet", "in", wallets).orderBy("created_at", "desc").execute()
       : [];
+    // Play figures and invite links of the listed players (the admin review and blocked tables).
+    const agg = wallets.length
+      ? await sql<{ wallet: string; days: number; points: number; friends: number; inviter: string | null; inviter_name: string | null }>`
+          SELECT w.wallet,
+                 (SELECT count(*)::int FROM user_days d WHERE d.wallet = w.wallet AND d.answered > 0) AS days,
+                 (SELECT coalesce(sum(amount), 0)::bigint FROM points_ledger l WHERE l.wallet = w.wallet) AS points,
+                 (SELECT count(*)::int FROM referrals r WHERE r.inviter = w.wallet) AS friends,
+                 r.inviter, iu.display_name AS inviter_name
+          FROM unnest(${sql.val(wallets)}::text[]) AS w(wallet)
+          LEFT JOIN referrals r ON r.invitee = w.wallet
+          LEFT JOIN users iu ON iu.wallet = r.inviter`.execute(db)
+      : { rows: [] as { wallet: string; days: number; points: number; friends: number; inviter: string | null; inviter_name: string | null }[] };
     return {
       players: users.map((u) => ({
         ...u,
+        play: (() => {
+          const a = agg.rows.find((x) => x.wallet === u.wallet);
+          return a ? { days: a.days, points: Number(a.points), friends: a.friends, inviter: a.inviter, inviterName: a.inviter_name } : null;
+        })(),
         created_at: toUnix(u.created_at),
         registered_at: toUnix(u.registered_at),
         openFlags: flags.filter((f) => f.wallet === u.wallet).map((f) => ({ id: f.id, rule: f.rule, score: f.score, details: f.details, at: toUnix(f.created_at) })),
@@ -668,8 +733,12 @@ export function registerAdminRoutes(app: FastifyInstance, kit: RouteKit): void {
       FROM referrals WHERE requested_at > now() - interval '14 days' GROUP BY 1 ORDER BY 1`.execute(db);
     const issued = await sql<{ kind: string; s: number }>`
       SELECT kind, coalesce(sum(amount), 0)::bigint AS s FROM points_ledger WHERE kind IN ('referral', 'welcome') GROUP BY kind`.execute(db);
-    const top = await sql<{ inviter: string; friends: number; bonus: number }>`
-      SELECT inviter, count(*)::int AS friends, coalesce(sum(bonus_points), 0)::bigint AS bonus FROM referrals GROUP BY inviter ORDER BY friends DESC LIMIT 20`.execute(db);
+    const top = await sql<{ inviter: string; friends: number; bonus: number; first_done: number; name: string | null; risk_score: number | null; frozen: boolean | null; week_bonus: number }>`
+      SELECT r.inviter, count(*)::int AS friends, coalesce(sum(r.bonus_points), 0)::bigint AS bonus,
+             count(r.first_day_at)::int AS first_done, u.display_name AS name, u.risk_score, u.frozen,
+             (SELECT coalesce(sum(amount), 0)::bigint FROM points_ledger l WHERE l.wallet = r.inviter AND l.kind = 'referral' AND l.block_time > now() - interval '7 days') AS week_bonus
+      FROM referrals r LEFT JOIN users u ON u.wallet = r.inviter
+      GROUP BY r.inviter, u.display_name, u.risk_score, u.frozen ORDER BY friends DESC LIMIT 20`.execute(db);
     const flagged = await db.selectFrom("risk_flags").selectAll().where("rule", "in", ["invite_cluster", "welcome_farm"]).where("status", "=", "open").limit(100).execute();
     const share = await sql<{ share: number | null }>`
       SELECT CASE WHEN count(*) = 0 THEN NULL ELSE count(r.invitee)::float / count(*) END AS share
@@ -678,7 +747,7 @@ export function registerAdminRoutes(app: FastifyInstance, kit: RouteKit): void {
       linksPerDay: perDay.rows,
       invitedShare7d: share.rows[0]?.share ?? null,
       pointsIssued: Object.fromEntries(issued.rows.map((r) => [r.kind, Number(r.s)])),
-      topInviters: top.rows.map((r) => ({ ...r, bonus: Number(r.bonus) })),
+      topInviters: top.rows.map((r) => ({ ...r, bonus: Number(r.bonus), week_bonus: Number(r.week_bonus) })),
       flaggedClusters: flagged,
     };
   });
@@ -688,7 +757,21 @@ export function registerAdminRoutes(app: FastifyInstance, kit: RouteKit): void {
     const rows = await db.selectFrom("email_domains").selectAll().orderBy("added_at").orderBy("domain").execute();
     const signups = await sql<{ domain: string; n: number }>`
       SELECT email_domain AS domain, count(*)::int AS n FROM users WHERE created_at > now() - interval '7 days' GROUP BY email_domain`.execute(db);
-    return { domains: rows.map((r) => ({ ...r, signups7d: signups.rows.find((s) => s.domain === r.domain)?.n ?? 0 })) };
+    // Email checks of the last 7 days that were refused: per listed domain (other refusals, e.g. an already
+    // linked address) and the top domains refused because they are not on the list.
+    const refused = await sql<{ domain: string; result: string; n: number }>`
+      SELECT domain, result, count(*)::int AS n FROM auth_checks
+      WHERE created_at > now() - interval '7 days' AND result <> 'allowed' AND result NOT LIKE 'rate_limited%'
+      GROUP BY domain, result`.execute(db);
+    const notListed = refused.rows.filter((r) => r.result === "domain_not_allowed").sort((a, b) => b.n - a.n);
+    return {
+      domains: rows.map((r) => ({
+        ...r,
+        signups7d: signups.rows.find((s) => s.domain === r.domain)?.n ?? 0,
+        refused7d: refused.rows.filter((x) => x.domain === r.domain && x.result !== "domain_not_allowed").reduce((a, x) => a + x.n, 0),
+      })),
+      refusedNotListed7d: { total: notListed.reduce((a, x) => a + x.n, 0), top: notListed.slice(0, 5).map((x) => ({ domain: x.domain, n: x.n })) },
+    };
   });
 
   const domainSchema = z
@@ -697,7 +780,7 @@ export function registerAdminRoutes(app: FastifyInstance, kit: RouteKit): void {
     .toLowerCase()
     .regex(/^([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/);
   post("/admin/v1/email-domains", "operator", async (req, admin) => {
-    const b = z.object({ domain: domainSchema, displayName: z.string().trim().min(1).max(40), rule: z.enum(["gmail", "plus", "none"]).default("plus") }).parse(req.body);
+    const b = z.object({ domain: domainSchema, displayName: z.string().trim().min(1).max(40), rule: z.enum(["gmail", "plus", "none"]).default("plus"), reason: z.string().trim().max(500).optional() }).parse(req.body);
     if (b.domain === "googlemail.com") throw new ApiError("BAD_REQUEST", "googlemail.com is folded into gmail.com");
     const r = await db
       .insertInto("email_domains")
@@ -712,7 +795,7 @@ export function registerAdminRoutes(app: FastifyInstance, kit: RouteKit): void {
 
   patch("/admin/v1/email-domains/:domain", "operator", async (req, admin) => {
     const { domain } = z.object({ domain: domainSchema }).parse(req.params);
-    const b = z.object({ enabled: z.boolean().optional(), rule: z.enum(["gmail", "plus", "none"]).optional(), displayName: z.string().trim().min(1).max(40).optional() }).parse(req.body);
+    const b = z.object({ enabled: z.boolean().optional(), rule: z.enum(["gmail", "plus", "none"]).optional(), displayName: z.string().trim().min(1).max(40).optional(), reason: z.string().trim().max(500).optional() }).parse(req.body);
     const set: Record<string, unknown> = { updated_at: new Date() };
     if (b.enabled !== undefined) set.enabled = b.enabled;
     if (b.rule !== undefined) set.rule = b.rule;

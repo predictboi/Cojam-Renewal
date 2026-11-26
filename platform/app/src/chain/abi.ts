@@ -7,10 +7,11 @@ export const predictAbi = cojamPredictAbi;
 export const stakingAbi = cojamStakingAbi;
 export const ctAbi = erc20Abi;
 
-/** Gas limits per action (DEV-PLAN 4.3 step 3: a fixed table plus 30%; caps from the fee payer policy 6.3). */
+/** Fallback gas limits per action until GET /v1/config answers (its gasLimits are the fee payer's caps and win; a
+ *  limit above a cap is refused with GAS_LIMIT_TOO_HIGH, so this table never exceeds them). transfer is user paid. */
 export const GAS: Record<string, bigint> = {
   predict: 150_000n, setPlayKey: 120_000n, revokePlayKey: 80_000n, convert: 200_000n,
-  approve: 120_000n, stake: 300_000n, claimInterest: 200_000n, withdraw: 200_000n, transfer: 90_000n,
+  approve: 100_000n, stake: 300_000n, claimInterest: 150_000n, withdraw: 150_000n, transfer: 90_000n,
 };
 
 /** Play key table: predict and revokePlayKey only. */

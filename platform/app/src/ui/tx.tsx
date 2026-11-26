@@ -36,7 +36,8 @@ export function useTxBusy(key: string): string | null {
 let nav: (to: string) => void = (to) => { location.href = to; };
 export function useTxNav() { nav = useNavigate(); }
 
-const explorer = () => (CONFIG.network === 'kaia' ? 'https://kaiascan.io' : 'https://kairos.kaiascan.io');
+/** The explorer from GET /v1/config, else the build time default of the network. */
+const explorer = () => queryClient.getQueryData<{ explorer?: string }>(['config'])?.explorer || CONFIG.chain.explorer;
 
 /** the success moment: a display figure on ink beside a lime done block (App.tx.doneFig) */
 function doneFig(ok: TxCfg['success']): string {

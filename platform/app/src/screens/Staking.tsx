@@ -1,7 +1,7 @@
 // S1 New stake (platform/design/staking.html): amount, lock period with the rate per tier, what it pays, the review sheet,
 // then approve and stake as two sponsored transactions (the sheet shows the two steps).
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useConfig, useWallet } from '../api';
+import { useConfig, useQuote, useWallet } from '../api';
 import { t, currentLang } from '../i18n';
 import { F, parseAmount } from '../lib/fmt';
 import { btn, errorNote, help, hold, icon, note, skel } from '../ui/h';
@@ -40,7 +40,11 @@ export default function Staking() {
   const [val, setVal] = useState(initial);
   const [period, setPeriod] = useState(90);
   const paused = st === 'paused' || !!cfg.data?.flags.stakingPaused;
-  const room = st === 'full' ? 300 : st === 'fullnone' ? 0 : Infinity;
+  const [qVal, setQVal] = useState(val);
+  useEffect(() => { const tm = setTimeout(() => setQVal(val), 400); return () => clearTimeout(tm); }, [val]);
+  const pa = parseAmount(qVal);
+  const quote = useQuote(pa.value || 0, period, !st && !paused && !!pa.value && (pa.value || 0) >= minStake && (pa.decimals || 0) <= 4);
+  const room = st === 'full' ? 300 : st === 'fullnone' ? 0 : quote.data?.capacityLeft ?? Infinity;
   const max20 = st === 'max20' || (w.data?.openStakes ?? 0) >= (params?.maxOpenPositions ?? 20);
   const blocked = paused || st === 'fullnone' || max20 || bal === 0 || loading || offline || held;
   const lastTier = useRef<number | null>(null);

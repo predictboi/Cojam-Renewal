@@ -1,7 +1,7 @@
 // K1 Weekly ranking (platform/design/ranking.html): the pool, a podium for ranks 1 to 3, ranks 4 to 10, "Around you",
 // and the pinned bar with the player's own rank.
 import { useEffect, useLayoutEffect, useState } from 'react';
-import { useRanking } from '../api';
+import { useConfig, useRanking } from '../api';
 import { t } from '../i18n';
 import { esc, F, reduceMotion } from '../lib/fmt';
 import { btn, errorNote, hold, icon, note, skel, tag } from '../ui/h';
@@ -29,6 +29,7 @@ export default function Ranking() {
   const st = usePreset();
   const [week, setWeek] = useState<'current' | 'last'>(st === 'lastweek' || st === 'sent' ? 'last' : 'current');
   const q = useRanking(week);
+  const cfgQ = useConfig();
   const held = useHold() || st === 'hold';
   const loading = st === 'loading' || q.isPending;
   const d = q.data;
@@ -59,7 +60,7 @@ export default function Ranking() {
   function view(): string {
     let n = '';
     if (held) n = hold(t('hold.rank'));
-    else if (w === 'last' && d) n = d.state === 'sent' ? note('ok', t('k.sent') + ' <a href="' + (CONFIG.chain.explorer) + '/tx/' + (d.airdropTx || '') + '" target="_blank" rel="noopener">' + t('w.scan') + '</a>') : note('sky', t('k.closed', { time: t('k.final.time') }));
+    else if (w === 'last' && d) n = d.state === 'sent' ? note('ok', t('k.sent') + ' <a href="' + (cfgQ.data?.explorer || CONFIG.chain.explorer) + '/tx/' + (d.airdropTx || '') + '" target="_blank" rel="noopener">' + t('w.scan') + '</a>') : note('sky', t('k.closed', { time: t('k.final.time') }));
     else if (d?.lastWeek) n = note('sky', t('k.last', { rank: d.lastWeek.rank, amount: F.prize(d.lastWeek.amount) }));
     return n + pool() + '<section class="sec sec-rule"><div class="sect-h"><h2 class="sect-h">' + t('k.top') + '</h2>' + (loading || w === 'last' ? '' : '<span class="live"><span class="live-dot"></span><span data-stamp="12">' + t('common.updated', { n: 12 }) + '</span></span>') + '</div>' +
       list() + '<p class="tie-line">' + icon('info', 16) + '<span>' + t('k.tie') + '</span></p></section>' + around();
