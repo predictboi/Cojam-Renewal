@@ -115,6 +115,16 @@ describe("CojamPredict: convert", function () {
     expect(await predict.convertedCtTotalOnDay(await predict.currentDay())).to.equal(100n * E18);
   });
 
+  it("a cap lowered below what was already used that day reports 0 left (no underflow)", async function () {
+    const ctx = await loadFixture(richWeek);
+    const { predict, master, alice } = ctx;
+    await predict.connect(master).proposeParams(withParams(ctx, { maxConvertCtPerUserPerDay: 1n, pointsPerCT: 100n, minConvertPoints: 100n }));
+    await time.increase(PARAM_DELAY);
+    await predict.connect(alice).convert(2000); // 2 CT under the old 50 CT cap
+    await predict.connect(master).applyParams(); // same day: the user cap is now 1 CT
+    await expect(predict.connect(alice).convert(100)).to.be.revertedWithCustomError(predict, "DailyCapReached").withArgs(0n);
+  });
+
   it("reserve shortfall reverts instead of overdrawing", async function () {
     const ctx = await loadFixture(richWeek);
     const { predict, master, treasury, alice, addr, ct } = ctx;
@@ -169,13 +179,13 @@ describe("CojamPredict: weekly airdrop", function () {
     expect(await predict.airdropDone(week)).to.equal(true);
   });
 
-  it("ties: equal points rank by the earlier last credit, then by the lower address", async function () {
+  it("ties: equal points rank by the earlier last completion, then by the lower address; settles never move it", async function () {
     const ctx = await deployPredict({ register: false });
     const { predict, op, day0, week, rest } = ctx;
     const [p1, p2, p3] = rest.slice(0, 3).sort((a, b) => (BigInt(a.address) < BigInt(b.address) ? -1 : 1));
     for (const s of [p1, p2, p3]) await op.registerPlayer(s.address, Z);
     await goTo(dayOpen(day0));
-    // p3 completes first, then p1 and p2 complete in the same block (same lastCreditAt)
+    // p3 completes first, then p1 and p2 complete in the same block (same lastCompletionAt)
     await play(predict, p3, day0, [1, 1, 1, 1, 1]);
     await play(predict, p1, day0, [1, 1, 1, 1, 0]);
     await play(predict, p2, day0, [1, 1, 1, 1, 0]);
@@ -188,8 +198,18 @@ describe("CojamPredict: weekly airdrop", function () {
     const s2 = await predict.weekPoints(week, p2.address);
     const s3 = await predict.weekPoints(week, p3.address);
     expect(s1.points).to.equal(s2.points);
-    expect(s1.lastCreditAt).to.equal(s2.lastCreditAt);
-    expect(s3.lastCreditAt).to.be.lessThan(s1.lastCreditAt);
+    expect(s1.lastCompletionAt).to.equal(s2.lastCompletionAt);
+    expect(s3.lastCompletionAt).to.be.lessThan(s1.lastCompletionAt);
+    // hits settled later (p3 last, by a keeper or a racing bot) do not change the tie break
+    await resolveDay(ctx, day0, [1, 1, 1, 1, 1]);
+    await passSettle(ctx, day0);
+    await predict.settle(p1.address, day0);
+    await predict.settle(p2.address, day0);
+    await predict.settle(p3.address, day0);
+    const t3 = await predict.weekPoints(week, p3.address);
+    expect(t3.points).to.equal(350n);
+    expect(t3.lastCompletionAt).to.equal(s3.lastCompletionAt);
+    expect((await predict.weekPoints(week, p1.address)).lastCompletionAt).to.equal(s1.lastCompletionAt);
     await goTo(weekEnd(week) + DEFAULTS.airdropDelay);
     const pool = 10n * E18;
     await expect(op.airdrop(week, [p1.address, p3.address, p2.address], pool)).to.be.revertedWithCustomError(predict, "BadWinners");

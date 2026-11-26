@@ -104,10 +104,11 @@ describe("CojamPredict: gas report", function () {
 
     // airdrop with 10 winners
     await goTo(weekEnd(week) + DEFAULTS.airdropDelay);
+    const lt = (v) => (v === 0n ? 2n ** 64n : v);
     const scored = [];
     for (const p of [...players, alice, bob, dave]) scored.push({ a: p.address, s: await predict.weekPoints(week, p.address) });
     scored.sort((x, y) => (x.s.points !== y.s.points ? (x.s.points > y.s.points ? -1 : 1)
-      : x.s.lastCreditAt !== y.s.lastCreditAt ? (x.s.lastCreditAt < y.s.lastCreditAt ? -1 : 1) : (BigInt(x.a) < BigInt(y.a) ? -1 : 1)));
+      : lt(x.s.lastCompletionAt) !== lt(y.s.lastCompletionAt) ? (lt(x.s.lastCompletionAt) < lt(y.s.lastCompletionAt) ? -1 : 1) : (BigInt(x.a) < BigInt(y.a) ? -1 : 1)));
     const winners = scored.slice(0, 10).map((x) => x.a);
     note("airdrop, 10 winners", await gasOf(op.airdrop(week, winners, 1000n * E18)));
     note("withdrawReserve", await gasOf(predict.connect(master).withdrawReserve(E18, ctx.treasury.address)));

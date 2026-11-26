@@ -99,16 +99,36 @@ describe("CojamPredict: players, invites and freezes", function () {
     expect(await predict.referrerOf(rest[0].address)).to.equal(Z);
   });
 
-  it("registerPlayer refuses zero, repeats, play keys and bad inviters", async function () {
-    const { predict, op, alice, bob, eve, key1, rest } = await loadFixture(fixture);
+  it("registerPlayer refuses zero, repeats and bad inviters", async function () {
+    const { predict, op, alice, bob, eve, rest } = await loadFixture(fixture);
     await expect(op.registerPlayer(Z, Z)).to.be.revertedWithCustomError(predict, "ZeroAddress");
     await expect(op.registerPlayer(alice.address, Z)).to.be.revertedWithCustomError(predict, "AlreadyRegistered");
-    await predict.connect(alice).setPlayKey(key1.address, BigInt(await time.latest()) + DAY);
-    await expect(op.registerPlayer(key1.address, Z)).to.be.revertedWithCustomError(predict, "AddressIsPlayKey");
     await expect(op.registerPlayer(eve.address, eve.address)).to.be.revertedWithCustomError(predict, "BadReferrer");
     await expect(op.registerPlayer(eve.address, rest[0].address)).to.be.revertedWithCustomError(predict, "BadReferrer"); // unregistered
     await op.setFrozen(bob.address, true, ethers.ZeroHash);
     await expect(op.registerPlayer(eve.address, bob.address)).to.be.revertedWithCustomError(predict, "BadReferrer"); // frozen
+  });
+
+  it("registration wins over a squatted play key: the binding is removed, the batch goes through", async function () {
+    const { predict, op, alice, key1, key2, rest, day0 } = await loadFixture(fixture);
+    const now = BigInt(await time.latest());
+    // alice binds the address of a wallet that is about to be registered
+    await predict.connect(alice).setPlayKey(key1.address, now + DAY);
+    await expect(op.registerPlayers([rest[0].address, key1.address], [Z, Z]))
+      .to.emit(predict, "PlayKeyRevoked").withArgs(alice.address, key1.address)
+      .and.to.emit(predict, "PlayerRegistered").withArgs(key1.address);
+    expect((await predict.playKeyOf(alice.address)).key).to.equal(Z);
+    expect(await predict.playerOfKey(key1.address)).to.equal(Z);
+    expect((await predict.players(key1.address)).registered).to.equal(true);
+    // the new player sets its own key and predicts; the squatter's old key path is gone
+    await predict.connect(key1).setPlayKey(key2.address, now + DAY);
+    await goTo(dayOpen(day0));
+    await expect(predict.connect(key2).predict(day0 * 5n, 1)).to.emit(predict, "Predicted").withArgs(key1.address, day0 * 5n, day0, 1, 1);
+    await predict.connect(key1).predict(day0 * 5n + 1n, 2);
+    expect((await predict.dayOf(key1.address, day0)).answered).to.equal(2n);
+    expect((await predict.dayOf(alice.address, day0)).answered).to.equal(0n);
+    // registering an unbound wallet emits no revoke
+    await expect(op.registerPlayer(rest[1].address, Z)).to.not.emit(predict, "PlayKeyRevoked");
   });
 
   it("registerPlayers: batch, length mismatch, 200 cap, all or nothing", async function () {
@@ -392,7 +412,7 @@ describe("CojamPredict: predict", function () {
     expect(await predict.totalSupply()).to.equal(100n);
     const w = await predict.weekPoints(week, alice.address);
     expect(w.points).to.equal(100n);
-    expect(w.lastCreditAt).to.equal(BigInt(await time.latest()));
+    expect(w.lastCompletionAt).to.equal(BigInt(await time.latest()));
     expect((await predict.players(alice.address)).completedOnce).to.equal(true);
   });
 

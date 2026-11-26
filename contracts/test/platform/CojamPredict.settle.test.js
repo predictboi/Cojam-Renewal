@@ -307,6 +307,28 @@ describe("CojamPredict: corrected outcome and compensation", function () {
     expect((await predict.weekPoints(week + 1n, dave.address)).points).to.equal(50n);
   });
 
+  it("a winner with points but no completion in the week (late compensation) ranks after equal points with a completion", async function () {
+    const ctx = await loadFixture(corrected);
+    const { predict, op, alice, bob, dave, day0, week } = ctx;
+    const id = day0 * 5n + 1n;
+    await goTo(weekEnd(week) + DEFAULTS.airdropDelay);
+    await op.airdrop(week, [alice.address], 0n);
+    await op.compensate(id, [dave.address]); // 50 points in week + 1, no completion there
+    const sd = await predict.weekPoints(week + 1n, dave.address);
+    expect([sd.points, sd.lastCompletionAt]).to.deep.equal([50n, 0n]);
+    // bob completes a day of week + 1 worth 50 points
+    await changeParams(ctx, { completionPoints: 50n });
+    const d = (await predict.currentDay()) + 1n;
+    expect(await predict.weekOf(d)).to.equal(week + 1n);
+    await op.createDay(d, marketsFor(d));
+    await goTo(dayOpen(d));
+    await play(predict, bob, d, [1, 1, 1, 1, 1]);
+    expect((await predict.weekPoints(week + 1n, bob.address)).points).to.equal(50n);
+    await goTo(weekEnd(week + 1n) + DEFAULTS.airdropDelay);
+    await expect(op.airdrop(week + 1n, [dave.address, bob.address], 0n)).to.be.revertedWithCustomError(predict, "BadWinners");
+    await op.airdrop(week + 1n, [bob.address, dave.address], 0n);
+  });
+
   it("a user not yet settled on the market is skipped until settled", async function () {
     const ctx = await played();
     const { predict, op, master, carol, day0 } = ctx;

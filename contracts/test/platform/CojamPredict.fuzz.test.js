@@ -74,11 +74,11 @@ async function runOne(seed) {
   const weekOf = (d) => (d + 3n) / 7n;
 
   function mint(to, amt) { add(M.bal, to, amt); M.supply += amt; }
-  function credit(player, amt, now, w) {
+  function credit(player, amt, now, w, completion = false) {
     mint(player, amt);
     const k = `${w}:${player}`;
     const s = M.week.get(k) || { points: 0n, last: 0n };
-    M.week.set(k, { points: s.points + amt, last: now });
+    M.week.set(k, { points: s.points + amt, last: completion ? now : s.last }); // only completions move the tie break
     const p = P(player);
     if (p.referrer === Z || p.frozen || M.params.referralBps === 0n) return;
     const rp = P(p.referrer);
@@ -180,7 +180,7 @@ async function runOne(seed) {
       M.days.set(`${player}:${pday}`, ud);
       if (ud.answered === 5) {
         ud.completed = true;
-        if (M.params.completionPoints > 0n) credit(player, M.params.completionPoints, now, weekOf(pday));
+        if (M.params.completionPoints > 0n) credit(player, M.params.completionPoints, now, weekOf(pday), true);
         if (!p.completedOnce) {
           p.completedOnce = true;
           const rp = P(p.referrer);
@@ -203,13 +203,16 @@ async function runOne(seed) {
       await time.increase(big ? BigInt(DAY) + BigInt(r.int(Number(DAY))) : BigInt(r.int(8 * 3600) + 1));
     }],
     [5, async function register() {
-      const w = r.chance(0.9) ? r.pick(named).address : r.pick(keySigners).address;
+      // sometimes an address another player bound as its play key: registration wins and unbinds it
+      const w = r.chance(0.85) ? r.pick(named).address : r.pick(keySigners).address;
       const refCands = [Z, Z, ...playerAddrs(), r.pick(all).address, w];
       const ref = r.pick(refCands);
       const p = P(w);
-      let ok = !p.registered && !M.playerOfKey.has(w);
+      let ok = !p.registered;
       if (ok && ref !== Z) { const rp = P(ref); ok = ref !== w && rp.registered && !rp.frozen && rp.referrer !== w; }
       await send(ok, "registerPlayer", () => op.registerPlayer(w, ref), () => {
+        const squatter = M.playerOfKey.get(w);
+        if (squatter) { M.keyOf.delete(squatter); M.playerOfKey.delete(w); }
         M.players.set(w, { registered: true, frozen: false, referrer: ref, registeredAt: now, completedOnce: false });
         if (ref !== Z) add(M.refCount, ref, 1n);
       });
@@ -466,10 +469,11 @@ async function runOne(seed) {
       await tick(); now -= 1n; await time.setNextBlockTimestamp(now + 1n);
       const t = now + 1n;
       const w = weekOf(t / DAY) - 1n - BigInt(r.int(2));
+      const lt = (v) => (v === 0n ? 2n ** 64n : v); // no completion that week counts as the latest
       const scores = named.map((s) => s.address)
         .map((a) => ({ a, s: M.week.get(`${w}:${a}`) || { points: 0n, last: 0n } }))
         .filter((x) => x.s.points > 0n && P(x.a).registered && !P(x.a).frozen)
-        .sort((x, y) => (x.s.points !== y.s.points ? (x.s.points > y.s.points ? -1 : 1) : x.s.last !== y.s.last ? (x.s.last < y.s.last ? -1 : 1) : BigInt(x.a) < BigInt(y.a) ? -1 : 1));
+        .sort((x, y) => (x.s.points !== y.s.points ? (x.s.points > y.s.points ? -1 : 1) : lt(x.s.last) !== lt(y.s.last) ? (lt(x.s.last) < lt(y.s.last) ? -1 : 1) : BigInt(x.a) < BigInt(y.a) ? -1 : 1));
       let winners = scores.slice(0, 10).map((x) => x.a);
       let ordered = true;
       if (winners.length >= 2 && r.chance(0.1)) { [winners[0], winners[1]] = [winners[1], winners[0]]; ordered = false; }
@@ -526,7 +530,7 @@ async function runOne(seed) {
       for (const s of named) {
         const x = await predict.weekPoints(w, s.address);
         const mx = M.week.get(`${w}:${s.address}`) || { points: 0n, last: 0n };
-        expect([x.points, x.lastCreditAt], `${tag} weekPoints`).to.deep.equal([mx.points, mx.last]);
+        expect([x.points, x.lastCompletionAt], `${tag} weekPoints`).to.deep.equal([mx.points, mx.last]);
         ws += x.points;
       }
       expect(ws, `${tag} week sum`).to.equal(ev.weekCredited.get(w) || 0n);
