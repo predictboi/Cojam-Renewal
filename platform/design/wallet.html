@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/screens/money.css">
 </head>
 <body>
 <!-- W1 Wallet. States: (none), new (under 1,000P), zero, loading, error (Kaia not answering), offline. Add ?lang=en|ko|ja. Mock data only. -->
@@ -27,30 +28,30 @@
   var off = App.state === "offline";
   function head() { return '<div class="ph-top"><h1>' + t("w.title") + "</h1></div>"; }
   function body() {
-    if (S === "loading") return '<section class="sec" aria-busy="true">' + C.skel("90px") + C.skel("200px", "40px") + '<div class="acts">' + C.skel("100%", "44px") + C.skel("100%", "44px") + "</div></section>" +
-      '<section class="tint stack-12" aria-busy="true">' + C.skel("150px") + C.skel("100%", "44px") + C.skel("100%", "44px") + '</section><section class="sec" aria-busy="true">' + C.skel("60px") + C.skel("140px", "32px") + C.skel("100%") + '</section><p class="sr-only" role="status">' + t("common.loading") + "</p>";
+    if (S === "loading") return '<section class="msec" aria-busy="true">' + C.skel("90px") + C.skel("200px", "44px") + '<div class="acts">' + C.skel("100%", "44px") + C.skel("100%", "44px") + "</div></section>" +
+      '<section class="msec" aria-busy="true">' + C.skel("150px") + C.skel("100%", "44px") + C.skel("100%", "44px") + '</section><section class="msec" aria-busy="true">' + C.skel("60px") + C.skel("140px", "28px") + C.skel("100%") + '</section><p class="sr-only" role="status">' + t("common.loading") + "</p>";
     var canCt = Math.floor(pts / 1000), a = u.address;
-    /* 1. the balance leads: one label, the figure in the display face straight on the page, then the two actions as a compact row */
+    /* 1. CT is the one hero figure. "Updated" sits on its label line, because it is this balance that is live. Deposit and withdraw are the two secondary buttons. */
     return (off ? C.note("warn", t("w.offline")) : "") +
-      '<section class="sec" aria-labelledby="ct-h">' + (S === "error" ? C.note("warn", t("e.rpc"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" })) : "") +
-      '<div class="lead-fig"><h2 class="lbl" id="ct-h">' + t("w.avail") + '</h2><p class="fig" id="ct-fig">' + F.dec(ct) + "<small>CT</small></p>" + (App.isKo ? '<p class="sub">' + F.krw(ct) + "</p>" : "") + "</div>" +
+      '<section class="msec" aria-labelledby="ct-h">' + (S === "error" ? C.note("warn", t("e.rpc"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" })) : "") +
+      '<div class="mhero"><div class="mhead"><h2 class="lbl" id="ct-h">' + t("w.avail") + "</h2>" + C.stamp(S === "error" ? 48 : 6) + '</div><p class="fig" id="ct-fig">' + F.dec(ct) + "<small>CT</small></p>" + (App.isKo ? '<p class="sub">' + F.krw(ct) + "</p>" : "") + "</div>" +
       '<div class="acts">' + C.btn(t("w.deposit"), { href: "deposit.html", icon: "download", disabled: off }) + C.btn(t("w.withdraw"), { href: "withdraw.html", icon: "share", disabled: off }) + "</div>" +
-      '<div class="list"><a class="rowlink" href="stakes.html"><span class="muted">' + t("w.staked") + '</span><b id="staked">' + F.ct(staked) + "</b>" + C.icon("chev", 18) + "</a>" +
-      '<div class="rowlink rowlink--static"><span class="muted">KAIA<small>' + t("w.kaia.note") + "</small></span><b>" + F.kaia(kaia) + "</b></div></div></section>" +
-      /* 2. the player's own address: the one tinted block of the screen, with a text button (this is what people come here to copy) */
-      '<section class="tint addr-block" aria-labelledby="addr-h"><h2 class="lbl" id="addr-h">' + t("w.addr") + '</h2><p class="addr-v" id="addr" translate="no">' + F.groups(a) + "</p>" +
-      '<div class="addr-acts">' + /* the button itself turns into "Copied": no toast repeats it. The explorer link carries its name. */
-      C.btn(t("w.copy"), { block: true, icon: "copy", id: "copy-addr", attrs: 'data-copy="' + a + '" data-done="' + App.esc(t("w.copy.done")) + '"' }) +
-      C.btn("Kaiascan", { href: "https://kaiascan.io/address/" + a, ext: true, iconEnd: "ext", kind: "ghost", attrs: 'id="scan" translate="no" aria-label="' + App.esc(t("w.scan")) + '"' }) + "</div>" +
+      '<div class="list"><a class="wrow" href="stakes.html"><span>' + t("w.staked") + '</span><b id="staked">' + F.ct(staked) + "</b>" + C.icon("chev", 18) + "</a>" +
+      '<div class="wrow"><span>KAIA</span><b>' + F.kaia(kaia) + "</b><small>" + t("w.kaia.note") + "</small></div></div></section>" +
+      /* 2. the player's own address: a flat section under the ink rule. Label, the full address in two rows of five groups, one secondary button, one text link. */
+      '<section class="msec maddr" aria-labelledby="addr-h"><h2 class="lbl" id="addr-h">' + t("w.addr") + '</h2><p class="addr-v" id="addr" translate="no">' + F.groups(a) + "</p>" +
+      '<div class="maddr-acts">' + /* the button itself turns into "Copied": no toast repeats it. The explorer is a text link that carries its name. */
+      C.btn(t("w.copy"), { icon: "copy", id: "copy-addr", attrs: 'data-copy="' + a + '" data-done="' + App.esc(t("w.copy.done")) + '"' }) +
+      '<a class="linkish" id="scan" translate="no" href="https://kaiascan.io/address/' + a + '" target="_blank" rel="noopener" aria-label="' + App.esc(t("w.scan")) + '">Kaiascan' + C.icon("ext", 16) + "</a></div>" +
       '<p class="addr-note">' + t("w.addr.note") + "</p></section>" +
-      /* 3. points: the figure, what it converts to, and the one primary action of the screen */
-      '<section class="sec" aria-labelledby="pt-h"><div class="lead-fig"><h2 class="lbl" id="pt-h">' + t("w.points") + '</h2><p class="fig" id="pt-fig">' + F.int(pts) + '</p><p class="sub">' + (canCt ? t("w.ready", { n: canCt }) : t("w.notyet", { g: F.int(1000 - pts) })) + "</p></div>" +
-      (S === "" || off ? C.rows([[t("w.onway"), t("w.pendinghit", { p: u.pendingHit, time: "22:10" })]]) : "") +
-      C.btn(t("w.convert"), { kind: "primary", block: true, href: "convert.html" + (S === "new" || S === "zero" ? "?state=short" : ""), disabled: off }) + "</section>" +
+      /* 3. points are second in size. What is still on the way is a state, so it is an outlined chip. Convert has room above it and is the one primary action. */
+      '<section class="msec" aria-labelledby="pt-h"><div class="mhero"><h2 class="lbl" id="pt-h">' + t("w.points") + '</h2><p class="fig mfig-2" id="pt-fig">' + F.int(pts) + "<small>P</small></p></div>" +
+      '<p class="mline">' + (canCt ? t("w.ready", { n: canCt }) : t("w.notyet", { g: F.int(1000 - pts) })) + "</p>" +
+      (S === "" || off ? '<p class="wpend">' + C.tag(t("w.onway")) + "<span>" + t("w.pendinghit", { p: u.pendingHit, time: "22:10" }) + "</span></p>" : "") +
+      '<div class="wconvert">' + C.btn(t("w.convert"), { kind: "primary", block: true, href: "convert.html" + (S === "new" || S === "zero" ? "?state=short" : ""), disabled: off }) + "</div></section>" +
       /* 4. the token contract is reference only: collapsed, labelled as an address you must not send to, with its own toast */
-      C.help(t("w.info"), '<p class="note note-warn">' + C.icon("warn", 18) + "<span>" + t("w.token") + '</span></p><p class="addr-v" translate="no">' + F.groups(M.token) + "</p>" +
-        C.btn(t("w.token.copy"), { sm: true, icon: "copy", attrs: 'data-copy="' + M.token + '" data-toast="' + App.esc(t("w.token.copied")) + '" data-done="' + App.esc(t("w.copy.done")) + '"' })) +
-      C.stamp(S === "error" ? 48 : 6);
+      C.help(t("w.info"), '<p class="note note-warn">' + C.icon("warn", 18) + "<span>" + t("w.token") + '</span></p><div class="mcontract"><p class="addr-v" translate="no">' + F.groups(M.token) + "</p>" +
+        C.btn(t("w.token.copy"), { sm: true, icon: "copy", attrs: 'data-copy="' + M.token + '" data-toast="' + App.esc(t("w.token.copied")) + '" data-done="' + App.esc(t("w.copy.done")) + '"' }) + "</div>");
   }
   App.mount({ tab: "wallet", docTitle: t("w.title"), head: head(), body: body(), points: pts, pts: S === "loading" ? "loading" : S === "error" ? "stale" : "", badges: { home: "dot", results: 2 } });
 })();

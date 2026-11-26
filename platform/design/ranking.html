@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/screens/rank.css">
 </head>
 <body>
 <!-- K1 Weekly ranking. States: (none) outside the Top 10, top10, unranked, winner, short, lastweek (being finalised), sent (prizes sent), loading, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
@@ -65,7 +66,7 @@
       (r.prize === undefined ? "" : '<p class="krow-prize">' + prize(r.prize) + "<small>CT</small></p>") +
       (r.gap === undefined || r.me ? "" : '<p class="krow-gap">' + gap(r.gap) + "</p>") + "</li>";
   }
-  /* "Around you": the rank just above, the player, the rank just below, each with its distance in points */
+  /* "Around you": no second label row (the heading and the words "ahead" and "behind" say what the right column is). The rank just above, the player, the rank just below, each with its distance in points */
   function aroundRows(w) {
     var rows = M.around.slice(1, 4);
     if (w === "last") rows = rows.map(function (r, i) { return Object.assign({}, r, { rank: 30 + i, pts: 1250 - i * 50 }); });
@@ -77,7 +78,7 @@
     if (!hasAround(w)) return "";
     var rows = aroundRows(w);
     return '<section class="sec sec-rule" id="around" tabindex="-1"><div class="sect-h"><h2 class="sect-h">' + t("k.around") + '</h2><span class="muted">' + t("k.around.sub", { a: rows[0].rank, b: rows[rows.length - 1].rank }) + "</span></div>" +
-      '<p class="cols" aria-hidden="true"><span>' + t("k.col.player") + "</span><span>" + t("k.col.gap") + '</span></p><ol class="list">' + rows.map(row).join("") + "</ol></section>";
+      '<ol class="list" aria-label="' + App.esc(t("k.col.gap")) + '">' + rows.map(row).join("") + "</ol></section>";
   }
   function list(w) {
     if (S === "loading") return '<ul class="list" id="top10" aria-busy="true">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function () { return '<li class="krow">' + C.skel("24px", "24px") + "<div>" + C.skel("120px", "14px") + C.skel("60px", "10px", "margin-top:8px") + "</div>" + C.skel("64px", "16px") + "</li>"; }).join("") + "</ul>";
@@ -105,6 +106,17 @@
     a.scrollIntoView({ behavior: App.reduce ? "auto" : "smooth", block: "center" }); a.focus({ preventScroll: true });
     a.classList.remove("is-flash"); void a.offsetWidth; a.classList.add("is-flash");
   }
+  /* first view: the pinned bar's top edge lands on a line between two rows, never through one.
+     Rows stretch a little (53 to 64 px) to fill the space above the bar; what is left over goes to the podium height. */
+  function snap() {
+    var app = $(".app"), first = $("#top10 .list .krow"), p = $("#pin"); if (!app || !first || !p) return;
+    app.style.removeProperty("--krow-h"); app.style.removeProperty("--pod-h");
+    var avail = p.getBoundingClientRect().top - (first.getBoundingClientRect().top + window.scrollY), n = Math.floor(avail / 53);
+    if (avail <= 0) return;
+    var h = n ? Math.min(avail / n, 64) : 0, left = Math.ceil(avail - n * h);
+    if (left > 32) return;
+    if (n) app.style.setProperty("--krow-h", h + "px"); if (left > 0) app.style.setProperty("--pod-h", 88 + left + "px");
+  }
   function view(w) {
     var note = "";
     if (w === "last") note = S === "sent" ? C.note("ok", t("k.sent") + ' <a href="https://kaiascan.io/" target="_blank" rel="noopener">' + t("w.scan") + "</a>") : C.note("sky", t("k.closed", { time: t("k.final.time") }));
@@ -116,12 +128,14 @@
     if (S === "error") return C.error();
     return C.seg([{ label: t("r.week"), value: "this", on: week === "this" }, { label: t("k.lastweek"), value: "last", on: week === "last" }], { name: "week", label: t("k.week") }) + '<div class="stack pg-fade" id="view">' + view(week) + "</div>";
   }
-  App.mount({ tab: "rank", docTitle: t("k.title"), head: head(), body: body(), pin: pin(week), badges: { home: "dot", results: 2 }, after: function () {
+  App.mount({ tab: "rank", cls: "sc-rank", docTitle: t("k.title"), head: head(), body: body(), pin: pin(week), badges: { home: "dot", results: 2 }, after: function () {
     document.addEventListener("seg", function (e) {
       if (e.detail.name !== "week") return; week = e.detail.value;
       var v = $("#view"); v.innerHTML = view(week); v.classList.remove("pg-fade"); void v.offsetWidth; v.classList.add("pg-fade");
-      var p = $("#pin"); if (p) p.outerHTML = pin(week); App.enhance(document.body); App.pinFit();
+      var p = $("#pin"); if (p) p.outerHTML = pin(week); App.enhance(document.body); App.pinFit(); snap();
     });
+    snap(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(snap);
+    window.addEventListener("resize", snap);
     document.addEventListener("click", function (e) {
       if (e.target.closest("#how")) howSheet();
       else if (e.target.closest("button#pin")) toAround();

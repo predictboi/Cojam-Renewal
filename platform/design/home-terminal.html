@@ -13,9 +13,10 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/screens/home.css">
 </head>
 <body>
-<!-- H2 Home, terminal view. States: (none) two answered, fresh, syncing, slow, failed, reconnect, reconnectfail, otherdevice, loading, empty, closed, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<!-- H2 Home, terminal view. States: (none) two answered (or the picks made in this tab; with all five answered it is the finished home, which links to day done), fresh (the explicit reset), syncing, slow, failed, reconnect, reconnectfail, otherdevice, loading, empty, closed, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -25,11 +26,16 @@
   var t = App.t, S = App.state, M = MOCK, $ = App.$;
   /* picks: n -> { dir, sync: "ok" | "saving" | "fail" } */
   var picks = {}, sess = App.sess, live = S === "" || S === "fresh";
-  if (S === "fresh") sess.resetDay();
+  /* "?state=fresh" is the explicit reset. It is dropped from the address once used, so Back from day done never resets the day again. */
+  function dropFresh() { try { var u = new URL(location.href); u.searchParams.delete("state"); history.replaceState(null, "", u.pathname + u.search + u.hash); } catch (e) {} }
+  /* a page restored from the back cache is built again, so it always shows the picks as they are now */
+  window.addEventListener("pageshow", function (e) { if (e.persisted) location.reload(); });
+  if (S === "fresh") { sess.resetDay(); dropFresh(); }
   var leftSaved = live ? sess.takeLeft() : 0;   /* picks sent at once because the player left inside their undo window */
-  if (live && sess.picked() === 5) { location.replace(sess.data.paid ? "done.html" : "done.html?state=moment"); return; }
+  /* the day is already finished in this tab: the list shows all five answered and links to day done */
+  var fin = live && sess.picked() === 5;
   /* picks made in this tab (in either view) carry over; with none, the plain screen shows its two sample picks */
-  if (S === "" && sess.picked()) M.set.forEach(function (id, i) { if (sess.data.picks[id]) picks[i + 1] = { dir: sess.data.picks[id], sync: "ok" }; });
+  if (live && sess.picked()) M.set.forEach(function (id, i) { if (sess.data.picks[id]) picks[i + 1] = { dir: sess.data.picks[id], sync: "ok" }; });
   else if (S !== "fresh" && S !== "partial0") { picks[1] = { dir: "r", sync: "ok" }; picks[2] = { dir: "l", sync: S === "syncing" || S === "slow" ? "saving" : "ok" }; }
   if (S === "failed") picks[2] = { dir: "l", sync: "fail" };
   var current = null;
@@ -76,18 +82,43 @@
     if (S === "closed") return viewSwitch() + C.empty({ icon: "refresh", title: t("h.closed"), action: C.btn(t("h.closed.btn"), { kind: "primary", href: "home-terminal.html" }) });
     if (S === "error") return viewSwitch() + C.error();
     if (S === "otherdevice") return viewSwitch() + C.otherDevice();
-    return viewSwitch() + (App.offline ? C.note("warn", t("h.offline")) : "") + C.playBanner(S) + '<ol class="term" id="term">' + list() + "</ol>";
+    return viewSwitch() + (App.offline ? C.note("warn", t("h.offline")) : "") + C.playBanner(S) + '<ol class="term" id="term">' + list() + '</ol><div class="term-end" id="term-end" hidden></div>';
   }
   current = firstOpen();
   App.store.set("view", "term");
-  App.mount({ tab: "home", docTitle: t("h.title"), head: head(), body: body(), badges: { home: "dot", results: 2 }, after: function () {
+  App.mount({ tab: "home", docTitle: t("h.title"), head: head(), body: body(), badges: { home: fin ? 0 : "dot", results: 2 }, after: function () {
     var term = $("#term"), lastPick = 0; if (!term) return;
     if (S === "failed") App.toast(t("h.toast.fail", { n: 2 }), { btn: t("common.retry") });
     if (leftSaved) App.toast(leftSaved > 1 ? t("h.left.savedn", { n: leftSaved }) : t("h.left.saved"));
     var leaving = false;
     window.addEventListener("pagehide", function () { var n = Q.filter(function (q) { return picks[q.n] && picks[q.n].sync === "held"; }).length; if (live && n && !leaving) sess.leave(n); });
+    /* under the list once all five are picked: "Finishing in 3" with "Finish now" while a pick can still be undone (as on the card view),
+       then "Saving", and on a finished day the link to day done */
+    var endEl = $("#term-end"), endT, endMode = "";
+    function heldPicks() { return Q.map(function (q) { return picks[q.n]; }).filter(function (p) { return p && p.sync === "held"; }).sort(function (a, b) { return a.t0 - b.t0; }); }
+    function endPaint() {
+      clearInterval(endT);
+      var held = heldPicks(), mode = count() < 5 ? "" : held.length ? "wait" : fin && !leaving ? "fin" : "saving";
+      if (mode !== endMode) {
+        endMode = mode; endEl.hidden = !mode;
+        endEl.innerHTML = !mode ? "" : '<div class="term-end-txt"><h2>' + t("h.end.h") + '</h2><p id="term-end-p">' + (mode === "fin" ? t("h.fin.b") : mode === "saving" ? '<span class="spin"></span>' + t("h.end.b") : "") + "</p></div>" +
+          (mode === "wait" ? C.btn(t("h.end.now"), { kind: "primary", block: true, id: "finish" }) : mode === "fin" ? C.btn(t("h.fin.btn"), { kind: "primary", block: true, href: sess.data.paid ? "done.html" : "done.html?state=moment", iconEnd: "right" }) : "");
+        if (mode === "wait") endEl.scrollIntoView({ block: "nearest", behavior: App.reduce ? "auto" : "smooth" });
+      }
+      if (mode !== "wait") return;
+      var p = held[held.length - 1], line = $("#term-end-p");
+      function tick() { line.innerHTML = t("h.end.in", { n: "<b>" + Math.max(1, Math.ceil((UNDO_MS - (Date.now() - p.t0)) / 1000)) + "</b>" }); }
+      tick(); endT = setInterval(tick, 100);
+    }
+    function goDone(ms) { leaving = true; endPaint(); setTimeout(function () { location.href = "done.html?state=moment"; }, ms); }
+    /* "Finish now": every pick still inside its undo window is sent at once and the day done screen opens */
+    endEl.addEventListener("click", function (e) {
+      if (!e.target.closest("#finish")) return;
+      heldPicks().forEach(function (p) { clearTimeout(p.timer); p.sync = "saving"; });
+      leaving = true; paint(false); goDone(0);
+    });
     function paint(focus) {
-      term.innerHTML = list();
+      term.innerHTML = list(); endPaint();
       var day5 = $("#day5"), sg = segs(); for (var i = 0; i < 5; i++) day5.children[i].className = sg[i] ? "is-" + sg[i] : "";
       $("#cnt").textContent = count();
       if (focus) { var h = $("#open-q"); if (h) h.focus({ preventScroll: true }); }
@@ -104,20 +135,21 @@
       }
       var b = e.target.closest("[data-pick]"); if (!b || b.disabled) return;
       if (App.offline) { App.toast(t("h.offline"), { key: "offline" }); return; }   /* the answers look switched off, and a tap says why */
-      if (Date.now() - lastPick < 200) return;   /* a double tap never answers two questions */
+      if (Date.now() - lastPick < 400) return;   /* a quick double tap never answers two questions */
       lastPick = Date.now();
       var n = +b.getAttribute("data-pick"), dir = b.getAttribute("data-dir");
       var p = picks[n] = { dir: dir, sync: "held", t0: Date.now() }; keep(); current = firstOpen();
       p.timer = setTimeout(function () {
         p.sync = "saving"; paint(false); confirm(n);
         var open = Q.some(function (q) { return picks[q.n] && picks[q.n].sync === "held"; });
-        if (count() === 5 && !open) { leaving = true; setTimeout(function () { location.href = "done.html?state=moment"; }, 500); }
+        if (count() === 5 && !open && !leaving) goDone(App.reduce ? 0 : 500);
       }, UNDO_MS);
       try { if (navigator.vibrate) navigator.vibrate(10); } catch (err) {}
       App.live(t("h.live.picked", { choice: Q[n - 1][dir], k: 5 - count() }));
       paint(true);
     });
     /* Undo from the keyboard while a window is open: Z or Backspace takes back the most recent pick */
+    endPaint();
     document.addEventListener("keydown", function (e) {
       if ((e.key !== "z" && e.key !== "Z" && e.key !== "Backspace") || e.repeat || e.altKey || e.ctrlKey || e.metaKey || $("#sheet-root.is-open")) return;
       var u = App.$$("[data-undo]", term).sort(function (a, b) { return picks[+b.getAttribute("data-undo")].t0 - picks[+a.getAttribute("data-undo")].t0; })[0];

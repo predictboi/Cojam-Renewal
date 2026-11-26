@@ -1,0 +1,91 @@
+/* Money screens: wallet, staking, my stakes, convert, deposit, withdraw. Loaded after components.css; values come from tokens.css.
+   The shared button looks, the segmented control, tags and the 2 px section rule live in components.css and are only used here, never redrawn. */
+
+/* ---------- sections: the 2 px ink rule between major parts, hairlines only inside a list ---------- */
+.msec { display: grid; gap: var(--s-12); min-width: 0; }
+.msec + .msec, .mtabs + .msec--rule { margin-top: var(--s-4); padding-top: var(--s-20); border-top: var(--rule, 2px solid var(--ink)); }
+.msec > .list > :first-child { border-top: var(--hair); }
+
+/* ---------- page tabs: "New stake / My stakes" are two pages, so they read as tabs on the ink rule, not as a filter ---------- */
+.mtabs { display: flex; gap: var(--s-20); min-width: 0; border-bottom: var(--rule, 2px solid var(--ink)); }
+.mtabs a { position: relative; display: inline-flex; align-items: center; gap: var(--s-8); min-height: 48px; padding: 0 var(--s-2); color: var(--ink-2); font-size: var(--fs-16); font-weight: var(--fw-semi); line-height: 1.2; text-decoration: none; white-space: nowrap; }
+.mtabs a[aria-current="page"] { color: var(--ink); font-weight: var(--fw-heavy); }
+/* the current tab stands on the rule: a 4 px ink foot that joins the 2 px line under the row */
+.mtabs a[aria-current="page"]::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--ink); }
+.mtabs a:focus-visible { outline-offset: -3px; }
+.mtabs-n { display: inline-grid; place-items: center; min-width: 24px; height: 24px; padding: 0 var(--s-6); border-radius: var(--r-s); box-shadow: inset 0 0 0 1.5px currentColor; font-family: var(--font-display); font-weight: var(--fw-black); font-stretch: var(--wide); font-size: var(--fs-13); line-height: 1; }
+.mtabs a[aria-current="page"] .mtabs-n { background: var(--ink); color: var(--snow); box-shadow: none; }
+@media (hover: hover) { .mtabs a:not([aria-current="page"]):hover { color: var(--ink); } }
+
+/* ---------- figures ---------- */
+.mhead { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); min-height: 20px; }
+/* "Updated 7s ago" belongs to the balance it describes: it sits on the label line */
+.mhead .stamp { justify-content: flex-end; font-size: var(--fs-12); line-height: 1.4; white-space: nowrap; }
+.mhero { display: grid; gap: var(--s-2); min-width: 0; }
+.mhero .fig { font-size: 44px; line-height: 1; letter-spacing: -0.03em; }
+.mhero .sub { font-size: var(--fs-14); color: var(--ink-2); }
+.mhero .mfig-2 { font-size: var(--fs-28); }
+.mline { font-size: var(--fs-14); line-height: 1.45; color: var(--ink-2); }
+.mline b { color: var(--ink); font-weight: var(--fw-bold); }
+
+/* ---------- wallet ---------- */
+.wrow { display: grid; grid-template-columns: 1fr auto; align-items: baseline; column-gap: var(--s-12); padding: var(--s-12) 0; color: var(--ink); font-size: var(--fs-15); text-decoration: none; }
+a.wrow { grid-template-columns: 1fr auto 18px; align-items: center; min-height: 52px; padding: 0; }
+.wrow > span:first-child { color: var(--ink-2); }
+.wrow b { font-weight: var(--fw-heavy); white-space: nowrap; }
+/* a value sits on the first line of its label; the explanation runs full width under both */
+.wrow small { grid-column: 1 / -1; margin-top: var(--s-2); font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
+@media (hover: hover) { a.wrow:hover b { text-decoration: underline; text-underline-offset: 3px; } }
+/* the pending points state: an ink outlined chip, then what it means */
+.wpend { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s-6) var(--s-8); font-size: var(--fs-14); font-weight: var(--fw-semi); line-height: 1.4; }
+.wconvert { margin-top: var(--s-12); }
+
+/* ---------- the player's address: a flat block, the same on wallet and deposit ---------- */
+.maddr { display: grid; gap: var(--s-10); min-width: 0; }
+.maddr .addr-v { font-size: var(--fs-16); line-height: 1.55; letter-spacing: 0.01em; }
+@media (max-width: 379px) { .maddr .addr-v { font-size: var(--fs-15); } }
+.maddr-acts { display: flex; align-items: center; gap: var(--s-16); min-width: 0; }
+.maddr-acts .btn { flex: 1; min-width: 0; }
+.maddr-acts .linkish { flex: none; }
+.maddr-links { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); margin: calc(-1 * var(--s-6)) 0; }
+.maddr .addr-note { text-wrap: balance; }
+.mcontract { display: grid; gap: var(--s-8); justify-items: start; }
+
+/* ---------- deposit ---------- */
+.dp-qr .qr { border: var(--edge); }
+.dp-qr { display: grid; gap: var(--s-12); }
+.dp-qr .watch { justify-content: flex-start; min-height: 24px; }
+.dp-token { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s-12); }
+.dp-token .linkish { flex: none; margin: calc(-1 * var(--s-12)) 0; }
+
+/* ---------- staking: new stake ---------- */
+/* the summary takes whatever height the screen has left, so there is no dead band above the pinned action */
+.pg:has(> .stk-sum) { display: flex; flex-direction: column; }
+.stk-sum { flex: 1 0 auto; align-content: center; gap: var(--s-8); }
+.stk-sum .mhero .fig { font-size: var(--fs-32); }
+.stk-lock { display: flex; align-items: flex-start; gap: var(--s-8); font-size: var(--fs-15); font-weight: var(--fw-semi); line-height: 1.4; color: var(--ink); }
+.stk-lock svg { margin-top: 2px; }
+.stk-sum + .help { border-top: var(--rule, 2px solid var(--ink)); border-bottom: 0; }
+
+/* ---------- my stakes ---------- */
+.mstats { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-16); }
+.mstats .stat b { font-size: var(--fs-20); }
+.mstake { gap: var(--s-12); }
+.mstake-top { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-12); }
+.mstake-top .fig { font-size: var(--fs-28); }
+.mstake-top .tag { margin-top: var(--s-2); padding: var(--s-4) var(--s-8); }
+/* progress in the product's block language: an ink outlined track like a day block, filled ink while locked, sky once unlocked (the colours of the two state chips) */
+.mbar { position: relative; height: 14px; border-radius: var(--r-s); background: var(--surface); box-shadow: inset 0 0 0 1.5px var(--ink); overflow: hidden; }
+.mbar i { display: block; height: 100%; min-width: 6px; background: var(--ink); }
+.mbar.is-full i { background: var(--sky); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.mbar-meta { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-8); font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
+.mbar-meta b { color: var(--ink); font-weight: var(--fw-bold); }
+.mstake .rows { padding-top: var(--s-12); border-top: var(--hair); }
+.mstake-gap { margin-top: calc(-1 * var(--s-6)); font-size: var(--fs-13); line-height: 1.4; color: var(--ink-2); }
+.mstake-acts { display: grid; gap: var(--s-8); }
+.mclosed { display: grid; gap: var(--s-2); }
+
+/* ---------- withdraw: a valid address is repeated in full under the field, grouped as on the wallet ---------- */
+.field-msg .addr-v { flex: 0 0 100%; font-size: var(--fs-15); line-height: 1.55; color: var(--ink); }
+.dp-qr + .maddr { margin-top: 0; padding-top: 0; border-top: 0; }
+.dp-token .addr-v { font-size: var(--fs-13); color: var(--ink-2); }

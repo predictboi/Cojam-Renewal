@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/screens/money.css">
 </head>
 <body>
 <!-- S2 My stakes. States: (none), claimable, unlocking (flips while you watch), claim (success sheet), loading, empty, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
@@ -36,32 +37,36 @@
   var claimable = stakes.reduce(function (a, s) { var c = calc(s); return a + (c.unlocked || c.interest >= M.minClaim ? c.interest : 0); }, 0);
 
   function head() { return '<div class="ph-top"><h1>' + t("s.title") + "</h1></div>"; }
-  function sw() { return C.seg([{ label: t("s.new"), href: "staking.html" }, { label: t("s.mine", { n: S === "empty" ? 0 : stakes.length }), href: "stakes.html", on: true }], { label: t("s.switch") }); }
+  /* two pages, so two tabs standing on the ink rule; the number of open stakes is a real count, in a chip */
+  function sw() { return '<nav class="mtabs" id="sw" aria-label="' + App.esc(t("s.switch")) + '"><a href="staking.html">' + t("s.new") + '</a><a href="stakes.html" aria-current="page">' + t("s.tab.mine") + '<span class="mtabs-n">' + (S === "empty" ? 0 : stakes.length) + "</span></a></nav>"; }
   function out(s) { return Math.round((s.amount + calc(s).interest) * 1e4) / 1e4; }
+  /* one stake is one section under the ink rule: what is locked and its state, how far along it is, what it has earned, and the action when there is one */
   function card(s) {
     var c = calc(s), actions;
     /* the button states everything that leaves the stake: principal plus interest, and the line under it shows the two parts */
-    if (c.unlocked) actions = C.btn(t("m.withdraw", { a: F.dec(out(s), 4) }), { kind: "primary", block: true, attrs: 'data-wd="' + s.id + '"', disabled: App.offline }) + '<p class="tiny muted center">' + t("m.withint", { p: F.dec(s.amount), i: F.dec(c.interest, 4) }) + "</p>";
-    else if (c.interest >= M.minClaim) actions = C.btn(t("m.claim", { i: F.dec(c.interest, 2) }), { block: true, attrs: 'data-claim="' + s.id + '"', disabled: App.offline });
-    else actions = C.btn(t("m.claim", { i: F.dec(c.interest, 2) }), { block: true, disabled: true }) + '<p class="tiny muted center">' + t("m.claim.gap", { g: F.dec(M.minClaim - c.interest, 2) }) + "</p>";
-    return '<article class="sec stake" data-stake="' + s.id + '"><div class="stake-top"><div><p class="fig fig--md">' + F.dec(s.amount) + '<small>CT</small></p><p class="small muted">' + t("m.card.period", { d: s.days, r: s.rate }) + "</p></div>" +
-      '<span data-status>' + (c.unlocked ? C.tag(t("m.unlocked"), "sky") : C.tag(t("m.locked"), "ink", "lock")) + "</span></div>" +
-      '<div class="stack-8"><div class="bar' + (c.unlocked ? " is-full" : "") + '" role="img" aria-label="' + t("m.day", { x: c.day, d: s.days }) + '"><i style="width:' + c.pct.toFixed(1) + '%"></i></div>' +
-      '<div class="row-between tiny muted"><span>' + t("m.started", { date: F.date(s.start) }) + "</span><span>" + t("m.day", { x: c.day, d: s.days }) + "</span><span>" + t("m.unlocks", { date: F.date(c.unlock) }) + "</span></div></div>" +
+    if (c.unlocked) actions = '<div class="mstake-acts" data-actions>' + C.btn(t("m.withdraw", { a: F.dec(out(s), 4) }), { kind: "primary", block: true, attrs: 'data-wd="' + s.id + '"', disabled: App.offline }) + '<p class="tiny muted center">' + t("m.withint", { p: F.dec(s.amount), i: F.dec(c.interest, 4) }) + "</p></div>";
+    else if (c.interest >= M.minClaim) actions = '<div class="mstake-acts" data-actions>' + C.btn(t("m.claim", { i: F.dec(c.interest, 2) }), { block: true, attrs: 'data-claim="' + s.id + '"', disabled: App.offline }) + "</div>";
+    /* under the 10 CT minimum there is nothing to press, so there is no button: only how far it is */
+    else actions = '<p class="mstake-gap" data-actions>' + t("m.claim.gap", { g: F.dec(M.minClaim - c.interest, 2) }) + "</p>";
+    return '<article class="msec mstake" data-stake="' + s.id + '"><div class="mstake-top"><div><p class="fig">' + F.dec(s.amount) + '<small>CT</small></p><p class="small muted">' + t("m.card.period", { d: s.days, r: s.rate }) + "</p></div>" +
+      '<span data-status>' + (c.unlocked ? C.tag(t("m.unlocked"), "sky") : C.tag(t("m.locked"), "", "lock")) + "</span></div>" +
+      '<div class="stack-8"><div class="mbar' + (c.unlocked ? " is-full" : "") + '" role="img" aria-label="' + t("m.day", { x: c.day, d: s.days }) + '"><i style="width:' + c.pct.toFixed(1) + '%"></i></div>' +
+      '<div class="mbar-meta"><span>' + t("m.started", { date: F.date(s.start) }) + "</span><b>" + t("m.day", { x: c.day, d: s.days }) + "</b><span>" + t("m.unlocks", { date: F.date(c.unlock) }) + "</span></div></div>" +
       C.rows([[t("m.interest"), '<span data-tick="' + c.interest + "|" + (c.unlocked ? 0 : c.per) + "|" + c.cap + '">' + F.dec(c.interest, 6) + "</span> CT" + (App.offline ? "<small>" + t("m.paused") + "</small>" : ""), true]]) +
-      '<div class="stack-8" data-actions>' + actions + "</div></article>";
+      actions + "</article>";
   }
   function body() {
     if (S === "error") return sw() + C.error();
     if (S === "empty") return sw() + C.empty({ icon: "lock", title: t("m.empty.h"), body: t("m.empty.b"), action: C.btn(t("m.empty.btn"), { kind: "primary", href: "staking.html" }) });
-    if (S === "loading") return sw() + '<section class="sec" aria-busy="true">' + C.skel("90px") + C.skel("170px", "40px") + C.skel("70%", "22px") + "</section>" + [1, 2].map(function () { return '<article class="sec" aria-busy="true">' + C.skel("120px", "26px") + C.skel("100%", "8px") + C.skel("100%") + C.skel("100%", "44px") + "</article>"; }).join("");
+    if (S === "loading") return sw() + '<section class="msec" aria-busy="true">' + C.skel("90px") + C.skel("170px", "44px") + C.skel("70%", "22px") + "</section>" + [1, 2].map(function () { return '<article class="msec" aria-busy="true">' + C.skel("120px", "28px") + C.skel("100%", "14px") + C.skel("100%") + C.skel("100%", "44px") + "</article>"; }).join("");
     return sw() +
-      /* the total leads, on the page: one label, the figure, then the two interest figures beside each other */
-      '<section class="sec" id="total"><div class="lead-fig"><h2 class="lbl">' + t("m.staked") + '</h2><p class="fig">' + F.dec(total) + "<small>CT</small></p></div>" +
-      '<div class="stats"><div class="stat"><b><span data-tick="' + sofar + "|" + perAll + '">' + F.dec(sofar, 6) + "</span></b><span>" + t("m.sofar") + ' (CT)</span></div><div class="stat"><b>' + F.dec(claimable, 2) + "</b><span>" + t("m.claimable") + " (CT)</span></div></div></section>" +
+      /* the total leads; under it the two interest figures side by side, both to six places so they read as one pair (the first one ticks) */
+      '<section class="msec" id="total"><div class="mhero"><h2 class="lbl">' + t("m.staked") + '</h2><p class="fig">' + F.dec(total) + "<small>CT</small></p></div>" +
+      '<div class="stats mstats"><div class="stat"><b><span data-tick="' + sofar + "|" + perAll + '">' + F.dec(sofar, 6) + "</span></b><span>" + t("m.sofar") + ' (CT)</span></div><div class="stat"><b>' + fix6(claimable) + "</b><span>" + t("m.claimable") + " (CT)</span></div></div></section>" +
       stakes.map(card).join("") +
-      C.help(t("m.closed.q", { n: M.stakesClosed.length }), M.stakesClosed.map(function (s) { return '<div class="row-between"><span>' + F.ct(s.amount) + ", " + t("m.card.period", { d: s.days, r: s.rate }) + "</span>" + C.tag(t("m.closed"), "line") + '</div><p class="tiny">' + t("m.paidout", { a: F.dec(s.paid, 2) }) + "</p>"; }).join(""));
+      C.help(t("m.closed.q", { n: M.stakesClosed.length }), M.stakesClosed.map(function (s) { return '<div class="mclosed"><div class="row-between"><span>' + F.ct(s.amount) + ", " + t("m.card.period", { d: s.days, r: s.rate }) + "</span>" + C.tag(t("m.closed"), "line") + '</div><p class="tiny">' + t("m.paidout", { a: F.dec(s.paid, 2) }) + "</p></div>"; }).join(""));
   }
+  function fix6(n) { return Number(n).toLocaleString("en-US", { minimumFractionDigits: 6, maximumFractionDigits: 6 }); }
   function find(id) { return stakes.filter(function (s) { return s.id === id; })[0]; }
   App.mount({ tab: "stake", docTitle: t("s.title"), head: head(), body: body(), badges: { home: "dot", results: 2, stake: "dot" }, after: function () {
     document.addEventListener("click", function (e) {

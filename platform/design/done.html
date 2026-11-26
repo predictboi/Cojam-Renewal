@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/screens/home.css">
 </head>
 <body>
 <!-- H3 Day done with countdown. States: (none) paid, moment (plays saving, then paid), saving, results, zero, offline. Add ?lang=en|ko|ja. Mock data only. -->
@@ -35,16 +36,16 @@
   var outcome = S === "results" ? ["wait", "pend", "miss", "wait", "wait"] : ["wait", "wait", "wait", "wait", "wait"];
   var waiting = outcome.filter(function (o) { return o === "wait"; }).length;
 
-  /* the one reward moment: "+100P" is the hero of the head, beside the headline. It waits in the quiet blue while the last pick is saved,
-     pops in lime with a long burst when the points are paid, then settles to white. No toast repeats it; the header pill counts up. */
+  /* the one reward moment: "+100P" is the hero of the head, under the small headline. It waits in the quiet blue while the last pick is saved,
+     pops in lime with a burst that stays inside the header band when the points are paid, then settles to white. No toast repeats it; the header pill counts up. */
   function status(p) {
     if (p === "saving") return '<p class="done-st" id="reward"><span class="spin"></span>' + t("d.saving.st") + "</p>";
     return '<p class="done-st" id="reward">' + C.icon("check", 14) + t("d.paid.st") + "</p>";
   }
   function head() {
     var segs = phase === "saving" ? ["done", "done", "done", "done", "pend"] : ["done", "done", "done", "done", "done"];
-    return '<div class="done-hero"><p class="done-fig' + (phase === "saving" ? " is-wait" : "") + '" id="done-fig" aria-hidden="true">+100P</p>' +
-      '<div class="done-side"><h1>' + t("d.h1") + '</h1><div aria-live="polite" id="reward-wrap">' + status(phase) + "</div></div></div>" +
+    return '<div class="done-stack"><h1>' + t("d.h1") + '</h1><p class="done-fig' + (phase === "saving" ? " is-wait" : "") + '" id="done-fig" aria-hidden="true">+100P</p>' +
+      '<div aria-live="polite" id="reward-wrap">' + status(phase) + "</div></div>" +
       '<div class="ph-line"><span class="ph-count">5<small>/5</small></span>' + C.day5(segs, { band: true, id: "day5", cls: S === "moment" ? "is-flash" : "", label: "5/5" }) + "</div>";
   }
   function pickRow(p, i) {
@@ -54,18 +55,29 @@
   }
   function body() {
     var secs = S === "zero" ? 0 : M.untilNextSet();
-    /* the primary action first; the next set is one quiet line under it; then the picks as plain rows and the payout rule as two short lines */
+    /* the primary action first; the next set is one quiet line under it; then the picks: how many wait for an answer, with when the +50P arrive in two short lines, and the rows */
     return C.btn(t("d.rank"), { kind: "primary", block: true, href: "ranking.html", iconEnd: "right" }) +
       '<p class="watch" id="next">' + (S === "zero" ? '<span class="spin"></span><span>' + t("d.loading") + "</span>" :
         C.icon("clock", 16) + "<span>" + t("d.next") + '</span> <b class="clock-inline" id="clock" data-cd="' + secs + '" aria-hidden="true"></b><span class="sr-only" data-cd-sr></span>') + "</p>" +
-      '<section class="sec sec-rule"><div class="sect-h"><h2 class="sect-h">' + t("d.picks") + '</h2><span class="muted">' + (waiting ? t("d.waitn", { n: waiting }) : "") + "</span></div>" +
-      '<ul class="list">' + picks.map(pickRow).join("") + "</ul>" +
-      '<div class="plain-note"><p>' + t("d.hit.1") + "</p><p>" + t("d.hit.2") + '</p><a class="linkish" href="results.html">' + t("d.results") + "</a></div></section>";
+      '<section class="sec sec-rule done-picks"><div class="sect-h"><h2 class="sect-h">' + t("d.picks") + '</h2><a class="linkish" href="results.html">' + t("d.results") + "</a></div>" +
+      '<div class="done-wait">' + (waiting ? '<p class="done-wait-n">' + t("d.waitn", { n: waiting }) + "</p>" : "") + '<div class="plain-note"><p>' + t("d.hit.1") + "</p><p>" + t("d.hit.2") + "</p></div></div>" +
+      '<ul class="list">' + picks.map(pickRow).join("") + "</ul></section>";
   }
-  App.mount({ tab: "home", docTitle: t("d.h1"), head: head(), body: body(), points: basePts, pts: phase === "saving" ? "pending" : S === "results" ? "hits" : "", badges: { results: 2 }, after: function () {
+  App.mount({ tab: "home", cls: "is-done", docTitle: t("d.h1"), head: head(), body: body(), points: basePts, pts: phase === "saving" ? "pending" : S === "results" ? "hits" : "", badges: { results: 2 }, after: function () {
     document.addEventListener("cd:zero", function () { if (S !== "zero") setTimeout(function () { location.href = "home-cards.html"; }, 1200); });
     if (S === "zero") setTimeout(function () { App.toast(t("h.new")); }, 600);
     if (S !== "moment") return;
+    /* the burst is flat and wide, so every piece stays inside the header band (the band also clips it) */
+    function burst(el) {
+      if (App.reduce) return;
+      var b = document.createElement("span"), r = el.getBoundingClientRect(), W = $(".ph").getBoundingClientRect().width, n = 32, h = "";
+      b.className = "burst"; b.setAttribute("aria-hidden", "true");
+      for (var i = 0; i < n; i++) {
+        var x = -r.width / 2 + 12 + Math.random() * (W - r.left - 36), y = (Math.random() - 0.5) * 84;
+        h += '<i style="--n:' + i + ";--x:" + x.toFixed(0) + "px;--y:" + y.toFixed(0) + "px;--r:" + Math.round(Math.random() * 360) + 'deg"></i>';
+      }
+      b.innerHTML = h; el.appendChild(b); setTimeout(function () { b.remove(); }, 2200);
+    }
     /* the day done moment: the fifth pick is mined (the 100P is credited in that same transaction), only then "+100P paid" and the count up */
     var day5 = $("#day5"), wrap = $("#reward-wrap"), fig = $("#done-fig");
     setTimeout(function () { day5.children[4].className = "is-done is-fill"; }, 800);
@@ -73,7 +85,7 @@
       var sp = App.$("#pts .spin"); if (sp) sp.remove();
       wrap.innerHTML = status("paid"); fig.classList.remove("is-wait"); fig.classList.add("is-pop");
       sess.data.paid = true; sess.save(); day5.classList.remove("is-flash"); day5.classList.add("is-wave");
-      App.burst(fig, 36); try { if (navigator.vibrate) navigator.vibrate([12, 40, 18]); } catch (e) {}
+      burst(fig); try { if (navigator.vibrate) navigator.vibrate([12, 40, 18]); } catch (e) {}
       App.addPoints(100); App.live(t("toast.paid", { n: 100 }));
     }, 1500);
   } });

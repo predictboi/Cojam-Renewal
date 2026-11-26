@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/screens/money.css">
 </head>
 <body>
 <!-- W4 Withdraw CT. States: (none) empty, filled, bad, sum, own, contract, nokaia, review, signing, sending, success, failed, loading, offline. Add ?lang=en|ko|ja. Mock data only. -->
@@ -31,10 +32,10 @@
   function body() {
     return (App.offline ? C.note("warn", t("x.offline")) : "") +
       '<p class="lead">' + t("x.gas") + "</p>" +
-      '<section class="sec">' +
+      '<section class="msec">' +
       '<div class="field"><div class="field-label"><label for="to"><b>' + t("x.to") + '</b></label></div><div class="field-box field-box--mono' + (blocked ? " is-off" : "") + '"><input id="to" name="to" type="text" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="0x…" value="' + addr0 + '" aria-describedby="to-msg"' + (blocked ? " disabled" : "") + '><button type="button" class="field-max" id="paste"' + (blocked ? " disabled" : "") + ">" + t("x.paste") + '</button></div><div class="field-msg" id="to-msg" aria-live="polite"></div></div>' +
       C.amount({ id: "amt", label: t("x.amount"), unit: "CT", value: amt0, disabled: blocked, side: S === "loading" ? C.skel("110px", "12px") : t("x.avail", { c: "<b>" + F.dec(bal) + "</b>" }) }) + "</section>" +
-      '<section class="sec">' + C.rows([[t("x.kaia"), F.kaia(kaia)], [t("x.fee"), t("x.fee.v", { f: fee })], [t("dp.net"), t("dp.net.v")]]) + "</section>" +
+      '<section class="msec">' + C.rows([[t("x.kaia"), F.kaia(kaia)], [t("x.fee"), t("x.fee.v", { f: fee })], [t("dp.net"), t("dp.net.v")]]) + "</section>" +
       '<div id="kaia-note"></div>';
   }
   function cfg(to, a) {
@@ -55,7 +56,7 @@
     function update() {
       var v = to.value.trim(), e1 = checkAddr(v), p = App.parseAmount(inp.value), a = p.value || 0, e2 = "", fix = "";
       to.closest(".field-box").classList.toggle("is-error", !!e1); to.setAttribute("aria-invalid", e1 ? "true" : "false");
-      toMsg.className = "field-msg" + (e1 ? " is-error" : ""); toMsg.innerHTML = e1 ? "<span>" + t(e1) + "</span>" : v ? '<span class="row">' + C.icon("check", 16) + t("x.addr.ok") + "</span>" : "";
+      toMsg.className = "field-msg" + (e1 ? " is-error" : ""); toMsg.innerHTML = e1 ? "<span>" + t(e1) + "</span>" : v ? '<span class="row">' + C.icon("check", 16) + t("x.addr.ok") + '</span><span class="addr-v" translate="no">' + F.groups(v) + "</span>" : "";   /* the field cannot show 42 characters: a valid address is repeated in full, grouped as on the wallet, so it can be checked by eye */
       if (p.bad || (!p.empty && a <= 0)) e2 = t("s.e.nan");
       else if (a > bal) { e2 = t("s.e.bal", { b: F.dec(bal) }); fix = C.btn(t("s.fix.bal", { b: F.dec(bal) }), { sm: true, attrs: 'data-fix="' + bal + '"' }); }
       inp.closest(".field-box").classList.toggle("is-error", !!e2); aMsg.className = "field-msg" + (e2 ? " is-error" : ""); aMsg.innerHTML = e2 ? "<span>" + e2 + "</span>" + fix : "";

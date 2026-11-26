@@ -387,12 +387,12 @@
       sh.innerHTML = '<div class="sheet-grip" data-grip aria-hidden="true"></div>' + html;
       if (sheetOpts.label) sh.setAttribute("aria-label", sheetOpts.label);
       var h = $("h2", sh); if (h) { h.id = "sheet-h"; sh.setAttribute("aria-labelledby", "sheet-h"); }
-      if (!root.classList.contains("is-open")) { lastFocus = document.activeElement; root.classList.add("is-open"); $(".app").setAttribute("inert", ""); sh.style.transform = ""; setTimeout(function () { sh.focus(); }, 50); }
+      if (!root.classList.contains("is-open")) { lastFocus = document.activeElement; root.classList.add("is-open"); var pg = $(".app") || $(".doc"); if (pg) pg.setAttribute("inert", ""); sh.style.transform = ""; setTimeout(function () { sh.focus(); }, 50); }
       App.enhance(sh);
     },
     close: function (silent) {
       var root = $("#sheet-root"); if (!root || !root.classList.contains("is-open")) return;
-      root.classList.remove("is-open"); $(".app").removeAttribute("inert"); $("#sheet").style.transform = "";
+      root.classList.remove("is-open"); var pg = $(".app") || $(".doc"); if (pg) pg.removeAttribute("inert"); $("#sheet").style.transform = "";
       if (lastFocus && lastFocus.focus) lastFocus.focus();
       var o = sheetOpts; sheetOpts = null; if (!silent && o && o.onClose) o.onClose();
     },
@@ -429,7 +429,7 @@
           '<div class="sheet-acts">' + C.btn(t("tx.hide"), { block: true, attrs: "data-tx=\"hide\"" }) + (state === "slow" ? C.btn(t("tx.scan"), { kind: "ghost", block: true, iconEnd: "ext", href: "https://kaiascan.io/tx/" + HASH, ext: true }) : "") + "</div>";
       } else if (state === "success") {
         var ok = cfg.success;
-        h = '<div class="sheet-state"><div class="sheet-ic is-ok">' + ic("check", 32) + "</div><h2>" + ok.title + "</h2></div>" + (ok.rows ? C.rows(ok.rows) : "") +
+        h = '<div class="sheet-state sheet-state--ok">' + App.tx.doneFig(ok) + "<h2>" + ok.title + "</h2></div>" + (ok.rows ? C.rows(ok.rows) : "") +
           '<div class="sheet-acts">' + (ok.btn ? C.btn(ok.btn.label, { kind: "primary", block: true, href: ok.btn.href }) + C.btn(t("common.done"), { kind: "ghost", block: true, attrs: "data-tx=\"done\"" }) : C.btn(t("common.done"), { kind: "primary", block: true, attrs: "data-tx=\"done\"" })) +
           '<a class="linkish self-center" href="https://kaiascan.io/tx/' + HASH + '" target="_blank" rel="noopener">' + t("tx.scan") + ic("ext", 16) + "</a></div>";
       } else if (state === "failed") {
@@ -437,6 +437,14 @@
           '<div class="sheet-acts">' + C.btn(t("common.retry"), { kind: "primary", block: true, attrs: "data-tx=\"retry\"" }) + C.btn(t("common.close"), { kind: "ghost", block: true, attrs: "data-tx=\"cancel\"" }) + "</div>";
       }
       return h;
+    },
+    /* the success moment speaks the product's own language: what happened as a display figure on ink beside a lime done block (the day done moment, smaller).
+       The figure is success.fig (for example "500 CT") or, without it, the CT amount named in the title (else the point amount). */
+    doneFig: function (ok) {
+      var fig = ok.fig, m;
+      if (!fig) { var txt = String(ok.title).replace(/<[^>]+>/g, ""), re = /([+\-]?\d[\d,]*(?:\.\d+)?)\s?(CT|P)(?![A-Za-z])/g, hit = null; while ((m = re.exec(txt))) { if (!hit || (m[2] === "CT" && hit[2] !== "CT") || m[2] === hit[2]) hit = m; } if (hit) fig = hit[1] + " " + hit[2]; }
+      var parts = fig ? /^(.*?)(?:\s(CT|P))?$/.exec(fig) : null;
+      return '<div class="sheet-done" aria-hidden="true"><span class="sheet-done-ck">' + ic("check", 22) + "</span>" + (parts ? '<span class="sheet-done-fig">' + parts[1] + (parts[2] ? "<small>" + parts[2] + "</small>" : "") + "</span>" : "") + "</div>";
     },
     show: function (state, cfg) {
       App.tx.cfg = cfg; App.tx.state = state;
@@ -454,7 +462,15 @@
       if (on) { if (b._tx) return; b._tx = { html: b.innerHTML, dis: b.disabled }; b.innerHTML = '<span class="spin"></span><span>' + label + "</span>"; b.disabled = true; b.classList.add("is-busy"); }
       else if (b._tx) { b.innerHTML = b._tx.html; b.disabled = b._tx.dis; b.classList.remove("is-busy"); b._tx = null; }
     },
-    go: function (state) { App.tx.state = state; if (state === "success" || state === "failed") App.tx.busy(false); if (App.tx.hidden) { if (state === "success" || state === "failed") { App.tx.hidden = false; App.tx.show(state, App.tx.cfg); } } else App.tx.show(state, App.tx.cfg); },
+    go: function (state) { App.tx.state = state; if (state === "success" || state === "failed") App.tx.busy(false); var cfg = App.tx.cfg;
+      if (!App.tx.hidden) { App.tx.show(state, cfg); return; }
+      /* after "Hide" the player has moved on: a finished transaction confirms with a toast and the sheet stays shut. Only a failure comes back, because it needs an answer. */
+      if (state === "failed") { App.tx.hidden = false; App.tx.show(state, cfg); }
+      else if (state === "success") {
+        App.tx.hidden = false; var ok = cfg.success || {}, msg = String(ok.title || cfg.label || "");
+        App.toast(msg, ok.btn ? { btn: ok.btn.label, fn: function () { location.href = ok.btn.href; } } : {});
+        App.live(msg.replace(/<[^>]+>/g, "")); if (cfg.onDone) cfg.onDone();
+      } },
     /* run the whole mock flow with real waits */
     run: function (cfg) {
       if (App.tx.pending) return;   /* one at a time */
@@ -553,13 +569,15 @@
 
   /* ---------- swipe card stack (spec 6.3) ----------
      Drag follows the finger, a release past the threshold (or a fling) throws the card, the next one springs forward.
-     Guards: for 200 ms after a commit a tap on an answer is dropped (a double tap never answers two cards), while a swipe or a key press
-     in that time is a second deliberate pick: one is queued and plays when the guard ends, so a quick pick is not lost.
+     Release: a drag commits past 35% of the card width however slowly it was made. A fling commits only with real travel (96 px at 0.5 px/ms)
+     or with clearly more speed (1.1 px/ms after 56 px), always in the direction of the drag. A drag that is more vertical than horizontal never commits.
+     Guards: for 400 ms after a commit a tap on an answer is dropped (a quick double tap never answers two cards), while a swipe or a key press
+     within 200 ms is a second deliberate pick: one is queued and plays when that guard ends, so a quick pick is not lost.
      Key repeat is ignored, arrow keys work without focus inside the card.
      A thrown card is kept so restore() can fly it back in (Undo). */
   App.deck = function (root, o) {
     o = o || {};
-    var ARM = 0.35, GUARD = 200, guardUntil = 0, queued = null, qTimer = null;
+    var ARM = 0.35, GUARD = 200, TAP_GUARD = 400, FLING = { far: 96, v: 0.5, near: 56, fast: 1.1 }, guardUntil = 0, tapUntil = 0, queued = null, qTimer = null;
     function live() { return $$(".qcard:not(.is-out)", root); }
     function guarded() { return Date.now() < guardUntil; }
     function queue(dir) {
@@ -599,8 +617,8 @@
     function commit(card, dir, v, dx, dy, src) {
       if (card.classList.contains("is-out")) return;
       if (o.disabled && o.disabled()) { reset(card); if (o.onBlocked) o.onBlocked(); return; }
-      if (guarded()) { reset(card); if (src !== "tap") queue(dir); return; }
-      guardUntil = Date.now() + GUARD;
+      if (src === "tap" ? Date.now() < tapUntil : guarded()) { reset(card); if (src !== "tap") queue(dir); return; }
+      guardUntil = Date.now() + GUARD; tapUntil = Date.now() + TAP_GUARD;
       var w = card.offsetWidth, sign = dir === "r" ? 1 : -1, dist = innerWidth * 0.5 + w - Math.abs(dx || 0);
       var ms = reduce ? 200 : Math.round(Math.max(190, Math.min(380, dist / Math.max(v || 0, 1.6))));
       card.classList.remove("is-drag"); card.classList.add("is-out"); card.setAttribute("data-pos", "out");
@@ -626,7 +644,7 @@
       card.setAttribute("data-pos", "0");
       void card.offsetWidth;
       layout();
-      guardUntil = Date.now() + 250; queued = null; clearTimeout(qTimer);   /* the tap that undid cannot also pick */
+      guardUntil = tapUntil = Date.now() + 250; queued = null; clearTimeout(qTimer);   /* the tap that undid cannot also pick */
       root.focus({ preventScroll: true });
     }
     var drag = null, swallow = 0;
@@ -638,22 +656,25 @@
       if (!drag || e.pointerId !== drag.id) return;
       var dx = e.clientX - drag.x, dy = e.clientY - drag.y;
       if (!drag.lock) {
-        if (Math.abs(dy) > 10 && Math.abs(dx) < 10) { drag = null; return; }       /* vertical first: hand over to page scroll */
+        if (Math.abs(dy) > 10 && Math.abs(dy) >= Math.abs(dx)) { drag = null; return; }       /* vertical first: hand over to page scroll */
         if (Math.abs(dx) < 10) return;
         drag.lock = true; drag.card.classList.add("is-drag"); try { drag.card.setPointerCapture(e.pointerId); } catch (err) {}
       }
       e.preventDefault();
-      drag.pts.push({ x: e.clientX, t: e.timeStamp }); if (drag.pts.length > 6) drag.pts.shift();
-      var k = feedback(drag.card, dx, dy), armed = Math.abs(k) >= ARM;
+      drag.pts.push({ x: e.clientX, t: e.timeStamp }); if (drag.pts.length > 8) drag.pts.shift();
+      var k = feedback(drag.card, dx, dy), armed = Math.abs(k) >= ARM && Math.abs(dx) > Math.abs(dy);
       if (armed !== drag.armed) { drag.armed = armed; if (armed) buzz(5); }   /* a light tick when the release would commit */
     });
     function end(e) {
       if (!drag || e.pointerId !== drag.id) return;
       var d = drag; drag = null; if (!d.lock) return;
       swallow = Date.now();
-      var dx = e.clientX - d.x, dy = e.clientY - d.y, w = d.card.offsetWidth, a = d.pts[0], b = d.pts[d.pts.length - 1], v = b.t > a.t ? Math.abs(b.x - a.x) / (b.t - a.t) : 0;
-      var k = Math.abs(dx) / w;
-      if (e.type !== "pointercancel" && (k >= ARM || (v >= 0.5 && k >= 0.15))) commit(d.card, dx > 0 ? "r" : "l", v, dx, dy, "swipe"); else reset(d.card);
+      var dx = e.clientX - d.x, dy = e.clientY - d.y, w = d.card.offsetWidth, ax = Math.abs(dx), sign = dx > 0 ? 1 : -1;
+      /* release speed: the samples of the last 100 ms only, signed, so a pause before the release or a flick back is not a fling */
+      var pts = d.pts.filter(function (p) { return e.timeStamp - p.t <= 100; }), a = pts[0], b = pts[pts.length - 1];
+      var v = a && b.t > a.t ? Math.max(0, sign * (b.x - a.x) / (b.t - a.t)) : 0;
+      var fling = (ax >= FLING.far && v >= FLING.v) || (ax >= FLING.near && v >= FLING.fast);
+      if (e.type !== "pointercancel" && ax > Math.abs(dy) && (ax / w >= ARM || fling)) commit(d.card, sign > 0 ? "r" : "l", v, dx, dy, "swipe"); else reset(d.card);
     }
     root.addEventListener("pointerup", end); root.addEventListener("pointercancel", end);
     root.addEventListener("click", function (e) {

@@ -1,0 +1,42 @@
+/* Home (card view, list view) and day done: screen specific rules. Loaded after components.css; shared classes are not restyled here. */
+
+/* ---------- card footnote: one line at 360 in every language ---------- */
+.qcard-final { white-space: nowrap; }
+
+/* ---------- finished home (card view): all five answered, the panel links to day done ---------- */
+.home-fin .deck-end { position: static; }
+.home-fin .end-ring .run { animation: none; stroke-dashoffset: 0; }
+.home-fin .deck-end p { max-width: 30ch; text-wrap: balance; }
+.home-fin .deck-end .btn { margin-top: var(--s-12); }
+
+/* ---------- list view: the block under the list once all five are picked ---------- */
+.term-end { display: grid; gap: var(--s-12); margin-top: var(--s-4); padding-top: var(--s-16); border-top: var(--rule); }
+.term-end[hidden] { display: none; }
+.term-end-txt { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-12); flex-wrap: wrap; }
+.term-end h2 { font-size: var(--fs-18); font-weight: var(--fw-heavy); }
+.term-end p { display: inline-flex; align-items: center; gap: var(--s-6); font-size: var(--fs-14); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.term-end p b { color: var(--ink); font-weight: var(--fw-heavy); }
+.term-end .spin { width: 12px; height: 12px; }
+
+/* ---------- day done: the headline is a small label, "+100P" under it is the hero ---------- */
+.is-done .ph { overflow: clip; }
+.done-stack { display: grid; justify-items: start; gap: var(--s-4); padding-top: var(--s-2); }
+.ph .done-stack h1, :lang(ko) .ph .done-stack h1, :lang(ja) .ph .done-stack h1 { font-size: var(--fs-15); letter-spacing: 0; color: var(--on-brand); }
+.done-stack .done-fig { font-size: 60px; letter-spacing: -0.035em; margin-left: -2px; }
+.done-stack .done-st { min-height: 20px; font-size: var(--fs-14); font-weight: var(--fw-medium); color: var(--on-brand); }
+.done-stack .is-wait ~ * .done-st { color: var(--on-brand-2); }
+
+/* the picks section: the results link sits on the heading row, the count and when the +50P arrive come before the rows */
+.done-picks { gap: var(--s-8); padding-top: var(--s-16); }
+.done-picks .sect-h { align-items: center; }
+.done-picks .sect-h .linkish { margin: -10px 0; padding: 0 0 0 var(--s-12); }   /* a full 44 px target without a taller heading row */
+.done-wait { display: grid; gap: var(--s-2); }
+.done-wait-n { font-size: var(--fs-14); font-weight: var(--fw-heavy); color: var(--ink); }
+.done-wait .plain-note { font-size: var(--fs-13); line-height: 1.45; }
+.done-picks .pick { min-height: 46px; padding: var(--s-6) 0; }
+.done-picks .list { border-top: var(--hair); }
+
+@media (max-width: 374px) {
+  .done-stack .done-fig { font-size: 52px; }
+  .is-done .pg { gap: var(--s-12); padding-top: var(--s-12); }
+}

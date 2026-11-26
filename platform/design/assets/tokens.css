@@ -10,7 +10,7 @@
   /* ---------- colour ----------
      One loud colour (blue: header and page head band), two quiet ones (snow content, ink cards and text),
      one key colour (volt) with four jobs only: the primary action, the current selection (a chosen period, the profile avatar), the day progress
-     and the one reward payoff (the "+100P" figure during the day done moment). The current tab and the segmented switch are ink, not volt.
+     and the one reward payoff (the "+100P" figure during the day done moment). The current tab and the current segment of a switch are ink, not volt.
      Figures, the podium, the points pill and illustration grounds use ink, white, blue or sky.
      Checked pairs: snow on blue 7.35, volt on blue 6.38, sky on blue 4.86, on-brand-2 on blue 5.64, ink on volt 15.7,
      ink-2 on snow 7.21, ink-2 on mist 6.53, ink-soft on ink 8.70, blue on snow 7.24, up on snow 5.29, down on snow 6.47, warn on warn-tint 5.81.
@@ -92,7 +92,8 @@
   --r-pill: 999px;
   --edge: 2px solid var(--ink);
   --edge-thin: 1.5px solid var(--ink);
-  --hair: 1px solid var(--line);
+  --rule: 2px solid var(--ink);                   /* between major sections of a flat page */
+  --hair: 1px solid var(--line);                  /* between rows inside a list */
   --hair-strong: 1.5px solid var(--line-field);   /* inputs and unselected options */
 
   /* ---------- shadow ---------- */
@@ -101,8 +102,7 @@
   --shadow-answer: 0 3px 0 var(--ink);      /* the two answer buttons */
   --shadow-card: 5px 5px 0 var(--ink);      /* the login panel and the gate preview */
   --shadow-deck: 0 18px 30px -14px rgba(11, 21, 48, 0.55), 5px 5px 0 var(--ink);   /* the front card of the deck: a hard drop plus soft depth */
-  --shadow-soft: 0 1px 2px rgba(11, 21, 48, 0.14);   /* the selected segment of a switch */
-  --shadow-toast: 0 10px 24px -10px rgba(11, 21, 48, 0.6), 0 0 0 1.5px var(--snow);
+  --shadow-toast: 0 0 0 2px var(--snow);   /* a snow ring keeps the ink toast apart from ink below it: no soft shadow */
   --shadow-tab: 0 -1px 0 var(--line);
   --shadow-stage: 0 0 0 1px var(--ink-line), 0 30px 80px rgba(0, 0, 0, 0.5);
   --ring: 0 0 0 3px var(--brand-tint);

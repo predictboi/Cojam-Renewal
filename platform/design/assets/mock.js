@@ -136,6 +136,16 @@
         { q: "p4", c: null, out: "none" }
       ] }
     ],
+    /* the answer source of each earlier question, as the server phrases it: [en, ko, ja]. Shown in the "How answers are set" sheet on Results. */
+    pastRules: {
+      p1: ["Binance ETH/USDT daily close, 00:00 UTC", "바이낸스 ETH/USDT 일봉 종가 (오전 9시)", "Binance ETH/USDTの日足終値（午前9時）"],
+      p2: ["KRX KOSPI closing index, 15:30 KST", "한국거래소 코스피 종가 (오후 3시 30분)", "韓国取引所のKOSPI終値（15時30分）"],
+      p3: ["JMA Tokyo station, daily rainfall", "일본 기상청 도쿄 관측소 일 강수량", "気象庁 東京観測所の日降水量"],
+      p4: ["Official KOVO match result", "한국배구연맹(KOVO) 공식 경기 결과", "韓国バレーボール連盟（KOVO）の公式記録"],
+      p5: ["KOBIS weekend box office", "영화진흥위원회 통합전산망 주말 박스오피스", "韓国映画振興委員会（KOBIS）の週末興行成績"],
+      p6: ["LBMA gold price, PM fix", "LBMA 금 가격 (오후 고시가)", "LBMA金価格（午後の値決め）"],
+      p7: ["Nikkei 225 closing value, 15:30 JST", "닛케이 225 종가 (오후 3시 30분)", "日経平均株価の終値（15時30分）"]
+    },
     contracts: ["0x91cb3b346c80ff965a9667ba6228834dbedd71a2", "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b", "0x7879f0a137eae8e45eb670e9ac7bb08c5dfadb84"],
     ago: ago, ahead: ahead
   };

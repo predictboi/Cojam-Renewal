@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/screens/money.css">
 </head>
 <body>
 <!-- W2 Convert points to CT. States: (none) 1,000P, empty, step, above, min, short, wait (first 7 days), cap, capglobal, paused, signing, sending, success, failed, loading, offline. Add ?lang=en|ko|ja. Mock data only. -->
@@ -29,16 +30,18 @@
   var blocked = S === "cap" || S === "capglobal" || S === "paused" || S === "wait" || S === "loading" || App.state === "offline";
   function gate(icon, title, bodyText, extra, action) { return C.empty({ icon: icon, title: title, body: bodyText, extra: extra, action: action }); }
   function body() {
-    if (S === "short") return '<section class="lead-fig"><h2 class="lbl">' + t("c.avail") + '</h2><p class="fig">' + F.pts(bal) + "</p></section>" +
+    if (S === "short") return '<section class="msec"><div class="mhero"><h2 class="lbl">' + t("c.avail") + '</h2><p class="fig">' + F.int(bal) + "<small>P</small></p></div></section>" +
       gate("bolt", t("c.short.h"), t("c.short.b", { p: F.int(bal), g: F.int(1000 - bal) }), "", C.btn(t("k.play"), { kind: "primary", href: "home-cards.html" }));
     var waitNote = "";
     if (S === "wait") { var d = M.user.firstConvert, secs = (d - Date.now()) / 1000;
       waitNote = C.note("sky", t("c.wait.b", { date: "<b>" + F.date(d, true) + "</b>" }) + "<br><b>" + t("c.wait.left", { d: Math.floor(secs / 86400), h: Math.floor(secs % 86400 / 3600) }) + "</b>"); }
     return waitNote + (S === "cap" ? C.note("warn", t("c.cap.hit", { time: t("time.kst9") })) : "") + (S === "capglobal" ? C.note("warn", t("c.cap.global", { time: t("time.kst9") })) : "") + (S === "paused" ? C.note("warn", t("c.paused")) : "") + (App.offline ? C.note("warn", t("w.offline")) : "") +
-      '<section class="sec">' +
+      '<section class="msec">' +
       C.amount({ id: "amt", label: t("c.amount"), unit: "P", mode: "numeric", value: initial, disabled: blocked, side: S === "loading" ? C.skel("96px", "12px") : t("c.avail") + " <b>" + F.pts(bal) + "</b>", msg: t("c.step") }) +
-      '<div class="row-between"><span class="lbl">' + t("c.get") + '</span><b class="fig" id="get" aria-live="polite">0<small>CT</small></b></div></section>' +
-      '<section class="sec">' + C.rows([[t("c.rate"), "1,000P = 1 CT"], [t("c.minimum"), "1,000P"], [t("c.capleft"), t("c.capof", { n: capLeft })], [t("c.fee"), t("c.fee.v")]]) + "</section>";
+      "</section>" +
+      /* the result is the figure of this screen: its own section between the ink rules */
+      '<section class="msec"><div class="mhero"><h2 class="lbl">' + t("c.get") + '</h2><p class="fig" id="get" aria-live="polite">0<small>CT</small></p></div></section>' +
+      '<section class="msec">' + C.rows([[t("c.rate"), "1,000P = 1 CT"], [t("c.minimum"), "1,000P"], [t("c.capleft"), t("c.capof", { n: capLeft })], [t("c.fee"), t("c.fee.v")]]) + "</section>";
   }
   function cfg(p) { var n = p / 1000; return { label: t("c.chip", { p: F.int(p) }), success: { title: t("c.ok.h", { p: F.int(p), n: n }), rows: [[t("c.ok.left"), F.pts(bal - p)], [t("c.ok.ct"), F.ct(M.user.ct + n)]] }, onSuccess: function () { App.addPoints(-p); } }; }
   App.mount({ tab: "wallet", back: "wallet.html", title: t("c.title"), body: body(), pin: S === "short" ? "" : C.actbar(C.btn("", { kind: "primary", block: true, id: "go", disabled: true }), t("c.rank")), points: bal, pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
