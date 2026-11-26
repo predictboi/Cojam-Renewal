@@ -386,8 +386,8 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
     // ------------------------------------------------------------------
 
     /// @notice Publishes the 5 markets of `dayId`, before the day opens.
-    /// @dev Each `closesAt` lies in (open, open + 1 day]; `resolvesAt` lies in
-    /// [closesAt + minResolveGap, open + 2 days] (the 48 hour rule); every content hash is set.
+    /// @dev Every `closesAt` equals the day's end (open + 1 day); `resolvesAt` lies in
+    /// [closesAt + minResolveGap, open + 2 days]; every content hash is set. See `PredictLogic.createDay`.
     function createDay(uint32 dayId, MarketInput[5] calldata m) external onlyRole(OPERATOR_ROLE) {
         bytes32[5] memory hashes = PredictLogic.createDay(markets, dayId, m, _params.minResolveGap);
         emit DayCreated(dayId, hashes);
@@ -532,7 +532,10 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
         uint256 corrected = _market(marketId).correctedOutcome;
         if (corrected == 0) revert NothingToCompensate();
         uint32 dayId = uint32(marketId / SLOTS);
+        // The question's week while its airdrop is not sent, else the current week (DECISIONS
+        // "Compensation points").
         uint32 weekId = weekOf(dayId);
+        if (airdropDone[weekId]) weekId = weekOf(currentDay());
         uint256 slot = marketId % SLOTS;
         uint256 amount = _params.hitPoints;
         for (uint256 i = 0; i < users.length; ++i) {
@@ -773,6 +776,9 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
         if (p.referrer != address(0)) revert ReferrerAlreadySet();
         if (block.timestamp >= uint256(p.registeredAt) + INVITE_WINDOW) revert InviteWindowClosed();
         _link(player, referrer);
+        // A late code still earns the welcome bonus once (DECISIONS "Welcome bonus with a late code"):
+        // paid now when the first full day is already done, else at that day as usual.
+        if (p.completedOnce) _welcome(player, referrer, currentDay());
     }
 
     /// @dev Referrer rules shared by registration and `setReferrer`; the player is registered.
@@ -803,11 +809,15 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
         if (cp != 0) _credit(player, cp, KIND_COMPLETION, weekOf(dayId), dayId);
         if (p.completedOnce) return;
         players[player].completedOnce = true;
-        address r = p.referrer;
+        if (p.referrer != address(0)) _welcome(player, p.referrer, dayId);
+    }
+
+    /// @dev Welcome bonus, once per player: at the first completed day when an inviter is linked, or at
+    /// a late link (`setReferrer`) when that day is already behind. Not paid while the inviter is frozen
+    /// (and not later); never ranked; earns the inviter nothing. A linked inviter is always registered.
+    function _welcome(address player, address r, uint32 dayId) private {
         uint256 wp = _params.welcomePoints;
-        if (r == address(0) || wp == 0) return;
-        Player memory rp = players[r];
-        if (rp.frozen) return; // a linked inviter is always registered
+        if (wp == 0 || players[r].frozen) return;
         _mint(player, wp);
         emit WelcomePaid(player, r, dayId, wp);
     }

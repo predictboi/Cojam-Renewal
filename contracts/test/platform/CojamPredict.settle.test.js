@@ -2,7 +2,7 @@ const { expect } = require("chai");
 const { ethers } = require("hardhat");
 const { loadFixture, time } = require("@nomicfoundation/hardhat-network-helpers");
 const {
-  H, RESOLVE_DEADLINE, DEFAULTS, dayOpen, marketsFor, deployPredict, at, goTo, play, resolveDay, passSettle, changeParams,
+  H, RESOLVE_DEADLINE, DEFAULTS, dayOpen, weekEnd, marketsFor, deployPredict, at, goTo, play, resolveDay, passSettle, changeParams,
 } = require("./predictHelpers");
 
 const Z = ethers.ZeroAddress;
@@ -228,9 +228,11 @@ describe("CojamPredict: settle", function () {
     // settle time long past: settles now
     await expect(predict.settle(alice.address, day0)).to.emit(predict, "Settled");
     // a market resolved now gets the new delay
-    expect(await time.latest()).to.be.lessThan(Number(dayOpen(day0 + 1n) + RESOLVE_DEADLINE));
-    await op.setOutcome(day0 * 5n + 1n, 2);
-    const m = await predict.markets(day0 * 5n + 1n);
+    const d = (await predict.currentDay()) - 1n;
+    await goTo((await predict.markets(d * 5n)).resolvesAt);
+    expect(await time.latest()).to.be.lessThan(Number(dayOpen(d + 1n) + RESOLVE_DEADLINE));
+    await op.setOutcome(d * 5n, 2);
+    const m = await predict.markets(d * 5n);
     expect(m.settlesAt - m.resolvedAt).to.equal(48n * H);
   });
 
@@ -291,6 +293,18 @@ describe("CojamPredict: corrected outcome and compensation", function () {
     await expect(op.compensate(id, [alice.address])).to.be.revertedWithCustomError(predict, "NothingToCompensate");
     await expect(op.compensate(id, Array(501).fill(bob.address))).to.be.revertedWithCustomError(predict, "BatchTooLarge");
     await op.compensate(id, Array(500).fill(bob.address));
+  });
+
+  it("compensation counts in the question's week before its airdrop, in the current week after it", async function () {
+    const { predict, op, alice, bob, dave, day0, week } = await loadFixture(corrected);
+    const id = day0 * 5n + 1n;
+    await expect(op.compensate(id, [bob.address])).to.emit(predict, "PointsCredited").withArgs(bob.address, week, day0, 3, 50);
+    await goTo(weekEnd(week) + DEFAULTS.airdropDelay);
+    await op.airdrop(week, [alice.address], 0n);
+    const now = await predict.weekOf(await predict.currentDay());
+    expect(now).to.equal(week + 1n);
+    await expect(op.compensate(id, [dave.address])).to.emit(predict, "PointsCredited").withArgs(dave.address, week + 1n, day0, 3, 50);
+    expect((await predict.weekPoints(week + 1n, dave.address)).points).to.equal(50n);
   });
 
   it("a user not yet settled on the market is skipped until settled", async function () {
@@ -419,6 +433,29 @@ describe("CojamPredict: friend invites and the welcome bonus", function () {
     expect((await predict.players(eve.address)).completedOnce).to.equal(true);
     await play(predict, dave, d, [1, 1, 1, 1, 1]);
     expect(await predict.balanceOf(dave.address)).to.equal(100n); // first completed day, welcome now 0
+  });
+
+  it("a late code before the first full day pays the welcome at that day; with a frozen inviter at the link it is never paid", async function () {
+    const { predict, op, alice, bob, carol, eve, day0 } = await loadFixture(fixture);
+    await op.setReferrer(bob.address, alice.address); // late code, nothing played yet: no welcome yet
+    expect(await predict.balanceOf(bob.address)).to.equal(0n);
+    await goTo(dayOpen(day0));
+    await play(predict, bob, day0, [1, 1, 1, 1, 0]);
+    await expect(predict.connect(bob).predict(day0 * 5n + 4n, 1)).to.emit(predict, "WelcomePaid").withArgs(bob.address, alice.address, day0, 100);
+    // carol completes, then her inviter goes on hold: a frozen inviter cannot be linked at all
+    await play(predict, carol, day0, [1, 1, 1, 1, 1]);
+    await op.setFrozen(alice.address, true, R);
+    await expect(op.setReferrer(carol.address, alice.address)).to.be.revertedWithCustomError(predict, "BadReferrer");
+    // eve registers invited by alice while alice is active, alice is frozen at eve's first full day: no welcome, ever
+    await op.setFrozen(alice.address, false, R);
+    await op.registerPlayer(eve.address, alice.address);
+    await op.setFrozen(alice.address, true, R);
+    await play(predict, eve, day0, [1, 1, 1, 1, 1]);
+    expect(await predict.balanceOf(eve.address)).to.equal(100n);
+    await op.setFrozen(alice.address, false, R);
+    await goTo(dayOpen(day0 + 1n));
+    await play(predict, eve, day0 + 1n, [1, 1, 1, 1, 1]);
+    expect(await predict.balanceOf(eve.address)).to.equal(200n);
   });
 
   it("referralBps 0 pays no bonus", async function () {

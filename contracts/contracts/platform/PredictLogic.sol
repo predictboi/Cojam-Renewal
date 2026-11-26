@@ -70,9 +70,10 @@ library PredictLogic {
         emit ParamsApplied(p);
     }
 
-    /// @notice Checks and writes the 5 markets of `dayId` (before the day opens). Each `closesAt` lies in
-    /// (open, open + 1 day]; each `resolvesAt` in [closesAt + gap, open + 2 days] (the 48 hour rule);
-    /// every content hash is set.
+    /// @notice Checks and writes the 5 markets of `dayId` (before the day opens). Every `closesAt` equals
+    /// the day's end, open + 1 day (DECISIONS "Question timing": all five stay open the whole day); each
+    /// `resolvesAt` lies in [closesAt + gap, open + 2 days]; every content hash is set. Outcomes are refused
+    /// from 48 hours after the close (`RESOLVE_DEADLINE`).
     /// @return hashes The 5 content hashes, for the `DayCreated` event.
     function createDay(
         mapping(uint256 => Market) storage markets,
@@ -86,7 +87,7 @@ library PredictLogic {
         if (markets[first].closesAt != 0) revert DayExists();
         for (uint256 i = 0; i < SLOTS; ++i) {
             MarketInput calldata x = m[i];
-            if (x.closesAt <= open || x.closesAt > open + 1 days) revert BadTimes();
+            if (x.closesAt != open + 1 days) revert BadTimes(); // all five close at the day's end
             if (x.resolvesAt < x.closesAt + gap || x.resolvesAt > open + 2 days) revert BadTimes();
             if (x.contentHash == bytes32(0)) revert EmptyContentHash();
             Market storage mk = markets[first + i];

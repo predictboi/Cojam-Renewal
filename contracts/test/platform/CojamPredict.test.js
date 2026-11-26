@@ -148,7 +148,7 @@ describe("CojamPredict: players, invites and freezes", function () {
     expect(day0).to.be.a("bigint");
   });
 
-  it("the 24 hour window: open at its last second, even after a completed day (no welcome bonus then)", async function () {
+  it("the 24 hour window: open at its last second, even after a completed day; a late code pays the welcome at the link", async function () {
     const { predict, op, alice, carol, day0 } = await loadFixture(fixture);
     await goTo(dayOpen(day0));
     await play(predict, carol, day0, [1, 1, 1, 1, 1]);
@@ -156,10 +156,13 @@ describe("CojamPredict: players, invites and freezes", function () {
     const reg = (await predict.players(carol.address)).registeredAt;
     await goTo(reg + 24n * H - 2n);
     await at(reg + 24n * H - 1n);
-    await expect(op.setReferrer(carol.address, alice.address)).to.emit(predict, "ReferrerSet");
+    await expect(op.setReferrer(carol.address, alice.address)).to.emit(predict, "ReferrerSet")
+      .and.to.emit(predict, "WelcomePaid").withArgs(carol.address, alice.address, await predict.currentDay(), 100)
+      .and.not.to.emit(predict, "ReferralPaid");
+    expect(await predict.balanceOf(carol.address)).to.equal(200n);
     await goTo(dayOpen(day0 + 1n));
     await play(predict, carol, day0 + 1n, [1, 1, 1, 1, 1]);
-    expect(await predict.balanceOf(carol.address)).to.equal(200n); // the first completed day is past: no welcome
+    expect(await predict.balanceOf(carol.address)).to.equal(300n); // no second welcome
     expect(await predict.balanceOf(alice.address)).to.equal(10n); // the 10% stream starts at the link
   });
 
@@ -312,11 +315,11 @@ describe("CojamPredict: play keys", function () {
 });
 
 describe("CojamPredict: days", function () {
-  it("createDay stores 5 markets and emits the hashes; boundary times are accepted", async function () {
+  it("createDay stores 5 markets that all close at the day's end; boundary resolve times are accepted", async function () {
     const { predict, op, day0 } = await loadFixture(fixture);
     const d = day0 + 10n;
     const open = dayOpen(d);
-    const m = marketsFor(d, { closes: [open + 1n, open + DAY, open + 5n * H, open + 6n * H, open + 7n * H], gap: H });
+    const m = marketsFor(d, { gap: H });
     m[1].resolvesAt = open + 2n * DAY; // the 48 hour rule's last second
     m[0].resolvesAt = m[0].closesAt + H; // exactly the gap
     await expect(op.createDay(d, m)).to.emit(predict, "DayCreated").withArgs(d, m.map((x) => x.contentHash));
@@ -335,7 +338,10 @@ describe("CojamPredict: days", function () {
     const good = () => marketsFor(d);
     await expect(predict.connect(stranger).createDay(d, good())).to.be.revertedWithCustomError(predict, "AccessControlUnauthorizedAccount");
     await expect(op.createDay(day0, marketsFor(day0))).to.be.revertedWithCustomError(predict, "DayExists");
-    let m = good(); m[2].closesAt = open; m[2].resolvesAt = open + 2n * H;
+    // every close must be exactly the day's end (DECISIONS "Question timing")
+    let m = good(); m[2].closesAt = open + 20n * H; m[2].resolvesAt = open + 22n * H;
+    await expect(op.createDay(d, m)).to.be.revertedWithCustomError(predict, "BadTimes");
+    m = good(); m[2].closesAt = open + DAY - 1n;
     await expect(op.createDay(d, m)).to.be.revertedWithCustomError(predict, "BadTimes");
     m = good(); m[3].closesAt = open + DAY + 1n; m[3].resolvesAt = open + DAY + 2n * H;
     await expect(op.createDay(d, m)).to.be.revertedWithCustomError(predict, "BadTimes");

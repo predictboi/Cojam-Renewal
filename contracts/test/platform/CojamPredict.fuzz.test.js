@@ -151,7 +151,7 @@ async function runOne(seed) {
       const open = d * DAY;
       const inputs = [];
       for (let i = 0; i < 5; i++) {
-        const closesAt = r.chance(0.1) ? open + BigInt(1 + r.int(24 * 3600 - 1)) : open + 12n * H + BigInt(1 + r.int(12 * 3600 - 1));
+        const closesAt = open + DAY; // all five close at the day's end
         let resolvesAt = closesAt + H + BigInt(r.int(20 * 3600));
         if (resolvesAt > open + 2n * DAY) resolvesAt = open + 2n * DAY;
         inputs.push({ closesAt, resolvesAt, contentHash: hash(`${seed}:${d}:${i}`) });
@@ -217,7 +217,10 @@ async function runOne(seed) {
       const p = P(w), rp = P(ref);
       const t = BigInt(await time.latest()) + 1n;
       const ok = p.registered && p.referrer === Z && t < p.registeredAt + 24n * H && ref !== w && rp.registered && !rp.frozen && rp.referrer !== w;
-      await send(ok, "setReferrer", () => op.setReferrer(w, ref), () => { p.referrer = ref; add(M.refCount, ref, 1n); });
+      await send(ok, "setReferrer", () => op.setReferrer(w, ref), () => {
+        p.referrer = ref; add(M.refCount, ref, 1n);
+        if (p.completedOnce && M.params.welcomePoints > 0n) mint(w, M.params.welcomePoints); // late code after the first full day
+      });
     }],
     [2, async function freeze() {
       const w = r.pick(named).address, f = r.chance(0.6);
@@ -419,7 +422,8 @@ async function runOne(seed) {
         for (const u of users) {
           if (!elig(u, s2)) continue;
           s2.add(u); M.compensated.add(`${id}:${u}`);
-          if (M.params.hitPoints > 0n) credit(u, M.params.hitPoints, now, weekOf(day));
+          const qw = M.airdropDone.has(weekOf(day)) ? weekOf(now / DAY) : weekOf(day);
+          if (M.params.hitPoints > 0n) credit(u, M.params.hitPoints, now, qw);
         }
       });
     }],

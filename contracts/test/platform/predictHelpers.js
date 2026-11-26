@@ -36,13 +36,13 @@ const weekEnd = (w) => (BigInt(w) * 7n + 4n) * DAY;
 const dayOpen = (d) => BigInt(d) * DAY;
 const hash = (s) => ethers.keccak256(ethers.toUtf8Bytes(String(s)));
 
-/** Default market inputs of a day: slot i closes at open + (12 + 2i) h and resolves `gap` later. */
+/** Default market inputs of a day: every slot closes at the day's end; slot i resolves `gap` + i minutes later. */
 function marketsFor(dayId, opts = {}) {
   const open = dayOpen(dayId);
   const gap = opts.gap === undefined ? H : opts.gap;
   return [0, 1, 2, 3, 4].map((i) => {
-    const closesAt = opts.closes ? opts.closes[i] : open + (12n + 2n * BigInt(i)) * H;
-    const resolvesAt = opts.resolves ? opts.resolves[i] : closesAt + gap;
+    const closesAt = opts.closes ? opts.closes[i] : open + DAY;
+    const resolvesAt = opts.resolves ? opts.resolves[i] : closesAt + gap + 60n * BigInt(i);
     return { closesAt, resolvesAt, contentHash: hash(`day ${dayId} slot ${i}`) };
   });
 }
