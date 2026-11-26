@@ -378,7 +378,7 @@ async function runOne(seed) {
     }],
     [3, async function keeper() {
       const t = BigInt(await time.latest()) + 1n;
-      const day = t / DAY - 1n - BigInt(r.int(3));
+      const day = t / DAY - 1n - BigInt(r.int(4));
       const users = named.map((x) => x.address);
       let any = false;
       for (const u of users) {
@@ -419,8 +419,10 @@ async function runOne(seed) {
       const id = anyMarket((i, m) => m.corrected !== 0) ?? anyMarket(() => true);
       if (id === null) return;
       const m = M.markets.get(id);
-      const users = Array.from({ length: 1 + r.int(5) }, () => r.pick(named).address);
       const day = id / 5n, slot = Number(id % 5n);
+      // mostly the users the corrected answer would pay (as the worker would list them), plus noise
+      const likely = named.map((x) => x.address).filter((u) => UD(u, day).choices[slot] === m.corrected && m.corrected !== 0);
+      const users = Array.from({ length: 1 + r.int(5) }, () => (likely.length && r.chance(0.7) ? r.pick(likely) : r.pick(named).address));
       const elig = (u, seen) => {
         const ud = UD(u, day);
         return ((ud.settled >> slot) & 1) === 1 && ud.choices[slot] === m.corrected && !M.compensated.has(`${id}:${u}`) && !seen.has(u);
