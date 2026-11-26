@@ -13,9 +13,10 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/screens/invite.css">
 </head>
 <body>
-<!-- G1 Gate. States: (none) picks android or desktop by width, android, accepted, dismissed, android-manual, ios, ios-other, inapp, inapp-ios, desktop, generic, installed. Add ?lang=en|ko|ja. Mock data only. -->
+<!-- G1 Gate. States: (none) picks android or desktop by width, android, accepted, dismissed, android-manual, ios, ios-other, inapp, inapp-ios, desktop, generic, installed, invited (an invite link opened in a browser). Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -41,14 +42,20 @@
       case "desktop": return "<h2>" + t("g.desk.h") + '</h2><p class="muted">' + t("g.desk.body") + "</p>" + C.qr(M.qrUrl, t("g.qr.alt")) + '<p class="center mono" translate="no">app.cojam.app</p>' + copy;
       case "generic": return "<h2>" + t("g.desk.h") + "</h2>" + C.qr(M.qrUrl, t("g.qr.alt")) + C.help(t("g.gen.ios"), C.steps(ios)) + C.help(t("g.gen.android"), C.steps(manual));
       case "installed": return C.note("ok", t("g.installed"));
+      /* an invite link opened in a browser: the installed app cannot read anything from here, so the code is shown to be copied and carried over by hand.
+         Who invited, the code as a copy block, what to do with it and what the friend gets; the install steps follow in the same panel */
+      case "invited": return '<div class="gate-inv"><h2>' + t("g.inv.h", { name: '<b translate="no">' + App.esc(M.invite.by) + "</b>" }) + "</h2>" + C.code(M.invite.code, { id: "inv-code", label: t("g.inv.code") }) +
+        "<p>" + t("g.inv.b") + '</p><p class="gate-inv-get">' + t("g.inv.get", { w: M.invite.welcome }) + "</p></div><h3>" + t("g.manual.h") + "</h3>" + C.steps(wide ? manual : ios);
     }
     return "";
   }
+  /* the example card; for an invited visitor the panel with the code comes first and the card follows it */
+  var demo = '<div class="gate-demo" aria-hidden="true"><span class="qcard-back"></span><span class="sticker">' + t("g.example") + "</span>" + C.qcard(M.set[4], { static: true }) + "</div>";
   var raw = '<div class="topnote" role="note">' + C.icon("shield", 16) + "<span>" + t("g.top") + "</span></div>" +
     '<div class="gate"><div class="gate-bar">' + C.logo() + C.lang() + "</div>" +
     '<div class="gate-col"><div class="stack-12"><h1>' + t("g.h1") + '</h1><p class="gate-lede">' + t("g.lede") + "</p></div>" +
-    '<div class="gate-demo" aria-hidden="true"><span class="qcard-back"></span><span class="sticker">' + t("g.example") + "</span>" + C.qcard(M.set[4], { static: true }) + "</div></div>" +
-    '<div class="gate-col"><section class="panel" aria-live="polite" id="panel">' + panel() + "</section>" +
+    (v === "invited" ? "" : demo) + "</div>" +
+    '<div class="gate-col"><section class="panel" aria-live="polite" id="panel">' + panel() + "</section>" + (v === "invited" ? demo : "") +
     '<ul class="facts"><li>' + C.icon("bolt", 20) + t("g.fact.1") + "</li><li>" + C.icon("mail", 20) + t("g.fact.2") + "</li><li>" + C.icon("shield", 20) + t("g.fact.3") + "</li></ul>" +
     '<section class="gate-swap"><h2>' + t("g.swap.h") + "</h2><p>" + t("g.swap.body") + "</p>" + C.btn(t("g.swap.btn"), { href: "https://cojam.app/migrate/", ext: true, iconEnd: "ext" }) + "</section></div>" +
     '<footer class="gate-foot"><a href="https://cojam.app">' + t("hd.home") + "</a><span>© 2026 Cojam</span></footer></div>" +

@@ -167,6 +167,13 @@
     return '<button type="button" class="addr-chip"' + (o.id ? ' id="' + o.id + '"' : "") + ' data-copy="' + a + '" data-done="' + esc(t("w.copy.done")) + '" aria-label="' + esc(t("w.copy") + ": " + a) + '">' +
       '<span class="addr-chip-v" translate="no">' + F.short(a) + "</span>" + ic("copy", 16) + "</button>";
   };
+  /* an invite code as a copy block: the code in the data face (capitals, ligatures off) inside a 2 px ink outline; the whole block is the copy control.
+     For 2 s after a tap the ground turns sky and the label reads "Copied" (the code itself stays readable). o.done draws that state from the start. */
+  C.code = function (code, o) {
+    o = o || {};
+    return '<button type="button" class="code-block' + (o.done ? " is-done" : "") + (o.cls ? " " + o.cls : "") + '"' + (o.id ? ' id="' + o.id + '"' : "") + ' data-copy="' + esc(code) + '"' + (o.done ? "" : ' data-done="' + esc(t("w.copy.done")) + '"') + ">" +
+      '<b class="code-v" translate="no">' + esc(code) + '</b><i class="code-act">' + ic("copy", 18) + ic("check", 18) + "<span>" + (o.done ? t("w.copy.done") : (o.label || t("common.copy"))) + "</span></i></button>";
+  };
   C.amount = function (o) {
     return '<div class="field"><div class="field-label"><label for="' + o.id + '"><b>' + o.label + "</b></label>" + (o.side ? "<span>" + o.side + "</span>" : "") + "</div>" +
       '<div class="field-box' + (o.error ? " is-error" : "") + (o.disabled ? " is-off" : "") + '"><input id="' + o.id + '" name="' + o.id + '" type="text" inputmode="' + (o.mode || "decimal") + '" autocomplete="off" spellcheck="false" placeholder="0" value="' + esc(o.value || "") + '"' + (o.disabled ? " disabled" : "") + ' aria-describedby="' + o.id + '-msg"' + (o.error ? ' aria-invalid="true"' : "") + ">" +
@@ -516,6 +523,7 @@
       if (dn && lab && !c._old) {
         var chip = c.classList.contains("addr-chip"), svg = chip && $("svg", c), was = svg && svg.outerHTML;
         if (chip) { c.style.minWidth = c.offsetWidth + "px"; if (svg) svg.outerHTML = ic("check", 16); App.live(dn); }
+        if (c.classList.contains("code-block")) App.live(dn);
         c._old = lab.textContent; lab.textContent = dn; c.classList.add("is-done");
         setTimeout(function () { lab.textContent = c._old; c._old = null; c.classList.remove("is-done"); if (chip) { var s2 = $("svg", c); if (s2 && was) s2.outerHTML = was; c.style.minWidth = ""; } }, 2000);
       }

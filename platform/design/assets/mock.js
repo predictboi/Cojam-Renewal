@@ -146,6 +146,21 @@
       p6: ["LBMA gold price, PM fix", "LBMA 금 가격 (오후 고시가)", "LBMA金価格（午後の値決め）"],
       p7: ["Nikkei 225 closing value, 15:30 JST", "닛케이 225 종가 (오후 3시 30분)", "日経平均株価の終値（15時30分）"]
     },
+    /* Friend invites. Code: 6 to 8 characters, capital letters and the digits 2 to 9 (never 0 or 1, so O, I and L are always letters).
+       The inviter gets `rate` percent of every point a friend earns, paid at the same moment on top of the friend's points; it converts to CT but is not in the weekly ranking.
+       `known` stands for the server lookup on first run; `self` is the new player's own code there (it cannot be used on yourself). Names of friends arrive already masked. */
+    invite: {
+      code: "MINJI7Q", link: "https://app.cojam.app/i/MINJI7Q", linkShort: "app.cojam.app/i/MINJI7Q", rate: 10, welcome: 100,
+      joined: 4, week: 85, total: 1240, by: "minji",
+      days: { 0: { pts: 15, n: 1 }, 1: { pts: 35, n: 2 }, 2: { pts: 35, n: 2 } },   /* bonus per results day (day index: points, friends who earned) */
+      friends: [
+        { name: "da****a", st: "first", pts: 640 },
+        { name: "yu**.m", st: "first", pts: 410 },
+        { name: "하*", st: "first", pts: 190 },
+        { name: "no***e", st: "joined", pts: 0 }
+      ],
+      known: { MINJI7Q: "minji", DALGONA4: "dalgona" }, self: "SORA52K"
+    },
     contracts: ["0x91cb3b346c80ff965a9667ba6228834dbedd71a2", "0x7f223b1607171b81ebd68d22f1ca79157fd4a44b", "0x7879f0a137eae8e45eb670e9ac7bb08c5dfadb84"],
     ago: ago, ahead: ahead
   };

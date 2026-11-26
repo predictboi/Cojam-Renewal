@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/screens/invite.css">
 </head>
 <body>
 <!-- P1 Profile and settings. States: (none), nameerror, nameword, notset, otherdevice, saved, logout, session, update. Add ?lang=en|ko|ja. Mock data only. -->
@@ -33,7 +34,9 @@
     return '<section class="sec pid" aria-label="' + App.esc(t("p.title")) + '"><p class="pid-name" id="pid-name" translate="no">' + App.esc(nm) + '</p><div class="stats">' +
       '<div class="stat"><b>' + (me && S !== "unranked" ? me.rank : "&ndash;") + "</b><span>" + (me && S !== "unranked" ? t("p.rank") : t("p.norank")) + "</span></div>" +
       '<div class="stat"><b>' + F.pts(me ? me.pts : 0) + "</b><span>" + t("r.week") + "</span></div>" +
-      '<div class="stat"><b>' + F.pts(M.user.points) + "</b><span>" + t("p.pts") + "</span></div></div></section>";
+      '<div class="stat"><b>' + F.pts(M.user.points) + "</b><span>" + t("p.pts") + "</span></div></div>" +
+      /* the way to the invite screen: one row under the figures, with the number of friends who joined as a count chip */
+      '<a class="inv-row" id="to-invite" href="invite.html"><span class="inv-row-t"><b>' + t("inv.entry") + "</b><small>" + t("inv.entry.sub", { r: M.invite.rate }) + '</small></span><span class="inv-row-go"><span class="sr-only">' + t("inv.entry.n", { n: M.invite.joined }) + '</span><span aria-hidden="true">' + M.invite.joined + "</span>" + C.icon("chev", 16) + "</span></a></section>";
   }
   function body() {
     var a = M.user.address;

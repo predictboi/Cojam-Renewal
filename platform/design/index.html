@@ -33,14 +33,14 @@
 (function () {
   var FLOWS = [
     { h: "Start here", p: "The walk through a new player takes, in order.", items: [
-      ["G1", "Gate", "gate.html", ["android", "accepted", "dismissed", "android-manual", "ios", "ios-other", "inapp", "inapp-ios", "desktop", "generic", "installed"]],
+      ["G1", "Gate", "gate.html", ["android", "accepted", "dismissed", "android-manual", "ios", "ios-other", "inapp", "inapp-ios", "desktop", "generic", "installed", "invited"]],
       ["A1", "Login", "login.html", ["empty", "bademail", "typo", "unsupported", "toomany", "sendfail", "sending", "code", "verifying", "wrong", "short", "expired", "tries", "setup", "returning", "busy", "walletfail", "devicefail", "refused-used", "refused-provider", "refused-many", "refused", "offline"]],
-      ["A2", "First run", "first-run.html", ["1", "2", "3", "settingup"]]
+      ["A2", "First run", "first-run.html", ["1", "2", "3", "settingup", "code", "code-valid", "code-unknown", "code-own"]]
     ] },
     { h: "Play", p: "Today's five predictions, both views, and the day done moment.", items: [
       ["H1", "Home, card view", "home-cards.html", ["fresh", "noimage", "imagetop", "partial", "syncing", "slow", "failed", "reconnect", "reconnectfail", "otherdevice", "loading", "empty", "closed", "error", "offline"]],
       ["H2", "Home, terminal view", "home-terminal.html", ["fresh", "syncing", "slow", "failed", "reconnect", "reconnectfail", "otherdevice", "loading", "empty", "closed", "error", "offline"]],
-      ["H3", "Day done", "done.html", ["moment", "saving", "results", "zero", "offline"]],
+      ["H3", "Day done", "done.html", ["moment", "saving", "results", "zero", "welcome", "offline"]],
       ["R1", "Results", "results.html", ["loading", "empty", "nowaiting", "noset", "error", "offline"]],
       ["K1", "Weekly ranking", "ranking.html", ["top10", "unranked", "winner", "short", "lastweek", "sent", "loading", "error", "offline"]]
     ] },
@@ -56,6 +56,7 @@
     ] },
     { h: "Account and system", p: "Profile, session and the full screen system states.", items: [
       ["P1", "Profile and settings", "profile.html", ["nameerror", "nameword", "notset", "otherdevice", "saved", "logout", "session", "update"]],
+      ["I1", "Invite friends", "invite.html", ["empty", "loading", "error", "offline", "copied", "shared"]],
       ["SYS", "System screens", "system.html", ["maintenance", "update", "offline", "notfound", "blocked"]]
     ] },
     { h: "Library", p: "Tokens and every component with its variants.", items: [["LIB", "Component library", "components.html", []]] }

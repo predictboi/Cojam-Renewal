@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/components.css">
 <link rel="stylesheet" href="assets/screens/rank.css">
+<link rel="stylesheet" href="assets/screens/invite.css">
 </head>
 <body>
 <!-- R1 Results. States: (none), loading, empty, nowaiting, noset, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
@@ -79,9 +80,12 @@
   }
   function group(g, gi) {
     var d = M.ago(g.day), label = g.day === 0 ? t("common.today") : g.day === 1 ? t("common.yesterday") : F.weekday(d);
+    var inv = S === "noset" ? null : M.invite.days[g.day];
     var n = { hit: 0, miss: 0, wait: 0, off: 0 }; g.rows.forEach(function (r) { n[MARK[r.out]]++; });
     return '<section class="sec rs-day" data-group><div class="rs-dayh"><div class="rs-dayh-t"><h2>' + label + '</h2><span class="rmarks" role="img" aria-label="' + esc(t("r.marks.sr", { h: n.hit, m: n.miss, w: n.wait })) + '">' + g.rows.map(function (r) { return mark(MARK[r.out]); }).join("") + "</span></div>" +
       '<p class="rs-dayh-sub">' + (g.done ? t("r.g.done") : t("r.g.part", { k: g.answered })) + (g.pending ? (LI === 2 ? "、" : ", ") + t("r.g.pending", { q: g.pending }) : "") + '</p><p class="rs-count">+' + F.pts(g.total) + "</p></div>" +
+      /* the invite bonus of that day: its own line with its own figure, apart from the day's points (which feed the ranking) and from the hit chips; it leads to the invite screen */
+      (inv ? '<a class="rs-inv" href="invite.html"><b>' + t("r.inv") + "</b><small>" + t("r.inv.sub", { r: M.invite.rate }) + '</small><span class="rs-inv-p">+' + F.pts(inv.pts) + "</span>" + C.icon("chev", 16) + "</a>" : "") +
       '<ul class="list">' + g.rows.map(function (r, ri) { return row(r, gi, ri, d); }).join("") + "</ul></section>";
   }
   /* how an answer is set: the three steps of the home card's sheet, with this question's source and its time */

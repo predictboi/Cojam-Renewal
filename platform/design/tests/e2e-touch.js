@@ -1,4 +1,4 @@
-// Touch walk through of the primary task with assertions (login, five cards, undo, day done, ranking, a 500 CT stake, copy the wallet address).
+// Touch walk through of the primary task with assertions (login, five cards, undo, day done, ranking, a 500 CT stake, copy the wallet address, friend invites).
 // Serve first: python3 -m http.server 8820 -d platform/design (another port: PORT=8816).
 // Run: node platform/design/tests/e2e-touch.js <en|ko|ja> <width> <height> [captureDir]   Captures are named v7-<screen>-<lang>-<width>.png
 const {chromium}=require('playwright');
@@ -368,6 +368,87 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   await pg.locator('.prow-addr .addr-chip').tap(); await pg.waitForTimeout(300);
   ok('profile: the chip copies the full address and reads "Copied"', await pg.evaluate(()=>navigator.clipboard.readText())===FULL && await pg.evaluate(()=>document.querySelector('.addr-chip-v').textContent===App.t('w.copy.done')));
   await shot('p1-profile');
+
+  // ---------- 6b. friend invites: open from profile, copy the code, share falls back to copy, the wallet row, first run code field, the gate for an invited visitor
+  {
+  const CODE='MINJI7Q', LINK='https://app.cojam.app/i/MINJI7Q';
+  await pg.evaluate(()=>scrollTo(0,0)); await pg.waitForTimeout(150);
+  const pr=await pg.evaluate(()=>{const a=document.querySelector('#to-invite'),r=a.getBoundingClientRect(),tb=document.querySelector('.tb').getBoundingClientRect();return {href:a.getAttribute('href'),h:r.height,first:r.bottom<=tb.top,n:a.querySelector('.inv-row-go [aria-hidden]').textContent};});
+  ok('profile: the invite row sits on the first screen, is 44 px or taller and shows the friends who joined', pr.href==='invite.html'&&pr.h>=44&&pr.first&&pr.n==='4', JSON.stringify(pr));
+  await pg.locator('#to-invite').tap(); await pg.waitForURL(/invite\.html/); await pg.waitForTimeout(700);
+  const iv=await pg.evaluate(()=>{const g=q=>document.querySelector(q),c=g('#code'),v=c.querySelector('.code-v'),cs=getComputedStyle(c),vs=getComputedStyle(v),p=getComputedStyle(g('.inv-pct')),sh=g('#share').getBoundingClientRect(),tb=g('.tb').getBoundingClientRect();
+    return {pct:g('.inv-pct').textContent,pff:p.fontFamily,pfs:parseFloat(p.fontSize),code:v.textContent,mono:/mono/i.test(vs.fontFamily),lig:vs.fontVariantLigatures,edge:cs.borderTopWidth+' '+cs.borderTopColor,h:c.getBoundingClientRect().height,link:g('.inv-link').textContent,shareFirst:sh.bottom<=tb.top,
+      prim:document.querySelectorAll('#main .btn-primary').length,steps:document.querySelectorAll('.inv-steps li').length,tri:[...document.querySelectorAll('.inv-tri b')].map(b=>b.textContent).join('|'),friends:document.querySelectorAll('.inv-friend').length,rules:document.querySelectorAll('.inv-rules li').length,
+      back:g('.ah-back').getAttribute('href'),over:document.documentElement.scrollWidth-innerWidth};});
+  ok('invite: "10%" leads in the display numerals; the code is mono with ligatures off inside a 2 px ink outline; one primary action, on the first screen', iv.pct==='10%'&&/Archivo/.test(iv.pff)&&iv.pfs>=72&&iv.code===CODE&&iv.mono&&iv.lig==='none'&&iv.edge==='2px rgb(11, 21, 48)'&&iv.h>=44&&iv.prim===1&&iv.shareFirst&&iv.over<=0, JSON.stringify(iv));
+  ok('invite: the link, three steps, three result figures, the friends and the rules are all there; back leads to the profile', iv.link==='app.cojam.app/i/'+CODE&&iv.steps===3&&iv.tri==='4|85P|1,240P'&&iv.friends===4&&iv.rules===4&&iv.back==='profile.html', JSON.stringify(iv));
+  await shot('i1-invite');
+  await pg.locator('#code').tap(); await pg.waitForTimeout(300);
+  const cp=await pg.evaluate(()=>{const c=document.querySelector('#code');return {done:c.classList.contains('is-done'),label:c.querySelector('.code-act span').textContent===App.t('w.copy.done'),code:c.querySelector('.code-v').textContent,bg:getComputedStyle(c).backgroundColor};});
+  ok('invite: a tap on the code block copies the code, the label reads "Copied" and the code stays readable', await pg.evaluate(()=>navigator.clipboard.readText())===CODE&&cp.done&&cp.label&&cp.code===CODE, JSON.stringify(cp));
+  await shot('i1-invite-copied');
+  await pg.waitForTimeout(2100);
+  ok('invite: the copied state ends after 2 s', await pg.evaluate(()=>{const c=document.querySelector('#code');return !c.classList.contains('is-done')&&c.querySelector('.code-act span').textContent===App.t('common.copy');}));
+  // no system share sheet: the primary button copies the link and says so
+  await pg.evaluate(()=>{Object.defineProperty(navigator,'share',{value:undefined,configurable:true,writable:true});return navigator.clipboard.writeText('x');});
+  await pg.locator('#share').tap(); await pg.waitForTimeout(300);
+  ok('invite: without navigator.share the primary button copies the invite link and reads "Link copied"', await pg.evaluate(()=>navigator.clipboard.readText())===LINK && await pg.evaluate(()=>document.querySelector('#share span').textContent===App.t('inv.linkcopied')));
+  await pg.waitForTimeout(2100);
+  ok('invite: the button returns to "Share invite link"', await pg.evaluate(()=>document.querySelector('#share span').textContent===App.t('inv.share')));
+  // with a system share sheet: the link and the code go to it
+  await pg.evaluate(()=>{navigator.share=d=>{window.__shared=d;return Promise.resolve();};});
+  await pg.locator('#share').tap(); await pg.waitForTimeout(400);
+  const sd=await pg.evaluate(()=>({d:window.__shared||null,toast:(document.querySelector('#toasts').textContent||'').includes(App.t('inv.shared'))}));
+  ok('invite: with navigator.share the link and a text carrying the code go to the share sheet, then "shared" is confirmed', !!sd.d&&sd.d.url===LINK&&sd.d.text.includes(CODE)&&sd.toast, JSON.stringify(sd));
+  await pg.evaluate(()=>navigator.clipboard.writeText('x')); await pg.locator('#copylink').tap(); await pg.waitForTimeout(300);
+  ok('invite: "Copy link" copies the invite link', await pg.evaluate(()=>navigator.clipboard.readText())===LINK);
+  await pg.goto(B+'invite.html?state=empty'); await pg.waitForTimeout(600);
+  const ie=await pg.evaluate(()=>({none:!!document.querySelector('.inv-none'),box:document.querySelectorAll('.empty,.inv-tri,.inv-friend').length,steps:document.querySelectorAll('.inv-steps li').length,code:!!document.querySelector('#code')}));
+  ok('invite, no friends yet: the offer, the code and the steps carry the page; one plain sentence, no empty box and no zero figures', ie.none&&ie.box===0&&ie.steps===3&&ie.code, JSON.stringify(ie));
+  // wallet: the invite bonus row leads to the invite screen and does not move Convert off the first screen
+  await pg.goto(B+'wallet.html'); await pg.waitForTimeout(700);
+  const wi=await pg.evaluate(()=>{const a=document.querySelector('#to-invite'),cv=document.querySelector('.wconvert .btn').getBoundingClientRect(),tb=document.querySelector('.tb').getBoundingClientRect(),ar=a.getBoundingClientRect();return {href:a.getAttribute('href'),v:a.querySelector('.inv-row-go').textContent,h:ar.height,after:ar.top>=cv.bottom,convertFirst:cv.bottom<=tb.top,over:document.documentElement.scrollWidth-innerWidth};});
+  ok('wallet: "Invite bonus this week +85P" is a row to the invite screen, under Convert, and Convert stays on the first screen', wi.href==='invite.html?from=wallet'&&wi.v==='+85P'&&wi.h>=44&&wi.after&&wi.convertFirst&&wi.over<=0, JSON.stringify(wi));
+  // results: the invite bonus is its own line under the day's head, not a question row and not a hit chip
+  await pg.goto(B+'results.html'); await pg.waitForTimeout(700);
+  const ri=await pg.evaluate(()=>{const rows=[...document.querySelectorAll('.rs-inv')];return {n:rows.length,pts:rows.map(r=>r.querySelector('.rs-inv-p').textContent).join('|'),inList:rows.some(r=>r.closest('li,ul')),chip:rows.some(r=>r.querySelector('.rchip')),note:rows.every(r=>r.querySelector('small').textContent===App.t('r.inv.sub',{r:10})),count:document.querySelector('.rs-count').textContent,h:Math.min(...rows.map(r=>r.getBoundingClientRect().height))};});
+  ok('results: each day carries its invite bonus as its own line with the ranking note; the day\'s own total is unchanged', ri.n===3&&ri.pts==='+15P|+35P|+35P'&&!ri.inList&&!ri.chip&&ri.note&&ri.count==='+100P'&&ri.h>=44, JSON.stringify(ri));
+  // day done for an invited player: the one time welcome bonus beside the day's +100P
+  await pg.goto(B+'done.html?state=welcome'); await pg.waitForTimeout(1300);
+  const dw=await pg.evaluate(()=>{const f=document.querySelector('#done-fig').getBoundingClientRect(),w=document.querySelector('#done-wel'),wr=w.getBoundingClientRect(),ph=document.querySelector('.ph').getBoundingClientRect();return {fig:document.querySelector('#done-fig').textContent,wel:w.querySelector('b').textContent,tag:w.querySelector('span').textContent===App.t('d.wel.tag'),beside:wr.left>=f.right-2&&wr.right<=ph.right&&wr.top>=ph.top,bg:getComputedStyle(w).backgroundColor,pts:document.querySelector('#pts-val').textContent,st:document.querySelector('#reward').textContent===App.t('d.wel.st',{n:200}),note:!!document.querySelector('.done-welnote')};});
+  ok('day done, welcome: "+100P welcome bonus" stands beside the day\'s +100P inside the band, in lime, and the points show both', dw.fig==='+100P'&&dw.wel==='+100P'&&dw.tag&&dw.beside&&dw.bg===LIME&&dw.pts==='1,450P'&&dw.st&&dw.note, JSON.stringify(dw));
+  await shot('h3-day-done-welcome');
+  // first run: the optional code field accepts a valid code and rejects an unknown one and the player's own
+  await pg.goto(B+'first-run.html'); await pg.waitForTimeout(700);
+  ok('first run: the code is one optional link on the first panel; the field is closed', await pg.locator('#code-open').isVisible() && !(await pg.locator('#code').isVisible()));
+  await pg.locator('#code-open').tap(); await pg.waitForTimeout(250);
+  const fc=await pg.evaluate(()=>{const i=document.querySelector('#code'),s=getComputedStyle(i),b=getComputedStyle(i.closest('.field-box'));return {focus:document.activeElement===i,mono:/mono/i.test(s.fontFamily),upper:s.textTransform,lig:s.fontVariantLigatures,edge:b.borderTopWidth+' '+b.borderTopColor,fits:document.documentElement.scrollHeight<=innerHeight,applyOff:document.querySelector('#code-apply').disabled};});
+  ok('first run: the open field is focused, mono capitals with ligatures off in a 2 px ink outline, and the panel still fits one screen', fc.focus&&fc.mono&&fc.upper==='uppercase'&&fc.lig==='none'&&fc.edge==='2px rgb(11, 21, 48)'&&fc.fits&&fc.applyOff, JSON.stringify(fc));
+  await pg.keyboard.type('kaia-999'); await pg.waitForTimeout(100);
+  ok('first run: typing is normalised to capitals without separators', await pg.locator('#code').inputValue()==='KAIA999');
+  await pg.locator('#next').tap(); await pg.waitForTimeout(800);
+  const fu=await pg.evaluate(()=>({panel:+document.querySelector('[data-panel]:not([hidden])').dataset.panel,err:document.querySelector('#code').closest('.field-box').classList.contains('is-error'),msg:document.querySelector('#code-msg span').textContent===App.t('o.code.unknown'),inv:document.querySelector('#code').getAttribute('aria-invalid'),skip:!!document.querySelector('#code-without'),fits:document.documentElement.scrollHeight<=innerHeight}));
+  ok('first run: Next checks a typed code first; an unknown code is rejected, the player stays on the panel and can continue without a code', fu.panel===1&&fu.err&&fu.msg&&fu.inv==='true'&&fu.skip&&fu.fits, JSON.stringify(fu));
+  await shot('a2-first-run-code-unknown');
+  await pg.locator('#code').fill('SORA52K'); await pg.keyboard.press('Enter'); await pg.waitForTimeout(800);
+  ok('first run: the player\'s own code is rejected with its own message', await pg.evaluate(()=>document.querySelector('#code-msg span').textContent===App.t('o.code.own')&&document.querySelector('#code').closest('.field-box').classList.contains('is-error')));
+  await pg.locator('#code').fill('minji7q'); await pg.locator('#code-apply').tap(); await pg.waitForTimeout(800);
+  const fv=await pg.evaluate(()=>{const i=document.querySelector('#code');return {v:i.value,ok:i.closest('.field-box').classList.contains('is-ok'),ro:i.readOnly,msg:document.querySelector('#code-msg').textContent,btn:document.querySelector('#code-apply').textContent===App.t('o.code.change'),fits:document.documentElement.scrollHeight<=innerHeight};});
+  ok('first run: a valid code is accepted: "Invited by minji" with the +100P line, the field locks and offers Change', fv.v==='MINJI7Q'&&fv.ok&&fv.ro&&fv.msg.includes('minji')&&fv.msg.includes('+100P')&&fv.btn&&fv.fits, JSON.stringify(fv));
+  await shot('a2-first-run-code-valid');
+  await pg.locator('#next').tap(); await pg.waitForTimeout(300);
+  ok('first run: with a valid code Next moves on and the code field leaves with the first panel', await pg.evaluate(()=>+document.querySelector('[data-panel]:not([hidden])').dataset.panel===2&&document.querySelector('#codebox').hidden));
+  await pg.goto(B+'first-run.html?state=code-unknown'); await pg.waitForTimeout(600);
+  await pg.locator('#code-skip').tap(); await pg.waitForTimeout(200);
+  ok('first run: Skip clears and closes the code field', await pg.locator('#code-open').isVisible() && await pg.evaluate(()=>document.querySelector('#code').value===''&&document.querySelector('#code-form').hidden));
+  // the gate for someone who opened an invite link in a browser
+  await pg.goto(B+'gate.html?state=invited'); await pg.waitForTimeout(800);
+  const gi=await pg.evaluate(()=>{const p=document.querySelector('#panel'),c=p.querySelector('.code-block'),st=p.querySelector('.steps'),r=c.getBoundingClientRect();return {h:p.querySelector('h2').textContent===App.t('g.inv.h',{name:'minji'}),code:c.querySelector('.code-v').textContent,above:r.bottom<=st.getBoundingClientRect().top,first:r.bottom<=innerHeight,steps:st.children.length,body:p.textContent.includes(App.t('g.inv.b')),over:document.documentElement.scrollWidth-innerWidth};});
+  ok('gate, invited: "minji invited you", the code block on the first screen above the install steps', gi.h&&gi.code===CODE&&gi.above&&gi.first&&gi.steps===3&&gi.body&&gi.over<=0, JSON.stringify(gi));
+  await pg.evaluate(()=>navigator.clipboard.writeText('x')); await pg.locator('#inv-code').tap(); await pg.waitForTimeout(300);
+  ok('gate, invited: a tap copies the code and the block reads "Copied"', await pg.evaluate(()=>navigator.clipboard.readText())===CODE && await pg.evaluate(()=>document.querySelector('#inv-code').classList.contains('is-done')));
+  await shot('g1-gate-invited');
+  }
   await pg.goto(B+'wallet.html'); await pg.waitForTimeout(600);
 
 

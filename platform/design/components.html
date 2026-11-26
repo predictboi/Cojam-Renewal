@@ -16,6 +16,7 @@
 <link rel="stylesheet" href="assets/screens/home.css">
 <link rel="stylesheet" href="assets/screens/money.css">
 <link rel="stylesheet" href="assets/screens/rank.css">
+<link rel="stylesheet" href="assets/screens/invite.css">
 </head>
 <body>
 <!-- Component library: every component of the spec inventory (section 6), built from the same C.* builders the screens use. -->
@@ -144,6 +145,8 @@
   ]);
   html += sec("QR block, address block, install steps", "The QR codes are real: scan them. A full address is always two equal lines of five groups.", [
     demo("Address block (deposit): the full address in two rows of five groups, one secondary button", '<section class="msec maddr"><h2 class="lbl">' + t("w.addr") + '</h2><p class="addr-v" translate="no">' + F.groups(M.user.address) + "</p>" + C.btn(t("w.copy"), { block: true, icon: "copy" }) + '<p class="addr-note">' + t("w.addr.note") + "</p></section>"),
+    demo("Invite code block (invite, gate): the code in the data face inside the 2 px ink outline; the whole block copies it and reads Copied for 2 s. Right: the copied state", '<div class="stack-12">' + C.code(M.invite.code) + C.code(M.invite.code, { done: true }) + "</div>"),
+    demo("Invite row (profile, wallet): a row to the invite screen with a count or the week's bonus in the outlined chip", '<a class="inv-row" href="invite.html"><span class="inv-row-t"><b>' + t("inv.entry") + "</b><small>" + t("inv.entry.sub", { r: M.invite.rate }) + '</small></span><span class="inv-row-go">+' + F.pts(M.invite.week) + C.icon("chev", 16) + "</span></a>"),
     demo("QR with the centre mark", C.qr(M.user.address, t("dp.qr"))),
     demo("Address chip (wallet, profile): the short address; the whole chip copies the full one and reads \"Copied\" for 2 s", C.addr(M.user.address)),
     demo("Install steps", C.steps([[t("g.ios.1"), "share"], [t("g.ios.2"), "addhome"], [t("g.ios.3"), "phone"]]))

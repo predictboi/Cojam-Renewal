@@ -14,9 +14,10 @@
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/components.css">
 <link rel="stylesheet" href="assets/screens/home.css">
+<link rel="stylesheet" href="assets/screens/invite.css">
 </head>
 <body>
-<!-- H3 Day done with countdown. States: (none) paid, moment (plays saving, then paid), saving, results, zero, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<!-- H3 Day done with countdown. States: (none) paid, moment (plays saving, then paid), saving, results, zero, offline, welcome (an invited player's first full day: +100P and the one time +100P welcome bonus). Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -28,7 +29,10 @@
   if (S === "moment" && sess.data.paid) S = "";   /* the reward moment plays once; a reload shows the settled screen */
   var phase = S === "moment" || S === "saving" ? "saving" : "paid";
   /* points: the 100P already counted in this tab is in M.user.points; a preset opened on its own adds it for the picture */
+  /* welcome: an invited player's first full day. The one time welcome bonus is paid in the same moment as the day's 100P */
+  var wel = S === "welcome", W = M.invite.welcome;
   var basePts = phase === "paid" && !sess.data.paid ? M.user.points + 100 : M.user.points;
+  if (wel) basePts += W;
   if (phase === "paid") M.user.points = basePts;
   /* the picks are the ones actually made on the home screen in this tab; a preset opened on its own falls back to sample picks */
   var sample = { q1: "r", q2: "r", q3: "l", q4: "r", q5: "r" };
@@ -40,11 +44,11 @@
      pops in lime with a burst that stays inside the header band when the points are paid, then settles to white. No toast repeats it; the header pill counts up. */
   function status(p) {
     if (p === "saving") return '<p class="done-st" id="reward"><span class="spin"></span>' + t("d.saving.st") + "</p>";
-    return '<p class="done-st" id="reward">' + C.icon("check", 14) + t("d.paid.st") + "</p>";
+    return '<p class="done-st" id="reward">' + C.icon("check", 14) + (wel ? t("d.wel.st", { n: 100 + W }) : t("d.paid.st")) + "</p>";
   }
   function head() {
     var segs = phase === "saving" ? ["done", "done", "done", "done", "pend"] : ["done", "done", "done", "done", "done"];
-    return '<div class="done-stack"><h1>' + t("d.h1") + '</h1><p class="done-fig' + (phase === "saving" ? " is-wait" : "") + '" id="done-fig" aria-hidden="true">+100P</p>' +
+    return '<div class="done-stack"><h1>' + t("d.h1") + '</h1>' + (wel ? '<div class="done-figs">' : "") + '<p class="done-fig' + (phase === "saving" ? " is-wait" : "") + '" id="done-fig" aria-hidden="true">+100P</p>' + (wel ? '<p class="done-wel" id="done-wel" aria-hidden="true"><b>+' + W + "P</b><span>" + t("d.wel.tag") + "</span></p></div>" : "") +
       '<div aria-live="polite" id="reward-wrap">' + status(phase) + "</div></div>" +
       '<div class="ph-line"><span class="ph-count">5<small>/5</small></span>' + C.day5(segs, { band: true, id: "day5", cls: S === "moment" ? "is-flash" : "", label: "5/5" }) + "</div>";
   }
@@ -59,6 +63,7 @@
     return C.btn(t("d.rank"), { kind: "primary", block: true, href: "ranking.html", iconEnd: "right" }) +
       '<p class="watch" id="next">' + (S === "zero" ? '<span class="spin"></span><span>' + t("d.loading") + "</span>" :
         C.icon("clock", 16) + "<span>" + t("d.next") + '</span> <b class="clock-inline" id="clock" data-cd="' + secs + '" aria-hidden="true"></b><span class="sr-only" data-cd-sr></span>') + "</p>" +
+      (wel ? '<p class="done-welnote">' + t("d.wel.note", { name: '<b translate="no">' + App.esc(M.invite.by) + "</b>", w: W }) + "</p>" : "") +
       '<section class="sec sec-rule done-picks"><div class="sect-h"><h2 class="sect-h">' + t("d.picks") + '</h2><a class="linkish" href="results.html">' + t("d.results") + "</a></div>" +
       '<div class="done-wait">' + (waiting ? '<p class="done-wait-n">' + t("d.waitn", { n: waiting }) + "</p>" : "") + '<div class="plain-note"><p>' + t("d.hit.1") + "</p><p>" + t("d.hit.2") + "</p></div></div>" +
       '<ul class="list">' + picks.map(pickRow).join("") + "</ul></section>";

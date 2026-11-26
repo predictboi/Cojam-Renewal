@@ -14,6 +14,7 @@
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/components.css">
 <link rel="stylesheet" href="assets/screens/money.css">
+<link rel="stylesheet" href="assets/screens/invite.css">
 </head>
 <body>
 <!-- W1 Wallet. States: (none), new (under 1,000P), zero, loading, error (Kaia not answering), offline. Add ?lang=en|ko|ja. Mock data only. -->
@@ -44,7 +45,9 @@
       '<section class="msec" aria-labelledby="pt-h"><div class="mhero"><h2 class="lbl" id="pt-h">' + t("w.points") + '</h2><p class="fig mfig-2" id="pt-fig">' + F.int(pts) + "</p></div>" +
       '<p class="mline">' + (canCt ? t("w.ready", { n: canCt }) : t("w.notyet", { g: F.int(1000 - pts) })) + "</p>" +
       (S === "" || off ? '<p class="wpend">' + C.tag(t("w.onway")) + "<span>" + t("w.pendinghit", { p: u.pendingHit, time: "22:10" }) + "</span></p>" : "") +
-      '<div class="wconvert">' + C.btn(t("w.convert"), { kind: "primary", block: true, href: "convert.html" + (S === "new" || S === "zero" ? "?state=short" : ""), disabled: off }) + "</div></section>" +
+      '<div class="wconvert">' + C.btn(t("w.convert"), { kind: "primary", block: true, href: "convert.html" + (S === "new" || S === "zero" ? "?state=short" : ""), disabled: off }) + "</div>" +
+      /* the invite bonus earned this week, as a row to the invite screen. It sits under Convert, so the primary action stays where it was on the first screen */
+      '<a class="inv-row winv" id="to-invite" href="invite.html?from=wallet"><span class="inv-row-t"><b>' + t("w.invite") + "</b><small>" + t("inv.entry.sub", { r: M.invite.rate }) + '</small></span><span class="inv-row-go">+' + F.pts(S === "zero" || S === "new" ? 0 : M.invite.week) + C.icon("chev", 16) + "</span></a></section>" +
       /* 3. the token contract is reference only (the full address with its QR is on the deposit screen): collapsed, labelled as an address you must not send to, with its own toast */
       C.help(t("w.info"), '<p class="note note-warn">' + C.icon("warn", 18) + "<span>" + t("w.token") + '</span></p><div class="mcontract"><p class="addr-v" translate="no">' + F.groups(M.token) + "</p>" +
         C.btn(t("w.token.copy"), { sm: true, icon: "copy", attrs: 'data-copy="' + M.token + '" data-toast="' + App.esc(t("w.token.copied")) + '" data-done="' + App.esc(t("w.copy.done")) + '"' }) +
