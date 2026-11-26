@@ -268,7 +268,7 @@ export function App() {
         ms: t.loginMs,
         error: undefined,
         result: {
-          email: user?.email?.address,
+          email: user?.email?.address ? user.email.address.replace(/^(.).*(@.*)$/, '$1***$2') : undefined,
           privyUserId: user?.id,
           embeddedWallet: embedded?.address || 'waiting for the embedded wallet…',
           walletCreation: walletCreation.current,
