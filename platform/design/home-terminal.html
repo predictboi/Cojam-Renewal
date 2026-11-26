@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>H2 Home, terminal view | Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+</head>
+<body>
+<!-- H2 Home, terminal view. States: (none) two answered, fresh, syncing, slow, failed, reconnect, reconnectfail, otherdevice, loading, empty, closed, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<noscript>Cojam needs JavaScript to show this screen.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/components.js"></script>
+<script>
+(function () {
+  var t = App.t, S = App.state, M = MOCK, $ = App.$;
+  /* picks: n -> { dir, sync: "ok" | "saving" | "fail" } */
+  var picks = {};
+  if (S !== "fresh" && S !== "partial0") { picks[1] = { dir: "r", sync: "ok" }; picks[2] = { dir: "l", sync: S === "syncing" || S === "slow" ? "saving" : "ok" }; }
+  if (S === "failed") picks[2] = { dir: "l", sync: "fail" };
+  var current = null;
+  var noSet = S === "empty" || S === "closed" || S === "error" || S === "loading" || S === "otherdevice";
+  function isAnswered(n) { return picks[n] && picks[n].sync !== "fail"; }
+  function count() { return M.set.filter(function (q) { return isAnswered(q.n); }).length; }
+  function firstOpen() { for (var i = 0; i < 5; i++) if (!isAnswered(M.set[i].n)) return M.set[i].n; return null; }
+  function segs() { return M.set.map(function (q) { var p = picks[q.n]; return !p ? "" : p.sync === "ok" ? "done" : p.sync === "saving" ? "pend" : "fail"; }); }
+
+  function head() {
+    var c = S === "loading" ? 0 : count();
+    return "<div><h1>" + t("h.title") + '</h1><p class="ph-sub">' + t("h.sub") + "</p></div>" +
+      '<div class="ph-line"><span class="ph-count"><span id="cnt">' + c + "</span><small>/5</small></span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs(), { band: true, id: "day5" }) + "</div>" +
+      '<div class="ph-meta"><span id="left">' + (c && !noSet ? t("h.left", { n: 5 - c }) : "") + "</span>" +
+      (S === "empty" || S === "closed" ? "<span></span>" : S === "loading" ? C.skel("96px", "12px") : "<span>" + t("h.closes") + ' <b data-cd="' + M.untilNextSet() + '"></b></span>') + "</div>";
+  }
+  function viewSwitch() {
+    return C.seg([{ label: t("h.view.card"), href: "home-cards.html" + (S && S !== "fresh" ? "?state=" + S : "") }, { label: t("h.view.term"), href: "home-terminal.html", on: true }], { label: t("h.view.label") });
+  }
+  function row(q) {
+    var n = q.n, p = picks[n], id = q.id, num = '<span class="trow-n" aria-hidden="true">0' + n + "</span>", tag = C.tag(t("cat." + q.cat));
+    if (p && p.sync !== "fail") {
+      return '<li class="trow is-done">' + num + '<div><p class="trow-q">' + t(id + ".q") + '</p><div class="trow-foot">' + tag + '<span class="trow-state">' +
+        (p.sync === "saving" ? '<span class="spin"></span><span class="sr-only">' + t("common.saving") + "</span>" : C.icon("check", 16)) + t("h.t.chose", { choice: t(id + "." + p.dir) }) + "</span></div></div></li>";
+    }
+    var failed = p && p.sync === "fail";
+    if (n === current) {
+      return '<li class="trow is-open' + (failed ? " is-fail" : "") + '">' + num + '<div><h2 class="trow-q" tabindex="-1" id="open-q">' + t(id + ".q") + '</h2><div class="trow-foot">' + tag +
+        (failed ? '<span class="trow-state">' + C.icon("warn", 16) + t("h.t.notsaved") + "</span>" : "") + "</div></div>" +
+        '<div class="trow-body"><div class="qcard-meta"><span>' + C.icon("search", 14) + "<span>" + t("h.answer", { rule: t(id + ".rule") }) + "</span></span><span>" + C.icon("clock", 14) + "<span>" + t("h.ai", { time: t(id + ".time") }) + "</span></span></div>" +
+        '<div class="choices">' + ["l", "r"].map(function (d) {
+          return '<button type="button" class="choice" data-pick="' + n + '" data-dir="' + d + '"' + (App.offline ? " disabled" : "") + ' aria-label="' + App.esc(t("h.pick.aria", { choice: t(id + "." + d), q: t(id + ".q") })) + '">' + (d === "l" ? C.icon("left", 18) : "") + "<span>" + t(id + "." + d) + "</span>" + (d === "r" ? C.icon("right", 18) : "") + "</button>";
+        }).join("") + "</div>" + (App.offline ? '<p class="small muted">' + t("h.offline") + "</p>" : "") + "</div></li>";
+    }
+    return '<li class="trow' + (failed ? " is-fail" : "") + '">' + num + '<div><p class="trow-q">' + t(id + ".q") + '</p><div class="trow-foot">' + tag +
+      (failed ? '<span class="trow-state">' + C.icon("warn", 16) + t("h.t.notsaved") + "</span>" : "") +
+      C.btn(failed ? t("h.t.again") : t("h.t.pick"), { sm: true, cls: "btn-quiet", attrs: 'data-open="' + n + '"' }) + "</div></div></li>";
+  }
+  function list() { return M.set.map(row).join(""); }
+  function body() {
+    if (S === "loading") return viewSwitch() + '<ol class="term" aria-busy="true">' + [1, 2, 3, 4, 5].map(function (n) { return '<li class="trow"><span class="trow-n" aria-hidden="true">0' + n + "</span><div>" + C.skel("94%", "16px") + '<div class="trow-foot">' + C.skel("64px", "22px", "border-radius:999px") + C.skel("72px") + "</div></div></li>"; }).join("") + '</ol><p class="sr-only" role="status">' + t("common.loading") + "</p>";
+    if (S === "empty") return viewSwitch() + C.empty({ icon: "clock", title: t("h.empty.h"), body: t("h.empty.b", { time: t("time.kst9") }), extra: '<p class="fig fig--md" data-cd="' + M.untilNextSet() + '"></p>' });
+    if (S === "closed") return viewSwitch() + C.empty({ icon: "refresh", title: t("h.closed"), action: C.btn(t("h.closed.btn"), { kind: "primary", href: "home-terminal.html" }) });
+    if (S === "error") return viewSwitch() + C.error();
+    if (S === "otherdevice") return viewSwitch() + C.otherDevice();
+    return viewSwitch() + (App.offline ? C.note("warn", t("h.offline")) : "") + C.playBanner(S) + '<ol class="term" id="term">' + list() + "</ol>";
+  }
+  current = firstOpen();
+  App.store.set("view", "term");
+  App.mount({ tab: "home", docTitle: t("h.title"), head: head(), body: body(), badges: { home: "dot", results: 2 }, after: function () {
+    var term = $("#term"); if (!term) return;
+    if (S === "failed") App.toast(t("h.toast.fail", { n: 2 }), { btn: t("common.retry") });
+    function paint(focus) {
+      term.innerHTML = list();
+      var day5 = $("#day5"), sg = segs(); for (var i = 0; i < 5; i++) day5.children[i].className = sg[i] ? "is-" + sg[i] : "";
+      var c = count(); $("#cnt").textContent = c; $("#left").textContent = c < 5 ? t("h.left", { n: 5 - c }) : "";
+      if (focus) { var h = $("#open-q"); if (h) h.focus({ preventScroll: true }); }
+    }
+    function confirm(n) { setTimeout(function () { if (picks[n]) { picks[n].sync = "ok"; paint(false); var seg = $("#day5").children[n - 1]; seg.classList.add("is-fill"); } }, 1300 + Math.random() * 800); }
+    if (S === "syncing") confirm(2);
+    document.addEventListener("click", function (e) { if (e.target.closest("[data-retry-now]")) { var b = $(".banner"); confirm(2); setTimeout(function () { if (b) b.remove(); }, 1500); } });
+    term.addEventListener("click", function (e) {
+      var o = e.target.closest("[data-open]"); if (o) { current = +o.getAttribute("data-open"); paint(true); return; }
+      var b = e.target.closest("[data-pick]"); if (!b || b.disabled) return;
+      var n = +b.getAttribute("data-pick"), dir = b.getAttribute("data-dir");
+      picks[n] = { dir: dir, sync: "saving" }; current = firstOpen();
+      try { if (navigator.vibrate) navigator.vibrate(10); } catch (err) {}
+      App.live(t("h.live.picked", { choice: t("q" + n + "." + dir), k: 5 - count() }));
+      paint(true); confirm(n);
+      if (count() === 5) setTimeout(function () { location.href = "done.html?state=moment"; }, 420);
+    });
+  } });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>Cojam Daily Prediction: component library</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+</head>
+<body>
+<!-- Component library: every component of the spec inventory (section 6), built from the same C.* builders the screens use. -->
+<div class="doc">
+  <header class="doc-head">
+    <a class="ah-logo" href="index.html" aria-label="Back to the design hub"><span class="chip-logo"><img src="assets/cojam-mark.svg" alt="" width="26" height="26">Cojam</span></a>
+    <h1>Component library</h1>
+    <p>One token file, one component file. Volt has two jobs: the primary action and the current selection (plus the day progress it stands for). Blue is the ground of headers, ink carries figures, sky is quiet data.</p>
+  </header>
+  <main class="doc-main" id="lib"></main>
+</div>
+<div class="toasts is-bare" id="toasts" role="status" aria-live="polite"></div>
+<div class="sr-only" id="live" aria-live="polite"></div>
+<div class="sheet-root" id="sheet-root"><div class="sheet-scrim" data-sheet-scrim></div><div class="sheet" id="sheet" role="dialog" aria-modal="true" tabindex="-1"></div></div>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/components.js"></script>
+<script>
+(function () {
+  var t = App.t, F = App.fmt, M = MOCK;
+  function sec(title, note, demos) { return '<section class="doc-sec"><h2>' + title + "</h2>" + (note ? "<p>" + note + "</p>" : "") + demos.join("") + "</section>"; }
+  function demo(cap, html, kind) { return '<div class="lib-demo' + (kind ? " lib-demo--" + kind : "") + '"><p class="lib-cap">' + cap + "</p>" + html + "</div>"; }
+  var sw = [["--brand", "Blue", "on-brand"], ["--volt", "Volt", "ink"], ["--ink", "Ink", "snow"], ["--sky", "Sky", "ink"], ["--snow", "Snow", "ink"], ["--inset", "Mist", "ink"], ["--brand-tint", "Blue tint", "ink"], ["--up-tint", "Up", "up"], ["--warn-tint", "Warn", "warn"], ["--down-tint", "Down", "down"]];
+  var html = "";
+  html += sec("Tokens", "Colours, type and shape come from assets/tokens.css. Screens hard code nothing.", [
+    demo("Colour", '<div class="sw">' + sw.map(function (s) { return '<div style="background:var(' + s[0] + ");color:var(--" + s[2] + ')">' + s[1] + "<br>" + s[0] + "</div>"; }).join("") + "</div>"),
+    demo("Type: display (Archivo wide, Pretendard heavy for Hangul and kana), body (Pretendard), figures (tabular)", '<p class="fig fig--xl">1,284<small>CT</small></p><p class="fig">Daily 5 / 오늘의 예측 / 今日の予想</p><h2>Heading 20, heavy</h2><p>Body 16. Five quick predictions every day.</p><p class="small muted">Secondary 14, ink 2 on snow at 7.2:1.</p><p class="mono" translate="no">' + M.user.address + "</p>")
+  ]);
+  html += sec("App header and point pill", "Tab roots show the logo chip, sub screens a back button and the title. Pill states: ready, loading, saving, hits pending, stale.", [
+    demo("Tab root", C.header({}), "blue"), demo("Sub screen", C.header({ back: "#", title: t("c.title") }), "blue"),
+    demo("Pill: loading, saving, hits pending, stale", C.header({ pts: "loading" }) + C.header({ pts: "pending" }) + C.header({ pts: "hits" }) + C.header({ pts: "stale" }), "blue")
+  ]);
+  html += sec("Bottom tab bar", "Selected tab: volt pill behind the icon. Badges: dot and count.", [demo("Home selected, dot and count badges", C.tabbar("home", { home: "dot", results: 12, stake: "dot" }))]);
+  html += sec("Segmented switch", "", [
+    demo("Two options", C.seg([{ label: t("h.view.card"), value: "a", on: true }, { label: t("h.view.term"), value: "b" }], { name: "demo1", label: "Demo" })),
+    demo("Three options", C.seg([{ label: t("r.f.all"), value: "a", on: true }, { label: t("r.f.wait"), value: "b" }, { label: t("r.f.set"), value: "c" }], { name: "demo2", label: "Demo" })),
+    demo("Disabled", C.seg([{ label: "EN", value: "a", on: true }, { label: "한국어", value: "b" }], { label: "Demo", disabled: true }))
+  ]);
+  html += sec("Day progress: the signature", "Five blocks, one per prediction. Empty, saving (stripes), done (volt), failed. It appears on Home, Day done, Results, the first run and the Gate preview.", [
+    demo("On the blue band: 2 done, 1 saving", '<div class="ph-line"><span class="ph-count">3<small>/5</small></span>' + C.day5(["done", "done", "pend", "", ""], { band: true }) + "</div>", "blue"),
+    demo("On the blue band, failed block", C.day5(["done", "fail", "done", "", ""], { band: true }), "blue"),
+    demo("Large, day done", C.day5(["done", "done", "done", "pend", "pend"], { band: true, size: "lg" }), "blue"),
+    demo("On snow", C.day5(["done", "done", "pend", "fail", ""])),
+    demo("Small, a past day: hit, hit, miss, waiting, not answered", C.day5(["done", "done", "miss", "wait", ""], { size: "sm" }))
+  ]);
+  html += sec("Buttons", "One primary per view. Press: scale and shade, the volt button presses onto its ink drop.", [
+    demo("Primary, loading, disabled", C.btn("Stake 500 CT", { kind: "primary", block: true }) + C.btn("Sending code", { kind: "primary", block: true, loading: true }) + C.btn("Enter an amount", { kind: "primary", block: true, disabled: true })),
+    demo("Secondary, small, quiet, ghost, danger, icon", '<div class="lib-wrap">' + C.btn("Deposit", { icon: "download" }) + C.btn("Use 1,000P", { sm: true }) + C.btn("Pick", { sm: true, cls: "btn-quiet" }) + C.btn("Cancel", { kind: "ghost" }) + C.btn("Log out", { cls: "btn-danger" }) + C.iconBtn("copy", "Copy") + '<button type="button" class="linkish">Text link</button></div>'),
+    demo("On blue", '<div class="lib-wrap">' + C.btn("Skip", { cls: "btn-onband", sm: true }) + C.lang() + "</div>", "blue")
+  ]);
+  html += sec("Tags and status chips", "", [demo("", '<div class="lib-wrap">' + C.tag("Crypto") + C.tag("Hit", "up") + C.tag("Miss") + C.tag("Corrected", "sky") + C.tag("Cancelled", "line") + C.tag("Locked", "ink", "lock") + C.tag("Unlocked", "volt") + C.tag("Paused", "warn") + C.tag("Failed", "down") + '<span class="live"><span class="live-dot"></span>Updated 4s ago</span></div>')]);
+  html += sec("Swipe card stack and choice pair", "Real touch drag: follows the finger, tilts up to 8 degrees, the choice on the drag side turns volt, commits at 35% travel or a fling. Buttons and the left and right arrow keys do the same.", [
+    demo("Try it: drag, tap a choice, or focus the card and press an arrow key", '<div class="deck" id="lib-deck">' + [M.set[2], M.set[1], M.set[0]].map(function (q) { return C.qcard(q); }).join("") + '</div><ul class="sync"><li><span class="spin"></span><span>' + t("h.sync", { n: 2, choice: t("q2.r") }) + "</span></li></ul>" + C.btn("Reset the stack", { sm: true, id: "lib-reset" })),
+    demo("Returned card with the not saved note, disabled choices", '<div class="deck">' + C.qcard(M.set[3], { failed: true, disabled: true, static: true }) + "</div>")
+  ]);
+  html += sec("Terminal rows", "Answered, saving, current (expanded), remaining, failed.", [demo("", '<ol class="term">' +
+    '<li class="trow is-done"><span class="trow-n">01</span><div><p class="trow-q">' + t("q1.q") + '</p><div class="trow-foot">' + C.tag(t("cat.crypto")) + '<span class="trow-state">' + C.icon("check", 16) + t("h.t.chose", { choice: t("q1.r") }) + "</span></div></div></li>" +
+    '<li class="trow is-done"><span class="trow-n">02</span><div><p class="trow-q">' + t("q2.q") + '</p><div class="trow-foot">' + C.tag(t("cat.markets")) + '<span class="trow-state"><span class="spin"></span>' + t("h.t.chose", { choice: t("q2.l") }) + "</span></div></div></li>" +
+    '<li class="trow is-open"><span class="trow-n">03</span><div><p class="trow-q">' + t("q3.q") + '</p><div class="trow-foot">' + C.tag(t("cat.weather")) + '</div></div><div class="trow-body"><div class="choices"><button type="button" class="choice">' + C.icon("left", 18) + "<span>" + t("q3.l") + '</span></button><button type="button" class="choice"><span>' + t("q3.r") + "</span>" + C.icon("right", 18) + "</button></div></div></li>" +
+    '<li class="trow"><span class="trow-n">04</span><div><p class="trow-q">' + t("q4.q") + '</p><div class="trow-foot">' + C.tag(t("cat.sports")) + C.btn(t("h.t.pick"), { sm: true, cls: "btn-quiet" }) + "</div></div></li>" +
+    '<li class="trow is-fail"><span class="trow-n">05</span><div><p class="trow-q">' + t("q5.q") + '</p><div class="trow-foot">' + C.tag(t("cat.crypto")) + '<span class="trow-state">' + C.icon("warn", 16) + t("h.t.notsaved") + "</span>" + C.btn(t("h.t.again"), { sm: true, cls: "btn-quiet" }) + "</div></div></li></ol>")]);
+  html += sec("Countdown and the day done moment", "Digits change without animation. The reward chip only says paid after confirmation.", [
+    demo("Large countdown", '<div class="card card--ink center stack-8"><p class="card-h">' + t("d.next") + "</p>" + C.clock(M.untilNextSet()) + "</div>"),
+    demo("Inline countdown", '<p class="ph-meta"><span></span><span>' + t("h.closes") + ' <b data-cd="' + M.untilNextSet() + '"></b></span></p>', "blue"),
+    demo("Done badge and reward line: saving, then paid", '<div class="head-row"><span class="done-badge">' + C.icon("check", 30) + '</span></div><p class="reward"><span class="spin"></span>' + t("d.saving") + '</p><p class="reward is-paid">' + C.icon("check", 16) + t("d.paid") + "</p>", "blue")
+  ]);
+  html += sec("Result rows, day header and stats", "", [
+    demo("Stats", '<div class="stats"><div class="stat"><b>1,350P</b><span>' + t("r.earned") + '</span></div><div class="stat"><b>11/20</b><span>' + t("r.hits") + '</span></div><div class="stat"><b>4/7</b><span>' + t("r.days") + "</span></div></div>"),
+    demo("Day group: waiting, hit paid, hit pending, miss, corrected, cancelled, not answered", '<div class="list"><div class="day-h"><b>' + t("common.yesterday") + '</b><span class="day-total">+250P</span><span class="day-sub">' + C.day5(["done", "miss", "done", "done", "miss"], { size: "sm" }) + "<span>" + t("r.g.done") + "</span></span></div>" +
+      [["wait", '<span class="rrow-out muted">' + C.icon("clock", 14) + t("r.o.wait") + "</span>"], ["hit", '<span class="rrow-out">' + C.tag(t("r.o.hit"), "up") + "+50P</span>"], ["pend", '<span class="rrow-out">' + C.tag(t("r.o.hit"), "up") + '<span class="muted">' + t("r.o.pend", { time: "22:10" }) + "</span></span>"], ["miss", '<span class="rrow-out">' + C.tag(t("r.o.miss")) + "</span>"], ["corr", '<span class="rrow-out">' + C.tag(t("r.o.corr"), "sky") + "+50P</span>"], ["void", '<span class="rrow-out">' + C.tag(t("r.o.void"), "line") + "</span>"], ["none", '<span class="rrow-out muted">' + t("r.o.none") + "</span>"]].map(function (r, i) {
+        return '<div class="rrow"><span class="rrow-q">' + t("p" + (i + 1) + ".q") + '</span><span class="rrow-foot"><span class="row">' + C.tag(t("cat.markets")) + "<span>" + t("r.you", { choice: t("yes") }) + "</span></span>" + r[1] + "</span></div>"; }).join("") + "</div>")
+  ]);
+  function krow(r, cls) { return '<li class="krow ' + cls + '"><span class="krow-rank">' + r.rank + '</span><div class="grow"><p class="krow-name">' + r.name + (r.tied ? C.tag(t("k.tied"), "line") : "") + (cls.indexOf("is-me") >= 0 ? C.tag(t("k.you"), "ink") : "") + '</p><p class="krow-pts">' + F.pts(r.pts) + '</p></div><p class="krow-prize">' + r.prize + "<small>CT</small></p></li>"; }
+  html += sec("Ranking rows, pinned own row and prize pool card", "", [
+    demo("Top 3 badge, tie, plain, own row, not awarded", '<ol class="list">' + krow(M.ranking[0], "is-top") + krow(M.ranking[2], "is-top") + krow(M.ranking[4], "") + krow({ rank: 7, name: "minji", pts: 2200, prize: 51.36 }, "is-me") + '<li class="krow is-void"><span class="krow-rank">9</span><p class="krow-name">' + t("k.void") + '</p><p class="krow-prize"></p></li></ol>'),
+    demo("Pinned own row: outside the Top 10", '<aside class="pin"><span class="pin-rank">27</span><div class="pin-main"><b>' + t("k.you") + "</b><span>" + t("k.gap", { gap: 750 }) + '</span></div><span class="pin-pts">1,350P</span></aside>'),
+    demo("Pinned own row: in the Top 10", '<aside class="pin"><span class="pin-rank">7</span><div class="pin-main"><b>' + t("k.in") + "</b><span>" + t("k.prize", { c: "51.36" }) + '</span></div><span class="pin-pts">2,200P</span></aside>'),
+    demo("Pinned own row: no rank yet", '<aside class="pin pin--wide"><div class="pin-main"><b>' + t("k.none") + "</b></div>" + C.btn(t("k.play"), { kind: "primary", sm: true, cls: "btn-sm" }) + "</aside>"),
+    demo("Prize pool card", '<section class="card card--ink stack-12"><div class="pool-top"><div><p class="card-h">' + t("k.pool") + '</p><p class="fig fig--xl fig--volt">1,284<small>CT</small></p></div><div class="end"><p class="card-h">' + t("k.ends") + '</p><p class="fig fig--md">3d 14h</p></div></div>' + C.help(t("k.split.q"), '<div class="split">' + M.pool.split.slice(0, 5).map(function (p, i) { return "<div>#" + (i + 1) + "<b>" + p + "%</b></div>"; }).join("") + "</div>") + "</section>")
+  ]);
+  html += sec("Fields", "16 px or larger text so iOS does not zoom. Errors sit under the field with the fix as a button.", [
+    demo("Amount with Max: valid", C.amount({ id: "f1", label: t("s.amount"), unit: "CT", value: "500", side: t("s.avail") + " <b>1,840.5 CT</b>", msg: t("s.min") })),
+    demo("Error with fix button", C.amount({ id: "f2", label: t("s.amount"), unit: "CT", value: "5,000", error: true, side: t("s.avail") + " <b>1,840.5 CT</b>", msg: "<span>" + t("s.e.bal", { b: "1,840.5" }) + "</span>" + C.btn(t("s.fix.bal", { b: "1,840.5" }), { sm: true }) })),
+    demo("Disabled", C.amount({ id: "f3", label: t("s.amount"), unit: "CT", value: "", disabled: true })),
+    demo("Address input with paste", '<div class="field"><div class="field-label"><label for="f4"><b>' + t("x.to") + '</b></label></div><div class="field-box field-box--mono"><input id="f4" type="text" placeholder="0x…" autocomplete="off" spellcheck="false"><button type="button" class="field-max">' + t("x.paste") + "</button></div></div>"),
+    demo("One time code", '<div class="field"><div class="field-box field-box--code"><input type="text" inputmode="numeric" maxlength="6" placeholder="000000" aria-label="' + t("a.code.label") + '"></div></div>'),
+    demo("Period selector", '<div class="period" role="group" aria-label="' + t("s.period") + '">' + [30, 90, 180, 365].map(function (d) { return '<button type="button" aria-pressed="' + (d === 90) + '"><b>' + d + "<small>" + t("s.d") + "</small></b><span>" + M.rates[d][0] + "%</span></button>"; }).join("") + "</div>"),
+    demo("Checkbox row", '<label class="check"><input type="checkbox"><span>' + t("x.rv.check") + "</span></label>")
+  ]);
+  html += sec("Summary rows and stake card", "", [
+    demo("Summary rows with an emphasis row", '<section class="card card--mist">' + C.rows([[t("s.tier"), t("s.tier.1")], [t("s.apr"), "12%"], [t("s.interest", { d: 90 }), "14.7945 CT", true], [t("s.unlock"), F.dateLong(M.ahead(90))]]) + "</section>"),
+    demo("Stake card: locked", '<article class="card stake"><div class="stake-top"><div><p class="fig fig--md">1,000<small>CT</small></p><p class="small muted">' + t("m.card.period", { d: 90, r: 13 }) + "</p></div>" + C.tag(t("m.locked"), "ink", "lock") + '</div><div class="bar"><i style="width:24%"></i></div>' + C.rows([[t("m.interest"), "7.479452 CT", true]]) + C.btn(t("m.claim", { i: "7.48" }), { block: true, disabled: true }) + "</article>"),
+    demo("Stake card: unlocked", '<article class="card stake"><div class="stake-top"><div><p class="fig fig--md">500<small>CT</small></p><p class="small muted">' + t("m.card.period", { d: 30, r: 8 }) + "</p></div>" + C.tag(t("m.unlocked"), "volt") + '</div><div class="bar is-full"><i style="width:100%"></i></div>' + C.btn(t("m.withdraw", { a: 500 }), { kind: "primary", block: true }) + "</article>")
+  ]);
+  html += sec("Sheet, transaction steps, status chip and toast", "The transaction sheet is used for staking, claiming, converting and withdrawing. It is never shown for a pick.", [
+    demo("Open each sheet state", '<div class="lib-wrap">' + ["review", "signing", "steps", "sending", "slow", "success", "failed"].map(function (s) { return C.btn(s, { sm: true, attrs: 'data-lib-sheet="' + s + '"' }); }).join("") + C.btn("Run the whole flow", { sm: true, attrs: 'data-lib-sheet="run"' }) + "</div>"),
+    demo("Transaction steps", '<ol class="txsteps"><li class="is-done"><span class="n">' + C.icon("check", 16) + "</span><span>" + t("tx.step1", { a: 500 }) + '</span><span class="st">' + t("tx.st.done") + '</span></li><li class="is-now"><span class="n">2</span><span>' + t("tx.step2", { a: 500 }) + '</span><span class="st"><span class="spin"></span>' + t("tx.st.now") + "</span></li></ol>"),
+    demo("Status chip above the tab bar (a hidden sheet)", '<button type="button" class="txchip"><span class="spin"></span>' + t("tx.chip", { label: t("s.chip", { a: 500 }) }) + "</button>"),
+    demo("Toast: plain and with a button", '<div class="lib-wrap">' + C.btn("Show a toast", { sm: true, attrs: 'data-toast-msg="' + App.esc(t("toast.paid", { n: 100 })) + '"' }) + C.btn("Toast with a button", { sm: true, id: "lib-toast" }) + '</div><div class="toast toast-static"><span>' + t("w.copied") + '</span></div><div class="toast toast-static"><span>' + t("toast.update") + '</span><button type="button">' + t("toast.reload") + "</button></div>")
+  ]);
+  html += sec("Notes, help, offline bar", "", [
+    demo("Info, warn, error with action, ok", C.note("", t("d.hit")) + C.note("warn", t("s.paused")) + C.note("error", t("e.load"), C.btn(t("common.retry"), { sm: true, icon: "refresh" })) + C.note("ok", t("g.installed"))),
+    demo("Help disclosure", C.help(t("a.help.q"), "<p>" + t("a.help.a") + "</p>")),
+    demo("Banners above the stack: slow pick, reconnecting, reconnect failed", C.playBanner("slow") + C.playBanner("reconnect") + C.playBanner("reconnectfail")),
+    demo("Offline bar", C.offbar())
+  ]);
+  html += sec("Skeleton, empty state, system screen", "", [
+    demo("Skeleton: lines, pill, card, row", '<div class="stack-8">' + C.skel("60%") + C.skel("90%") + C.skel("96px", "28px", "border-radius:999px") + C.skel("100%", "64px", "border-radius:18px") + "</div>"),
+    demo("Empty state", C.empty({ icon: "lock", title: t("m.empty.h"), body: t("m.empty.b"), action: C.btn(t("m.empty.btn"), { kind: "primary" }) })),
+    demo("System screen", '<div class="sys"><div class="sys-ic">' + C.icon("offline", 38) + "</div><h1>" + t("sys.off.h") + "</h1><p>" + t("sys.off.b") + "</p>" + C.btn(t("common.retry"), { kind: "primary" }) + "</div>")
+  ]);
+  html += sec("QR block, address chip, install steps", "The QR codes are real: scan them.", [
+    demo("QR with the centre mark", C.qr(M.user.address, t("dp.qr"))),
+    demo("Address chip: full, with copy and explorer", C.addr(M.user.address, { scan: true })),
+    demo("Address chip: large (deposit)", C.addr(M.user.address, { lg: true })),
+    demo("Address chip: short", C.addr(M.user.address, { short: true })),
+    demo("Install steps", C.steps([[t("g.ios.1"), "share"], [t("g.ios.2"), "addhome"], [t("g.ios.3"), "phone"]]))
+  ]);
+  document.getElementById("lib").innerHTML = html;
+  App.enhance(document.body);
+  var deckHtml = document.getElementById("lib-deck").innerHTML;
+  App.deck(document.getElementById("lib-deck"), { onCommit: function (n, dir) { App.toast(t("h.live.picked", { choice: t("q" + n + "." + dir), k: "" })); } });
+  document.getElementById("lib-reset").addEventListener("click", function () { var d = document.getElementById("lib-deck"); d.innerHTML = deckHtml; Array.prototype.forEach.call(d.children, function (c, i, a) { c.setAttribute("data-pos", a.length - 1 - i); c.classList.remove("is-out"); c.style.transform = ""; }); var c = d.children; for (var i = c.length - 1; i > 0; i--) d.appendChild(c[i - 1]); });
+  var cfg = { label: t("s.chip", { a: 500 }), stepsTitle: t("tx.stake.h", { a: 500 }), steps: [t("tx.step1", { a: 500 }), t("tx.step2", { a: 500 })], review: { rows: [[t("s.amount"), "12,000 CT"], [t("s.apr"), "14%"]], confirm: t("s.btn", { a: "12,000" }) }, success: { title: t("s.ok.h", { a: 500 }), rows: [[t("s.apr"), "12%"]] } };
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("[data-lib-sheet]"); if (b) { var s = b.getAttribute("data-lib-sheet"); if (s === "run") App.tx.run(Object.assign({}, cfg, { review: null })); else App.tx.show(s === "steps" ? "steps2" : s, cfg); }
+    if (e.target.closest("#lib-toast")) App.toast(t("toast.update"), { btn: t("toast.reload") });
+  });
+})();
+</script>
+</body>
+</html>

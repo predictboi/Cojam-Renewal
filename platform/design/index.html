@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>Cojam Daily Prediction: design hub</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+</head>
+<body>
+<!-- The hub: every screen and every state in one tap, grouped by flow. A review tool, so its own labels are English only. -->
+<div class="doc">
+  <header class="doc-head">
+    <span class="chip-logo"><img src="assets/cojam-mark.svg" alt="" width="26" height="26">Cojam</span>
+    <h1>Daily Prediction design hub</h1>
+    <p>Every screen and every state of the PWA, one tap each. Mock data only. Choose the language the screens open in, then tap a screen name for its main state or a chip for one state.</p>
+    <div class="seg" role="group" aria-label="Language for the screens" id="hub-lang">
+      <button type="button" class="seg-btn" data-l="en" aria-pressed="true">EN</button>
+      <button type="button" class="seg-btn" data-l="ko" aria-pressed="false">한국어</button>
+      <button type="button" class="seg-btn" data-l="ja" aria-pressed="false">日本語</button>
+    </div>
+  </header>
+  <main class="doc-main" id="hub"></main>
+</div>
+<script>
+(function () {
+  var FLOWS = [
+    { h: "Start here", p: "The walk through a new player takes, in order.", items: [
+      ["G1", "Gate", "gate.html", ["android", "accepted", "dismissed", "android-manual", "ios", "ios-other", "inapp", "inapp-ios", "desktop", "generic", "installed"]],
+      ["A1", "Login", "login.html", ["empty", "bademail", "unsupported", "toomany", "sendfail", "sending", "code", "verifying", "wrong", "expired", "tries", "setup", "returning", "busy", "walletfail", "devicefail", "refused-used", "refused-provider", "refused-many", "refused", "offline"]],
+      ["A2", "First run", "first-run.html", ["1", "2", "3", "settingup"]]
+    ] },
+    { h: "Play", p: "Today's five predictions, both views, and the day done moment.", items: [
+      ["H1", "Home, card view", "home-cards.html", ["partial", "syncing", "slow", "failed", "reconnect", "reconnectfail", "otherdevice", "loading", "empty", "closed", "error", "offline"]],
+      ["H2", "Home, terminal view", "home-terminal.html", ["fresh", "syncing", "slow", "failed", "reconnect", "reconnectfail", "otherdevice", "loading", "empty", "closed", "error", "offline"]],
+      ["H3", "Day done", "done.html", ["moment", "saving", "results", "zero", "offline"]],
+      ["R1", "Results", "results.html", ["loading", "empty", "nowaiting", "noset", "error", "offline"]],
+      ["K1", "Weekly ranking", "ranking.html", ["top10", "unranked", "winner", "short", "lastweek", "sent", "loading", "error", "offline"]]
+    ] },
+    { h: "Staking", p: "Open a stake, watch interest, claim and withdraw. Sheet states are listed on S1.", items: [
+      ["S1", "New stake", "staking.html", ["empty", "below", "above", "zero", "big", "paused", "full", "fullnone", "max20", "loading", "review", "signing", "steps", "sending", "slow", "success", "failed", "hidden", "error", "offline"]],
+      ["S2", "My stakes", "stakes.html", ["claimable", "unlocking", "claim", "loading", "empty", "error", "offline"]]
+    ] },
+    { h: "Wallet", p: "Balances, convert, deposit and withdraw.", items: [
+      ["W1", "Wallet", "wallet.html", ["new", "zero", "loading", "error", "offline"]],
+      ["W2", "Convert points", "convert.html", ["empty", "step", "above", "min", "short", "wait", "cap", "capglobal", "paused", "signing", "sending", "success", "failed", "loading", "offline"]],
+      ["W3", "Deposit", "deposit.html", ["arrived", "loading", "error", "offline"]],
+      ["W4", "Withdraw CT", "withdraw.html", ["filled", "bad", "sum", "own", "contract", "nokaia", "review", "signing", "sending", "success", "failed", "loading", "offline"]]
+    ] },
+    { h: "Account and system", p: "Profile, session and the full screen system states.", items: [
+      ["P1", "Profile and settings", "profile.html", ["nameerror", "nameword", "notset", "otherdevice", "saved", "logout", "session", "update"]],
+      ["SYS", "System screens", "system.html", ["maintenance", "update", "offline", "notfound", "blocked"]]
+    ] },
+    { h: "Library", p: "Tokens and every component with its variants.", items: [["LIB", "Component library", "components.html", []]] }
+  ];
+  var lang = "en";
+  try { lang = localStorage.getItem("cjp.lang") || "en"; } catch (e) {}
+  function url(file, st) { return file + "?lang=" + lang + (st ? "&state=" + st : ""); }
+  function render() {
+    document.getElementById("hub").innerHTML = FLOWS.map(function (f) {
+      return '<section class="doc-sec"><h2>' + f.h + "</h2><p>" + f.p + "</p>" + f.items.map(function (it) {
+        return '<div class="hub-item"><a class="hub-top" href="' + url(it[2]) + '"><span class="hub-id">' + it[0] + "</span><b>" + it[1] + '</b><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>' +
+          (it[3].length ? '<div class="hub-states">' + it[3].map(function (s) { return '<a href="' + url(it[2], s) + '">' + s + "</a>"; }).join("") + "</div>" : "") + "</div>";
+      }).join("") + "</section>";
+    }).join("");
+    Array.prototype.forEach.call(document.querySelectorAll("#hub-lang button"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-l") === lang ? "true" : "false"); });
+  }
+  document.getElementById("hub-lang").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; lang = b.getAttribute("data-l"); try { localStorage.setItem("cjp.lang", lang); } catch (err) {} render(); });
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>H1 Home, card view | Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+</head>
+<body>
+<!-- H1 Home, card view. States: (none) ready, partial, syncing, slow, failed, reconnect, reconnectfail, otherdevice, loading, empty, closed, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<noscript>Cojam needs JavaScript to show this screen.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/components.js"></script>
+<script>
+(function () {
+  var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$;
+  /* which questions are already answered when the screen opens, per state */
+  var answered = { partial: [1, 2], syncing: [1, 2, 3], slow: [1, 2], failed: [1, 3], offline: [1, 2], reconnect: [1], reconnectfail: [1] }[S] || [];
+  var pending = S === "syncing" ? [2, 3] : S === "slow" ? [2] : [];
+  var segs = M.set.map(function (q) { return pending.indexOf(q.n) >= 0 ? "pend" : answered.indexOf(q.n) >= 0 ? "done" : (S === "failed" && q.n === 2 ? "fail" : ""); });
+  var count = answered.length, left = 5 - count;
+  var noSet = S === "empty" || S === "closed" || S === "error" || S === "loading" || S === "otherdevice";
+
+  function head() {
+    return "<div><h1>" + t("h.title") + '</h1><p class="ph-sub">' + t("h.sub") + "</p></div>" +
+      '<div class="ph-line"><span class="ph-count"><span id="cnt">' + (S === "loading" ? "0" : count) + "</span><small>/5</small></span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs, { band: true, id: "day5" }) + "</div>" +
+      '<div class="ph-meta"><span id="left">' + (count && !noSet ? t("h.left", { n: left }) : "") + "</span>" +
+      (S === "empty" || S === "closed" ? "<span></span>" : S === "loading" ? C.skel("96px", "12px") : "<span>" + t("h.closes") + ' <b data-cd="' + M.untilNextSet() + '"></b></span>') + "</div>";
+  }
+  function viewSwitch() {
+    return C.seg([{ label: t("h.view.card"), href: "home-cards.html", on: true }, { label: t("h.view.term"), href: "home-terminal.html" + (S ? "?state=" + S : "") }], { label: t("h.view.label") });
+  }
+  function body() {
+    if (S === "loading") return viewSwitch() + '<div class="deck" aria-busy="true"><div class="qcard" data-pos="0"><div class="qcard-top">' + C.skel("72px", "24px", "border-radius:999px") + C.skel("88px") + "</div>" +
+      C.skel("100%", "20px") + C.skel("92%", "20px") + C.skel("60%", "20px") + '<div class="qcard-meta">' + C.skel("80%") + C.skel("66%") + '</div><div class="choices">' + C.skel("100%", "54px", "border-radius:999px") + C.skel("100%", "54px", "border-radius:999px") + '</div></div></div><p class="sr-only" role="status">' + t("common.loading") + "</p>";
+    if (S === "empty") return viewSwitch() + C.empty({ icon: "clock", title: t("h.empty.h"), body: t("h.empty.b", { time: t("time.kst9") }), extra: '<p class="fig fig--md" data-cd="' + M.untilNextSet() + '"></p>' });
+    if (S === "closed") return viewSwitch() + C.empty({ icon: "refresh", title: t("h.closed"), action: C.btn(t("h.closed.btn"), { kind: "primary", href: "home-cards.html" }) });
+    if (S === "error") return viewSwitch() + C.error();
+    if (S === "otherdevice") return viewSwitch() + C.otherDevice();
+    var cards = M.set.filter(function (q) { return answered.indexOf(q.n) < 0; });
+    if (S === "failed") cards.sort(function (a, b) { return (a.n === 2 ? -1 : 0) - (b.n === 2 ? -1 : 0); });
+    return viewSwitch() +
+      (App.offline ? C.note("warn", t("h.offline")) : "") + C.playBanner(S) +
+      '<div class="deck" id="deck">' + cards.slice().reverse().map(function (q) { return C.qcard(q, { failed: S === "failed" && q.n === 2, disabled: App.offline }); }).join("") + "</div>" +
+      '<ul class="sync" id="sync" aria-label="' + t("common.saving") + '">' + pending.map(function (n) { return syncLine(n, "r"); }).join("") + "</ul>" +
+      '<p class="hint" id="hint">' + t("h.hint") + (S === "" ? " " + t("h.final") : "") + "</p>";
+  }
+  function syncLine(n, dir) { return '<li data-n="' + n + '"><span class="spin"></span><span>' + t("h.sync", { n: n, choice: t("q" + n + "." + dir) }) + '</span><span class="sr-only">' + t("common.saving") + "</span></li>"; }
+
+  App.mount({ tab: "home", docTitle: t("h.title"), head: head(), body: body(), badges: { home: left ? "dot" : 0, results: 2 }, after: function () {
+    var deckEl = $("#deck"); if (!deckEl) return;
+    /* DOM order is reversed so the first question paints on top; the deck reads cards from the end */
+    Array.prototype.slice.call(deckEl.children).reverse().forEach(function (c) { deckEl.appendChild(c); });
+    var day5 = $("#day5"), cnt = $("#cnt"), sync = $("#sync");
+    if (S === "failed") { App.toast(t("h.toast.fail", { n: 2 }), { btn: t("common.retry") }); }
+    App.deck(deckEl, {
+      disabled: function () { return App.offline; },
+      onBlocked: function () { App.live(t("h.offline")); },
+      onCommit: function (n, dir, remaining) {
+        var seg = day5.children[n - 1]; seg.className = "is-pend";
+        count++; cnt.textContent = count; $("#left").textContent = remaining ? t("h.left", { n: remaining }) : "";
+        var hint = $("#hint"); if (hint) hint.hidden = true;
+        sync.insertAdjacentHTML("beforeend", syncLine(n, dir));
+        App.live(t("h.live.picked", { choice: t("q" + n + "." + dir), k: remaining }));
+        /* optimistic: the pick confirms in the background, nothing waits for it */
+        setTimeout(function () {
+          seg.className = "is-done is-fill";
+          var li = sync.querySelector('[data-n="' + n + '"]'); if (li) { li.classList.add("is-ok"); setTimeout(function () { li.remove(); }, 1000); }
+        }, 1300 + Math.random() * 900);
+        if (remaining === 0) setTimeout(function () { location.href = "done.html?state=moment"; }, App.reduce ? 0 : 420);
+      }
+    });
+    document.addEventListener("click", function (e) {   /* "Retry now" on the slow pick banner */
+      if (!e.target.closest("[data-retry-now]")) return;
+      setTimeout(function () { day5.children[1].className = "is-done is-fill"; var b = $(".banner"); if (b) b.remove(); var li = sync.querySelector('[data-n="2"]'); if (li) li.remove(); }, 900);
+    });
+    /* already pending picks of the syncing state confirm after a moment */
+    if (S !== "slow") pending.forEach(function (n, i) { setTimeout(function () { day5.children[n - 1].className = "is-done is-fill"; var li = sync.querySelector('[data-n="' + n + '"]'); if (li) { li.classList.add("is-ok"); setTimeout(function () { li.remove(); }, 1000); } }, 2600 + i * 1400); });
+  } });
+})();
+</script>
+</body>
+</html>

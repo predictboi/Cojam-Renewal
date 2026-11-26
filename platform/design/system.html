@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>System screens | Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+</head>
+<body>
+<!-- System screens. States: maintenance (default), update, offline, notfound, blocked (proposed for frozen accounts). Add ?lang=en|ko|ja. Mock data only. -->
+<noscript>Cojam needs JavaScript to show this screen.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/components.js"></script>
+<script>
+(function () {
+  var t = App.t, S = App.state || "maintenance", F = App.fmt, $ = App.$;
+  var v = {
+    maintenance: { icon: "tool", h: "sys.maint.h", b: "sys.maint.b", btn: "sys.maint.btn", extra: '<p class="sys-msg">' + t("sys.maint.msg") + '</p><p class="sys-meta">' + t("sys.maint.eta", { time: F.date(new Date(Date.now() + 40 * 60000), true) }) + "</p>", foot: t("sys.maint.auto") },
+    update: { icon: "download", h: "sys.update.h", b: "sys.update.b", btn: "sys.update.btn" },
+    offline: { icon: "offline", h: "sys.off.h", b: "sys.off.b", btn: "common.retry" },
+    blocked: { icon: "lock", h: "sys.blocked.h", b: "sys.blocked.b", btn: "sys.blocked.btn", href: "wallet.html" },
+    notfound: { icon: "search", h: "sys.404.h", b: "sys.404.b", btn: "sys.404.btn", href: "home-cards.html" }
+  }[S];
+  var raw = '<div class="sys"><div class="sys-ic">' + C.icon(v.icon, 38) + "</div><h1>" + t(v.h) + "</h1><p>" + t(v.b) + "</p>" + (v.extra || "") +
+    C.btn(t(v.btn), { kind: "primary", href: v.href, id: "act" }) + (v.foot ? '<p class="sys-meta">' + v.foot + "</p>" : "") + "</div>";
+  App.mount({ bare: true, docTitle: t(v.h), raw: raw, after: function () {
+    var b = $("#act"); if (b && b.tagName === "BUTTON") b.addEventListener("click", function () { b.classList.add("is-loading"); b.innerHTML = '<span class="spin"></span><span>' + t("common.loading") + "</span>"; setTimeout(function () { location.reload(); }, 900); });
+  } });
+})();
+</script>
+</body>
+</html>

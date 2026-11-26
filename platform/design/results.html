@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>R1 Results | Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+</head>
+<body>
+<!-- R1 Results. States: (none), loading, empty, nowaiting, noset, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<noscript>Cojam needs JavaScript to show this screen.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/components.js"></script>
+<script>
+(function () {
+  var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$;
+  var filter = S === "nowaiting" ? "wait" : S === "noset" ? "set" : "all";
+  var days = M.results;
+  if (S === "nowaiting") days = days.slice(1);
+  if (S === "noset") days = [{ day: 0, done: true, total: 100, rows: days[0].rows.map(function (r) { return Object.assign({}, r, { out: "wait", exp: r.exp || "16:00" }); }) }];
+  var SEG = { hit: "done", pend: "pend", corr: "done", miss: "miss", wait: "wait", none: "", "void": "" };
+
+  function head() { return "<div><h1>" + t("r.title") + '</h1><p class="ph-sub">' + t("r.sub") + "</p></div>"; }
+  function summary() {
+    if (S === "loading") return '<section class="card stack-12" aria-busy="true">' + C.skel("80px") + '<div class="stats">' + [1, 2, 3].map(function () { return '<div class="stat">' + C.skel("60px", "22px") + C.skel("70%", "10px", "margin-top:8px") + "</div>"; }).join("") + "</div>" + C.skel("100%") + "</section>";
+    return '<section class="card stack-12"><h2 class="card-h">' + t("r.week") + '</h2><div class="stats">' +
+      '<div class="stat"><b>' + F.pts(M.week.pts) + "</b><span>" + t("r.earned") + "</span></div>" +
+      '<div class="stat"><b>' + M.week.hits + "/" + M.week.answered + "</b><span>" + t("r.hits") + "</span></div>" +
+      '<div class="stat"><b>' + M.week.days + "/7</b><span>" + t("r.days") + "</span></div></div>" +
+      C.rows([[t("r.all"), F.pts(M.all.pts) + "<small>" + t("r.rate") + " " + M.all.rate + "%</small>"], [t("r.pending"), "+" + F.pts(M.user.pendingHit) + "<small>" + t("r.pending.note") + "</small>"]]) + "</section>";
+  }
+  function outcome(r) {
+    switch (r.out) {
+      case "wait": return '<span class="rrow-out muted">' + C.icon("clock", 14) + t("r.o.wait") + "</span>";
+      case "hit": return '<span class="rrow-out">' + C.tag(t("r.o.hit"), "up") + "+50P</span>";
+      case "pend": return '<span class="rrow-out">' + C.tag(t("r.o.hit"), "up") + '<span class="muted">' + t("r.o.pend", { time: r.at }) + "</span></span>";
+      case "miss": return '<span class="rrow-out">' + C.tag(t("r.o.miss")) + "</span>";
+      case "none": return '<span class="rrow-out muted">' + t("r.o.none") + "</span>";
+      case "corr": return '<span class="rrow-out">' + C.tag(t("r.o.corr"), "sky") + "+50P</span>";
+      case "void": return '<span class="rrow-out">' + C.tag(t("r.o.void"), "line") + "</span>";
+    }
+  }
+  function row(r, gi, ri, date) {
+    var id = "x-" + gi + "-" + ri, extra = "";
+    if (r.out === "wait") extra = '<p class="rrow-line">' + t("r.o.exp", { time: r.exp }) + "</p>";
+    if (r.out === "corr") extra = '<p class="rrow-line">' + t("r.o.corr.line", { date: F.date(date) }) + " " + t("r.o.added") + "</p>";
+    if (r.out === "void") extra = '<p class="rrow-line">' + t("r.o.void.line") + "</p>";
+    if (r.out === "pend") extra = '<p class="rrow-line">' + t("r.o.pend.help") + "</p>";
+    var set = r.out !== "wait" && r.out !== "none" && r.out !== "void";
+    return '<li data-out="' + (r.out === "wait" ? "wait" : "set") + '"><button type="button" class="rrow" aria-expanded="false" aria-controls="' + id + '"' + (set ? "" : " data-flat") + '><span class="rrow-q">' + t(r.q) + "</span>" +
+      '<span class="rrow-foot"><span class="row">' + C.tag(t("cat." + r.cat)) + (r.c ? "<span>" + t("r.you", { choice: t(r.c) }) + "</span>" : "") + "</span>" + outcome(r) + "</span>" + extra +
+      (set ? '<span class="rrow-more" id="' + id + '" hidden><span><b>' + t("r.x.answer") + ":</b> " + t(r.out === "miss" ? (r.c === "yes" ? "no" : "yes") : r.c) + "</span><span><b>" + t("r.x.evidence") + ":</b> " + t("p.evidence") + "</span><span><b>" + t("r.x.setat") + ":</b> " + F.date(date, true) + "</span></span>" : "") +
+      "</button></li>";
+  }
+  function group(g, gi) {
+    var d = M.ago(g.day), label = g.day === 0 ? t("common.today") : g.day === 1 ? t("common.yesterday") : F.weekday(d);
+    return '<section class="list" data-group><div class="day-h"><b>' + label + '</b><span class="day-total">+' + F.pts(g.total) + '</span><span class="day-sub">' +
+      C.day5(g.rows.map(function (r) { return SEG[r.out]; }), { size: "sm", label: label }) + "<span>" + (g.done ? t("r.g.done") : t("r.g.part", { k: g.answered })) + (g.pending ? ", " + t("r.g.pending", { q: g.pending }) : "") + "</span></span></div>" +
+      "<ul>" + g.rows.map(function (r, ri) { return row(r, gi, ri, d); }).join("") + "</ul></section>";
+  }
+  function body() {
+    if (S === "error") return C.error();
+    if (S === "empty") return C.empty({ icon: "list", title: t("r.empty.h"), body: t("r.empty.b"), action: C.btn(t("r.empty.btn"), { kind: "primary", href: "home-cards.html" }) });
+    var seg = C.seg([{ label: t("r.f.all"), value: "all", on: filter === "all" }, { label: t("r.f.wait"), value: "wait", on: filter === "wait" }, { label: t("r.f.set"), value: "set", on: filter === "set" }], { name: "filter", label: t("r.filter") });
+    if (S === "loading") return summary() + seg + [1, 2, 3].map(function () { return '<section class="list" aria-busy="true"><div class="day-h">' + C.skel("90px", "16px") + C.skel("48px", "16px") + "</div>" + [1, 2].map(function () { return '<div class="rrow">' + C.skel("90%", "16px") + C.skel("50%", "12px", "margin-top:10px") + "</div>"; }).join("") + "</section>"; }).join("");
+    return summary() + seg + '<div class="stack" id="groups">' + days.map(group).join("") + '</div><div id="fempty" hidden></div>' +
+      C.btn(t("r.more"), { block: true, id: "more", icon: "down" });
+  }
+  App.mount({ tab: "results", docTitle: t("r.title"), head: head(), body: body(), pts: S === "" ? "hits" : S === "loading" ? "loading" : "", badges: { home: "dot" }, after: function () {
+    var groups = $("#groups"); if (!groups) return;
+    function apply(f) {
+      var any = false;
+      App.$$("[data-group]", groups).forEach(function (g) {
+        var shown = 0; App.$$("li[data-out]", g).forEach(function (li) { var on = f === "all" || li.getAttribute("data-out") === f; li.hidden = !on; if (on) shown++; });
+        g.hidden = !shown; if (shown) any = true;
+      });
+      var fe = $("#fempty"); fe.hidden = any; $("#more").hidden = !any;
+      if (!any) fe.innerHTML = C.empty({ icon: f === "wait" ? "check" : "clock", title: t(f === "wait" ? "r.fe.wait" : "r.fe.set") });
+    }
+    apply(filter);
+    document.addEventListener("seg", function (e) { if (e.detail.name === "filter") apply(e.detail.value); });
+    groups.addEventListener("click", function (e) {
+      var b = e.target.closest(".rrow"); if (!b || b.hasAttribute("data-flat")) return;
+      var open = b.getAttribute("aria-expanded") !== "true"; b.setAttribute("aria-expanded", open); var m = b.querySelector(".rrow-more"); if (m) m.hidden = !open;
+    });
+    $("#more").addEventListener("click", function () {
+      var extra = { day: 3, done: true, total: 200, rows: [
+        { q: "p5.q", cat: "culture", c: "yes", out: "hit" }, { q: "p2.q", cat: "markets", c: "yes", out: "hit" }, { q: "p6.q", cat: "markets", c: "no", out: "miss" }, { q: "p7.q", cat: "markets", c: "yes", out: "miss" }, { q: "p3.q", cat: "weather", c: "no", out: "miss" }] };
+      groups.insertAdjacentHTML("beforeend", group(extra, 9)); this.hidden = true;
+    });
+  } });
+})();
+</script>
+</body>
+</html>

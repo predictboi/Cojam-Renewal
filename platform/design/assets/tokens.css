@@ -91,6 +91,7 @@
   --shadow-stage: 0 0 0 1px var(--ink-line), 0 30px 80px rgba(0, 0, 0, 0.5);
   --ring: 0 0 0 3px var(--brand-tint);
   --press-shade: rgba(11, 21, 48, 0.08);
+  --spin-track: rgba(11, 21, 48, 0.25);
 
   /* ---------- pattern ---------- */
   --band: linear-gradient(var(--grid-line) 1px, transparent 1px) -1px -1px / 44px 44px, linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) -1px -1px / 44px 44px, var(--brand);

@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>H3 Day done with countdown | Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+</head>
+<body>
+<!-- H3 Day done with countdown. States: (none) paid, moment (plays saving, then paid), saving, results, zero, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<noscript>Cojam needs JavaScript to show this screen.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/components.js"></script>
+<script>
+(function () {
+  var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$;
+  var phase = S === "moment" || S === "saving" ? "saving" : "paid";
+  var basePts = phase === "paid" ? M.user.points + 100 : M.user.points;
+  if (phase === "paid") M.user.points = basePts;
+  var picks = [["q1", "r"], ["q2", "l"], ["q3", "r"], ["q4", "r"], ["q5", "r"]];
+  var outcome = S === "results" ? ["hit", "pend", "miss", "wait", "wait"] : ["wait", "wait", "wait", "wait", "wait"];
+
+  function reward(p) {
+    if (p === "saving") return '<p class="reward" id="reward"><span class="spin"></span>' + t("d.saving") + "</p>";
+    return '<p class="reward is-paid" id="reward">' + C.icon("check", 16) + t("d.paid") + "</p>";
+  }
+  function head() {
+    var segs = phase === "saving" ? ["done", "done", "done", "pend", "pend"] : ["done", "done", "done", "done", "done"];
+    return '<div class="head-row"><span class="done-badge' + (S === "moment" ? " is-pop" : "") + '" aria-hidden="true">' + C.icon("check", 30) + '</span><h1 class="grow">' + t("d.h1") + "</h1></div>" +
+      C.day5(segs, { band: true, size: "lg", id: "day5", cls: S === "moment" ? "is-flash" : "", label: "5/5" }) +
+      '<div aria-live="polite" id="reward-wrap">' + reward(phase) + "</div>";
+  }
+  function pickRow(p, i) {
+    var o = outcome[i], cell = o === "hit" ? C.tag(t("d.hitp"), "up") : o === "pend" ? C.tag(t("d.hitpending", { time: "22:10" }), "up") : o === "miss" ? C.tag(t("d.miss")) : '<span class="pick-s">' + t("d.wait") + "</span>";
+    return '<li class="pick"><span class="pick-q">' + t(p[0] + ".q") + '</span><span class="pick-c">' + t("r.you", { choice: t(p[0] + "." + p[1]) }) + '</span><span class="pick-s">' + cell + "</span></li>";
+  }
+  function body() {
+    var secs = S === "zero" ? 0 : M.untilNextSet();
+    return '<section class="card card--ink center stack-8" aria-label="' + t("d.next") + '"><p class="card-h">' + t("d.next") + "</p>" +
+      (S === "zero" ? '<p class="watch"><span class="spin"></span>' + t("d.loading") + "</p>" : C.clock(secs, "clock")) +
+      '<p class="tiny muted">' + (App.offline ? t("off.bar") : t("d.next.at")) + "</p></section>" +
+      C.btn(t("d.rank"), { kind: "primary", block: true, href: "ranking.html", iconEnd: "right" }) +
+      '<section class="stack-12"><div class="sect-h"><h2 class="sect-h">' + t("d.picks") + '</h2><a class="linkish" href="results.html">' + t("d.results") + "</a></div>" +
+      '<ul class="list">' + picks.map(pickRow).join("") + "</ul>" +
+      C.note("", t("d.hit")) + "</section>";
+  }
+  App.mount({ tab: "home", docTitle: t("d.h1"), head: head(), body: body(), points: basePts, pts: phase === "saving" ? "pending" : S === "results" ? "hits" : "", badges: { results: 2 }, after: function () {
+    document.addEventListener("cd:zero", function () { if (S !== "zero") setTimeout(function () { location.href = "home-cards.html"; }, 1200); });
+    if (S === "zero") setTimeout(function () { App.toast(t("h.new")); }, 600);
+    if (S !== "moment") return;
+    /* the day done moment: the fifth pick is mined (the 100P is credited in that same transaction), only then "+100P paid" and the count up */
+    var day5 = $("#day5"), wrap = $("#reward-wrap");
+    setTimeout(function () { day5.children[3].className = "is-done is-fill"; }, 900);
+    setTimeout(function () { day5.children[4].className = "is-done is-fill"; }, 1500);
+    setTimeout(function () { var sp = App.$("#pts .spin"); if (sp) sp.remove(); wrap.innerHTML = reward("paid"); App.addPoints(100); App.toast(t("toast.paid", { n: 100 })); }, 2300);
+  } });
+})();
+</script>
+</body>
+</html>

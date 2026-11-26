@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>P1 Profile and settings | Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+</head>
+<body>
+<!-- P1 Profile and settings. States: (none), nameerror, nameword, notset, otherdevice, saved, logout, session, update. Add ?lang=en|ko|ja. Mock data only. -->
+<noscript>Cojam needs JavaScript to show this screen.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/components.js"></script>
+<script>
+(function () {
+  var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$, I = CJ_I18N;
+  var view = App.store.get("view", "card");
+  function linkRow(label, href, ext) { return '<a class="rowlink" href="' + href + '"' + (ext ? ' target="_blank" rel="noopener"' : "") + "><span>" + label + "</span>" + C.icon(ext ? "ext" : "chev", 18) + "</a>"; }
+  function body() {
+    return '<section class="card stack-12"><h2 class="card-h">' + t("p.account") + '</h2><div class="row">' + C.icon("mail", 20) + '<p class="grow">' + t("p.login", { email: '<b translate="no">' + M.user.email + "</b>" }) + "</p></div>" +
+      '<div><p class="tiny muted">' + t("p.wallet") + "</p>" + C.addr(M.user.address, { short: true }) + "</div></section>" +
+      '<section class="card stack-12"><h2 class="card-h">' + t("p.device") + "</h2>" + device() + "</section>" +
+      '<section class="card stack-12"><div class="field"><div class="field-label"><label for="name"><b>' + t("p.name") + '</b></label></div><div class="field-box field-box--text' + (S === "nameerror" ? " is-error" : "") + '"><input id="name" name="nickname" type="text" autocomplete="nickname" spellcheck="false" maxlength="24" value="' + (S === "nameerror" ? "cojam_admin" : S === "nameword" ? "f**k" : M.user.name) + '" aria-describedby="name-msg"></div>' +
+      '<div class="field-msg" id="name-msg" aria-live="polite"></div></div>' + C.btn(t("p.name.save"), { block: true, id: "save" }) + "</section>" +
+      '<section class="card stack-12"><h2 class="card-h">' + t("p.prefs") + '</h2><div class="stack-8"><p class="small" id="l-lang">' + t("lang.label") + "</p>" +
+      C.seg(I.langs.map(function (l) { return { label: I.names[l], value: l, on: l === App.lang }; }), { name: "lang", label: t("lang.label") }) + "</div>" +
+      '<div class="stack-8"><p class="small">' + t("p.view") + "</p>" + C.seg([{ label: t("h.view.card"), value: "card", on: view !== "term" }, { label: t("h.view.term"), value: "term", on: view === "term" }], { name: "view", label: t("p.view") }) + "</div></section>" +
+      '<section class="card card--flush"><h2 class="card-h pad">' + t("p.help") + "</h2>" + linkRow(t("p.how"), "first-run.html?from=profile") + '<hr class="hr">' +
+      '<details class="help help--flat"><summary>' + t("p.answers.q") + C.icon("down", 18) + '</summary><div class="help-body">' + t("p.answers.a") + "</div></details></section>" +
+      '<section class="card card--flush"><h2 class="card-h pad">' + t("p.links") + "</h2>" + linkRow(t("p.swap"), "https://cojam.app/migrate/", true) + '<hr class="hr">' + linkRow(t("p.site"), "https://cojam.app", true) + "</section>" +
+      C.btn(t("p.logout"), { block: true, cls: "btn-danger", id: "logout" }) +
+      '<div class="row-between small muted"><span>' + t("p.version", { v: M.version }) + '</span><button type="button" class="linkish" id="upd">' + t("p.update") + "</button></div>";
+  }
+  function device() {
+    if (S === "notset") return '<div class="row">' + C.icon("phone", 20) + '<p class="grow">' + t("p.device.notset") + "</p></div>" + C.btn(t("p.device.setup"), { block: true, href: "login.html?state=returning" });
+    if (S === "otherdevice") return '<div class="row">' + C.icon("phone", 20) + '<p class="grow">' + t("p.device.other") + "</p></div>" + C.btn(t("h.other.btn"), { block: true, href: "login.html?state=returning" });
+    return '<div class="row">' + C.icon("check", 20) + '<p class="grow"><b>' + t("p.device.ready") + '</b><br><span class="tiny muted">' + t("p.device.until", { date: F.dateLong(M.ahead(30)) }) + "</span></p></div>";
+  }
+  function validate(v) {
+    if (v === "") return "";
+    if (/\*|fuck|shit/i.test(v)) return "p.name.e.word";
+    if (v.length < 2 || v.length > 20 || v !== v.trim()) return "p.name.e.len";
+    if (!/^[\p{L}\p{N} _.]+$/u.test(v)) return "p.name.e.chars";
+    if (/^0x[0-9a-f]+$/i.test(v) || /cojam|admin/i.test(v)) return "p.name.e.staff";
+    return "";
+  }
+  App.mount({ tab: "", me: true, back: "wallet.html", title: t("p.title"), body: body(), badges: { home: "dot", results: 2 }, after: function () {
+    var name = $("#name"), msg = $("#name-msg");
+    function check() { var e = validate(name.value); name.closest(".field-box").classList.toggle("is-error", !!e); name.setAttribute("aria-invalid", e ? "true" : "false"); msg.className = "field-msg" + (e ? " is-error" : ""); msg.textContent = e ? t(e) : t("p.name.help"); return !e; }
+    name.addEventListener("input", check); check();
+    $("#save").addEventListener("click", function () { if (check()) { M.user.name = name.value; App.toast(t("p.name.saved")); } else name.focus(); });
+    document.addEventListener("seg", function (e) { if (e.detail.name === "lang") I.setLang(e.detail.value); if (e.detail.name === "view") App.store.set("view", e.detail.value); });
+    function logout() { App.sheet.open("<h2>" + t("p.logout.h") + '</h2><p class="sheet-lead">' + t("p.logout.b") + '</p><div class="sheet-acts">' + C.btn(t("p.logout"), { block: true, cls: "btn-danger", href: "login.html" }) + C.btn(t("common.cancel"), { kind: "ghost", block: true, attrs: "data-sheet-close" }) + "</div>"); }
+    $("#logout").addEventListener("click", logout);
+    $("#upd").addEventListener("click", function () { App.toast(t("p.uptodate")); });
+    if (S === "logout") logout();
+    if (S === "saved") App.toast(t("p.name.saved"));
+    if (S === "update") App.toast(t("toast.update"), { btn: t("toast.reload"), fn: function () { location.reload(); } });
+    if (S === "session") App.sheet.open('<div class="sheet-state"><div class="sheet-ic">' + C.icon("lock", 30) + "</div><h2>" + t("p.session.h") + '</h2><p class="sheet-lead">' + t("p.session.b") + '</p></div><div class="sheet-acts">' + C.btn(t("p.session.btn"), { kind: "primary", block: true, href: "login.html" }) + "</div>", { closable: false });
+  } });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>W2 Convert points to CT | Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+</head>
+<body>
+<!-- W2 Convert points to CT. States: (none) 1,000P, empty, step, above, min, short, wait (first 7 days), cap, capglobal, paused, signing, sending, success, failed, loading, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<noscript>Cojam needs JavaScript to show this screen.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/components.js"></script>
+<script>
+(function () {
+  var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$;
+  var bal = S === "short" ? 450 : S === "cap" ? 62250 : M.user.points, capLeft = S === "cap" ? 0 : 50;
+  var initial = { empty: "", step: "1,250", above: "5,000", min: "500", loading: "", cap: "", capglobal: "", wait: "", paused: "1,000" }[S];
+  if (initial === undefined) initial = "1,000";
+  var blocked = S === "cap" || S === "capglobal" || S === "paused" || S === "wait" || S === "loading" || App.state === "offline";
+  function gate(icon, title, bodyText, extra, action) { return C.empty({ icon: icon, title: title, body: bodyText, extra: extra, action: action }); }
+  function body() {
+    if (S === "short") return '<section class="card card--mist row-between"><span class="muted">' + t("c.avail") + '</span><b class="fig fig--md">' + F.pts(bal) + "</b></section>" +
+      gate("bolt", t("c.short.h"), t("c.short.b", { p: F.int(bal), g: F.int(1000 - bal) }), "", C.btn(t("k.play"), { kind: "primary", href: "home-cards.html" }));
+    var waitNote = "";
+    if (S === "wait") { var d = M.user.firstConvert, secs = (d - Date.now()) / 1000;
+      waitNote = C.note("sky", t("c.wait.b", { date: "<b>" + F.date(d, true) + "</b>" }) + "<br><b>" + t("c.wait.left", { d: Math.floor(secs / 86400), h: Math.floor(secs % 86400 / 3600) }) + "</b>"); }
+    return waitNote + (S === "cap" ? C.note("warn", t("c.cap.hit", { time: t("time.kst9") })) : "") + (S === "capglobal" ? C.note("warn", t("c.cap.global", { time: t("time.kst9") })) : "") + (S === "paused" ? C.note("warn", t("c.paused")) : "") + (App.offline ? C.note("warn", t("w.offline")) : "") +
+      '<section class="card stack">' +
+      C.amount({ id: "amt", label: t("c.amount"), unit: "P", mode: "numeric", value: initial, disabled: blocked, side: S === "loading" ? C.skel("96px", "12px") : t("c.avail") + " <b>" + F.pts(bal) + "</b>", msg: t("c.step") }) +
+      '<hr class="hr"><div class="row-between"><span class="muted">' + t("c.get") + '</span><b class="fig" id="get" aria-live="polite">0<small>CT</small></b></div></section>' +
+      '<section class="card card--mist">' + C.rows([[t("c.rate"), "1,000P = 1 CT"], [t("c.minimum"), "1,000P"], [t("c.capleft"), t("c.capof", { n: capLeft })], [t("c.fee"), t("c.fee.v")]]) + "</section>" +
+      C.btn("", { kind: "primary", block: true, id: "go", disabled: true }) +
+      '<p class="small muted center">' + t("c.rank") + "</p>";
+  }
+  function cfg(p) { var n = p / 1000; return { label: t("c.chip", { p: F.int(p) }), success: { title: t("c.ok.h", { p: F.int(p), n: n }), rows: [[t("c.ok.left"), F.pts(bal - p)], [t("c.ok.ct"), F.ct(M.user.ct + n)]] }, onSuccess: function () { App.addPoints(-p); } }; }
+  App.mount({ tab: "wallet", back: "wallet.html", title: t("c.title"), body: body(), points: bal, pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
+    var inp = $("#amt"); if (!inp) return;
+    var msg = $("#amt-msg"), box = inp.closest(".field-box"), go = $("#go"), get = $("#get"), maxP = Math.min(Math.floor(bal / 1000) * 1000, capLeft * 1000);
+    function update() {
+      var p = App.parseAmount(inp.value), v = Math.floor(p.value || 0), err = "", fix = "";
+      function use(f) { return C.btn(t("c.fix", { f: F.int(f) }), { sm: true, attrs: 'data-fix="' + f + '"' }); }
+      if (p.bad) err = t("c.e.min");
+      else if (!p.empty && v > bal) { err = t("c.e.bal", { p: F.int(bal) }); if (maxP) fix = use(maxP); }
+      else if (!p.empty && v < 1000) err = t("c.e.min");
+      else if (!p.empty && v % 1000) { var f = Math.floor(v / 1000) * 1000; err = t("c.e.step", { f: F.int(f) }); fix = use(f); }
+      else if (!p.empty && v > capLeft * 1000 && capLeft) { err = t("c.cap.over", { n: capLeft, f: F.int(capLeft * 1000) }); fix = use(capLeft * 1000); }
+      box.classList.toggle("is-error", !!err); inp.setAttribute("aria-invalid", err ? "true" : "false");
+      msg.className = "field-msg" + (err ? " is-error" : ""); msg.innerHTML = err ? "<span>" + err + "</span>" + fix : "<span>" + t("c.step") + "</span>";
+      var valid = !err && !p.empty && !blocked, n = valid ? v / 1000 : 0;
+      get.innerHTML = F.dec(n) + "<small>CT</small>";
+      go.disabled = !valid; go.querySelector("span").textContent = valid ? t("c.btn", { p: F.int(v), n: n }) : t("c.btn.empty");
+      return valid ? v : 0;
+    }
+    inp.addEventListener("input", update);
+    document.addEventListener("click", function (e) {
+      var f = e.target.closest("[data-fix]"); if (f) { inp.value = F.int(+f.getAttribute("data-fix")); update(); return; }
+      if (e.target.closest("[data-max]")) { inp.value = F.int(maxP); update(); }
+    });
+    go.addEventListener("click", function () { var v = update(); if (v) App.tx.run(cfg(v)); });
+    var v0 = update();
+    var show = { signing: "signing", sending: "sending", success: "success", failed: "failed" }[S];
+    if (show) App.tx.show(show, cfg(v0 || 1000));
+  } });
+})();
+</script>
+</body>
+</html>

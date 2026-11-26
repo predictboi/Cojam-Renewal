@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>S1 Staking, new stake | Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+</head>
+<body>
+<!-- S1 Staking, new stake. States: (none) 500 CT for 90 days, empty, below, above, zero, big, paused, full, fullnone, max20, loading, review, signing, steps, sending, slow, success, failed, hidden, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<noscript>Cojam needs JavaScript to show this screen.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/components.js"></script>
+<script>
+(function () {
+  var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$;
+  var bal = S === "zero" ? 0 : S === "big" || S === "review" ? 25000 : M.user.ct, period = 90;
+  var initial = { empty: "", below: "50", above: "5,000", zero: "", big: "12,000", review: "12,000", loading: "" }[S];
+  if (initial === undefined) initial = "500";
+  var blocked = S === "paused" || S === "fullnone" || S === "max20" || S === "zero" || S === "loading" || App.state === "offline";
+  var room = S === "full" ? 300 : Infinity;   /* what the interest fund can still reserve for this period */
+  var PERIODS = [30, 90, 180, 365];
+  function tier(a) { return a >= 10000 ? 2 : a >= 1000 ? 1 : 0; }
+
+  function head() { return "<div><h1>" + t("s.title") + '</h1><p class="ph-sub">' + t("s.sub") + "</p></div>"; }
+  function body() {
+    if (S === "error") return C.seg([{ label: t("s.new"), href: "staking.html", on: true }, { label: t("s.mine", { n: 2 }), href: "stakes.html" }], { label: t("s.switch") }) + C.error();
+    return C.seg([{ label: t("s.new"), href: "staking.html", on: true }, { label: t("s.mine", { n: 2 }), href: "stakes.html" }], { label: t("s.switch") }) +
+      (S === "paused" ? C.note("warn", t("s.paused")) : "") + (S === "fullnone" ? C.note("warn", t("s.full") + " " + t("s.full.none")) : "") + (S === "max20" ? C.note("warn", t("s.max20"), C.btn(t("s.mine", { n: 20 }), { sm: true, href: "stakes.html" })) : "") + '<div id="full-note"></div>' + (App.offline ? C.note("warn", t("s.offline")) : "") +
+      (S === "zero" ? C.note("", t("s.zero"), '<div class="row">' + C.btn(t("w.deposit"), { sm: true, href: "deposit.html" }) + C.btn(t("w.convert"), { sm: true, href: "convert.html" }) + "</div>") : "") +
+      '<section class="card stack">' +
+      C.amount({ id: "amt", label: t("s.amount"), unit: "CT", value: initial, disabled: blocked, side: S === "loading" ? C.skel("110px", "12px") : t("s.avail") + " <b>" + F.ct(bal) + "</b>", msg: t("s.min") }) +
+      '<div><p class="field-label"><b id="per-l">' + t("s.period") + '</b></p><div class="period" role="group" aria-labelledby="per-l" id="period">' +
+      PERIODS.map(function (d) { return '<button type="button" data-d="' + d + '" aria-pressed="' + (d === period) + '"' + (blocked ? " disabled" : "") + "><b>" + d + "<small>" + t("s.d") + '</small></b><span data-rate="' + d + '"></span></button>'; }).join("") + "</div></div></section>" +
+      '<section class="card card--mist" id="sum" aria-live="polite"></section>' +
+      '<div class="stack-8">' + C.btn("", { kind: "primary", block: true, id: "go", disabled: true }) + '<p class="tiny muted center">' + t("s.fee") + "</p></div>" +
+      '<p class="small muted" id="rules"></p>' +
+      C.help(t("s.help.q"), "<p>" + t("s.help.a") + '</p><div class="scrollx"><table class="ratetable"><tr><th>' + t("s.th.lock") + "</th><th>" + t("s.th.1") + "</th><th>" + t("s.th.2") + "</th><th>" + t("s.th.3") + "</th></tr>" +
+        PERIODS.map(function (d) { return "<tr><td>" + t("s.days", { d: d }) + "</td>" + M.rates[d].map(function (r) { return "<td>" + r + "%</td>"; }).join("") + "</tr>"; }).join("") + "</table></div>");
+  }
+  function txCfg(a) {
+    var r = M.rates[period][tier(a)], unlock = F.dateLong(M.ahead(period)), amt = F.dec(a);
+    return { label: t("s.chip", { a: amt }), stepsTitle: t("tx.stake.h", { a: amt }), steps: [t("tx.step1", { a: amt }), t("tx.step2", { a: amt })],
+      review: a >= 10000 ? { rows: [[t("s.amount"), F.ct(a)], [t("s.period"), t("s.days", { d: period })], [t("s.apr"), r + "%"], [t("s.unlock"), unlock]], confirm: t("s.btn", { a: amt }) } : null,
+      success: { title: t("s.ok.h", { a: amt }), rows: [[t("s.unlock"), unlock], [t("s.apr"), r + "%"]], btn: { label: t("s.ok.btn"), href: "stakes.html" } } };
+  }
+  App.mount({ tab: "stake", docTitle: t("s.title"), head: head(), body: body(), pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
+    var inp = $("#amt"); if (!inp) return;
+    var msg = $("#amt-msg"), box = inp.closest(".field-box"), go = $("#go"), sum = $("#sum");
+    function update() {
+      var p = App.parseAmount(inp.value), a = p.value || 0, err = "", fix = "";
+      if (p.bad) err = t("s.e.nan");
+      else if (!p.empty && a < M.minStake) { err = t("s.e.min"); if (bal >= M.minStake) fix = C.btn(t("s.fix.min"), { sm: true, attrs: 'data-fix="100"' }); }
+      else if (a > bal) { err = t("s.e.bal", { b: F.dec(bal) }); fix = C.btn(t("s.fix.bal", { b: F.dec(bal) }), { sm: true, attrs: 'data-fix="' + bal + '"' }); }
+      box.classList.toggle("is-error", !!err); inp.setAttribute("aria-invalid", err ? "true" : "false");
+      msg.className = "field-msg" + (err ? " is-error" : ""); msg.innerHTML = err ? "<span>" + err + "</span>" + fix : "<span>" + t("s.min") + "</span>";
+      var over = !err && a > room;
+      $("#full-note").innerHTML = over ? C.note("warn", t("s.full") + " " + t("s.full.room", { x: F.dec(room), d: period }), C.btn(t("s.fix.stake", { x: F.dec(room) }), { sm: true, attrs: 'data-fix="' + room + '"' })) : "";
+      var ti = tier(a), valid = !err && !p.empty && !blocked && !over;
+      PERIODS.forEach(function (d) { $('[data-rate="' + d + '"]').textContent = M.rates[d][ti] + "%"; });
+      var r = M.rates[period][ti], interest = a * r / 100 * period / 365;
+      sum.innerHTML = S === "loading" ? C.skel("100%") + C.skel("100%", "14px", "margin-top:14px") + C.skel("100%", "14px", "margin-top:14px") : C.rows([
+        [t("s.tier"), t("s.tier." + (ti + 1))], [t("s.apr"), r + "%"],
+        [t("s.interest", { d: period }), F.ct(interest) + (App.isKo && a ? "<small>" + F.krw(interest) + "</small>" : ""), true],
+        [t("s.unlock"), F.dateLong(M.ahead(period))],
+        App.isKo && a ? [t("s.value"), F.krw(a)] : null]);
+      $("#rules").textContent = t("s.rules", { d: period });
+      go.disabled = !valid; go.querySelector("span").textContent = valid ? t("s.btn", { a: F.dec(a) }) : t("s.btn.empty");
+      return valid ? a : 0;
+    }
+    inp.addEventListener("input", update);
+    document.addEventListener("click", function (e) {
+      var f = e.target.closest("[data-fix]"); if (f) { inp.value = F.dec(+f.getAttribute("data-fix")); update(); return; }
+      if (e.target.closest("[data-max]")) { inp.value = F.dec(bal); update(); return; }
+      var d = e.target.closest("#period button"); if (d && !d.disabled) { period = +d.getAttribute("data-d"); App.$$("#period button").forEach(function (b) { b.setAttribute("aria-pressed", b === d); }); update(); }
+    });
+    go.addEventListener("click", function () { var a = update(); if (a) App.tx.run(txCfg(a)); });
+    var a0 = update();
+    var show = { review: "review", signing: "signing", steps: "steps2", sending: "sending", slow: "slow", success: "success", failed: "failed" }[S];
+    if (show) App.tx.show(show, txCfg(a0 || 500));
+    if (S === "hidden") { App.tx.cfg = txCfg(500); App.tx.state = "sending"; App.tx.chip(true); }
+  } });
+})();
+</script>
+</body>
+</html>

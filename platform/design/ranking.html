@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>K1 Weekly ranking | Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+</head>
+<body>
+<!-- K1 Weekly ranking. States: (none) outside the Top 10, top10, unranked, winner, short, lastweek (being finalised), sent (prizes sent), loading, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<noscript>Cojam needs JavaScript to show this screen.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/components.js"></script>
+<script>
+(function () {
+  var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$;
+  var week = S === "lastweek" || S === "sent" ? "last" : "this";
+  function head() { return "<div><h1>" + t("k.title") + '</h1><p class="ph-sub">' + t("k.sub") + "</p></div>"; }
+  function rowsFor(w) {
+    var rows = M.ranking.slice();
+    if (w === "last") return rows.map(function (r, i) { return Object.assign({}, r, { pts: r.pts - 150 - i * 10, prize: +(1196 * M.pool.split[i] / 100).toFixed(2), tied: false }); });
+    if (S === "top10") rows[6] = { rank: 7, name: M.user.name, pts: 2200, prize: 51.36, me: true };
+    if (S === "short") rows = rows.slice(0, 6);
+    return rows;
+  }
+  function pool(w) {
+    if (S === "loading") return '<section class="card card--ink stack-12" aria-busy="true">' + C.skel("120px") + C.skel("180px", "34px") + C.skel("70%") + "</section>";
+    var ct = w === "last" ? 1196 : M.pool.ct;
+    var split = M.pool.split.map(function (p, i) { return "<div>" + t("k.rankth", { n: i + 1 }) + "<b>" + p + "%</b>" + F.dec(ct * p / 100, 1) + "</div>"; }).join("");
+    var right = w === "last" ? '<div class="end">' + (S === "sent" ? C.tag(t("k.sent"), "volt", "check") : C.tag(t("k.final.h"), "onink")) + "</div>" :
+      '<div class="end"><p class="card-h">' + t("k.ends") + '</p><p class="fig fig--md" data-cd="' + M.untilWeekEnd() + '" data-cd-fmt="dh"></p><p class="tiny muted">' + t("k.endat") + "</p></div>";
+    return '<section class="card card--ink stack-12"><div class="pool-top"><div><p class="card-h">' + t(w === "last" ? "k.lastweek" : "k.pool") + '</p><p class="fig fig--xl fig--volt">' + F.int(ct) + "<small>CT</small></p></div>" + right + "</div>" +
+      '<p class="small muted">' + t("k.pool.line", { n: F.int(ct) }) + "</p>" +
+      C.help(t("k.split.q"), "<p>" + t("k.split.note") + '</p><div class="split">' + split + "</div>") + "</section>";
+  }
+  function row(r) {
+    return '<li class="krow' + (r.rank <= 3 ? " is-top" : "") + (r.me ? " is-me" : "") + '"><span class="krow-rank"><span class="sr-only">' + t("k.rank.sr", { n: r.rank }) + '</span><span aria-hidden="true">' + r.rank + "</span></span>" +
+      '<div class="grow"><p class="krow-name"><span translate="no">' + App.esc(r.name) + "</span>" + (r.me ? C.tag(t("k.you"), "ink") : "") + (r.tied ? C.tag(t("k.tied"), "line") : "") + '</p><p class="krow-pts">' + F.pts(r.pts) + "</p></div>" +
+      '<p class="krow-prize">' + F.dec(r.prize, 2) + "<small>CT</small></p></li>";
+  }
+  function list(w) {
+    if (S === "loading") return '<ul class="list" aria-busy="true">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function () { return '<li class="krow">' + C.skel("32px", "32px", "border-radius:50%") + "<div>" + C.skel("120px", "14px") + C.skel("60px", "10px", "margin-top:8px") + "</div>" + C.skel("52px", "16px") + "</li>"; }).join("") + "</ul>";
+    var rows = rowsFor(w), voids = "";
+    for (var i = rows.length + 1; i <= 10; i++) voids += '<li class="krow is-void"><span class="krow-rank" aria-hidden="true">' + i + '</span><p class="krow-name">' + t("k.void") + '</p><p class="krow-prize"></p></li>';
+    return '<ol class="list">' + rows.map(row).join("") + voids + "</ol>";
+  }
+  function pin(w) {
+    if (S === "loading" || S === "error") return "";
+    var me = M.me;
+    if (w === "last") return '<aside class="pin" id="pin" aria-label="' + t("k.you") + '"><span class="pin-rank">31</span><div class="pin-main"><b>' + t("k.you") + "</b><span>" + t("k.lastweek") + '</span></div><span class="pin-pts">' + F.pts(1200) + "</span></aside>";
+    if (S === "unranked") return '<aside class="pin pin--wide" id="pin" aria-label="' + t("k.you") + '"><div class="pin-main"><b>' + t("k.none") + "</b></div>" + C.btn(t("k.play"), { kind: "primary", sm: true, href: "home-cards.html", cls: "btn-sm" }) + "</aside>";
+    if (S === "top10") return '<aside class="pin" id="pin" aria-label="' + t("k.you") + '"><span class="pin-rank">7</span><div class="pin-main"><b>' + t("k.in") + "</b><span>" + t("k.prize", { c: "51.36" }) + '</span></div><span class="pin-pts">' + F.pts(2200) + "</span></aside>";
+    return '<aside class="pin" id="pin" aria-label="' + t("k.you") + '"><span class="pin-rank"><span class="sr-only">' + t("k.rank.sr", { n: me.rank }) + '</span><span aria-hidden="true">' + me.rank + '</span></span><div class="pin-main"><b>' + t("k.you") + "</b><span>" + t("k.gap", { gap: F.int(me.gap) }) + '</span></div><span class="pin-pts">' + F.pts(me.pts) + "</span></aside>";
+  }
+  function view(w) {
+    var note = "";
+    if (w === "last") note = S === "sent" ? C.note("ok", t("k.sent") + ' <a href="https://kaiascan.io/" target="_blank" rel="noopener">' + t("w.scan") + "</a>") : C.note("sky", t("k.closed", { time: t("k.final.time") }));
+    else if (S === "winner") note = C.note("sky", t("k.last", { rank: 4, amount: "119.6" }));
+    return note + pool(w) + '<section class="stack-12"><div class="sect-h"><h2 class="sect-h">' + t("k.top") + "</h2>" + (S === "loading" || w === "last" ? "" : '<span class="live"><span class="live-dot"></span><span data-stamp="12">' + t("common.updated", { n: 12 }) + "</span></span>") + "</div>" + list(w) + "</section>";
+  }
+  function body() {
+    if (S === "error") return C.error();
+    return C.seg([{ label: t("r.week"), value: "this", on: week === "this" }, { label: t("k.lastweek"), value: "last", on: week === "last" }], { name: "week", label: t("k.week") }) + '<div class="stack" id="view">' + view(week) + "</div>";
+  }
+  App.mount({ tab: "rank", docTitle: t("k.title"), head: head(), body: body(), pin: pin(week), badges: { home: "dot", results: 2 }, after: function () {
+    document.addEventListener("seg", function (e) {
+      if (e.detail.name !== "week") return; week = e.detail.value;
+      $("#view").innerHTML = view(week); var p = $("#pin"); if (p) p.outerHTML = pin(week); App.enhance(document.body);
+    });
+  } });
+})();
+</script>
+</body>
+</html>

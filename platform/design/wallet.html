@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>W1 Wallet | Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+</head>
+<body>
+<!-- W1 Wallet. States: (none), new (under 1,000P), zero, loading, error (Kaia not answering), offline. Add ?lang=en|ko|ja. Mock data only. -->
+<noscript>Cojam needs JavaScript to show this screen.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/components.js"></script>
+<script>
+(function () {
+  var t = App.t, F = App.fmt, S = App.state, M = MOCK, u = M.user;
+  var pts = S === "zero" ? 0 : S === "new" ? 450 : u.points, ct = S === "zero" ? 0 : u.ct, staked = S === "zero" ? 0 : u.staked, kaia = S === "zero" ? 0 : u.kaia;
+  var off = App.state === "offline";
+  function head() { return "<div><h1>" + t("w.title") + '</h1><p class="ph-sub">' + t("w.sub") + "</p></div>"; }
+  function body() {
+    if (S === "loading") return '<section class="card card--ink stack-12" aria-busy="true">' + C.skel("70px") + C.skel("160px", "38px") + C.skel("100%", "52px", "border-radius:999px") + '</section><section class="card stack-12" aria-busy="true">' + C.skel("40px") + C.skel("180px", "32px") + C.skel("100%") + C.skel("100%") + '</section><div class="two">' + C.skel("100%", "44px", "border-radius:999px") + C.skel("100%", "44px", "border-radius:999px") + '</div><p class="sr-only" role="status">' + t("common.loading") + "</p>";
+    var canCt = Math.floor(pts / 1000);
+    return (off ? C.note("warn", t("w.offline")) : "") +
+      '<section class="card card--ink stack-12"><div><h2 class="card-h">' + t("w.points") + '</h2><p class="fig fig--xl fig--volt">' + F.int(pts) + "<small>P</small></p></div>" +
+      '<p class="small">' + (canCt ? t("w.ready", { n: canCt }) : t("w.notyet", { g: F.int(1000 - pts) })) + "</p>" +
+      (S === "" || off ? C.rows([[t("w.onway"), t("w.pendinghit", { p: u.pendingHit, time: "22:10" })]]) : "") +
+      C.btn(t("w.convert"), { kind: "primary", block: true, href: "convert.html" + (S === "new" || S === "zero" ? "?state=short" : ""), disabled: off }) + "</section>" +
+      '<section class="card stack-12">' + (S === "error" ? C.note("warn", t("e.rpc"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" })) : "") +
+      '<div><h2 class="card-h">CT</h2><p class="fig">' + F.dec(ct) + "<small>CT</small></p>" + (App.isKo ? '<p class="small muted">' + F.krw(ct) + "</p>" : "") + "</div>" +
+      '<hr class="hr"><a class="rowlink" href="stakes.html"><span class="muted">' + t("w.staked") + "</span><b>" + F.ct(staked) + "</b>" + C.icon("chev", 18) + "</a>" +
+      '<hr class="hr"><div class="rowlink rowlink--static"><span class="muted">KAIA<small>' + t("w.kaia.note") + "</small></span><b>" + F.kaia(kaia) + "</b></div></section>" +
+      '<div class="two">' + C.btn(t("w.deposit"), { href: "deposit.html", icon: "download", disabled: off }) + C.btn(t("w.withdraw"), { href: "withdraw.html", icon: "share", disabled: off }) + "</div>" +
+      '<section class="stack-8"><h2 class="card-h">' + t("w.addr") + "</h2>" + C.addr(u.address, { scan: true }) + "</section>" +
+      '<section class="stack-8"><h2 class="card-h">' + t("w.token") + "</h2>" + C.addr(M.token, { label: t("w.token.copy") }) + "</section>" +
+      C.stamp(S === "error" ? 48 : 6);
+  }
+  App.mount({ tab: "wallet", docTitle: t("w.title"), head: head(), body: body(), points: pts, pts: S === "loading" ? "loading" : S === "error" ? "stale" : S === "" ? "hits" : "", badges: { home: "dot", results: 2 } });
+})();
+</script>
+</body>
+</html>
