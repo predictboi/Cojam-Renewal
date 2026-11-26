@@ -43,8 +43,9 @@ interface ICojamStaking {
     event TiersSet(uint256[2] thresholds);
     /// @notice The minimum stake (new positions) and the minimum locked claim changed.
     event MinimumsSet(uint256 minStake, uint256 minClaim);
-    /// @notice The per user open position cap and the total principal cap changed (0 = no total cap).
-    event CapsSet(uint256 maxOpenPositions, uint256 maxTotalPrincipal);
+    /// @notice The per user open position cap, the total principal cap and the per user
+    /// open principal cap changed (0 = no cap for either principal cap).
+    event CapsSet(uint256 maxOpenPositions, uint256 maxTotalPrincipal, uint256 maxUserPrincipal);
     /// @notice Reward CT not owed to anyone went back to the treasury.
     event RewardsWithdrawn(address indexed to, uint256 amount);
     /// @notice A new treasury was proposed; it can be applied from `eta`.
@@ -65,6 +66,7 @@ interface ICojamStaking {
     error BelowMinStake(uint256 amount, uint256 minStake);
     error TooManyPositions(uint256 open, uint256 max);
     error TotalCapReached(uint256 room, uint256 amount);
+    error UserCapReached(uint256 room, uint256 amount);
     error InsufficientRewards(uint256 available, uint256 needed);
     error NothingReceived();
     error ReceivedMoreThanSent();
@@ -102,7 +104,7 @@ interface ICojamStaking {
 
     function setMinimums(uint256 newMinStake, uint256 newMinClaim) external;
 
-    function setCaps(uint256 newMaxOpenPositions, uint256 newMaxTotalPrincipal) external;
+    function setCaps(uint256 newMaxOpenPositions, uint256 newMaxTotalPrincipal, uint256 newMaxUserPrincipal) external;
 
     function withdrawRewards(uint256 amount, address to) external;
 

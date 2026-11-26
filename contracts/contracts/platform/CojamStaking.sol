@@ -92,6 +92,8 @@ contract CojamStaking is ICojamStaking, AccessControlDefaultAdminRules, Pausable
 
     /// @notice Positions of `user` whose principal is not withdrawn yet.
     mapping(address user => uint256) public openPositions;
+    /// @notice Principal of `user`'s open positions, summed (what `maxUserPrincipal` caps).
+    mapping(address user => uint256) public principalOf;
     /// @notice CT owed back to stakers as principal.
     uint256 public totalPrincipal;
     /// @notice Interest reserved for open positions and not paid yet: sum of (maxInterest - claimed).
@@ -114,6 +116,8 @@ contract CojamStaking is ICojamStaking, AccessControlDefaultAdminRules, Pausable
     uint256 public maxOpenPositions;
     /// @notice Cap on `totalPrincipal` checked by `stake`; 0 means no cap.
     uint256 public maxTotalPrincipal;
+    /// @notice Cap on `principalOf[user]` checked by `stake`; 0 means no cap.
+    uint256 public maxUserPrincipal;
 
     /// @notice Where `withdrawRewards` may send CT.
     address public treasury;
@@ -147,11 +151,12 @@ contract CojamStaking is ICojamStaking, AccessControlDefaultAdminRules, Pausable
         minStake = 100e18;
         minClaim = 10e18;
         maxOpenPositions = 20;
+        maxUserPrincipal = 1_000_000e18; // DECISIONS "Staking cap per user"
 
         emit RatesSet(rateBps);
         emit TiersSet(tierThresholds);
         emit MinimumsSet(minStake, minClaim);
-        emit CapsSet(maxOpenPositions, 0);
+        emit CapsSet(maxOpenPositions, 0, maxUserPrincipal);
         emit TreasurySet(address(0), treasury_);
     }
 
@@ -181,6 +186,12 @@ contract CojamStaking is ICojamStaking, AccessControlDefaultAdminRules, Pausable
         if (cap != 0 && totalPrincipal + received > cap) {
             revert TotalCapReached(cap > totalPrincipal ? cap - totalPrincipal : 0, received);
         }
+        uint256 userCap = maxUserPrincipal;
+        uint256 mine = principalOf[msg.sender];
+        if (userCap != 0 && mine + received > userCap) {
+            revert UserCapReached(userCap > mine ? userCap - mine : 0, received);
+        }
+        principalOf[msg.sender] = mine + received;
 
         id = _open(received, lockIndex);
         openPositions[msg.sender] = open + 1;
@@ -262,6 +273,7 @@ contract CojamStaking is ICojamStaking, AccessControlDefaultAdminRules, Pausable
         p.closed = true;
         p.claimed = p.maxInterest;
         openPositions[msg.sender] -= 1;
+        principalOf[msg.sender] -= principal;
         totalPrincipal -= principal;
         totalCommitted -= interest;
         totalInterestPaid += interest;
@@ -307,10 +319,11 @@ contract CojamStaking is ICojamStaking, AccessControlDefaultAdminRules, Pausable
         emit MinimumsSet(newMinStake, newMinClaim);
     }
 
-    /// @notice Set the per user open position cap (1 to 20) and the cap on total principal
-    /// (0 for none). Both are checked only by `stake`; a cap below the current figure just
-    /// stops new positions.
-    function setCaps(uint256 newMaxOpenPositions, uint256 newMaxTotalPrincipal)
+    /// @notice Set the per user open position cap (1 to 20), the cap on total principal and
+    /// the cap on one address's open principal (0 for none on either). All are checked only
+    /// by `stake`; a cap below the current figure just stops new positions (for the user cap,
+    /// only that user's).
+    function setCaps(uint256 newMaxOpenPositions, uint256 newMaxTotalPrincipal, uint256 newMaxUserPrincipal)
         external
         onlyRole(DEFAULT_ADMIN_ROLE)
     {
@@ -319,7 +332,8 @@ contract CojamStaking is ICojamStaking, AccessControlDefaultAdminRules, Pausable
         }
         maxOpenPositions = newMaxOpenPositions;
         maxTotalPrincipal = newMaxTotalPrincipal;
-        emit CapsSet(newMaxOpenPositions, newMaxTotalPrincipal);
+        maxUserPrincipal = newMaxUserPrincipal;
+        emit CapsSet(newMaxOpenPositions, newMaxTotalPrincipal, newMaxUserPrincipal);
     }
 
     /// @notice Send `amount` reward CT that no position is owed back to the treasury.
