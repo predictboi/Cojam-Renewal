@@ -477,7 +477,7 @@
     function paint(card, k) {   /* k: travel as a share of the card width, -1 to 1 */
       var hot = Math.abs(k) >= 0.2 ? (k > 0 ? "r" : "l") : "";
       $$(".choice", card).forEach(function (b) { b.classList.toggle("is-hot", b.getAttribute("data-dir") === hot); });
-      $(".qtint", card).style.opacity = Math.min(0.42, Math.abs(k) * 1.1);
+      $(".qtint", card).style.opacity = Math.min(0.26, Math.abs(k) * 0.8);
       $(".qstamp--l", card).style.opacity = k < 0 ? Math.min(1, -k * 3.2) : 0;
       $(".qstamp--r", card).style.opacity = k > 0 ? Math.min(1, k * 3.2) : 0;
     }

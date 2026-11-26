@@ -194,17 +194,17 @@ img, svg { display: block; flex: none; }
 /* ---------- swipe card stack: image led cards in a physical deck ----------
    The front card is sharp and carries the hard drop; the next three sit behind it, offset, rotated, scaled and veiled.
    Motion is transform and opacity only; will-change on the front card only. */
-.deck { position: relative; display: grid; margin: var(--s-8) var(--s-10) var(--s-24); }
-.qcard { grid-area: 1 / 1; position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: space-between; min-height: clamp(372px, calc(100dvh - 412px), 470px); border: var(--edge); border-radius: var(--r-card); background: var(--ink); color: var(--snow); overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; transform-origin: 50% 125%;
+.deck { position: relative; display: grid; margin: var(--s-4) var(--s-12) var(--s-32); }
+.qcard { grid-area: 1 / 1; position: relative; isolation: isolate; display: flex; flex-direction: column; justify-content: space-between; min-height: clamp(350px, calc(100dvh - 450px), 470px); border: var(--edge); border-radius: var(--r-card); background: var(--ink); color: var(--snow); overflow: hidden; touch-action: pan-y; user-select: none; -webkit-user-select: none; transform-origin: 50% 125%;
   transition: transform var(--dur-deck) var(--ease-spring), opacity var(--dur-base) var(--ease-out); }
 .qcard::after { content: ""; position: absolute; inset: 0; z-index: 6; background: var(--snow); opacity: 0; pointer-events: none; transition: opacity var(--dur-deck) var(--ease-out); }
 .qcard[data-pos="0"] { z-index: 4; will-change: transform; box-shadow: var(--shadow-deck); }
-.qcard[data-pos="1"] { z-index: 3; transform: translate(11px, 10px) rotate(4deg) scale(0.96); }
-.qcard[data-pos="2"] { z-index: 2; transform: translate(-11px, 17px) rotate(-5deg) scale(0.92); }
-.qcard[data-pos="3"] { z-index: 1; transform: translate(5px, 24px) rotate(8deg) scale(0.88); }
-.qcard[data-pos="1"]::after { opacity: 0.45; }
-.qcard[data-pos="2"]::after { opacity: 0.66; }
-.qcard[data-pos="3"]::after { opacity: 0.82; }
+.qcard[data-pos="1"] { z-index: 3; transform: translate(14px, 12px) rotate(4.5deg) scale(0.96); }
+.qcard[data-pos="2"] { z-index: 2; transform: translate(-14px, 20px) rotate(-5.5deg) scale(0.93); }
+.qcard[data-pos="3"] { z-index: 1; transform: translate(6px, 28px) rotate(9deg) scale(0.89); }
+.qcard[data-pos="1"]::after { opacity: 0.22; }
+.qcard[data-pos="2"]::after { opacity: 0.42; }
+.qcard[data-pos="3"]::after { opacity: 0.6; }
 .qcard[data-pos="x"] { display: none; }
 .qcard[data-pos="out"] { z-index: 5; pointer-events: none; }
 .qcard:not([data-pos="0"], [data-pos="out"]) > :not(.qimg) { visibility: hidden; }
