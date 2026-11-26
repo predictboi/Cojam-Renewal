@@ -23,11 +23,11 @@
         empty: X.empty("Nothing to review", "No account has a risk score between 50 and 79. The risk check runs every hour and at every sign up; the next run is at 15:00 KST.", X.link("See blocked accounts", "?state=blocked")),
         cols: [
           { h: "Account", val: function (p) { return p.addr; }, cell: function (p) { return who(p); } },
-          { h: "Joined", cell: function (p) { return '<span class="nowrap">' + p.joined + "</span>"; } },
-          { h: "Score", val: function (p) { return p.score; }, cell: function (p) { return score(p.score); } },
-          { h: "Rules that fired", w: "36%", cell: function (p) { return rules(p); } },
+          { h: "Joined", w: "1%", cell: function (p) { return '<span class="nowrap">' + p.joined + "</span>"; } },
+          { h: "Score", w: "1%", val: function (p) { return p.score; }, cell: function (p) { return score(p.score); } },
+          { h: "Rules that fired", w: "44%", cell: function (p) { return rules(p); } },
           { h: "Inviter", cell: function (p) { return p.inviter ? esc(p.inviter) : '<span class="dim">None</span>'; } },
-          { h: "Play", num: 1, val: function (p) { return p.points; }, cell: function (p) { return p.days + (p.days === 1 ? " day" : " days") + '<span class="t2">' + n(p.points) + " P" + (p.friends ? ", " + p.friends + " friends" : "") + "</span>"; } },
+          { h: "Play", num: 1, w: "1%", val: function (p) { return p.points; }, cell: function (p) { return p.days + (p.days === 1 ? " day" : " days") + '<span class="t2 nowrap">' + n(p.points) + " P" + (p.friends ? ", " + p.friends + " friends" : "") + "</span>"; } },
           { h: "", cell: function (p, i) { return '<div class="row-acts">' + X.btn("Open", { link: 1, act: "detail", arg: i }) + X.btn("Clear", { small: 1, act: "clear", arg: i, write: 1 }) + X.btn("Block", { small: 1, act: "block", arg: i, write: 1 }) + "</div>"; } }
         ],
         after: rows.length ? '<div class="tbl-foot"><span>14 of 14 accounts</span><span>Block and Clear are sent with the operator key. Every action needs a note and is written to the audit log.</span></div>' : "" }) + "</section>";

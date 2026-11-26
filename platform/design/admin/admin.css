@@ -313,7 +313,7 @@ th.num .th-sort { flex-direction: row-reverse; }
 .steps .t2 { color: var(--ink-2); font-size: 13px; }
 .steps li[data-s="wait"] .t1 { color: var(--ink-2); font-weight: 600; }
 .chk { display: grid; gap: 0; }
-.chk li { display: grid; grid-template-columns: 20px minmax(0, 1fr) minmax(0, auto); gap: var(--s-10); align-items: start; padding: var(--s-8) 0; border-bottom: var(--hair); font-size: 13.5px; }
+.chk li { display: grid; grid-template-columns: 20px minmax(0, 3fr) minmax(0, 2fr); gap: var(--s-10); align-items: start; padding: var(--s-8) 0; border-bottom: var(--hair); font-size: 13.5px; }
 .chk li:last-child { border-bottom: 0; }
 .chk svg { margin-top: 1px; color: var(--up); }
 .chk li[data-s="fail"] svg { color: var(--down); }

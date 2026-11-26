@@ -69,7 +69,7 @@
     var title = over ? "오늘 닛케이 225 지수는 과연 4만 선을 넘겨서 장을 마감할 수 있을까요?" : t.title;
     function f(id, label, val, max, rowsN) {
       var c = len(val), left = max - c, cid = id + "-" + l;
-      var cnt = '<span class="cnt"' + (left < 0 ? " data-over" : "") + ' data-count="' + cid + '">' + (editable ? (left < 0 ? -left + " over" : left + " left") : c + " of " + max) + "</span>";
+      var cnt = '<span class="cnt"' + (left < 0 ? " data-over" : "") + ' data-count="' + cid + '">' + (editable ? (left < 0 ? -left + " over" : left + " left") : c + "/" + max) + "</span>";
       if (!editable) return '<div class="fl"><span class="lab">' + label + cnt + '</span><p class="ro" lang="' + l + '">' + esc(val) + "</p></div>";
       return '<div class="fl"><label for="' + cid + '">' + label + cnt + "</label>" + (rowsN ? '<textarea class="inp" rows="' + rowsN + '"' : '<input class="inp"') + ' id="' + cid + '" lang="' + l + '" data-max="' + max + '"' + (left < 0 ? ' aria-invalid="true" aria-describedby="' + cid + '-e"' : "") + (rowsN ? ">" + esc(val) + "</textarea>" : ' value="' + esc(val) + '">') +
         (left < 0 ? '<p class="err" id="' + cid + '-e">' + ic("warn") + "The question is too long for the card in " + LNAME[l] + ".</p>" : "") + "</div>";
