@@ -160,11 +160,12 @@
     var icon = kind === "warn" || kind === "error" ? "warn" : kind === "ok" ? "check" : "info";
     return '<div class="note' + (kind ? " note-" + kind : "") + '"' + (kind === "error" ? ' role="alert"' : "") + ">" + ic(icon, 18) + '<div class="note-body"><div>' + html + "</div>" + (action || "") + "</div></div>";
   };
+  /* the player's address as a compact chip: the short form in the data face. The whole chip is the copy control (44 px tall): it copies the full address,
+     and for 2 s the icon is a check and the label reads "Copied". Screen readers get the full address in the label. */
   C.addr = function (a, o) {
     o = o || {};
-    return '<div class="addr' + (o.lg ? " addr--lg" : "") + '"><span class="addr-v" translate="no"' + (o.short ? ' aria-label="' + a + '"' : "") + ">" + (o.short ? F.short(a) : F.groups(a)) + "</span>" +
-      C.iconBtn("copy", o.label || t("w.copy"), 'data-copy="' + a + '" data-toast="' + esc(o.toast || t("w.copied", { a: F.short(a) })) + '"') +
-      (o.scan ? '<a class="btn btn-icon" href="https://kaiascan.io/address/' + a + '" target="_blank" rel="noopener" aria-label="' + esc(t("w.scan")) + '">' + ic("ext", 18) + "</a>" : "") + "</div>";
+    return '<button type="button" class="addr-chip"' + (o.id ? ' id="' + o.id + '"' : "") + ' data-copy="' + a + '" data-done="' + esc(t("w.copy.done")) + '" aria-label="' + esc(t("w.copy") + ": " + a) + '">' +
+      '<span class="addr-chip-v" translate="no">' + F.short(a) + "</span>" + ic("copy", 16) + "</button>";
   };
   C.amount = function (o) {
     return '<div class="field"><div class="field-label"><label for="' + o.id + '"><b>' + o.label + "</b></label>" + (o.side ? "<span>" + o.side + "</span>" : "") + "</div>" +
@@ -512,7 +513,12 @@
       try { if (navigator.clipboard) navigator.clipboard.writeText(text).catch(function () {}); } catch (err) {}
       if (c.hasAttribute("data-toast")) App.toast(c.getAttribute("data-toast"));   /* a button that turns into "Copied" needs no toast */
       var dn = c.getAttribute("data-done"), lab = $("span", c);
-      if (dn && lab && !c._old) { c._old = lab.textContent; lab.textContent = dn; c.classList.add("is-done"); setTimeout(function () { lab.textContent = c._old; c._old = null; c.classList.remove("is-done"); }, 2000); }
+      if (dn && lab && !c._old) {
+        var chip = c.classList.contains("addr-chip"), svg = chip && $("svg", c), was = svg && svg.outerHTML;
+        if (chip) { c.style.minWidth = c.offsetWidth + "px"; if (svg) svg.outerHTML = ic("check", 16); App.live(dn); }
+        c._old = lab.textContent; lab.textContent = dn; c.classList.add("is-done");
+        setTimeout(function () { lab.textContent = c._old; c._old = null; c.classList.remove("is-done"); if (chip) { var s2 = $("svg", c); if (s2 && was) s2.outerHTML = was; c.style.minWidth = ""; } }, 2000);
+      }
       if (c.classList.contains("btn-icon")) { var old = c.innerHTML; c.classList.add("is-done"); c.innerHTML = ic("check", 18); setTimeout(function () { c.classList.remove("is-done"); c.innerHTML = old; }, 1600); }
       return;
     }
@@ -695,14 +701,6 @@
     root.setAttribute("tabindex", "-1");
     layout();
     return { layout: layout, live: live, restore: restore };
-  };
-  /* payoff: a burst of pieces from an element (the day done figure) */
-  App.burst = function (el, count) {
-    if (reduce || !el) return;
-    var b = document.createElement("span"); b.className = "burst"; b.setAttribute("aria-hidden", "true"); count = count || 16;
-    for (var i = 0; i < count; i++) { var a = (i / count) * Math.PI * 2 + Math.random() * 0.4, r = 70 + Math.random() * 130;
-      b.innerHTML += '<i style="--n:' + i + ";--x:" + (Math.cos(a) * r).toFixed(0) + "px;--y:" + (Math.sin(a) * r - 10).toFixed(0) + "px;--r:" + Math.round(Math.random() * 360) + 'deg"></i>'; }
-    el.appendChild(b); setTimeout(function () { b.remove(); }, 2200);
   };
 
   /* ---------- QR code: byte mode, error correction Q, versions 1 to 6 (enough for a URL or an address) ---------- */
