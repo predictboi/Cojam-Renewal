@@ -32,7 +32,7 @@ async function gasPrice(): Promise<bigint> {
 }
 
 function asSponsorError(e: unknown) {
-  if (e instanceof ApiError) return { code: e.code, status: e.status, txHash: e.txHash };
+  if (e instanceof ApiError) return { code: e.code, status: e.status, txHash: e.txHash, retryable: e.extra?.retryable as boolean | undefined };
   return { code: 'NETWORK', status: 0 };
 }
 

@@ -18,6 +18,9 @@ import { cojamPredictAbi, readPredictParams, type Address } from '../worker/chai
 import { SimulationRevert } from '../worker/sender.ts';
 import type { JobContext } from './context.ts';
 
+/** createDay refuses a day with less than this left before its end. */
+export const LATE_CREATE_MARGIN_SEC = 3600;
+
 const b32 = (s: string): Hex => stringToHex(s.slice(0, 31), { size: 32 });
 const unix = (d: Date | string | null) => (d ? Math.floor(new Date(d).getTime() / 1000) : 0);
 
@@ -41,21 +44,27 @@ export type PublishResult = 'exists' | 'published' | 'incomplete' | 'too_late';
 export async function publishDay(ctx: JobContext, dayId: number): Promise<PublishResult> {
   if ((await chainMarket(ctx, dayId * 5)).closesAt !== 0) return 'exists';
   const now = ctx.now();
-  if (now >= dayOpensAt(dayId)) {
-    await ctx.alerts.raise(`day-missed:${dayId}`, 'critical', `Day ${dayId} was not published before it opened`, 'createDay is only accepted before the open: the day has no questions.');
+  // createDay is accepted before the open, or late while at least 1 hour of the day remains
+  // (contract change "late day creation"); a late day is playable from the block that creates it.
+  if (now + LATE_CREATE_MARGIN_SEC > dayEnd(dayId)) {
+    await ctx.alerts.raise(`day-missed:${dayId}`, 'critical', `Day ${dayId} was never published`, 'createDay is refused in the last hour of the day: the day has no questions.');
     return 'too_late';
+  }
+  if (now >= dayOpensAt(dayId)) {
+    await ctx.alerts.raise(`day-late:${dayId}`, 'critical', `Day ${dayId} opened without questions; publishing late`, 'Players who opened the app before the late creation saw no questions.');
   }
   const hourUtc = new Date(now * 1000).getUTCHours();
   const load = () => ctx.db.selectFrom('markets').selectAll().where('day_id', '=', dayId).where('status', '=', 'scheduled').orderBy('slot').execute();
   let rows = await load();
-  if (rows.length < 5 && hourUtc >= ctx.settings.publishReserveHourUtc) {
+  const late = now >= dayOpensAt(dayId);
+  if (rows.length < 5 && (late || hourUtc >= ctx.settings.publishReserveHourUtc)) {
     const params = await readPredictParams(ctx.client, ctx.contracts.predict);
     await fillFromReserve(aiDeps(ctx, params.minResolveGap), dayId);
     if (ctx.settings.aiEnabled && (await load()).length < 5) await draftDay(aiDeps(ctx, params.minResolveGap), dayId).catch(() => undefined);
     rows = await load();
   }
   if (rows.length < 5 || rows.map((r) => r.slot).join() !== '0,1,2,3,4') {
-    await ctx.alerts.raise(`day-incomplete:${dayId}`, hourUtc >= ctx.settings.publishAlertHourUtc ? 'critical' : 'warn', `Day ${dayId} has ${rows.length} of 5 questions`, 'The day cannot be published until all 5 slots are scheduled.');
+    await ctx.alerts.raise(`day-incomplete:${dayId}`, late || hourUtc >= ctx.settings.publishAlertHourUtc ? 'critical' : 'warn', `Day ${dayId} has ${rows.length} of 5 questions`, 'The day cannot be published until all 5 slots are scheduled.');
     return 'incomplete';
   }
   const closesAt = dayEnd(dayId);
@@ -152,14 +161,13 @@ export async function correctionCheck(ctx: JobContext): Promise<{ checked: numbe
     .where('settles_at', '>', new Date(now * 1000))
     .execute();
   for (const m of rows) {
-    const done = await ctx.db
+    // One re-check per answer: a run 3 newer (by id) than the runs that set the answer.
+    const ids = await ctx.db
       .selectFrom('resolutions')
-      .select('id')
+      .select([sql<number>`max(id) filter (where run in ('1', '2'))`.as('first'), sql<number>`max(id) filter (where run = '3')`.as('recheck')])
       .where('market_id', '=', m.market_id)
-      .where('run', '=', '3')
-      .where('created_at', '>=', m.resolved_at ?? new Date(0))
       .executeTakeFirst();
-    if (done) continue;
+    if (ids?.recheck && (!ids.first || Number(ids.recheck) > Number(ids.first))) continue;
     out.checked++;
     const d = await recheckMarket(resolveDeps(ctx), m.market_id, m.outcome as 1 | 2);
     if (d.action === 'correct') {

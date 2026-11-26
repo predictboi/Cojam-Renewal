@@ -39,7 +39,7 @@ export function createDeck(root: HTMLElement, o: DeckOpts = {}): DeckApi {
     });
     root.classList.toggle('is-empty', !cards.length);
   }
-  function buzz(ms: number) { try { navigator.vibrate?.(ms); } catch { /* */ } }
+  function buzz(ms: number) { try { (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive && navigator.vibrate?.(ms); } catch { /* */ } }
   function paint(card: HTMLElement, k: number, armed: boolean) {
     const dir = k > 0 ? 'r' : k < 0 ? 'l' : '', a = Math.abs(k);
     $$('.choice', card).forEach((b) => b.classList.toggle('is-hot', !!armed && b.getAttribute('data-dir') === dir));

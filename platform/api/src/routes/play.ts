@@ -15,6 +15,7 @@ import {
   chainTry,
   imageUrls,
   marketTexts,
+  popcount,
   predictParams,
   publicName,
   requirePlayer,
@@ -225,11 +226,8 @@ export function registerPlayRoutes(app: FastifyInstance, kit: RouteKit): void {
       .where("day_id", ">=", weekFirstDay(week))
       .where("day_id", "<=", today)
       .execute();
-    const all = await deps.db
-      .selectFrom("user_days")
-      .select([sql<number>`coalesce(sum(hits),0)::bigint`.as("hits"), sql<number>`coalesce(sum(length(replace(settled_mask::bit(5)::text,'0',''))),0)::bigint`.as("settled")])
-      .where("wallet", "=", wallet)
-      .executeTakeFirst();
+    const allDays = await deps.db.selectFrom("user_days").select(["hits", "settled_mask"]).where("wallet", "=", wallet).execute();
+    const all = { hits: allDays.reduce((a, d) => a + d.hits, 0), settled: allDays.reduce((a, d) => a + popcount(d.settled_mask), 0) };
     const allPts = await deps.db
       .selectFrom("points_ledger")
       .select(sql<number>`coalesce(sum(amount),0)::bigint`.as("s"))

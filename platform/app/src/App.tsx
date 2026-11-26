@@ -21,7 +21,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react';
 import { toast } from './state/ui';
 import type { Today } from './api/types';
 
-import Gate from './screens/Gate';
+import Gate, { InviteRedirect } from './screens/Gate';
 import Login from './screens/Login';
 import FirstRun from './screens/FirstRun';
 import HomeCards from './screens/HomeCards';
@@ -107,7 +107,7 @@ export function App() {
   const loc = useLocation();
   useEffect(() => { if (cfg.data) setChainConfig(cfg.data); }, [cfg.data]);
   const sa = isStandalone();
-  const gateRoute = /^\/(gate|i\/)/.test(loc.pathname);
+  const gateRoute = /^\/gate/.test(loc.pathname);
 
   let content: ReactNode;
   if (cfg.data?.flags.maintenance) content = <System kind="maintenance" />;
@@ -121,6 +121,7 @@ export function App() {
   );
   else content = (
     <Routes>
+      <Route path="/i/:code" element={<InviteRedirect />} />
       <Route path="/login" element={<Login />} />
       <Route path="/welcome" element={<FirstRun />} />
       <Route path="/system/:kind" element={<System />} />

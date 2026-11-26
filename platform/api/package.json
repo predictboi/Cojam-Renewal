@@ -11,12 +11,13 @@
     "start:api": "tsx src/server/main.ts",
     "start:worker": "tsx src/worker/main.ts",
     "dev:api": "tsx watch --env-file=.env src/server/main.ts",
-    "dev:seed": "tsx --env-file-if-exists=.env src/db/seed.ts",
-    "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate-cli.ts",
+    "dev:seed": "tsx src/db/seed.ts",
+    "db:migrate": "tsx src/db/migrate-cli.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:api": "vitest run test/api",
-    "test:worker": "vitest run test/worker"
+    "test:worker": "vitest run test/worker",
+    "ai:dry-run": "tsx scripts/ai-dry-run.ts"
   },
   "license": "UNLICENSED",
   "dependencies": {

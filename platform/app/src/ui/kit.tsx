@@ -1,6 +1,6 @@
 // React parts of the shell (port of App.mount, C.header, C.tabbar, toasts, sheet and live region in components.js).
 // Markup and class names match the prototype, so tokens.css and components.css style them unchanged.
-import { createElement, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { createElement, forwardRef, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { t } from '../i18n';
 import { F, reduceMotion } from '../lib/fmt';
@@ -12,9 +12,9 @@ import { useOutbox } from '../chain/outbox/runner';
 
 /* ---------- raw HTML from the string builders ---------- */
 type HtmlProps = { as?: string; html: string; className?: string; id?: string; style?: CSSProperties; [k: string]: unknown };
-export function Html({ as = 'div', html, ...rest }: HtmlProps) {
-  return createElement(as, { ...rest, dangerouslySetInnerHTML: { __html: html } });
-}
+export const Html = forwardRef<HTMLElement, HtmlProps>(function Html({ as = 'div', html, ...rest }, ref) {
+  return createElement(as as string, { ...(rest as Record<string, unknown>), ref, dangerouslySetInnerHTML: { __html: html as string } });
+});
 export const Icon = ({ name, size = 20, cls }: { name: string; size?: number; cls?: string }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" className={cls} dangerouslySetInnerHTML={{ __html: icon(name, size).replace(/^<svg[^>]*>|<\/svg>$/g, '') }} />
 );

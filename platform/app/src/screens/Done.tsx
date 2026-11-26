@@ -42,9 +42,10 @@ export default function Done() {
   const bandRef = useRef<HTMLDivElement>(null);
 
   // the picks actually made today (chain choices, or held and sent picks)
+  const sample = [2, 2, 1, 2, 2]; // the prototype's sample picks when a preset is opened on its own
   const picks = (td?.markets || []).map((m) => {
     const it = dayItems.find((i) => i.marketId === m.marketId);
-    const c = m.choice.chain || it?.choice || 2;
+    const c = m.choice.chain || it?.choice || sample[m.slot];
     return { q: qOf(m), dir: (c === 1 ? 'l' : 'r') as 'l' | 'r' };
   });
   const outcome = st === 'results' ? ['wait', 'pend', 'miss', 'wait', 'wait'] : ['wait', 'wait', 'wait', 'wait', 'wait'];
@@ -57,7 +58,7 @@ export default function Done() {
     if (!animate || popped || phase !== 'paid') return;
     const tm = setTimeout(() => {
       setPopped(true);
-      try { navigator.vibrate?.([12, 40, 18]); } catch { /* */ }
+      try { (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive && navigator.vibrate?.([12, 40, 18]); } catch { /* */ }
       live(t('toast.paid', { n: 100 }));
       burst();
     }, 700);
@@ -114,7 +115,9 @@ export default function Done() {
       return '<li class="pick"><span class="pick-q">' + esc(p.q.title) + '</span><span class="pick-c">' + pick(p.dir, esc(p.q[p.dir])) + (sub ? '<small>' + sub + '</small>' : '') + '</span></li>';
     }).join('') + '</ul></section>';
   // the header pill: the 100P is counted up when the moment pops
-  const shownPts = preset && st !== 'saving' && !paidNow && CONFIG.mockApi ? pts + 100 + (wel ? W : 0) : animate && !popped && paidNow ? pts - 100 : pts;
+  // mock presets opened on their own add the 100P the prototype shows; on chain the wallet read already has it
+  const mockCredit = CONFIG.mockApi && !td?.completed ? (preset && st !== 'saving' ? 100 + (wel ? W : 0) : simPaid ? 100 : 0) : 0;
+  const shownPts = animate && !popped ? pts + mockCredit - (paidNow ? (mockCredit ? mockCredit : 100) : 0) : pts + mockCredit;
   return (
     <Shell tab="home" cls="is-done" docTitle={t('d.h1')} head={head} points={shownPts} pts={!showPaid ? 'pending' : st === 'results' ? 'hits' : ''} badges={{ home: 0 }}>
       <Html as="div" style={{ display: 'contents' }} html={body} />

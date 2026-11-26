@@ -2,6 +2,8 @@
 // columns from src/db/migrations/0900_worker_tables.sql.
 import type { ColumnType, Generated, Kysely } from 'kysely';
 import type { Database, MarketsTable, UsersTable } from '../db/index.ts';
+// Side effect: int8 columns parse to numbers (pg type parser set in src/db/index.ts).
+import '../db/index.ts';
 
 type Timestamp = ColumnType<Date, Date | string, Date | string>;
 type DefaultTimestamp = ColumnType<Date, Date | string | undefined, Date | string>;

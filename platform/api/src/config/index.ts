@@ -75,6 +75,8 @@ const schema = z.object({
   ADMIN_SERVICE_PER_MINUTE: int(120),
   /** Dev only: trust the X-Dev-User header instead of a Privy token. Refused when NODE_ENV=production. */
   AUTH_DEV_BYPASS: bool,
+  /** Dev only: "stub" runs without a Kaia node (src/chain/devStub.ts). Refused when NODE_ENV=production. */
+  DEV_CHAIN: z.enum(["none", "stub"]).default("none"),
 
   // Sign up and abuse
   EMAIL_HASH_KEY: optStr,
@@ -175,6 +177,10 @@ export function loadConfig(raw: Record<string, string | undefined> = process.env
   // The dev bypass trusts a header to name the user: it must never run in production.
   if (env.AUTH_DEV_BYPASS && isProduction) {
     throw new ConfigError("AUTH_DEV_BYPASS cannot be enabled when NODE_ENV=production");
+  }
+
+  if (env.DEV_CHAIN === "stub" && isProduction) {
+    throw new ConfigError("DEV_CHAIN=stub cannot be enabled when NODE_ENV=production");
   }
 
   if (isProduction) {

@@ -52,6 +52,7 @@ async function main() {
   const cfg = loadConfig(process.env, 'worker');
   const log = createLogger(cfg.env.LOG_LEVEL, { service: 'cojam-app-worker', network: cfg.network });
   const pool: pg.Pool = createPool(cfg.databaseUrl, 10);
+  pool.on('error', (e) => log.error('postgres pool error', { error: e.message }));
 
   // One worker only: hold an advisory lock on a dedicated connection for the life of the process.
   const lockClient = await pool.connect();

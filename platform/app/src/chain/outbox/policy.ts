@@ -31,16 +31,18 @@ export type Verdict =
   | 'fail'           // non retryable: the card returns while the market is open
   | 'frozen';        // FROZEN: stop, drop held and queued picks, open Account on hold
 
-const RETRY = new Set(['NETWORK', 'BAD_RESPONSE', 'RATE_LIMITED_SENDER', 'RATE_LIMITED_USER', 'RATE_LIMITED_IP', 'RATE_LIMITED_BURST', 'TIMEOUT']);
+const RETRY = new Set(['NETWORK', 'BAD_RESPONSE', 'RATE_LIMITED_SENDER', 'RATE_LIMITED_USER', 'RATE_LIMITED_IP', 'RATE_LIMITED_BURST', 'TIMEOUT', 'INTERNAL', 'RPC_UNAVAILABLE', 'PAUSED', 'INSUFFICIENT_RESERVE']);
 
-export function classify(code: string, status = 0): Verdict {
+/** retryable: the API's own flag (platform/shared/src/errors.ts), used for codes this table does not name. */
+export function classify(code: string, status = 0, retryable?: boolean): Verdict {
   if (code === 'ALREADY_DONE') return 'done_elsewhere';
   if (code === 'PLAY_KEY_INVALID') return 'pause_key';
   if (code === 'BROADCAST_UNCERTAIN') return 'uncertain';
   if (code === 'FROZEN') return 'frozen';
   if (code === 'FEE_PAYER_BALANCE_LOW' || code === 'DAILY_BUDGET_EXHAUSTED') return 'sponsor_down';
   if (code === 'MARKET_CLOSED' || code === 'NOT_REGISTERED' || code === 'CHAIN_ID_MISMATCH') return 'fail';
-  if (RETRY.has(code) || status >= 500 || status === 429 || /^HTTP_5/.test(code)) return 'retry';
+  if (code === 'DAY_NOT_OPEN' || code === 'MARKET_NOT_TODAY') return 'fail';
+  if (RETRY.has(code) || retryable === true || status >= 500 || status === 429 || /^HTTP_5/.test(code)) return 'retry';
   return 'fail'; // an unexpected revert or an unknown code (4.7)
 }
 

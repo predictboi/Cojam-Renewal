@@ -1,28 +1,11 @@
-// The calls each signer may build, from a fixed table (DEV-PLAN 4.1). Local until platform/shared exports the
-// generated ABIs; the signatures follow DEV-PLAN 3.4 and 3.5.
-import { encodeFunctionData, parseAbi, type Hex } from 'viem';
+// The calls each signer may build, from a fixed table (DEV-PLAN 4.1).
+import { encodeFunctionData, type Hex } from 'viem';
+// Generated ABIs from platform/shared (synced from contracts/artifacts by the deploy agent).
+import { cojamPredictAbi, cojamStakingAbi, erc20Abi } from '../../../shared/abi/index.ts';
 
-export const predictAbi = parseAbi([
-  'function predict(uint256 marketId, uint8 choice)',
-  'function setPlayKey(address key, uint64 expiresAt)',
-  'function revokePlayKey()',
-  'function convert(uint256 points)',
-  'function settle(address user, uint32 dayId)',
-  'function playKeyOf(address player) view returns (address key, uint64 expiresAt)',
-  'function playerOf(address key) view returns (address player, uint64 expiresAt, bool valid)',
-  'function dayOf(address user, uint32 dayId) view returns (uint8 answered, uint8[5] choices, bool completed, uint8 settledMask, uint8 hits)',
-  'function balanceOf(address user) view returns (uint256)',
-]);
-export const stakingAbi = parseAbi([
-  'function stake(uint256 amount, uint8 lockIndex) returns (uint256 id)',
-  'function claimInterest(uint256 id) returns (uint256)',
-  'function withdraw(uint256 id) returns (uint256 principal, uint256 interest)',
-]);
-export const ctAbi = parseAbi([
-  'function approve(address spender, uint256 value) returns (bool)',
-  'function transfer(address to, uint256 value) returns (bool)',
-  'function allowance(address owner, address spender) view returns (uint256)',
-]);
+export const predictAbi = cojamPredictAbi;
+export const stakingAbi = cojamStakingAbi;
+export const ctAbi = erc20Abi;
 
 /** Gas limits per action (DEV-PLAN 4.3 step 3: a fixed table plus 30%; caps from the fee payer policy 6.3). */
 export const GAS: Record<string, bigint> = {

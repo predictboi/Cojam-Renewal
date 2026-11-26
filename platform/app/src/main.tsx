@@ -9,6 +9,7 @@ import './styles/screens/home.css';
 import './styles/screens/rank.css';
 import './styles/screens/money.css';
 import './styles/screens/invite.css';
+import './styles/app.css';
 import { CONFIG } from './config';
 import { queryClient } from './api';
 import { App } from './App';

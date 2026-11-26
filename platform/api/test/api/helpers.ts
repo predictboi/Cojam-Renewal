@@ -15,7 +15,6 @@ import { buildApp } from "../../src/server/app.ts";
 import type { Deps } from "../../src/server/deps.ts";
 import { DEFAULT_PARAMS } from "../../src/routes/common.ts";
 
-export const TEMPLATE = "cojam_test_template";
 export const PREDICT = "0x8bf58c00a9f6b1894ee6562a30630fabf1ca0b7b" as Address;
 export const STAKING = "0x4978c46902a626437f6f092abb1cfa91705d3017" as Address;
 export const CTA = "0xa8e540c5b5804d4bf2dd2110a307a99e76c6bd9e" as Address;
@@ -28,7 +27,9 @@ export async function createTestDb(): Promise<{ db: Db; url: string; drop: () =>
   const name = `cojam_t_${randomBytes(5).toString("hex")}`;
   const admin = new pg.Client({ connectionString: adminUrl });
   await admin.connect();
-  await admin.query(`CREATE DATABASE "${name}" TEMPLATE "${TEMPLATE}"`);
+  const template = process.env.COJAM_TEST_TEMPLATE;
+  if (!template) throw new Error("COJAM_TEST_TEMPLATE is not set: run the tests through vitest (test/globalSetup.ts)");
+  await admin.query(`CREATE DATABASE "${name}" TEMPLATE "${template}"`);
   await admin.end();
   const u = new URL(adminUrl);
   u.pathname = `/${name}`;

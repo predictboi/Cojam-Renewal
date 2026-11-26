@@ -1,0 +1,2 @@
+/* App only: React wraps some HTML string parts in display: contents boxes; their children get the same rule as .pg > * */
+.pg > [style*="contents"] > * { min-width: 0; }

@@ -60,7 +60,7 @@ export class Indexer {
 
   /** Indexes one range. Returns null when already at the head. */
   async tick(): Promise<TickResult | null> {
-    const head = Number(await this.client.getBlockNumber()) - this.opts.confirmations;
+    const head = Number(await this.client.getBlockNumber({ cacheTime: 0 })) - this.opts.confirmations;
     const last = await this.cursor();
     const from = last + 1;
     if (from > head) return null;
@@ -186,7 +186,10 @@ export class Indexer {
         .onConflict((oc) => oc.column('name').doUpdateSet({ block: to, updated_at: new Date() }))
         .execute();
     });
-    if (ctx.ownerActivity.length) await this.onOwnerActivity(ctx.ownerActivity);
+    if (ctx.ownerActivity.length) {
+      // After the commit: a failing alert must not stall the index (the range is already written).
+      await this.onOwnerActivity(ctx.ownerActivity).catch((e) => this.log.error('indexer: owner activity alert failed', { error: (e as Error).message }));
+    }
   }
 
   /**

@@ -6,7 +6,7 @@ import {
   backoffMs, classify, nextNonce, sendAfterFor, RESEND_AFTER_MS, RESIGN_AFTER_MS, SPONSOR_DOWN_RETRY_MS, UNCERTAIN_WAIT_MS,
 } from './policy';
 
-export interface SponsorErrorLike { code: string; status?: number; txHash?: string }
+export interface SponsorErrorLike { code: string; status?: number; txHash?: string; retryable?: boolean }
 export interface OutboxDeps {
   db: CojamDb;
   now(): number;
@@ -178,7 +178,7 @@ export class Outbox {
       return 'sent';
     } catch (e) {
       const err = e as SponsorErrorLike;
-      const v = classify(err.code || 'NETWORK', err.status);
+      const v = classify(err.code || 'NETWORK', err.status, err.retryable);
       const attempts = item.attempts + 1;
       switch (v) {
         case 'done_elsewhere':

@@ -50,7 +50,7 @@ export type Vars = Record<string, string | number>;
 /** t(key, vars): vars are inserted as given (HTML allowed: escape user data with esc()). Missing keys read "[key]". */
 export function t(key: string, vars?: Vars): string {
   // i18next leaves unknown {x} placeholders untouched, as the design's t() does
-  return i18next.t(key, vars as never) as string;
+  return i18next.t(key, vars as never) as unknown as string;
 }
 export function useLang(): { lang: Lang; t: typeof t } {
   const { i18n } = useTranslation();

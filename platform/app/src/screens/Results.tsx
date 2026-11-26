@@ -75,7 +75,7 @@ export default function Results() {
     const label = ago === 0 ? t('common.today') : ago === 1 ? t('common.yesterday') : F.weekday(g.date);
     const n: Record<string, number> = { hit: 0, miss: 0, wait: 0, off: 0 }; g.rows.forEach((r) => n[MARK[r.outcome]]++);
     const shown = g.rows.filter((r) => filter === 'all' || (r.outcome === 'wait' ? 'wait' : 'set') === filter).length;
-    const pending = g.rows.filter((r) => r.outcome === 'pend').length;
+    const pending = g.pendingPoints;
     return '<section class="sec rs-day" data-group' + (shown ? '' : ' hidden') + '><div class="rs-dayh"><div class="rs-dayh-t"><h2>' + label + '</h2><span class="rmarks" role="img" aria-label="' + esc(t('r.marks.sr', { h: n.hit, m: n.miss, w: n.wait })) + '">' + g.rows.map((r) => mark(MARK[r.outcome])).join('') + '</span></div>' +
       '<p class="rs-dayh-sub">' + (g.completed ? t('r.g.done') : t('r.g.part', { k: g.answered })) + (pending ? (L === 'ja' ? '、' : ', ') + t('r.g.pending', { q: pending }) : '') + '</p><p class="rs-count">+' + F.pts(g.points) + '</p></div>' +
       (g.inviteBonus ? '<a class="rs-inv" href="/invite"><b>' + t('r.inv') + '</b><small>' + t('r.inv.sub', { r: 10 }) + '</small><span class="rs-inv-p">+' + F.pts(g.inviteBonus.points) + '</span>' + icon('chev', 16) + '</a>' : '') +

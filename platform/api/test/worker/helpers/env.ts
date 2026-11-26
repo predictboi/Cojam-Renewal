@@ -23,6 +23,7 @@ import {
   type Address,
 } from 'viem';
 import { privateKeyToAccount, type PrivateKeyAccount } from 'viem/accounts';
+import '../../../src/db/index.ts'; // int8 -> number parser
 import { migrate } from '../../../src/db/migrate.ts';
 import { chainFor } from '../../../src/worker/chain.ts';
 import type { WDb, WorkerDatabase } from '../../../src/worker/db.ts';
@@ -77,7 +78,7 @@ export interface Deployed {
 
 export async function deploy(url: string): Promise<Deployed> {
   const chain = chainFor(31337, [url]);
-  const client = createPublicClient({ chain, transport: http(url), pollingInterval: 50 }) as PublicClient;
+  const client = createPublicClient({ chain, transport: http(url), pollingInterval: 50, cacheTime: 0 }) as PublicClient;
   const owner = privateKeyToAccount(HH_KEYS[0]);
   const operator = privateKeyToAccount(HH_KEYS[1]);
   const ownerWallet = createWalletClient({ chain, transport: http(url), account: owner });
@@ -134,6 +135,7 @@ export async function createWorkerDb(): Promise<TestDb> {
   const u = new URL(adminUrl);
   u.pathname = `/${name}`;
   const pool = new pg.Pool({ connectionString: u.toString(), max: 5 });
+  pool.on('error', () => undefined); // DROP DATABASE ... WITH (FORCE) ends idle clients
   await migrate(pool);
   const db = new Kysely<WorkerDatabase>({ dialect: new PostgresDialect({ pool }) });
   return {

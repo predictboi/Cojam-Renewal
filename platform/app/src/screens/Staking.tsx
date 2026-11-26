@@ -131,8 +131,8 @@ export default function Staking() {
           </div>
           <p className="stk-lock" id="rules" dangerouslySetInnerHTML={{ __html: icon('lock', 18) + '<span>' + t('s.rules', { date: unlock }) + '</span>' }} />
         </section>
-        <Html as="div" style={{ display: 'contents' }} html={help(t('s.help.q'), '<p>' + t('s.help.a') + '</p><div class="scrollx"><table class="ratetable"><tr><th>' + t('s.th.lock') + '</th><th>' + t('s.th.1') + '</th><th>' + t('s.th.2') + '</th><th>' + t('s.th.3') + '</th></tr>' +
-          PERIODS.map((d) => '<tr><td>' + t('s.days', { d }) + '</td>' + rates[String(d)].map((x) => '<td>' + x + '%</td>').join('') + '</tr>').join('') + '</table></div>')} />
+        <Html as="details" className="help" html={help(t('s.help.q'), '<p>' + t('s.help.a') + '</p><div class="scrollx"><table class="ratetable"><tr><th>' + t('s.th.lock') + '</th><th>' + t('s.th.1') + '</th><th>' + t('s.th.2') + '</th><th>' + t('s.th.3') + '</th></tr>' +
+          PERIODS.map((d) => '<tr><td>' + t('s.days', { d }) + '</td>' + rates[String(d)].map((x) => '<td>' + x + '%</td>').join('') + '</tr>').join('') + '</table></div>').replace(/^<details class="help">|<\/details>$/g, '')} />
       </div>
     </Shell>
   );

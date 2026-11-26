@@ -101,7 +101,8 @@ export function imageUrls(m: Pick<Market, "image_url" | "image_key">, base: stri
 }
 
 export function marketTexts(m: Pick<Market, "content">): MarketTexts {
-  return m.content as unknown as MarketTexts;
+  const c = m.content as unknown as MarketTexts;
+  return { en: c.en, ko: c.ko, ja: c.ja };
 }
 
 export function asChoice(n: number | null | undefined): Choice | null {

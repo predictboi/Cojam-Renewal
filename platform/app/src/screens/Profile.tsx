@@ -145,11 +145,11 @@ export default function Profile() {
   const a = d?.wallet || w.data?.address || '';
   const nm = current || (a ? F.short(a) : '');
   const rank = d?.stats.weekRank ?? null;
-  const ident = '<section class="sec pid" aria-label="' + esc(t('p.title')) + '"><p class="pid-name" id="pid-name" translate="no">' + esc(nm) + '</p><div class="stats">' +
+  const ident = '<p class="pid-name" id="pid-name" translate="no">' + esc(nm) + '</p><div class="stats">' +
     '<div class="stat"><b>' + (rank && !held ? rank : '&ndash;') + '</b><span>' + (rank ? t('p.rank') : t('p.norank')) + '</span></div>' +
     '<div class="stat"><b>' + F.pts(d?.stats.weekPoints || 0) + '</b><span>' + t('r.week') + '</span></div>' +
     '<div class="stat"><b>' + F.pts(w.data?.points ?? d?.stats.points ?? 0) + '</b><span>' + t('p.pts') + '</span></div></div>' +
-    '<a class="inv-row" id="to-invite" href="/invite"><span class="inv-row-t"><b>' + t('inv.entry') + '</b><small>' + t('inv.entry.sub', { r: inv.data ? inv.data.referralBps / 100 : 10 }) + '</small></span><span class="inv-row-go"><span class="sr-only">' + t('inv.entry.n', { n: inv.data?.stats.joined ?? 0 }) + '</span><span aria-hidden="true">' + (inv.data?.stats.joined ?? 0) + '</span>' + icon('chev', 16) + '</span></a></section>';
+    '<a class="inv-row" id="to-invite" href="/invite"><span class="inv-row-t"><b>' + t('inv.entry') + '</b><small>' + t('inv.entry.sub', { r: inv.data ? inv.data.referralBps / 100 : 10 }) + '</small></span><span class="inv-row-go"><span class="sr-only">' + t('inv.entry.n', { n: inv.data?.stats.joined ?? 0 }) + '</span><span aria-hidden="true">' + (inv.data?.stats.joined ?? 0) + '</span>' + icon('chev', 16) + '</span></a>';
   const hLeft = Math.ceil(24 - (Date.now() - signedUp) / 3600000);
   const codeRow = codeState === 'linked'
     ? '<div class="prow" id="code-row">' + icon('check', 20) + '<p class="grow"><b>' + t('p.code.by', { name: '<span translate="no">' + esc(inviter || '') + '</span>' }) + '</b><br><span class="tiny muted">' + t('p.code.fixed') + '</span></p></div>'
@@ -173,7 +173,7 @@ export default function Profile() {
   return (
     <Shell me back="/wallet" title={t('p.title')}>
       <div style={{ display: 'contents' }} onClick={onClick}>
-        <Html as="div" style={{ display: 'contents' }} html={ident} />
+        <Html as="section" className="sec pid" aria-label={t('p.title')} html={ident} />
         <Html as="section" className="sec" html={account} />
         <section className="sec">
           <div className="field">

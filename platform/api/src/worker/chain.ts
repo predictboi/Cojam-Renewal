@@ -23,6 +23,7 @@ export function createChainClient(chainId: number, rpcUrls: string[]): PublicCli
     chain: chainFor(chainId, rpcUrls),
     transport: transports.length === 1 ? transports[0] : fallback(transports, { rank: false }),
     pollingInterval: 1_000,
+    cacheTime: 0,
   }) as PublicClient;
 }
 

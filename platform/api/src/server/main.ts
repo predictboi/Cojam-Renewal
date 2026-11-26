@@ -4,6 +4,7 @@ import { loadConfig, kaiaToWei } from "../config/index.ts";
 import { createDb, createPool } from "../db/index.ts";
 import { migrate } from "../db/migrate.ts";
 import { createChainClients, createChainReader } from "../chain/index.ts";
+import { createDevStubChain } from "../chain/devStub.ts";
 import { createDevVerifier, createPrivyVerifier } from "../auth/privy.ts";
 import { createFeePayerService } from "../feeDelegation/service.ts";
 import { buildApp } from "./app.ts";
@@ -34,13 +35,17 @@ if (env.ADMIN_OWNER_EMAIL) {
 }
 
 const clients = createChainClients(config);
-const chain = createChainReader(clients);
+const stub = env.DEV_CHAIN === "stub" && !config.isProduction ? createDevStubChain(db, () => deps.feePayer?.address) : null;
+const chain = stub ? stub.chain : createChainReader(clients);
+const rpc = stub ? stub.rpc : clients.rpc;
+// Dev stub only: a well known throwaway key (Hardhat account #1) when no fee payer key is set.
+const feePayerKey = env.APP_FEE_PAYER_PRIVATE_KEY ?? (stub ? "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d" : undefined);
 
 const deps: Deps = {
     config,
     db,
     chain,
-    rpc: clients.rpc,
+    rpc,
     userAuth: env.PRIVY_APP_ID ? createPrivyVerifier({ appId: env.PRIVY_APP_ID, appSecret: env.PRIVY_APP_SECRET, verificationKey: env.PRIVY_VERIFICATION_KEY }) : null,
     adminAuth: env.PRIVY_ADMIN_APP_ID
       ? createPrivyVerifier({ appId: env.PRIVY_ADMIN_APP_ID, appSecret: env.PRIVY_ADMIN_APP_SECRET, verificationKey: env.PRIVY_ADMIN_VERIFICATION_KEY })
@@ -54,13 +59,13 @@ const app = await buildApp(deps, { logger: { level: env.LOG_LEVEL } });
 
 // The fee payer is built after the app so it can use the app's logger; routes read deps.feePayer per request.
 const { predict, staking, ct } = config.addresses;
-if (env.APP_FEE_PAYER_PRIVATE_KEY && predict && staking && ct) {
+if (feePayerKey && predict && staking && ct) {
   const fp = createFeePayerService({
     db,
     chain,
-    rpc: clients.rpc,
+    rpc,
     policy: { chainId: config.chainId, predict, staking, ct, maxGasPriceWei: BigInt(Math.round(env.MAX_GAS_PRICE_GKEI * 1e9)) },
-    privateKey: env.APP_FEE_PAYER_PRIVATE_KEY as `0x${string}`,
+    privateKey: feePayerKey as `0x${string}`,
     limits: {
       predictPerDay: env.SPONSOR_PREDICT_PER_DAY,
       setPlayKeyPerDay: env.SPONSOR_SETPLAYKEY_PER_DAY,
@@ -81,7 +86,7 @@ if (env.APP_FEE_PAYER_PRIVATE_KEY && predict && staking && ct) {
 }
 
 await app.listen({ port: env.PORT, host: env.HOST });
-app.log.info({ network: config.network, chainId: config.chainId, devBypass: config.devBypass }, "cojam-app-api listening");
+app.log.info({ network: config.network, chainId: config.chainId, devBypass: config.devBypass, devChain: env.DEV_CHAIN }, "cojam-app-api listening");
 
 const stop = async () => {
   await app.close();

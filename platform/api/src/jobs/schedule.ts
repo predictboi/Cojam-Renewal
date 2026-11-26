@@ -27,6 +27,12 @@ export const CRON_JOBS: CronJob[] = [
     what: 'createDay for tomorrow from 12:00, every 15 min until mined; reserve fill at 22:00; alert from 18:00',
     run: (ctx) => publishDay(ctx, dayIdOf(ctx.now()) + 1),
   },
+  {
+    name: 'publish-late',
+    cron: '*/15 * * * *',
+    what: 'Safety net: createDay for today if it is still missing (accepted until 1 hour before the day ends)',
+    run: (ctx) => publishDay(ctx, dayIdOf(ctx.now())),
+  },
   { name: 'resolution', cron: '*/5 * * * *', what: 'Resolution sweep: markets past resolvesAt without an outcome', run: resolutionSweep },
   { name: 'settle', cron: '*/10 * * * *', what: 'settleMany for players with ready, unsettled slots', run: settleSweep },
   { name: 'expiry', cron: '*/10 * * * *', what: 'voidExpired for markets past dayEnd + 48 h', run: expirySweep },

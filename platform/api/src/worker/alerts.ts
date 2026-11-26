@@ -80,7 +80,7 @@ export class Alerts {
     if (existing) return existing.id;
     const row = await this.db
       .insertInto('worker_alerts')
-      .values({ key, severity, title, body: body ?? null, details: details === undefined ? null : JSON.stringify(details) })
+      .values({ key, severity, title, body: body ?? null, details: details === undefined ? null : JSON.stringify(details, (_k, v) => (typeof v === 'bigint' ? v.toString() : v)) })
       .onConflict((oc) => oc.column('key').where('resolved_at', 'is', null).doUpdateSet({ count: sql`worker_alerts.count + 1`, last_seen_at: new Date() }))
       .returning('id')
       .executeTakeFirstOrThrow();

@@ -124,7 +124,7 @@ export default function HomeList() {
     const s = rows.find((r) => r.m.n === n); if (!s || !today.data || !hasOutbox()) return;
     await outbox().commit({ marketId: s.m.marketId, dayId: today.data.dayId, slot: s.m.slot, choice: dir === 'l' ? 1 : 2, closesAt: s.m.closesAt, player: player || '0x0' });
     kick();
-    try { navigator.vibrate?.(10); } catch { /* */ }
+    try { (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive && navigator.vibrate?.(10); } catch { /* */ }
     live(t('h.live.picked', { choice: s.q[dir], k: 5 - count - 1 }));
     focusNext.current = true; setCurrent(null);
   };
