@@ -34,4 +34,4 @@ Founder decisions for the operating platform (recorded 2026-11-26). The developm
 | Design bar | The PWA must read as a high grade production app: an independent review, then a polish pass on the findings, before build |
 | Undo | After a swipe the next card shows at once. For 3 seconds the player can press Undo: the previous card comes back to the front and is picked again. Without Undo the transaction is sent after 3 seconds. Undo acts on the most recent pick only |
 | Ranking ties | Confirmed: no split prizes; with the same points, whoever reached the total first ranks higher, and the ranking screen says so |
-| Answer colours | The two answers of a prediction have their own colours everywhere (button, drag stamp): left (no, down, under) coral `#FF6B57`, right (yes, up, over) lime, ink text on both |
+| Answer colours | The two answers of a prediction have their own colours everywhere (button, drag stamp, pick line): left (no, down, under) coral, right (yes, up, over) sky blue, equal in visual weight, ink text on both. Lime is not used for an answer, so neither answer looks recommended (changed from coral and lime on 2026-11-27) |
