@@ -1,19 +1,19 @@
 # Cojam Daily Prediction: technical development plan
 
-Status: draft for founder review, 2026-11-26. Scope is `docs/platform/PLAN-SOURCE.md` as amended by `docs/platform/DECISIONS.md`; where they differ, `DECISIONS.md` wins, and where this plan and either of them differ, they win. Screen ids match the parallel screen specification. Every number marked "estimate" must be replaced by a measurement on Kairos before mainnet.
+Status: draft 2, 2026-11-26. Folds in `docs/platform/REVIEW.md` (sections A and B) and every row of `docs/platform/DECISIONS.md`: Privy email login only, the play key, per market settle with a 48 hour resolution rule, the accepted review defaults, the master wallet as owner, Render and Cloudflare, and phases instead of dates. Scope is `docs/platform/PLAN-SOURCE.md` as amended by `docs/platform/DECISIONS.md`; where they differ, `DECISIONS.md` wins, and where this plan and either of them differ, they win. Screen ids, state names and copy match `docs/platform/SCREEN-SPEC.md`. Every number marked "estimate" must be replaced by a measurement on Kairos before mainnet.
 
 Contents
 
 1. Research findings and the recommended architecture
 2. Architecture overview, repository layout, tech stack
 3. Contract design
-4. Background sending of one transaction per swipe
+4. Background sending of one transaction per swipe (play key)
 5. Anti abuse
 6. Server and jobs
 7. Data model
 8. Security, self audit, tests
 9. Environments and deploy
-10. Milestones
+10. Phases and acceptance criteria
 11. Open questions for the founder
 12. Sources
 
@@ -39,7 +39,7 @@ What Privy documents.
 | Can policies restrict raw signing | The policy method list covers `eth_sendTransaction`, `eth_signTransaction`, `eth_signTypedData_v4`, `personal_sign`, `eth_sign7702Authorization` and others; `secp256k1_sign` is not in it, and unnamed methods default to deny [6] | A server signer cannot be limited to our contracts when it signs raw hashes |
 | Signature format returned | Not documented (65 bytes expected; `v` may be 27/28 or 0/1) | Spike |
 
-Conclusion for A. Documentation supports the path "PWA computes the Kaia SigHash, the Privy embedded wallet signs it with `secp256k1_sign`, the PWA attaches the signature and posts the 0x31 transaction to our fee payer". Nothing in Privy's or Kaia's docs rules it out. Five things are not documented and must be proven by the spike (section 10, phase 0): that `secp256k1_sign` runs with no modal inside an installed PWA on iOS and Android; the returned signature format and the `v` conversion; that a Kaia node accepts the result; the latency per signature; and whether Privy bills each raw signature against the "signatures" allowance (section 1.3).
+Conclusion for A. Documentation supports the path "PWA computes the Kaia SigHash, the Privy embedded wallet signs it with `secp256k1_sign`, the PWA attaches the signature and posts the 0x31 transaction to our fee payer". Nothing in Privy's or Kaia's docs rules it out. With the play key (section 4) the Privy wallet signs only the play key authorisation and value actions (convert, approve, stake, claim, withdraw principal), not swipes, so this path no longer sits inside every swipe. Five things are not documented and must be proven by the spike (section 10, phase 0): that `secp256k1_sign` runs with no modal inside an installed PWA on iOS and Android; the returned signature format and the `v` conversion; that a Kaia node accepts the result; the latency per signature; and whether Privy bills each raw signature against the "signatures" allowance (section 1.3).
 
 Session signers are not recommended for this. They would let our server sign for users with no client involved, but because raw hash signing is outside Privy's policy methods [6], a server signer able to sign Kaia hashes could sign any transaction for every user wallet. A leak of our authorization key would then reach every user's CT. Client side signing keeps that power in each user's own session.
 
@@ -51,6 +51,8 @@ If the spike fails, users sign an EIP-712 message with `signTypedData` (a standa
 | --- | --- | --- |
 | ERC-2771 trusted forwarder | A forwarder contract verifies a generic signed request and calls the target, which reads the real sender from the end of the calldata (`_msgSender()`) | Rejected: every function of every contract trusts the forwarder, so a forwarder bug or a signed request of the wrong shape reaches everything, including staking principal. More audit surface than we need |
 | Function specific signed intents | Each sponsored function gets a `...BySig` twin that verifies an EIP-712 struct for exactly that action (`Predict(user, marketId, choice, deadline)`, `Convert(user, points, nonce, deadline)`, `Stake(user, amount, lockIndex, nonce, deadline)`, ...) and then runs the same internal function | Recommended fallback: narrow, each struct names the action, `deadline` bounds replay, OpenZeppelin `EIP712` and `Nonces` cover the mechanics |
+
+Swipes are not affected by the fallback: the play key is a local key, not a Privy wallet, so it sends its own 0x31 `predict` transactions through the fee payer in both paths (section 4). In path B only the play key authorisation (`setPlayKeyBySig(player, key, expiresAt, nonce, deadline, sig)`) and the value actions go through the relayer.
 
 Idempotency in the intent path. `Predict` needs no nonce: the contract accepts one prediction per user per market, so a replayed signature is a no op that reverts in simulation and is never broadcast. Conversion, stake, claim and principal withdrawal take a per user nonce (`Nonces`) plus a deadline.
 
@@ -65,7 +67,7 @@ The staking deposit problem. CT has no `permit`, so the staking contract can onl
 | "Convert and stake" (points convert straight into a position) | Cojam | Covers converted CT only, not deposits from outside |
 | Credit CT sent to the staking contract without approve | | Rejected: an unlabelled transfer cannot be attributed safely |
 
-### 1.3 C. Privy pricing, providers, PWA behaviour
+### 1.3 C. Privy pricing, email login, PWA behaviour
 
 Pricing (privy.io/pricing, read 2026-11-26) [8]:
 
@@ -77,34 +79,45 @@ Pricing (privy.io/pricing, read 2026-11-26) [8]:
 | Above 10,000 MAU or 50,000 signatures | $2,000 base plus $0.05 per MAU above 10,000 and $0.01 per signature above 50,000 | | |
 | Enterprise | custom, "from $0.001 per signature" | | |
 
-An MAU is an authenticated user with a session in the last 30 days [8]. This matters more than gas: one transaction per swipe means at least 5 signatures per player per day. At 3,000 daily players that is about 477,000 signatures a month (section 4.8), which on the Developer plans costs about $4,270 a month in signature overage on top of the plan; Enterprise pricing at $0.001 would be about $480. Whether a client side `secp256k1_sign` from the user's own session counts as a billed "signature" is not stated anywhere: it is a spike item and a founder question.
+An MAU is an authenticated user with a session in the last 30 days [8]. Without a play key, one transaction per swipe would mean at least 5 Privy signatures per player per day: about 477,000 a month at 3,000 daily players, about $4,270 a month in overage on the Developer plans (REVIEW A1). With the play key (section 4) Privy signs only the play key authorisation (about once per device per 30 days) and value actions, about 36,000 signatures a month at 3,000 daily players, inside the 50,000 included (section 4.8). Whether a client side `secp256k1_sign` counts as a billed "signature" is still asked of Privy in writing (spike item 6), but it no longer decides the budget.
 
-Login providers [9][10]: Privy natively supports Google, Apple, Twitter (X), Discord, GitHub, LinkedIn, Spotify, TikTok, Instagram, Telegram and LINE. **LINE is native. Kakao is not**; it can be added as a custom OAuth 2.0 provider in the Dashboard (authorization and token URLs, PKCE optional, callback `https://auth.privy.io/api/v1/oauth/callback`, fields cannot be edited after saving) [10]. The custom OAuth page states no plan restriction, but that is unconfirmed. Privy also warns that Google OAuth may fail inside in app browsers [9].
+Login: **Privy email login only, with a one time code** (DECISIONS, 2026-11-26). No social providers, no external wallet connect [9]. The user enters an email address, Privy sends a 6 digit code, the user types it in the app, and Privy creates the Kaia embedded wallet on the first login. Code length, code lifetime and Privy's send and attempt limits are recorded by the spike (item 5) and copied into the A1 copy; the PWA adds its own 60 second resend timer. Email login has no OAuth redirect, so the iOS standalone redirect risk of social login is gone.
 
 PWA behaviour.
 
 * Install: Android Chrome fires `beforeinstallprompt`; iOS Safari has no install API, so the Gate shows "Share, then Add to Home Screen" steps. Standalone detection: `matchMedia('(display-mode: standalone)').matches || navigator.standalone === true`.
-* iOS storage: a home screen web app has its own storage, separate from Safari, so a user logs in again inside the installed app; WebKit counts days of use separately for home screen apps, so the 7 day script storage cap does not wipe an app that is used [17].
-* OAuth inside an iOS standalone app is the main risk: other auth SDKs have hit the pattern where the provider page opens in Safari and never returns to the standalone app [16]. Privy has no PWA specific page; a published Next.js PWA template uses Privy embedded wallets with a service worker and an install prompt, without iOS notes [15]. The spike must log in with every chosen provider from an installed PWA on a real iPhone.
+* iOS storage: a home screen web app has its own storage, separate from Safari, so a user logs in again inside the installed app; WebKit counts days of use separately for home screen apps, so the 7 day script storage cap does not wipe an app that is used [17]. The play key lives in this storage (IndexedDB), so an eviction costs one new login and one "Setting up your game" step, nothing else.
+* Email code inside an iOS standalone app: the user leaves the app to read the code in Mail and comes back. iOS may reload a backgrounded standalone app, so the PWA keeps the pending email and the "code sent" time in `[local]` and returns to the code step on reload; whether Privy's pending code survives a reload is a spike item. The code field uses `autocomplete="one-time-code"` so iOS and Android can offer the code from Mail or Messages. A published Next.js PWA template uses Privy embedded wallets with a service worker and an install prompt [15].
 
 ### 1.4 Recommended architecture (decision for phase 0)
 
-**Path A, Kaia native fee delegation signed by the Privy embedded wallet.** Every sponsored action (predict, settle, convert, approve for staking, stake, claim interest, withdraw principal) is a 0x31 transaction whose sender is the user's Privy wallet. The PWA computes the SigHash with `@kaiachain/js-ext-core`, signs it with `secp256k1_sign` with no modal, and posts it to a new fee payer endpoint that reuses the decoding, policy and co-signing code of `server/`. Contracts read `msg.sender` only.
+**Path A, Kaia native fee delegation, with two signers.**
 
-Reasons: one code path for every action including the approve that staking needs; `msg.sender` is the user, so contracts stay small and close to the house style of `CojamMigration.sol`; the fee payer code is already built, unit tested and format checked against mainnet (`docs/FEE-DELEGATION.md` section 1); the fee payer has no nonce of its own in 0x31, so it scales horizontally; and server compromise cannot move user funds, because the server only co-signs what users signed.
+* **The play key signs swipes.** On the first login on a device the PWA creates a local key, and the Privy wallet authorises it once on chain with `setPlayKey(address key, uint64 expiresAt)` (REVIEW A1, adopted in DECISIONS). From then on every swipe is a 0x31 `predict` whose sender is the play key itself, signed on the device in a few milliseconds: no Privy signature, no prompt, no network round trip to sign. The contract resolves the player from the key. The play key can only predict and revoke itself; it holds no funds and cannot convert, stake, claim or withdraw.
+* **The Privy wallet signs value actions.** The play key authorisation, convert, approve for staking, stake, claim interest and withdraw principal are 0x31 transactions whose sender is the user's Privy wallet. The PWA computes the SigHash with `@kaiachain/js-ext-core`, signs it with `secp256k1_sign` with no modal, and posts it to the fee payer.
 
-**Fallback, path B, chosen only if the spike fails:** function specific EIP-712 intents sent by a relayer pool, plus a one time KAIA drip for the staking approve. Contracts are written with every user action as an internal function `_predict(user, ...)` behind a thin `predict(...)` wrapper, so the `...BySig` wrappers can be added in a day; they are not shipped if path A passes, to keep the audit surface small.
+Both kinds go to one fee payer endpoint that reuses the decoding, policy and co-signing code of `server/`. Contracts read `msg.sender` only, plus the play key lookup in `predict`.
+
+Why the play key account sends its own 0x31 transactions rather than signing EIP-712 messages for a relayer (the alternative considered): the fee payer stays the only server signer and has no nonce of its own in 0x31, so it scales horizontally and never serialises users; each play key has its own nonce sequence on its own device, so the outbox keeps the simple nonce rules of section 4.3; a 0x31 sender needs no KAIA, so the key never holds funds; and no relayer pool, nonce queue or `predictBySig` function is needed.
+
+Reasons for path A overall: one code path for every action including the approve that staking needs; `msg.sender` is the user (or the user's key), so contracts stay small and close to the house style of `CojamMigration.sol`; the fee payer code is already built, unit tested and format checked against mainnet (`docs/FEE-DELEGATION.md` section 1); and server compromise cannot move user funds, because the server only co-signs what users or their keys signed.
+
+**Fallback, path B, chosen only if the spike shows that `secp256k1_sign` cannot be used:** the play key path stays as it is (it does not depend on Privy's raw signing). The play key authorisation and the value actions become function specific EIP-712 intents (`setPlayKeyBySig`, `convertBySig`, `stakeBySig`, ...) sent by a relayer pool, plus a one time KAIA drip for the staking approve (section 1.2). Contracts are written with every user action as an internal function `_convert(user, ...)` behind a thin wrapper, so the `...BySig` wrappers can be added in a day; they are not shipped if path A passes, to keep the audit surface small.
+
+The direct path (a `predict` signed by the Privy wallet itself) stays valid in the contract and in the fee payer policy, so play continues if a device cannot keep a play key; it is not the normal path.
 
 What the first spike must prove (phase 0 gate, all on Kairos 1001):
 
 1. `secp256k1_sign` over a Kaia SigHash returns a signature with no modal, in an installed PWA on iOS 17+ Safari and Android Chrome, right after login and after a cold restart a day later.
 2. `v` conversion (27/28 or 0/1 to `chainId x 2 + 35 + yParity`) and that `server/src/policy.js` decoding recovers the Privy wallet address.
-3. A 0x31 `predict` signed this way is co-signed and mined on Kairos; repeat with 5 transactions signed back to back with nonces n to n+4 without waiting for receipts, all mined in order.
-4. Median and p95 latency of one `secp256k1_sign` call (target under 1.5 s p95; it runs in the background, so it only bounds how fast the outbox drains).
-5. Login from the installed iOS PWA with Google, Apple, LINE and Kakao (custom OAuth) returns to the app.
-6. Privy's answer in writing: is a raw signature from the user's client billed as a "signature"?
+3. A 0x31 `setPlayKey` signed by the Privy wallet is co-signed and mined; then the new play key (an account that never held KAIA) sends 5 `predict` transactions signed back to back with nonces 0 to 4 without waiting for receipts, all co-signed and mined in order, and the contract credits the Privy wallet, not the key.
+4. Latency: local play key signing (target under 50 ms p95) and one `secp256k1_sign` call (target under 1.5 s p95; it runs only at setup and for value actions).
+5. Email login from the installed PWA on a real iPhone and an Android phone: code delivered, `one-time-code` autofill, leaving for Mail and coming back (including an app reload) still reaches a logged in session; record the code length, code lifetime and Privy's resend and attempt limits.
+6. Privy's answer in writing: is a raw signature from the user's client billed as a "signature", and does an email login count as one?
 7. A normal user paid transfer through Privy `eth_sendTransaction` on Kaia (for W4).
 8. Kaiascan shows the point balance of the soulbound ledger (section 3.2) as a token holding.
+9. The play key survives in IndexedDB across a cold restart and 7 days without use on iOS and Android; record the result of `navigator.storage.persist()`.
+10. The direct path: a `predict` signed by the Privy wallet is co-signed and mined (fallback when a device cannot keep a play key).
 
 ---
 
@@ -116,14 +129,16 @@ What the first spike must prove (phase 0 gate, all on Kairos 1001):
                      Installed PWA  app.cojam.app  (browser tab: G1 Gate only)
    +----------------------------------------------------------------------------------+
    | React UI (H1..P1)  |  Outbox (IndexedDB, one sender loop)  |  Privy SDK           |
-   |  optimistic state  |  build 0x31 -> SigHash -> sign -> POST |  login, embedded     |
-   +---------+-------------------------+---------------------------+  wallet (TEE)     |
-             | reads (REST)            | POST /v1/tx/sponsor       |  secp256k1_sign   |
-             v                         v                           +-------------------+
-   +------------------------------------------------------------+
-   | cojam-app-api  (Fastify, app-api.cojam.app)                |       Admin  admin.cojam.app
-   |  Privy JWT auth | read API | fee payer (co-sign 0x31)      |<----- (Privy login, allowlist,
-   |  policy + limits + simulate | admin API | audit log        |        owner txs via Kaia Wallet)
+   |  optimistic state  |  play key signs 0x31 predict -> POST  |  email code login,   |
+   |                    |  play key in IndexedDB                |  embedded wallet     |
+   +---------+-------------------------+---------------------------+  (TEE)            |
+             | reads (REST)            | POST /v1/tx/sponsor       |  secp256k1_sign:  |
+             v                         v                           |  setPlayKey and   |
+   +------------------------------------------------------------+  |  value actions    |
+   | cojam-app-api  (Fastify, app-api.cojam.app)                |  +-------------------+
+   |  Privy JWT auth | read API | fee payer (co-sign 0x31)      |       Admin  admin.cojam.app
+   |  policy + limits + simulate | admin API | audit log        |<----- (Privy email login, allow list,
+   |                                                            |        owner txs signed by the master wallet)
    +-------------+-----------------------------+----------------+
                  | Postgres (Render)           | kaia_sendRawTransaction
    +-------------v-----------------+           v
@@ -136,10 +151,10 @@ What the first spike must prove (phase 0 gate, all on Kairos 1001):
    |   draft, validate, translate, |    |  CT 0x91cb3B346C80ff965a9667ba6228834dbedD71a2
    |   resolve with evidence       |    +--------------------------------------------+
    |  monitors and alerts          |           ^ plain CT transfers (reserves)
-   +-------------------------------+     Reward wallet (founder) funds both contracts
+   +-------------------------------+     Master wallet (owner and treasury) funds both contracts
 ```
 
-Keys: the user's key lives in Privy; the app fee payer key lives in `cojam-app-api`; the operator key lives in `cojam-app-worker`; the owner key stays with the founder (never on a server).
+Keys: the user's wallet key lives in Privy; the play key lives on the user's device (IndexedDB) and can only predict; the app fee payer key lives in `cojam-app-api`; the operator key lives in `cojam-app-worker`; the owner key is the master wallet `0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb`, an EOA in the founder's wallet apps only (never on a server).
 
 ### 2.2 Repository layout
 
@@ -175,7 +190,8 @@ Sharing: `contracts/` keeps one compiler setup, `verify-sourcify.js` and the `op
 | Routing | React Router (hash free, `history`) | Few screens, deep links for `?lang=` and results |
 | Server and chain state | TanStack Query | Caching, retries and background refetch of reads; optimistic updates for swipes |
 | Local state and outbox | Zustand + Dexie (IndexedDB) | Small store; the outbox must survive an app kill |
-| Chain code in the browser | viem (reads, ABI encoding) + `@kaiachain/js-ext-core` (0x31 build, SigRLP, sender RLP) | viem is what Privy uses; js-ext-core is Kaia's own encoder, already proven in `server/` |
+| Chain code in the browser | viem (reads, ABI encoding, play key generation and local secp256k1 signing) + `@kaiachain/js-ext-core` (0x31 build, SigRLP, sender RLP) | viem is what Privy uses; js-ext-core is Kaia's own encoder, already proven in `server/` |
+| Login | Privy email login with a one time code (`@privy-io/react-auth`, headless email flow so A1 uses our own screens) | DECISIONS: email only; our own screens keep the copy and the three languages under our control |
 | Gestures and motion | `@use-gesture/react` + Motion (Framer Motion) | Swipe with velocity thresholds and spring return; respects reduced motion |
 | i18n | i18next + react-i18next, ICU plural format, JSON per locale (en source, ko, ja) | Mature, lazy loading per locale, matches the site's EN / KO / JA toggle |
 | Fonts | Pretendard Variable (en, ko), Pretendard JP Variable (`:lang(ja)`), tabular numerals | Brand table in `CLAUDE.md` |
@@ -197,9 +213,10 @@ Both contracts follow `CojamMigration.sol` house style: NatSpec on every item, c
 
 ### 3.1 Time rules (shared by contracts, server and PWA)
 
-* `dayId = block.timestamp / 1 days` (UTC days). Day `d` opens at `d x 86400` = 00:00 UTC = **09:00 KST / JST**, and lasts 24 hours. This is "a new set every 24 hours" with one global boundary for Korea and Japan (confirm in section 11).
+* `dayId = block.timestamp / 1 days` (UTC days). Day `d` opens at `d x 86400` = 00:00 UTC = **09:00 KST / JST**, and lasts 24 hours. This is "a new set every 24 hours" with one global boundary for Korea and Japan (decided, REVIEW B3).
 * `weekId = (dayId + 3) / 7`: weeks run Monday 00:00 UTC to the next Monday 00:00 UTC (Monday 09:00 KST). 1970-01-01 was a Thursday, so `+3` aligns Mondays.
-* A day's 5 markets accept predictions from the day's open until each market's own `closesAt`, never later than the day's end. A market not answered by then is gone; the countdown on H3 counts to the next day's open.
+* A day's 5 markets accept predictions from the day's open until each market's own `closesAt`, never later than the day's end. A market not answered by then is gone and cannot be caught up later; the countdown on H3 counts to the next day's open.
+* **48 hour rule.** Every market of a day is resolved (answer set or voided) within 48 hours of the day's end (REVIEW A2). The contract enforces it: `createDay` requires `resolvesAt <= dayEnd + 24 h`, `setOutcome` is refused after `dayEnd + RESOLVE_DEADLINE` (48 h, a constant), and after that anyone may call `voidExpired(marketId)`. So every hit point of day `d` is final by `dayEnd + 48 h + settleDelay` at the latest.
 
 ### 3.2 Points model: decision
 
@@ -218,8 +235,8 @@ Same contract rather than a separate token contract: the ledger and the rules th
 
 * `marketId = dayId x 5 + slot`, `slot` 0 to 4. Ids are predictable, so the PWA and the server need no lookup.
 * One `Market` struct per id (two storage slots). Question text, choice labels and translations are off chain; the contract stores `contentHash = keccak256(canonical JSON of the English question, choices, close and resolve times, sources)` for audit.
-* One `UserDay` struct per user per day, packed in one storage slot: how many of the 5 are answered, the 5 choices in 2 bits each (0 none, 1 choice A, 2 choice B), the completed flag, the settled flag and the hit count.
-* Each swipe is one transaction (`predict(marketId, choice)`), as the founder decided; section 4 covers background sending, nonces and retries.
+* One `UserDay` struct per user per day, packed in one storage slot: how many of the 5 are answered, the 5 choices in 2 bits each (0 none, 1 choice A, 2 choice B), the completed flag, a 5 bit mask of the slots already settled (per market settle, REVIEW A2) and the hit count.
+* Each swipe is one transaction (`predict(marketId, choice)`), as the founder decided, sent by the device's play key on behalf of its player; section 4 covers the play key, background sending, nonces and retries.
 
 ### 3.4 `CojamPredict`
 
@@ -240,17 +257,23 @@ struct UserDay {                                  // one slot
     uint8  answered;                              // 0..5
     uint16 choices;                               // 2 bits per slot
     bool   completed;                             // completion points credited
-    bool   settled;                               // hit points credited
+    uint8  settledMask;                           // bit i set: slot i settled (hit credited or not)
     uint8  hits;
 }
 struct Player { bool registered; bool frozen; uint64 registeredAt; }
+struct PlayKey { address key; uint64 expiresAt; }  // one slot; key 0 = none
 
 mapping(uint256 marketId => Market) public markets;
 mapping(address user => mapping(uint32 dayId => UserDay)) public userDays;
 mapping(address user => Player) public players;
+mapping(address player => PlayKey) public playKeyOf;               // one active key per player
+mapping(address key => address player) public playerOfKey;         // a key serves one player only
+uint64 public constant MAX_PLAY_KEY_TTL = 90 days;
+uint64 public constant RESOLVE_DEADLINE = 48 hours;                // after the day's end (3.1)
 mapping(address user => uint256) public balanceOf;                 // points
 uint256 public totalSupply;                                        // points
-mapping(uint32 weekId => mapping(address user => uint256)) public weekPoints;
+struct WeekScore { uint192 points; uint64 lastCreditAt; }           // one slot; lastCreditAt breaks ties
+mapping(uint32 weekId => mapping(address user => WeekScore)) public weekPoints;
 mapping(uint32 weekId => bool) public airdropDone;
 mapping(uint256 marketId => mapping(address user => bool)) public compensated;
 mapping(address user => mapping(uint32 dayId => uint256)) public convertedCtOnDay;
@@ -262,25 +285,30 @@ Functions and access control:
 
 | Function | Caller | Rules | Effect |
 | --- | --- | --- | --- |
-| `registerPlayer(address wallet)`, `registerPlayers(address[] wallets)` | OPERATOR | not zero, not registered | Marks a Privy wallet as a player (the anti abuse gate, section 5) |
-| `setFrozen(address wallet, bool frozen, bytes32 reason)` | OPERATOR (freeze), OWNER (unfreeze) | registered | A frozen player cannot predict, convert, or receive an airdrop; balances are never reduced |
-| `createDay(uint32 dayId, MarketInput[5] calldata m)` | OPERATOR | `block.timestamp < dayId x 1 days` (before the open), day not created, each `closesAt` in `(open, open + 1 days]`, `resolvesAt >= closesAt + minResolveGap`, `contentHash != 0` | Writes 5 markets, emits `DayCreated` |
+| `registerPlayer(address wallet)`, `registerPlayers(address[] wallets)` | OPERATOR | not zero, not registered, not bound as anyone's play key | Marks a Privy wallet as a player (the anti abuse gate, section 5) |
+| `setFrozen(address wallet, bool frozen, bytes32 reason)` | OPERATOR (freeze), OWNER (unfreeze) | registered | A frozen player cannot predict (directly or through a play key), convert, set a play key, or receive an airdrop; balances are never reduced |
+| `setPlayKey(address key, uint64 expiresAt)` | the player's own wallet (`msg.sender` is the player; sponsored) | registered, not frozen, `key != 0`, `key != msg.sender`, key is not a registered player, `playerOfKey[key]` is 0 or the caller, `now < expiresAt <= now + MAX_PLAY_KEY_TTL` | Unbinds the player's previous key (one active key per player), binds the new one, emits `PlayKeySet` |
+| `revokePlayKey()` | the player, or the player's current play key | a key is set | Unbinds it, emits `PlayKeyRevoked`. Lets logout revoke without a Privy signature |
+| `createDay(uint32 dayId, MarketInput[5] calldata m)` | OPERATOR | `block.timestamp < dayId x 1 days` (before the open), day not created, each `closesAt` in `(open, open + 1 days]`, `resolvesAt >= closesAt + minResolveGap`, `resolvesAt <= open + 1 days + 24 hours` (48 hour rule, 3.1), `contentHash != 0` | Writes 5 markets, emits `DayCreated` |
 | `voidMarket(uint256 marketId, bytes32 reason)` | OPERATOR | not settled for anyone yet (before `resolvedAt + settleDelay`, or not resolved) | `outcome = 3` |
-| `predict(uint256 marketId, uint8 choice)` | registered, not frozen, not paused | day created, `now >= open`, `now < closesAt`, `choice` 1 or 2, slot not answered | Stores the choice; on the fifth answer credits `completionPoints` (section 4.5) |
-| `setOutcome(uint256 marketId, uint8 outcome)` | OPERATOR (AI keeper) | `now >= resolvesAt`, outcome 1, 2 or 3, not set | Stores outcome and `resolvedAt`, O(1) |
+| `voidExpired(uint256 marketId)` | anyone | no outcome set and `now >= dayEnd + RESOLVE_DEADLINE` | `outcome = 3`; guarantees the 48 hour rule even if the operator is down |
+| `predict(uint256 marketId, uint8 choice)` | the player's wallet, or the player's play key while `now < expiresAt` (the contract resolves the player: `player = playerOfKey[msg.sender]` when that binding is current, else `msg.sender`); player registered, not frozen, not paused | day created, `now >= open`, `now < closesAt`, `choice` 1 or 2, slot not answered | Stores the choice for the player; on the fifth answer credits `completionPoints` to the player (section 4.5) |
+| `setOutcome(uint256 marketId, uint8 outcome)` | OPERATOR (AI keeper) | `now >= resolvesAt`, `now < dayEnd + RESOLVE_DEADLINE`, outcome 1, 2 or 3, not set | Stores outcome and `resolvedAt`, O(1) |
 | `correctOutcome(uint256 marketId, uint8 outcome)` | OPERATOR | set, `now < resolvedAt + settleDelay` | Replaces the outcome inside the window; no one has been credited yet |
-| `settle(address user, uint32 dayId)` | anyone | all 5 markets resolved, `now >= max(resolvedAt) + settleDelay`, user day not settled | Counts hits, credits `hits x hitPoints` to balance and to `weekPoints[weekOf(dayId)]` |
-| `settleMany(address[] users, uint32 dayId)` | anyone (keeper) | at most 200 users; users not ready are skipped | Batch of `settle` |
+| `settle(address user, uint32 dayId)` | anyone | at least one answered or voided slot of the day whose market has `now >= resolvedAt + settleDelay` and is not yet in `settledMask` (per market settle, REVIEW A2) | For each such slot: adds it to `settledMask`, counts a hit if the user's choice equals the outcome, credits `hitPoints` per hit to balance and to `weekPoints[weekOf(dayId)]`. May run several times for one day as markets resolve at different times |
+| `settleMany(address[] users, uint32 dayId)` | anyone (keeper) | at most 200 users; users with nothing ready are skipped | Batch of `settle` |
 | `setCorrectedOutcome(uint256 marketId, uint8 outcome)` | OWNER | after the window, outcome differs from the stored one | Records the true answer for compensation; does not change past credits |
-| `compensate(uint256 marketId, address[] users)` | OPERATOR | `correctedOutcome != 0`; for each user: day settled, user's choice equals `correctedOutcome`, not yet compensated; at most 500 users | Credits `hitPoints` per user (verifiable on chain: no free minting) |
+| `compensate(uint256 marketId, address[] users)` | OPERATOR | `correctedOutcome != 0`; for each user: that market's slot is in `settledMask`, user's choice equals `correctedOutcome`, not yet compensated; at most 500 users | Credits `hitPoints` per user (verifiable on chain: no free minting) |
 | `convert(uint256 points)` | registered, not frozen, not paused | `points >= minConvertPoints`, `points % pointsPerCT == 0`, account older than `minAccountAge`, per user and global daily CT caps, reserve holds the CT | Burns points, sends `points x 1e18 / pointsPerCT` CT to the caller |
-| `airdrop(uint32 weekId, address[] winners, uint256 pool)` | OPERATOR | week ended `airdropDelay` ago, not done, `winners.length <= 10`, distinct, registered, not frozen, strictly ordered by `weekPoints` (ties: see section 11), `pool <= maxWeeklyPool`, reserve holds `pool` | Pays `pool x splitBps[i] / 10000` to each winner, marks done |
+| `airdrop(uint32 weekId, address[] winners, uint256 pool)` | OPERATOR | week ended `airdropDelay` ago, not done, `winners.length <= 10`, distinct, registered, not frozen, strictly ordered by `weekPoints` points (higher first), then by `lastCreditAt` (earlier first), then by address (lower first), `pool <= maxWeeklyPool`, reserve holds `pool` | Pays `pool x splitBps[i] / 10000` to each winner, marks done |
 | `proposeParams(Params)`, `applyParams()`, `cancelParams()` | OWNER | bounds (3.6); apply after `PARAM_DELAY` (48 h) | Economic changes are announced on chain 48 h ahead |
 | `pause()` / `unpause()` | PAUSER / OWNER | | Pauses `predict` and `convert` only; settle, compensate, views keep working |
 | `withdrawReserve(uint256 amount, address to)` | OWNER | `to == params.treasury` | Takes unused CT back |
 | `transfer`, `transferFrom`, `approve` | anyone | always revert `PointsNonTransferable()` | |
 
-Views: `name`, `symbol`, `decimals`, `allowance` (0), `dayOf(address, uint32) -> (answered, choices[5], completed, settled, hits)`, `pendingHits(address, uint32)`, `previewConvert(points)`, `reserve()`, `currentDay()`, `weekOf(dayId)`.
+A play key is never a registered player, so every function other than `predict` and `revokePlayKey` treats it as an unknown address: `convert`, `setPlayKey` and the staking functions revert for it. That is what limits a play key to predicting.
+
+Views: `name`, `symbol`, `decimals`, `allowance` (0), `dayOf(address, uint32) -> (answered, choices[5], completed, settledMask, hits)`, `pendingHits(address, uint32) -> (points, landsAt)`, `playerOf(address key) -> (player, expiresAt, valid)`, `previewConvert(points)`, `reserve()`, `currentDay()`, `weekOf(dayId)`.
 
 Events:
 
@@ -288,12 +316,14 @@ Events:
 event Transfer(address indexed from, address indexed to, uint256 value);          // point mint and burn only
 event PlayerRegistered(address indexed wallet);
 event PlayerFrozen(address indexed wallet, bool frozen, bytes32 reason);
+event PlayKeySet(address indexed player, address indexed key, uint64 expiresAt);
+event PlayKeyRevoked(address indexed player, address indexed key);
 event DayCreated(uint32 indexed dayId, bytes32[5] contentHashes);
-event Predicted(address indexed user, uint256 indexed marketId, uint32 indexed dayId, uint8 choice, uint8 answered);
+event Predicted(address indexed user, uint256 indexed marketId, uint32 indexed dayId, uint8 choice, uint8 answered); // user is the player, never the key
 event PointsCredited(address indexed user, uint32 indexed weekId, uint32 dayId, uint8 kind, uint256 amount); // 1 completion, 2 hits, 3 compensation
 event OutcomeSet(uint256 indexed marketId, uint8 outcome, bool correction);
-event MarketVoided(uint256 indexed marketId, bytes32 reason);
-event Settled(address indexed user, uint32 indexed dayId, uint8 hits, uint256 points);
+event MarketVoided(uint256 indexed marketId, bytes32 reason);                  // reason "expired" for voidExpired
+event Settled(address indexed user, uint32 indexed dayId, uint8 slotsMask, uint8 hits, uint256 points);
 event CorrectedOutcomeSet(uint256 indexed marketId, uint8 outcome);
 event Compensated(uint256 indexed marketId, address indexed user, uint256 points);
 event Converted(address indexed user, uint256 points, uint256 ctAmount);
@@ -302,26 +332,31 @@ event ParamsProposed(Params p, uint64 applyAfter);  event ParamsApplied(Params p
 event ReserveWithdrawn(address indexed to, uint256 amount);
 ```
 
-Errors: `NotRegistered`, `Frozen`, `DayNotOpen`, `MarketClosed`, `AlreadyPredicted(uint256 marketId)`, `BadChoice`, `DayExists`, `BadTimes`, `NotResolvable`, `AlreadyResolved`, `CorrectionWindowOver`, `NotReadyToSettle`, `AlreadySettled`, `NothingToCompensate`, `BelowMinimum`, `NotMultipleOfRate`, `AccountTooNew`, `DailyCapReached(uint256 left)`, `InsufficientReserve(uint256 available, uint256 needed)`, `WeekNotOver`, `AirdropDone`, `BadWinners`, `PoolTooLarge`, `ParamOutOfBounds(uint8 which)`, `TooEarly`, `PointsNonTransferable`, `ZeroAddress`, `BatchTooLarge`.
+Errors: `NotRegistered`, `Frozen`, `DayNotOpen`, `MarketClosed`, `AlreadyPredicted(uint256 marketId)`, `BadChoice`, `DayExists`, `BadTimes`, `NotResolvable`, `AlreadyResolved`, `CorrectionWindowOver`, `NotReadyToSettle`, `AlreadySettled`, `NothingToCompensate`, `BelowMinimum`, `NotMultipleOfRate`, `AccountTooNew`, `DailyCapReached(uint256 left)`, `InsufficientReserve(uint256 available, uint256 needed)`, `WeekNotOver`, `AirdropDone`, `BadWinners`, `PoolTooLarge`, `ParamOutOfBounds(uint8 which)`, `TooEarly`, `PointsNonTransferable`, `ZeroAddress`, `BatchTooLarge`, `BadPlayKey`, `PlayKeyTaken`, `BadExpiry`, `NoPlayKey`, `ResolveDeadlinePassed`, `NotExpired`.
 
 Invariants (each one a fuzz invariant in `test/platform/`):
 
 1. `totalSupply == sum(balanceOf)`.
 2. Points are created only by `predict` (completion), `settle` (hits) and `compensate`; destroyed only by `convert`. No function moves points between addresses.
 3. A user has at most one choice per market, and only while `open <= now < closesAt`.
-4. Each `(user, dayId)` receives completion points at most once and hit points at most once; each `(user, marketId)` is compensated at most once, and only if the user's choice equals `correctedOutcome`.
-5. An outcome is never set before `resolvesAt`; once `resolvedAt + settleDelay` has passed it never changes.
+4. Each `(user, dayId)` receives completion points at most once; each `(user, marketId)` is settled at most once (its bit in `settledMask`) and compensated at most once, and only if the user's choice equals `correctedOutcome`.
+5. An outcome is never set before `resolvesAt` nor after `dayEnd + RESOLVE_DEADLINE`; once `resolvedAt + settleDelay` has passed it never changes.
 6. CT out (conversions, airdrops, owner withdrawals) never exceeds CT in; `convert` and `airdrop` revert rather than overdraw.
 7. One airdrop per week, its total at most `maxWeeklyPool`.
-8. `setOutcome`, `correctOutcome`, `voidMarket` are O(1); `settleMany`, `compensate`, `registerPlayers` are bounded by their batch caps.
+8. `setOutcome`, `correctOutcome`, `voidMarket`, `voidExpired`, `setPlayKey` are O(1); `settleMany`, `compensate`, `registerPlayers` are bounded by their batch caps.
+9. A player has at most one bound play key and a key serves at most one player; a play key's call only ever changes its own player's choices; no play key call moves points or CT.
 
-Completion and hit crediting, and why this shape. The completion reward is pushed by the fifth `predict` (the user pays nothing, it is one extra storage write). Hit points are **not** pushed by the answer transaction: `setOutcome` is O(1) whatever the number of players. Hits are computed lazily per user day by `settle`, which anyone may call; our keeper calls `settleMany` once the settle delay has passed. The settle delay (default 6 hours) is the correction window: the second AI pass (section 6.4) can fix a wrong outcome before a single point is credited. After the window, a wrong answer is handled by `setCorrectedOutcome` plus `compensate`, which only pays users whose on chain choice matches the corrected outcome. Points credited on the wrong answer are not taken back (the founder's "checked afterwards and compensated").
+Completion and hit crediting, and why this shape. The completion reward is pushed by the fifth `predict` (the user pays nothing, it is one extra storage write). Hit points are **not** pushed by the answer transaction: `setOutcome` is O(1) whatever the number of players. Hits are computed lazily **per market** by `settle`, which anyone may call; our keeper calls `settleMany` for every player of a market once that market's settle delay has passed, so one slow question no longer holds back the hit points of the other four (REVIEW A2). The settle delay (default 6 hours, REVIEW B4) is the correction window: the second AI pass (section 6.4) can fix a wrong outcome before a single point is credited, and the hit shows as pending with the time it lands until then. After the window, a wrong answer is handled by `setCorrectedOutcome` plus `compensate`, which only pays users whose on chain choice matches the corrected outcome. Points credited on the wrong answer are never taken back (REVIEW B5).
 
-Conversion source. `CojamPredict` holds its own CT reserve, funded by plain transfers from the reward wallet (the same funding model as the swap). The plan's admin field "reward wallet address" becomes the funding wallet shown in AD2 and the `treasury` that `withdrawReserve` pays back to. Conversions and airdrops draw from this one reserve.
+Conversion source. `CojamPredict` holds its own CT reserve, funded by plain transfers from the master wallet (the same funding model as the swap). The plan's admin field "reward wallet address" becomes the `treasury` shown in AD2, set at deploy to the master wallet `0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb`, which is where `withdrawReserve` and `withdrawRewards` pay back to. Conversions and airdrops draw from this one reserve. How much CT to fund at launch is open (section 11).
 
-Weekly ranking: decision. **On chain per week counters plus off chain sorting and an on chain airdrop.** Every credit adds to `weekPoints[weekId][user]` (about 5,000 gas per credit after the first of the week), so anyone can check a winner's points; sorting stays off chain (the indexer), and `airdrop` verifies that the submitted winners are strictly ordered by their on chain counters. What it cannot prove is that nobody outside the list scored more; that is covered by publishing the full ranking (K1 and AD5) and the 36 hour delay. Hit points count in the week of the market's day, not the week of the settle transaction, so Sunday's markets count for the week they were played.
+Weekly ranking: decision. **On chain per week counters plus off chain sorting and an on chain airdrop.** Every credit adds to `weekPoints[weekId][user].points` and stamps `lastCreditAt` in the same slot (about 5,000 gas per credit after the first of the week), so anyone can check a winner's points; sorting stays off chain (the indexer), and `airdrop` verifies that the submitted winners are strictly ordered by their on chain counters. What it cannot prove is that nobody outside the list scored more; that is covered by publishing the full ranking (K1 and AD5) and the airdrop delay. Hit points count in the week of the market's day, not the week of the settle transaction, so Sunday's markets count for the week they were played.
 
-Weekly pool. The plan's "signed up users x 1 CT" is computed off chain by the worker (count defined in section 5) and passed as `pool`, capped on chain by `maxWeeklyPool`. Split `splitBps = [3000, 2000, 1500, 1000, 700, 500, 400, 300, 300, 300]` (sums to 10,000). With fewer than 10 eligible players the unpaid share stays in the reserve.
+Ties: decided as a strict order, so the contract can verify it and the 10 prizes never need splitting: equal points rank by who reached that total first (earlier `lastCreditAt`), then by the lower address. K1 shows distinct ranks with the note "Tied on points: whoever reached the total first ranks higher." (The spec's earlier default of splitting tied prizes is dropped because it cannot be checked on chain without an unbounded winner list.)
+
+Airdrop timing. Sunday's markets may resolve up to Wednesday 00:00 UTC (48 hour rule) and their hits land `settleDelay` later, so the week's final points are known at Wednesday 06:00 UTC. `airdropDelay` is therefore 60 hours: the airdrop runs Wednesday 12:00 UTC (21:00 KST), and the contract requires `airdropDelay >= RESOLVE_DEADLINE + settleDelay`.
+
+Weekly pool. The plan's "signed up users x 1 CT" becomes **qualified players x 1 CT** (REVIEW B7: registered, not frozen, played 3 or more days that week, account older than 7 days), computed off chain by the worker and passed as `pool`, capped on chain by `maxWeeklyPool` (10,000 CT). Split `splitBps = [3000, 2000, 1500, 1000, 700, 500, 400, 300, 300, 300]` (sums to 10,000). With fewer than 10 eligible players the unpaid share stays in the reserve.
 
 ### 3.5 `CojamStaking`
 
@@ -369,7 +404,7 @@ maxInterest   = principal x aprBps x (lockDays x 1 days) / (10_000 x YEAR)      
 
 Earned is always computed from `start`, not from the last claim, so repeated claims cannot drift by rounding. Check against the plan: 1,000 CT for 90 days at 13% gives 1000 x 0.13 x 90 / 365 = 32.05 CT ("about 32 CT").
 
-After the lock ends: accrual stops at `end`. The position stays open until the owner withdraws; there is no automatic renewal and no interest after `end` (founder question 11.8).
+After the lock ends: accrual stops at `end`. The position stays open until the owner withdraws; there is no automatic renewal and no interest after `end` (decided, REVIEW B8). Tier is set by the size of each position, a user may hold up to 20 open positions, and `maxTotalPrincipal` starts at 0 (no cap).
 
 Solvency, the contract never promises interest it does not hold:
 
@@ -387,7 +422,7 @@ Functions:
 | Function | Caller | Rules |
 | --- | --- | --- |
 | `stake(uint256 amount, uint8 lockIndex) returns (uint256 id)` | anyone, not paused | `amount >= minStake`, `lockIndex < 4`, open positions below cap, total cap, reserve check; pulls with `safeTransferFrom` and measures what arrived |
-| `claimInterest(uint256 id) returns (uint256)` | position owner | `claimable >= minClaim`, or any amount once the lock has ended |
+| `claimInterest(uint256 id) returns (uint256)` | position owner | `claimable >= minClaim` (10 CT) while locked, or any amount once the lock has ended (REVIEW B9) |
 | `withdraw(uint256 id) returns (uint256 principal, uint256 interest)` | position owner | `now >= end`, not closed; pays principal plus all remaining interest |
 | `setRates(uint32[3][4])`, `setTiers`, `setMinimums`, `setCaps` | OWNER | each rate at most 5,000 bps; `minStake` 1 to 100,000 CT; `minClaim` 0 to 1,000 CT; affect new positions only, so no delay needed |
 | `withdrawRewards(uint256 amount, address to)` | OWNER | `amount <= availableRewards()`, `to == treasury`; principal and committed interest can never be withdrawn |
@@ -397,7 +432,7 @@ Events: `Staked(user, id, amount, lockDays, aprBps, end, maxInterest)`, `Interes
 
 Invariants: `CT.balanceOf(this) >= totalPrincipal + totalCommitted` at all times; a position pays at most `principal + maxInterest`; principal can only go to its owner and only after `end`; owner functions cannot touch principal or committed interest; rate changes never change an open position.
 
-Early exit is not offered (the plan: "principal withdraws after the lock ends"); see question 11.8.
+Early exit is not offered (the plan: "principal withdraws after the lock ends"; decided, REVIEW B8). Staking functions read `msg.sender` only, so a play key can never stake, claim or withdraw.
 
 ### 3.6 Parameters and bounds (admin AD2)
 
@@ -414,9 +449,12 @@ Early exit is not offered (the plan: "principal withdraws after the lock ends");
 | `minResolveGap` | 1 h | 0 to 7 days | Predict | 48 h delay |
 | `maxWeeklyPool` | 10,000 CT | 0 to 1,000,000 | Predict | 48 h delay |
 | `splitBps[10]` | 30/20/15/10/7/5/4/3/3/3 % | sum 10,000 | Predict | 48 h delay |
-| `airdropDelay` | 36 h | 12 h to 7 days | Predict | 48 h delay |
-| `treasury` | reward wallet | not zero | both | 48 h delay |
+| `airdropDelay` | 60 h (Wednesday 12:00 UTC) | `RESOLVE_DEADLINE + settleDelay` to 7 days | Predict | 48 h delay |
+| `treasury` | master wallet `0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb` | not zero | both | 48 h delay |
+| `RESOLVE_DEADLINE`, `MAX_PLAY_KEY_TTL` | 48 h, 90 days | constants | Predict | never |
 | Rates, tiers, minimums, caps | plan values | 3.5 | Staking | new positions only, immediate |
+
+Off chain settings (server, AD2, immediate): weekly pool per qualified player (1 CT), play key lifetime requested by the PWA (30 days), sponsorship limits (4.7).
 
 ### 3.7 Roles and key custody
 
