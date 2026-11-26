@@ -32,3 +32,5 @@ Founder decisions for the operating platform (recorded 2026-11-26). The developm
 | Language behaviour | The app opens in English by default for everyone. Korean and Japanese are chosen by the user from the language control and remembered. No automatic switch by device language |
 | Question content languages | When the AI drafts a question it writes the title, the two choices and the answer rule natively in English, Korean and Japanese (written for each language, not translated word for word) and the server stores all three; the app shows the one for the chosen language. The contract hash covers all three texts |
 | Design bar | The PWA must read as a high grade production app: an independent review, then a polish pass on the findings, before build |
+| Undo | After a swipe the next card shows at once. For 3 seconds the player can press Undo: the previous card comes back to the front and is picked again. Without Undo the transaction is sent after 3 seconds. Undo acts on the most recent pick only |
+| Ranking ties | Confirmed: no split prizes; with the same points, whoever reached the total first ranks higher, and the ranking screen says so |
