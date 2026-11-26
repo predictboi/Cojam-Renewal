@@ -73,5 +73,5 @@ struct ReferralStats {
 /// @notice Ranked points of a user in a week. One storage slot.
 struct WeekScore {
     uint192 points;
-    uint64 lastCreditAt; // time of the last ranked credit: earlier ranks higher on equal points
+    uint64 lastCompletionAt; // time of the last completion credit this week (0 = none): earlier ranks higher on equal points
 }

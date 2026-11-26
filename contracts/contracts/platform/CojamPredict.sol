@@ -199,7 +199,6 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
     error LengthMismatch();
     error BadPlayKey();
     error PlayKeyTaken();
-    error AddressIsPlayKey();
     error BadExpiry();
     error NoPlayKey();
     error ResolveDeadlinePassed();
@@ -576,10 +575,10 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
         uint32 day = currentDay();
         uint256 userCap = uint256(q.maxConvertCtPerUserPerDay) * CT_UNIT;
         uint256 userUsed = convertedCtOnDay[msg.sender][day];
-        if (userUsed + ctAmount > userCap) revert DailyCapReached(userCap - userUsed);
+        if (userUsed + ctAmount > userCap) revert DailyCapReached(userCap > userUsed ? userCap - userUsed : 0);
         uint256 dayCap = uint256(q.maxConvertCtPerDay) * CT_UNIT;
         uint256 dayUsed = convertedCtTotalOnDay[day];
-        if (dayUsed + ctAmount > dayCap) revert DailyCapReached(dayCap - dayUsed);
+        if (dayUsed + ctAmount > dayCap) revert DailyCapReached(dayCap > dayUsed ? dayCap - dayUsed : 0);
         uint256 available = CT.balanceOf(address(this));
         if (available < ctAmount) revert InsufficientReserve(available, ctAmount);
 
@@ -595,7 +594,8 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
 
     /// @notice Pays the weekly airdrop of week `weekId`: `pool * splitBps[i] / 10000` to the i-th winner.
     /// Winners must be registered, unfrozen, have ranked points that week and be strictly ordered by
-    /// points (higher first), then by `lastCreditAt` (earlier first), then by address (lower first).
+    /// points (higher first), then by `lastCompletionAt` (the earlier last completion of the week first;
+    /// 0, no completion that week, counts as the latest), then by address (lower first).
     /// Once per week, `airdropDelay` after the week's end, `pool <= maxWeeklyPool`.
     function airdrop(uint32 weekId, address[] calldata winners, uint256 pool)
         external
@@ -763,7 +763,14 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
         if (wallet == address(0)) revert ZeroAddress();
         Player storage p = players[wallet];
         if (p.registered) revert AlreadyRegistered();
-        if (playerOfKey[wallet] != address(0)) revert AddressIsPlayKey();
+        // Registration wins over a play key binding: a player who bound this address as its key (by
+        // mistake or to block the registration) loses that binding.
+        address squatter = playerOfKey[wallet];
+        if (squatter != address(0)) {
+            delete playKeyOf[squatter];
+            delete playerOfKey[wallet];
+            emit PlayKeyRevoked(squatter, wallet);
+        }
         p.registered = true;
         p.registeredAt = uint64(block.timestamp);
         emit PlayerRegistered(wallet);
@@ -828,7 +835,9 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
         _mint(player, amount);
         WeekScore storage w = weekPoints[weekId][player];
         w.points += SafeCast.toUint192(amount);
-        w.lastCreditAt = uint64(block.timestamp);
+        // Ties are broken by the player's own action only: hits and compensations, whose time is chosen
+        // by whoever calls settle or compensate, never move it.
+        if (kind == KIND_COMPLETION) w.lastCompletionAt = uint64(block.timestamp);
         emit PointsCredited(player, weekId, dayId, kind, amount);
 
         Player memory p = players[player];

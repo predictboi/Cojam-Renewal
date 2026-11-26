@@ -100,7 +100,8 @@ library PredictLogic {
 
     /// @notice Checks an airdrop list and returns each winner's amount `pool * split[i] / 10000` and
     /// the total. Winners must be registered, unfrozen, hold ranked points in the week and be strictly
-    /// ordered: points (higher first), then `lastCreditAt` (earlier first), then address (lower first).
+    /// ordered: points (higher first), then `lastCompletionAt` (earlier first, 0 counts as the latest),
+    /// then address (lower first).
     /// Strict order also makes the list free of duplicates.
     function checkWinners(
         mapping(address => Player) storage players,
@@ -174,7 +175,10 @@ library PredictLogic {
         returns (bool)
     {
         if (a.points != b.points) return a.points > b.points;
-        if (a.lastCreditAt != b.lastCreditAt) return a.lastCreditAt < b.lastCreditAt;
+        // 0 (ranked points but no completion in the week, only through a late compensation) is the latest.
+        uint256 at = a.lastCompletionAt == 0 ? type(uint256).max : a.lastCompletionAt;
+        uint256 bt = b.lastCompletionAt == 0 ? type(uint256).max : b.lastCompletionAt;
+        if (at != bt) return at < bt;
         return aw < bw;
     }
 }
