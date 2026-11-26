@@ -76,7 +76,7 @@ services:
         value: "1"
       # Add https://app.cojam.app and https://admin.cojam.app once the custom domains are attached.
       - key: ALLOWED_ORIGINS
-        value: https://cojam-app.onrender.com,https://app.cojam.app,https://admin.cojam.app
+        value: https://cojam-app.onrender.com,https://cojam-admin.onrender.com,https://app.cojam.app,https://admin.cojam.app
       - key: APP_URL
         value: https://app.cojam.app
       - key: PRIVY_APP_ID
@@ -206,6 +206,54 @@ services:
         value: no-cache
     routes:
       # Client side routes: every unknown path serves the app shell.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # The admin web app (admin.cojam.app), desktop only. Static: Vite builds platform/admin into dist.
+  # Sign in uses a separate admin Privy app (email only); owner actions are signed in the browser by
+  # the owner's own wallet, never by a server.
+  - type: web
+    name: cojam-admin
+    runtime: static
+    branch: ccr-ae3111c3-lc250i
+    rootDir: platform/admin
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - platform/admin/**
+        - platform/shared/**
+        - render.platform.yaml
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: VITE_API_URL
+        value: https://cojam-app-api.onrender.com
+      # Public id of the admin Privy app (not a secret); set it when that app exists.
+      - key: VITE_PRIVY_ADMIN_APP_ID
+        sync: false
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000; includeSubDomains
+      - path: /*
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+    routes:
       - type: rewrite
         source: /*
         destination: /index.html
