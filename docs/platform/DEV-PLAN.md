@@ -79,7 +79,7 @@ Pricing (privy.io/pricing, read 2026-11-26) [8]:
 | Above 10,000 MAU or 50,000 signatures | $2,000 base plus $0.05 per MAU above 10,000 and $0.01 per signature above 50,000 | | |
 | Enterprise | custom, "from $0.001 per signature" | | |
 
-An MAU is an authenticated user with a session in the last 30 days [8]. Without a play key, one transaction per swipe would mean at least 5 Privy signatures per player per day: about 477,000 a month at 3,000 daily players, about $4,270 a month in overage on the Developer plans (REVIEW A1). With the play key (section 4) Privy signs only the play key authorisation (about once per device per 30 days) and value actions, about 36,000 signatures a month at 3,000 daily players, inside the 50,000 included (section 4.8). Whether a client side `secp256k1_sign` counts as a billed "signature" is still asked of Privy in writing (spike item 6), but it no longer decides the budget.
+An MAU is an authenticated user with a session in the last 30 days [8]. Without a play key, one transaction per swipe would mean at least 5 Privy signatures per player per day: about 477,000 a month at 3,000 daily players, about $4,270 a month in overage on the Developer plans (REVIEW A1). With the play key (section 4) Privy signs only the play key authorisation (about once per device per 30 days) and value actions, about 36,000 signatures a month at 3,000 daily players, inside the 50,000 included (section 4.9). Whether a client side `secp256k1_sign` counts as a billed "signature" is still asked of Privy in writing (spike item 6), but it no longer decides the budget.
 
 Login: **Privy email login only, with a one time code** (DECISIONS, 2026-11-26). No social providers, no external wallet connect [9]. The user enters an email address, Privy sends a 6 digit code, the user types it in the app, and Privy creates the Kaia embedded wallet on the first login. Code length, code lifetime and Privy's send and attempt limits are recorded by the spike (item 5) and copied into the A1 copy; the PWA adds its own 60 second resend timer. Email login has no OAuth redirect, so the iOS standalone redirect risk of social login is gone.
 
@@ -98,7 +98,7 @@ PWA behaviour.
 
 Both kinds go to one fee payer endpoint that reuses the decoding, policy and co-signing code of `server/`. Contracts read `msg.sender` only, plus the play key lookup in `predict`.
 
-Why the play key account sends its own 0x31 transactions rather than signing EIP-712 messages for a relayer (the alternative considered): the fee payer stays the only server signer and has no nonce of its own in 0x31, so it scales horizontally and never serialises users; each play key has its own nonce sequence on its own device, so the outbox keeps the simple nonce rules of section 4.3; a 0x31 sender needs no KAIA, so the key never holds funds; and no relayer pool, nonce queue or `predictBySig` function is needed.
+Why the play key account sends its own 0x31 transactions rather than signing EIP-712 messages for a relayer (the alternative considered): the fee payer stays the only server signer and has no nonce of its own in 0x31, so it scales horizontally and never serialises users; each play key has its own nonce sequence on its own device, so the outbox keeps the simple nonce rules of section 4.4; a 0x31 sender needs no KAIA, so the key never holds funds; and no relayer pool, nonce queue or `predictBySig` function is needed.
 
 Reasons for path A overall: one code path for every action including the approve that staking needs; `msg.sender` is the user (or the user's key), so contracts stay small and close to the house style of `CojamMigration.sol`; the fee payer code is already built, unit tested and format checked against mainnet (`docs/FEE-DELEGATION.md` section 1); and server compromise cannot move user funds, because the server only co-signs what users or their keys signed.
 
@@ -292,7 +292,7 @@ Functions and access control:
 | `createDay(uint32 dayId, MarketInput[5] calldata m)` | OPERATOR | `block.timestamp < dayId x 1 days` (before the open), day not created, each `closesAt` in `(open, open + 1 days]`, `resolvesAt >= closesAt + minResolveGap`, `resolvesAt <= open + 1 days + 24 hours` (48 hour rule, 3.1), `contentHash != 0` | Writes 5 markets, emits `DayCreated` |
 | `voidMarket(uint256 marketId, bytes32 reason)` | OPERATOR | not settled for anyone yet (before `resolvedAt + settleDelay`, or not resolved) | `outcome = 3` |
 | `voidExpired(uint256 marketId)` | anyone | no outcome set and `now >= dayEnd + RESOLVE_DEADLINE` | `outcome = 3`; guarantees the 48 hour rule even if the operator is down |
-| `predict(uint256 marketId, uint8 choice)` | the player's wallet, or the player's play key while `now < expiresAt` (the contract resolves the player: `player = playerOfKey[msg.sender]` when that binding is current, else `msg.sender`); player registered, not frozen, not paused | day created, `now >= open`, `now < closesAt`, `choice` 1 or 2, slot not answered | Stores the choice for the player; on the fifth answer credits `completionPoints` to the player (section 4.5) |
+| `predict(uint256 marketId, uint8 choice)` | the player's wallet, or the player's play key while `now < expiresAt` (the contract resolves the player: `player = playerOfKey[msg.sender]` when that binding is current, else `msg.sender`); player registered, not frozen, not paused | day created, `now >= open`, `now < closesAt`, `choice` 1 or 2, slot not answered | Stores the choice for the player; on the fifth answer credits `completionPoints` to the player (section 4.6) |
 | `setOutcome(uint256 marketId, uint8 outcome)` | OPERATOR (AI keeper) | `now >= resolvesAt`, `now < dayEnd + RESOLVE_DEADLINE`, outcome 1, 2 or 3, not set | Stores outcome and `resolvedAt`, O(1) |
 | `correctOutcome(uint256 marketId, uint8 outcome)` | OPERATOR | set, `now < resolvedAt + settleDelay` | Replaces the outcome inside the window; no one has been credited yet |
 | `settle(address user, uint32 dayId)` | anyone | at least one answered or voided slot of the day whose market has `now >= resolvedAt + settleDelay` and is not yet in `settledMask` (per market settle, REVIEW A2) | For each such slot: adds it to `settledMask`, counts a hit if the user's choice equals the outcome, credits `hitPoints` per hit to balance and to `weekPoints[weekOf(dayId)]`. May run several times for one day as markets resolve at different times |
@@ -454,16 +454,17 @@ Early exit is not offered (the plan: "principal withdraws after the lock ends"; 
 | `RESOLVE_DEADLINE`, `MAX_PLAY_KEY_TTL` | 48 h, 90 days | constants | Predict | never |
 | Rates, tiers, minimums, caps | plan values | 3.5 | Staking | new positions only, immediate |
 
-Off chain settings (server, AD2, immediate): weekly pool per qualified player (1 CT), play key lifetime requested by the PWA (30 days), sponsorship limits (4.7).
+Off chain settings (server, AD2, immediate): weekly pool per qualified player (1 CT), play key lifetime requested by the PWA (30 days), sponsorship limits (4.8).
 
 ### 3.7 Roles and key custody
 
 | Role | Holder | Can | Cannot |
 | --- | --- | --- | --- |
-| OWNER (`DEFAULT_ADMIN_ROLE` via OZ `AccessControlDefaultAdminRules`, 3 day transfer delay) | Founder: a Kaia Safe multisig recommended, or a hardware backed EOA (question 11.10) | Propose and apply params, grant and revoke roles, unpause, unfreeze, set corrected outcomes, withdraw unused reserves to the treasury | Move points, touch staking principal or committed interest |
-| OPERATOR | Hot key in `cojam-app-worker` (Render secret), KAIA only | Register players, freeze, create days, set and correct outcomes inside the window, void, compensate (on chain checked), airdrop (on chain checked) | Change params, withdraw CT, unpause |
-| PAUSER | Operator key and a founder phone wallet | Pause new predictions, conversions and stakes | Unpause |
+| OWNER (`DEFAULT_ADMIN_ROLE` via OZ `AccessControlDefaultAdminRules`, 3 day transfer delay) of both contracts | The master wallet `0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb`, an EOA whose key lives only in the founder's wallet apps (DECISIONS). Owner transactions are built by the admin and signed and paid by the master wallet itself, never by a server | Propose and apply params, grant and revoke roles, unpause, unfreeze, set corrected outcomes, withdraw unused reserves to the treasury | Move points, touch staking principal or committed interest |
+| OPERATOR | Hot key in `cojam-app-worker` (Render secret), KAIA only | Register players, freeze, create days, set and correct outcomes inside the window, void, compensate (on chain checked), airdrop (on chain checked) | Change params, withdraw CT, unpause, set or use play keys |
+| PAUSER | Operator key and the master wallet | Pause new predictions, conversions and stakes | Unpause |
 | Fee payer (not a contract role) | Hot key in `cojam-app-api`, KAIA only, separate from the swap fee payer `0xB3CB...52da` so budgets and alerts stay separate | Co-sign allow listed 0x31 transactions | Anything on chain by itself |
+| Play key (not a contract role) | One per player, on the player's device (IndexedDB), bound by `setPlayKey`, expires after at most 90 days (30 requested) | `predict` for its player, `revokePlayKey` | Convert, stake, claim, withdraw, hold funds, set another key |
 
 A leaked operator key can at worst: register sybils, freeze players (reversible by the owner), set wrong outcomes (bounded to points; fixable inside the window, compensable after), and run one airdrop per ended week to a ranked list it cannot forge. It cannot take CT except through those capped, rule checked paths. Rotation: owner revokes and grants the role.
 
@@ -473,79 +474,104 @@ Both contracts are immutable, like the token and the swap. Reasons: users stake 
 
 ---
 
-## 4. Background sending of one transaction per swipe
+## 4. Background sending of one transaction per swipe (play key)
 
-The founder decided: one transaction per swipe, sent in the background, the next card shown at once, quiet retries. This section is the design for it.
+The founder decided: one transaction per swipe, sent in the background, the next card shown at once, quiet retries; and the play key (REVIEW A1, DECISIONS). This section is the design for both.
 
-### 4.1 Signing without a prompt per swipe
+### 4.1 Two signers, no prompt per swipe
 
-* Privy Dashboard: "Add confirmation modals" off, and `showWalletUIs: false` passed per call as well [7]. The PWA shows its own small "saved" tick per card instead.
-* Signing uses `secp256k1_sign` over the 0x31 SigHash (path A). No session signers (section 1.1).
-* Because a modal free wallet signs whatever our code asks, the PWA's code integrity is the security boundary: strict CSP (`script-src 'self'` plus Privy's documented origins), no third party scripts or analytics tags, subresource integrity on anything external, and the outbox only builds calls from a fixed table (`predict`, `settle`, `convert`, `approve(staking)`, `stake`, `claimInterest`, `withdraw`).
+| Signer | Signs | How | Nonce sequence |
+| --- | --- | --- | --- |
+| Play key (local, one per device) | `predict`, `revokePlayKey` | viem local account over the 0x31 SigHash, in a few milliseconds, no network round trip | The play key account's own nonces, used only by this device's outbox |
+| Privy embedded wallet | `setPlayKey`, `convert`, CT `approve(staking)`, `stake`, `claimInterest`, `withdraw` (all sponsored), and the user paid CT `transfer` (W4) | `secp256k1_sign` over the 0x31 SigHash (path A), modal off; W4 through `eth_sendTransaction` | The Privy wallet's nonces, used only by the transaction sheet, one action at a time |
 
-### 4.2 The outbox
+Because the two signers are different accounts, predicts and value actions never compete for nonces: a stake started while three picks are in flight needs no coordination with the outbox.
+
+* Privy Dashboard: "Add confirmation modals" off, and `showWalletUIs: false` passed per call as well [7]. The PWA shows its own small "saved" tick per card and its own transaction sheet (SCREEN-SPEC 2.2).
+* No session signers (section 1.1).
+* Because a modal free wallet and a local key sign whatever our code asks, the PWA's code integrity is the security boundary: strict CSP (`script-src 'self'` plus Privy's documented origins), no third party scripts or analytics tags, subresource integrity on anything external, and each signer builds calls only from a fixed table: the play key `predict` and `revokePlayKey`, the Privy wallet the value actions above. The contract enforces the play key's limit anyway (3.4).
+
+### 4.2 Play key lifecycle
+
+| Step | What happens | Screen state (SCREEN-SPEC) |
+| --- | --- | --- |
+| Create | After login, if IndexedDB holds no valid key for this player, the PWA generates a key with viem `generatePrivateKey()`. The raw key is stored in IndexedDB encrypted with a non extractable AES-GCM `CryptoKey` (WebCrypto cannot hold secp256k1 keys natively; the wrap stops a plain storage dump from revealing it, not a script running in our origin). The PWA calls `navigator.storage.persist()` | A1 setup panel "Setting up your game" |
+| Authorise | The Privy wallet signs a sponsored 0x31 `setPlayKey(key, now + 30 days)`; the setup panel waits for it to be mined (about 1 to 3 s) | Same panel, step "Getting this device ready to play" |
+| Use | Every swipe is a 0x31 `predict` sent by the key (4.3) | H1, H2 |
+| Renew | On app open, when fewer than 7 days remain, the PWA silently sends a new `setPlayKey` for the same key with a new expiry (one Privy signature, no UI unless it fails) | None; failure shows the H1 banner "We could not reconnect this device." |
+| Expire | After `expiresAt` the fee payer refuses the key's predicts with `PLAY_KEY_INVALID`; queued picks wait, the PWA re-authorises, then the picks are signed again | H1 / H2 banner "Reconnecting this device" |
+| Storage lost | iOS eviction, reinstall, cleared site data or a new phone: no key on the device. After login the PWA creates a new key; `setPlayKey` replaces the old binding | A1 setup panel "Setting up your game" |
+| Replaced by another device | One active key per player, so setting up a second device unbinds the first. The first device learns it from `PLAY_KEY_INVALID` plus `playKeyOf(player) != myKey` and does not re-authorise on its own (that would ping pong between devices) | H1 / H2 panel "Cojam is now set up on another device" with "Play on this device" |
+| Revoke | Log out: the key sends `revokePlayKey()` itself (sponsored, no Privy signature), then the PWA deletes it. A frozen player's key stops working because `predict` checks the player | P1 log out |
+
+A pick made while the key is being re-authorised is not lost: it stays `queued` in the outbox and is signed by the new key once `setPlayKey` is mined, as long as its market is still open.
+
+### 4.3 The outbox
 
 Each swipe writes an item to IndexedDB before anything else, then the UI moves on:
 
 ```
-OutboxItem { id: "predict:<marketId>", kind, args, createdAt, state, nonce?, raw?, txHash?, attempts, lastError?, notAfter }
+OutboxItem { id: "predict:<marketId>", kind, args, createdAt, state, signer, nonce?, raw?, txHash?, attempts, lastError?, notAfter }
 state: queued -> signing -> sent -> mined | done_elsewhere | failed
+signer: the play key address that signed `raw` (a raw signed by a replaced key is discarded and the item re-queued)
 notAfter: market.closesAt (a prediction that cannot reach the chain before close is dropped as "not counted")
 ```
 
 The item id is the idempotency key: a second swipe on the same market cannot create a second item.
 
-One sender loop per wallet, guarded by `navigator.locks.request("cojam-outbox:" + address)` so two windows of the app never sign competing nonces. The loop:
+One sender loop per play key, guarded by `navigator.locks.request("cojam-outbox:" + playKeyAddress)` so two windows of the app never sign competing nonces. The loop:
 
-1. Take the oldest `queued` item.
-2. `nonce = max(eth_getTransactionCount(address, "pending"), lastNonceUsed + 1)`.
-3. Build the 0x31 tx (gas limit from a fixed table per action plus 30%, gas price from `eth_gasPrice` cached 60 s), compute SigHash, `secp256k1_sign`, attach, encode `senderTxHashRLP`.
+1. Take the oldest `queued` item. If the play key is missing, expired or replaced, stop and run the lifecycle step of 4.2.
+2. `nonce = max(eth_getTransactionCount(playKey, "pending"), lastNonceUsed + 1)` (0 for a fresh key).
+3. Build the 0x31 tx (gas limit from a fixed table per action plus 30%, gas price from `eth_gasPrice` cached 60 s), compute SigHash, sign locally with the play key, attach, encode `senderTxHashRLP`.
 4. `POST /v1/tx/sponsor`. The server answers after `kaia_sendRawTransaction` accepted it (not after mining), typically in under 500 ms.
 5. On `200 {txHash}`: mark `sent`, remember `lastNonceUsed = nonce`, and go straight to the next item. A separate poller marks `mined` from receipts.
 
-So five quick swipes become five transactions with nonces n to n+4, sent one after another as fast as signing allows, each accepted by the node before the next is signed. Kaia's 1 second blocks mine them in nonce order.
+So five quick swipes become five transactions with nonces n to n+4, sent one after another as fast as the server accepts them (local signing adds almost nothing), each accepted by the node before the next is signed. Kaia's 1 second blocks mine them in nonce order.
 
-### 4.3 Nonce rules for several transactions in flight
+Value actions do not use the outbox: the transaction sheet sends one Privy signed 0x31 at a time, reads the Privy wallet's `pending` nonce for each, and waits for the receipt before the next step (approve, then stake).
+
+### 4.4 Nonce rules for several transactions in flight
 
 | Situation | What it means for the nonce | Action |
 | --- | --- | --- |
 | Server refused before broadcast (policy, limits, simulation) | Nonce not used | Next item reuses the same nonce |
 | `ALREADY_DONE` (simulation reverted `AlreadyPredicted` with the same choice on chain) | Nonce not used | Item becomes `done_elsewhere`, UI unchanged |
+| `PLAY_KEY_INVALID` (key expired, revoked or replaced) | Nonce not used | Pause the loop, run 4.2 (renew, or show "set up on another device"); after a new key is bound, items are signed by it starting at its nonce 0 |
 | `BROADCAST_UNCERTAIN` with a hash | Nonce maybe used | Pause the loop; poll the hash and the account nonce for up to 60 s; continue when one of them moves; else resend the identical raw transaction (same hash, so it cannot double) |
 | Sent but not mined after 30 s and the account nonce has not passed it | Dropped from the pool | Resend the identical raw transaction once; if still missing at 90 s, re-sign the same payload with the same nonce |
-| Mined but reverted | Nonce used | Read the chain: if the choice is stored, done; if `MarketClosed`, failed ("not counted"); else re-queue with a new nonce |
+| Mined but reverted | Nonce used | Read the chain: if the choice is stored, done; if `MarketClosed`, failed ("not counted"); if the key was replaced in the meantime, re-queue for the new key; else re-queue with a new nonce |
 | Later item mined while an earlier one is stuck | Cannot happen: Kaia executes nonces in order, which is why the loop never signs n+1 before n was accepted | |
 
-The account nonce is the user's only (the fee payer's nonce is not involved in 0x31), so the fee payer never serializes users against each other.
+The account nonce is the play key's only (the fee payer's nonce is not involved in 0x31, and the Privy wallet's nonces belong to value actions), so the fee payer never serialises users against each other and a key's nonce is touched by one device only.
 
-Path B variant: with a relayer the user signs typed data with no nonce for `predict`, and the relayer owns nonces: a pool of 4 relayer EOAs, each with a single writer queue in the worker (a Postgres row lock per key), next nonce kept in memory and re-read from `pending` on any error, stuck transactions replaced after 60 s.
-
-### 4.4 Idempotency
+### 4.5 Idempotency
 
 * PWA: one outbox item per market id.
-* Server: the sponsor endpoint caches the `senderTxHash` for 10 minutes (same as `server/`), so the same signed transaction posted twice is broadcast once; it also keeps `(wallet, marketId)` in `sponsored_txs` and refuses a second sponsored `predict` for the same market with `ALREADY_DONE` when the first was mined.
+* Server: the sponsor endpoint caches the `senderTxHash` for 10 minutes (same as `server/`), so the same signed transaction posted twice is broadcast once; it also keeps `(player, marketId)` in `sponsored_txs` and refuses a second sponsored `predict` for the same market with `ALREADY_DONE` when the first was mined, whichever key or wallet sent it.
 * Contract: `AlreadyPredicted(marketId)` makes a duplicate revert; the fee payer simulates every call first, so a duplicate is refused before any gas is spent and never reverts on chain at our cost.
 
-### 4.5 Completion reward on the fifth answer
+### 4.6 Completion reward on the fifth answer
 
-`predict` increments `UserDay.answered`; the call that makes it 5 sets `completed` and credits `completionPoints` in the same transaction (`PointsCredited(kind 1)`, `DayCompleted` derived by the indexer). Because the five transactions execute in nonce order, the fifth to execute is always the one that credits, whatever the order of the swipes. H3 shows "+100P paid" optimistically as soon as the fifth item is `sent`, and confirms when it is `mined`; if a predict finally fails, H3 rolls back to the remaining card with a short explanation.
+`predict` increments `UserDay.answered`; the call that makes it 5 sets `completed` and credits `completionPoints` to the player in the same transaction (`PointsCredited(kind 1)`, `DayCompleted` derived by the indexer). Because the five transactions execute in nonce order, the fifth to execute is always the one that credits, whatever the order of the swipes. H3 never shows the reward before it is confirmed (REVIEW A4): while any of the five is not yet mined it shows "Saving your picks. 100P follows."; when the fifth is mined and `PointsCredited(kind 1)` is seen it shows "+100P paid", counts the point pill up and fires the toast "+100P paid.". With 1 second blocks the wait is brief. If a predict finally fails, H3 returns to H1 or H2 with that card back as unanswered.
 
-### 4.6 Retry policy
+### 4.7 Retry policy (one policy for the plan and the spec, REVIEW A3)
 
-* Automatic, silent: backoff 1, 2, 4, 8, 16, 30 s with jitter, at most 8 attempts or until `notAfter`, whichever comes first. Network loss pauses the loop (`online` event resumes it).
-* Surfaced only when it keeps failing: after 3 failed attempts or 60 s, a small banner on H1/H2 "1 choice is still being saved" with "Retry now"; after `notAfter`, the card shows "not counted: time ran out".
+* Automatic, silent: backoff 1, 2, 4, 8, 16, 30 s with jitter, then every 30 s, **until the market closes** (`notAfter`). Before each retry the client reads the chain; a pick already stored counts as confirmed and is not resent. Network loss pauses the loop (`online` event resumes it).
+* Surfaced while it keeps failing, without stopping: after 3 failed attempts or 60 s, a small banner on H1/H2 "1 pick is still being saved" (plural "{n} picks are still being saved") with "Retry now".
+* The card returns with "Not saved. Pick again." and the toast "Your pick on question {n} was not saved." only for a non retryable failure while the market is still open (an unexpected revert or an unknown error code). After the close it shows "Not saved: the question closed" and does not return.
 * On app start the loop resumes any unfinished items.
-* Non retryable codes surface at once: `MARKET_CLOSED`, `NOT_REGISTERED`, `FROZEN`, `CHAIN_ID_MISMATCH`.
-* If sponsorship is down (`FEE_PAYER_BALANCE_LOW`, `DAILY_BUDGET_EXHAUSTED`), items wait and retry every 60 s; users are never asked to pay for predictions.
+* Non retryable codes surface at once: `MARKET_CLOSED`, `NOT_REGISTERED`, `FROZEN`, `CHAIN_ID_MISMATCH`. `PLAY_KEY_INVALID` is not a failure: it triggers 4.2 and the item waits.
+* If sponsorship is down (`FEE_PAYER_BALANCE_LOW`, `DAILY_BUDGET_EXHAUSTED`), items wait and retry every 60 s until the close; users are never asked to pay for predictions.
 
-### 4.7 Throughput and rate limits at 5 transactions per user per day
+### 4.8 Throughput and rate limits at 5 transactions per user per day
 
 | Item | 300 daily players | 3,000 daily players |
 | --- | --- | --- |
 | Predict transactions a day | 1,500 | 15,000 |
-| All sponsored transactions a day (predict, convert, staking; settle is keeper sent) | about 1,600 | about 16,000 |
+| All sponsored transactions a day (predict, play key authorisation, convert, staking; settle is keeper sent) | about 1,650 | about 16,300 |
 | Peak (assume 25% of players in the first 15 minutes after 09:00 KST) | 0.4 tx/s | 4.2 tx/s |
-| Fee payer work per tx | decode, 1 to 2 RPC reads, `eth_estimateGas`, sign, send: about 150 to 400 ms, I/O bound | |
+| Fee payer work per tx | decode, 1 to 3 RPC reads (plus `playerOf(key)` for a play key predict, cached until the key's expiry or a `PlayKeySet` event), `eth_estimateGas`, sign, send: about 150 to 400 ms, I/O bound | |
 | Instances needed | 1 | 1 (2 for headroom); limits in Postgres so 2 is safe |
 | RPC calls per tx | about 4 | 60,000 to 80,000 a day: **a dedicated Kaia RPC provider is required**; the public node rate limits |
 
@@ -553,43 +579,45 @@ Per user and global limits (all configurable):
 
 | Limit | Default | Code |
 | --- | --- | --- |
-| Sponsored `predict` per wallet per day | 5 markets, 2 attempts each (10) | `RATE_LIMITED_SENDER` |
+| Sponsored `predict` per player per day (counted on the resolved player, whichever key or wallet sends) | 5 markets, 2 attempts each (10) | `RATE_LIMITED_SENDER` |
+| Sponsored `setPlayKey` per player per day | 3 | `RATE_LIMITED_SENDER` |
 | Other sponsored calls per wallet per day | 15 | `RATE_LIMITED_SENDER` |
-| Same limits per Privy user id (JWT `sub`) | same | `RATE_LIMITED_USER` |
+| Same limits per Privy user id (JWT `sub`) where a token is sent | same | `RATE_LIMITED_USER` |
 | Per client network (salted IP hash) per day | 300 (mobile carrier NAT) | `RATE_LIMITED_IP` |
-| Sponsor requests per wallet per minute | 20 | `RATE_LIMITED_BURST` |
+| Sponsor requests per player per minute | 20 | `RATE_LIMITED_BURST` |
 | Global daily KAIA budget | 3 x the 7 day average spend, at least 10 KAIA | `DAILY_BUDGET_EXHAUSTED` |
 | Fee payer balance floor | 10 KAIA | `FEE_PAYER_BALANCE_LOW` |
 
-### 4.8 Gas per swipe and monthly cost (estimate)
+### 4.9 Gas per swipe and monthly cost (estimate)
 
 Assumptions: gas price 27.5 gkei (node `eth_gasPrice`, 2026-11-12, `docs/FEE-DELEGATION.md`); intrinsic 21,000, plus 10,000 for fee delegated types, plus calldata at 100 gas per byte (the pre Prague Kaia rate; KIP-223 changed calldata pricing at Prague [13], so this is a conservative upper bound); execution from storage writes (20,000 for a new slot, 2,900 to 5,000 for an update, 2,100 per cold read). Measure on Kairos in phase 1.
 
 | Transaction | Calldata | Execution (estimate) | Total gas | KAIA |
 | --- | --- | --- | --- | --- |
-| `predict`, first of the day (new `UserDay` slot) | 68 B, 6,800 | 31,000 | about 69,000 | 0.0019 |
-| `predict`, second to fourth | 6,800 | 12,000 | about 50,000 | 0.0014 |
-| `predict`, fifth (completion: balance, supply, week counter, events) | 6,800 | 37,000 to 52,000 | 75,000 to 90,000 | 0.0021 to 0.0025 |
-| Keeper `settleMany`, per user in a batch of 100 | 32 B | 25,000 | about 28,000 | 0.0008 |
+| `predict` by the play key, first of the day (new `UserDay` slot, plus about 4,500 for the key lookup) | 68 B, 6,800 | 35,500 | about 74,000 | 0.0020 |
+| `predict` by the play key, second to fourth | 6,800 | 16,500 | about 55,000 | 0.0015 |
+| `predict` by the play key, fifth (completion: balance, supply, week counter, events) | 6,800 | 41,500 to 56,500 | 80,000 to 95,000 | 0.0022 to 0.0026 |
+| `setPlayKey` (two new slots, old binding cleared) | 68 B | 45,000 | about 85,000 | 0.0023 |
+| Keeper `settleMany`, per user and call in a batch of 100 (per market settle: about 2 calls per user day, because the 5 markets resolve in at most 2 time bands, 6.4) | 32 B | 25,000 | about 28,000 | 0.0008 |
 | `convert` (burn, CT transfer, caps) | 36 B | 60,000 | about 95,000 | 0.0026 |
 | `approve` CT for staking (once) | 68 B | 25,000 | about 62,000 | 0.0017 |
 | `stake` (new position, pull, commit) | 68 B | 120,000 to 150,000 | up to 190,000 | 0.0052 |
 | `claimInterest` / `withdraw` | 36 B | 45,000 / 60,000 | 80,000 / 95,000 | 0.0022 / 0.0026 |
 
-Per daily player: 5 predicts about 300,000 gas plus settle 28,000 = **about 330,000 gas, 0.0091 KAIA a day**; average per swipe about 60,000 gas, 0.0017 KAIA.
+Per daily player: 5 predicts about 327,000 gas plus 2 settle calls 56,000 = **about 380,000 gas, 0.0105 KAIA a day**; average per swipe about 65,000 gas, 0.0018 KAIA. Per market settle and the key lookup add about 15% over the first draft.
 
 | Monthly (30 days) | 300 daily players | 3,000 daily players |
 | --- | --- | --- |
-| Predict and settle gas | 82 KAIA | 817 KAIA |
-| Conversions, staking, operator txs (5 markets, 5 outcomes, airdrop) | about 5 KAIA | about 40 KAIA |
-| Total with a 30% estimate margin | **about 115 KAIA** | **about 1,110 KAIA** |
-| In KRW at 40 KRW per KAIA (the pool reference: 5 KAIA per CT, 1 CT = 200 KRW) | about 4,600 KRW | about 44,400 KRW |
-| In KRW at 250 KRW per KAIA (if KAIA reprices) | about 28,800 KRW | about 277,500 KRW |
-| Privy signatures (5 predicts + about 0.3 other per player day) | about 47,700: inside 50,000 | about 477,000: about $4,270 overage on Developer plans, about $480 at Enterprise $0.001 |
+| Predict and settle gas | 94 KAIA | 940 KAIA |
+| Play key authorisations (about 1.5 per MAU a month), conversions, staking, operator txs (5 markets, 5 outcomes, airdrop) | about 7 KAIA | about 61 KAIA |
+| Total with a 30% estimate margin | **about 130 KAIA** | **about 1,300 KAIA** |
+| In KRW at 40 KRW per KAIA (the pool reference: 5 KAIA per CT, 1 CT = 200 KRW) | about 5,200 KRW | about 52,000 KRW |
+| In KRW at 250 KRW per KAIA (if KAIA reprices) | about 32,500 KRW | about 325,000 KRW |
+| Privy signatures (play key authorisation about 1.5 per MAU a month, plus about 0.3 value actions per player day; swipes need none) | about 3,600: inside 50,000 | about 36,000: inside 50,000 |
 | Privy plan (MAU about 2x daily players) | Core $299 (or Free under 500 MAU) | Scale $499 |
 | Claude API (section 6.4) | about $100 to $150 | about $100 to $150 |
 
-Gas is small; the Privy signature line is the cost that decides the budget at scale (question 11.1).
+With the play key, Privy cost is the plan fee only, and gas stays small. Above about 4,000 daily players the signature allowance (and above 10,000 MAU the plan) is the next limit to watch.
 
 ---
 
@@ -821,10 +849,10 @@ Tables (Postgres):
 | Contract unit | Every function, role, error, boundary time, param bound | Hardhat + chai (as `contracts/test/`) |
 | Contract fuzz | Random sequences of predict, outcome, correct, settle, compensate, convert, airdrop, stake, claim, withdraw with time jumps; invariants | `test/platform/fuzz.test.js` in the existing `FUZZ_RUNS` style |
 | Fork | Against mainnet CT on a Kaia fork: funding, conversions, staking with real token behaviour | `fork.kaia.test.js` pattern |
-| Gas | Report per function; feeds 4.8 | `REPORT_GAS=true` |
+| Gas | Report per function; feeds 4.9 | `REPORT_GAS=true` |
 | API unit | Policy, decoding, limits, idempotency, JWT binding | `node:test` / Vitest with mocked RPC (as `server/test`) |
 | AI pipeline | Golden set of 50 past questions with known answers; replay resolution; measure agreement and void rate; injection fixtures | Vitest + recorded fixtures |
-| PWA | Outbox state machine (all rows of 4.3) with a fake node; i18n completeness; gesture tests | Vitest + Playwright |
+| PWA | Outbox state machine (all rows of 4.4, and the play key lifecycle of 4.2) with a fake node; i18n completeness; gesture tests | Vitest + Playwright |
 | E2E on Kairos | Real Privy logins on iPhone and Android, installed PWA, 5 swipes in under 10 s, airplane mode mid swipe, kill app mid outbox, day rollover, conversion, staking full cycle with a 1 hour lock test build | Playwright for desktop parts, manual script for devices, `tools/e2e/` pattern |
 | Soak | 14 real daily cycles on Kairos with 20 to 30 testers | Phase 5 |
 
