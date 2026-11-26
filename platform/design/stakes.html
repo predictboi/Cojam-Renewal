@@ -63,7 +63,7 @@
     if (S === "empty") return sw() + C.empty({ icon: "lock", title: t("m.empty.h"), body: t("m.empty.b"), action: C.btn(t("m.empty.btn"), { kind: "primary", href: "staking.html" }) });
     if (S === "loading") return sw() + '<section class="msec" aria-busy="true">' + C.skel("90px") + C.skel("170px", "44px") + C.skel("70%", "22px") + "</section>" + [1, 2].map(function () { return '<article class="msec" aria-busy="true">' + C.skel("120px", "28px") + C.skel("100%", "14px") + C.skel("100%") + C.skel("100%", "44px") + "</article>"; }).join("");
     return sw() +
-      (hold ? C.hold(t("hold.stakes")) + (noKaia ? C.note("error", t("hold.nokaia", { f: M.fee, k: F.dec(kaia, 4) }), C.btn(t("x.fix.kaia"), { sm: true, href: "deposit.html", id: "get-kaia" })) : "") : "") +
+      (hold ? C.hold(t("hold.stakes")) + (noKaia ? C.note("warn", t("hold.nokaia", { f: M.fee, k: F.dec(kaia, 4) }), C.btn(t("x.fix.kaia"), { sm: true, href: "deposit.html", id: "get-kaia" })) : "") : "") +
       /* the total leads; under it the two interest figures side by side, both to four places, as on every other screen, so they read as one pair (the first one ticks) */
       '<section class="msec" id="total"><div class="mhero"><h2 class="lbl">' + t("m.staked") + '</h2><p class="fig">' + F.dec(total) + "<small>CT</small></p></div>" +
       '<div class="stats mstats"><div class="stat"><b><span data-tick="' + sofar + "|" + perAll + '">' + fix4(sofar) + "</span></b><span>" + t("m.sofar") + ' (CT)</span></div><div class="stat"><b>' + fix4(claimable) + "</b><span>" + t("m.claimable") + " (CT)</span></div></div>" +

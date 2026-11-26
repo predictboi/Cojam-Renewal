@@ -31,7 +31,7 @@
   if (noName) base = "";
   var manual = [[t("g.manual.1"), "more"], [t("g.manual.2"), "addhome"], [t("g.manual.3"), "phone"]];
   var ios = [[t("g.ios.1"), "share"], [t("g.ios.2"), "addhome"], [t("g.ios.3"), "phone"]];
-  var copy = C.btn(t("g.copy"), { block: true, icon: "copy", attrs: 'id: "copylink", attrs: 'data-copy="' + (inv ? M.invite.link : M.appUrl) + '" data-toast="' + App.esc(t(inv ? "g.inv.copied" : "g.copied")) + '"' });
+  var copy = C.btn(t("g.copy"), { block: true, icon: "copy", id: "copylink", attrs: 'data-copy="' + (inv ? M.invite.link : M.appUrl) + '" data-toast="' + App.esc(t(inv ? "g.inv.copied" : "g.copied")) + '"' });
   /* who invited, the code as a copy block, what to do with it and what the friend gets. Without a name the headline is "You were invited": the code is what matters */
   function invBlock() {
     return '<div class="gate-inv"><h2>' + (noName ? t("g.inv.h.anon") : t("g.inv.h", { name: '<b translate="no">' + App.esc(M.invite.by) + "</b>" })) + "</h2>" + C.code(M.invite.code, { id: "inv-code", label: t("g.inv.code") }) +

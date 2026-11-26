@@ -25,7 +25,7 @@
 (function () {
   var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$;
   var bal = S === "zero" ? 0 : S === "big" || S === "review" ? 25000 : M.user.ct, period = 90;
-  var initial = { empty: "", below: "50", above: "5,000", zero: "", big: "12,000", review: "12,000", loading: "" }[S];
+  var initial = { empty: "", below: "50", above: "5,000", zero: "", big: "12,000", review: "12,000", loading: "", hold: "" }[S];
   if (initial === undefined) initial = "500";
   var blocked = S === "paused" || S === "fullnone" || S === "max20" || S === "zero" || S === "loading" || App.state === "offline" || S === "hold";
   var room = S === "full" ? 300 : Infinity;   /* what the interest fund can still reserve for this period */
@@ -34,7 +34,7 @@
 
   function head() { return '<div class="ph-top"><h1>' + t("s.title") + "</h1></div>"; }
   /* two pages, so two tabs standing on the ink rule (a filter would be the segmented control); the open stakes are a real count, in a chip */
-  function sw() { return '<nav class="mtabs" id="sw" aria-label="' + App.esc(t("s.switch")) + '"><a href="staking.html' + HQ + '" aria-current="page">' + t("s.new") + '</a><a href="stakes.html' + HQ + '">' + t("s.tab.mine") + '<span class="mtabs-n" id="sw-n">' + M.stakes.length + "</span></a></nav>"; }
+  function sw() { return '<nav class="mtabs" id="sw" aria-label="' + App.esc(t("s.switch")) + '"><a href="staking.html' + HQ + '" aria-current="page">' + t("s.new") + '</a><a href="stakes.html' + HQ + '">' + t("s.tab.mine") + '<span class="mtabs-n" id="sw-n">' + (M.stakes.length + (S === "hold" ? 1 : 0)) + "</span></a></nav>"; }
   function avail() { return t("s.avail") + ' <b id="avail">' + F.ct(bal) + "</b>"; }
   function body() {
     if (S === "error") return sw() + C.error();

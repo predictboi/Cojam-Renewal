@@ -902,3 +902,5 @@ button.rowlink { width: 100%; padding: 0; border: 0; background: none; text-alig
 .sys--hold .sys-contact { display: grid; gap: var(--s-10); }
 .sys--hold .sys-contact .btn { margin-top: 0; min-width: 0; }
 .sys--hold .sys-link { justify-self: center; }
+/* a button inside a note keeps its own padding (the text link rule above is for links in the sentence) */
+.note a.btn { padding: 0 var(--s-16); color: var(--ink); font-weight: var(--fw-bold); }

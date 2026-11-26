@@ -481,6 +481,35 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   ok('"Finish now" ends the wait: the day done screen opens in under 1.5 s', /done\.html/.test(p2.url()) && Date.now()-f0<1500, (Date.now()-f0)+' ms');
   await ctx2.close();
 
+  // ---------- 8. account on hold: home has the panel and no answers, wallet Convert is off and Withdraw works, a claim states the fee
+  await pg.goto(B+'home-cards.html?state=hold'); await pg.waitForTimeout(700);
+  const hh=await pg.evaluate(()=>({panel:!!document.querySelector('.empty #hold-more'),href:(document.querySelector('#hold-more')||{}).getAttribute&&document.querySelector('#hold-more').getAttribute('href'),answers:document.querySelectorAll('.choice').length,deck:!!document.querySelector('#deck'),dead:document.querySelectorAll('#main button[disabled], #main [aria-disabled="true"]').length}));
+  ok('on hold, home (cards): the panel replaces the deck, links to the explanation, no answer buttons and nothing dead', hh.panel&&/system\.html\?state=blocked/.test(hh.href)&&hh.answers===0&&!hh.deck&&hh.dead===0, JSON.stringify(hh));
+  await shot('h1-hold');
+  await pg.goto(B+'home-terminal.html?state=hold'); await pg.waitForTimeout(600);
+  ok('on hold, home (list): the same panel, no answer buttons and no pick buttons', await pg.evaluate(()=>!!document.querySelector('.empty #hold-more')&&!document.querySelector('.choice, [data-open], #term')));
+  await pg.goto(B+'wallet.html?state=hold'); await pg.waitForTimeout(700);
+  const hw=await pg.evaluate(()=>({banner:!!document.querySelector('.hold .hold-more'),conv:document.querySelector('#convert').disabled,why:(document.querySelector('#convert-why')||{}).innerText||'',want:App.t('hold.convert.reason'),ct:document.querySelector('#ct-fig').innerText,kaia:/KAIA/.test(document.querySelector('.list').innerText),wd:document.querySelector('#wd').tagName}));
+  ok('on hold, wallet: the notice shows, balances stay, Convert is disabled with its reason, Withdraw is a live link', hw.banner&&hw.conv&&hw.why.trim()===hw.want&&/1,840/.test(hw.ct)&&hw.kaia&&hw.wd==='A', JSON.stringify(hw));
+  const hb=await pg.evaluate(()=>{const e=document.querySelector('.hold'),s=getComputedStyle(e);return s.backgroundColor+'|'+s.boxShadow;});
+  ok('on hold: the notice is the round\'s alert style (white ground, 2 px ink outline)', /^rgb\(255, 255, 255\)\|/.test(hb)&&/rgb\(11, 21, 48\) 0px 0px 0px 2px inset/.test(hb), hb);
+  await shot('w1-hold');
+  await pg.locator('#wd').tap(); await pg.waitForURL(/withdraw\.html/,{timeout:4000}).catch(()=>{}); await pg.waitForTimeout(500);
+  ok('on hold, wallet: Withdraw opens the withdraw screen, which says the fee is paid in KAIA', /withdraw\.html/.test(pg.url()) && await pg.evaluate(()=>document.querySelector('.lead').innerText.trim()===App.t('x.gas')&&!document.querySelector('#to').disabled));
+  await pg.goto(B+'stakes.html?state=hold'); await pg.waitForTimeout(700);
+  const hs=await pg.evaluate(()=>({claim:!document.querySelector('[data-claim]').disabled,wd:!document.querySelector('[data-wd]').disabled,lines:document.querySelectorAll('[data-fee-line]').length,line:document.querySelector('[data-fee-line]').innerText,want:App.t('hold.fee.line')}));
+  ok('on hold, my stakes: claim and withdraw are live and each says "You pay the network fee in KAIA"', hs.claim&&hs.wd&&hs.lines===2&&hs.line.includes(hs.want), JSON.stringify(hs));
+  await pg.locator('[data-claim]').tap(); await pg.waitForTimeout(500);
+  const hn=await pg.evaluate(()=>({open:document.querySelector('#sheet-root').classList.contains('is-open'),note:(document.querySelector('#tx-note')||{}).innerText||'',want:App.t('hold.fee.rv'),rows:document.querySelector('#sheet .rows').innerText,confirm:!!document.querySelector('#tx-confirm:not([disabled])')}));
+  ok('on hold, my stakes: Claim opens a review with the fee note, the fee and the KAIA balance before anything is sent', hn.open&&hn.note.includes(hn.want)&&/0\.0021/.test(hn.rows)&&/2\.4000 KAIA/.test(hn.rows)&&hn.confirm, JSON.stringify(hn));
+  await shot('s2-hold-claim-fee');
+  await pg.goto(B+'stakes.html?state=hold-nokaia'); await pg.waitForTimeout(600);
+  ok('on hold with too little KAIA: claim and withdraw are off and the note states the amount needed and links to the deposit screen', await pg.evaluate(()=>document.querySelector('[data-claim]').disabled&&document.querySelector('[data-wd]').disabled&&/0\.0021/.test(document.querySelector('.note').innerText)&&/deposit\.html/.test(document.querySelector('#get-kaia').getAttribute('href'))));
+  await pg.goto(B+'system.html?state=blocked'); await pg.waitForTimeout(500);
+  ok('account on hold screen: the support address is a mail link and is visible to copy', await pg.evaluate(()=>document.querySelector('#contact').getAttribute('href')==='mailto:help@cojam.app'&&document.querySelector('#mail-copy').innerText.trim()==='help@cojam.app'&&document.querySelector('#mail-copy').getAttribute('data-copy')==='help@cojam.app'));
+  await pg.goto(B+'gate.html?state=invited-inapp'); await pg.waitForTimeout(500);
+  ok('gate from an invite link (in-app browser): "Copy link" copies the invite link, not the plain app address', await pg.evaluate(()=>document.querySelector('#copylink').getAttribute('data-copy')===MOCK.invite.link&&MOCK.invite.link!==MOCK.appUrl));
+
   ok('no page errors', errs.length===0, errs.join(' | '));
   await b.close();
   const fails=res.filter(r=>r[0]==='FAIL');

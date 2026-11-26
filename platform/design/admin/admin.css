@@ -276,7 +276,7 @@ th.num .th-sort { flex-direction: row-reverse; }
 /* ---------- log viewer ---------- */
 .log { font-size: 13px; }
 .log li { display: grid; grid-template-columns: 132px 64px 150px 1fr auto; gap: var(--s-12); align-items: baseline; padding: var(--s-6) 0; border-bottom: var(--hair); }
-.log time { font-family: var(--font-data); font-size: 12.5px; color: var(--ink-2); }
+.log time { font-size: 12.5px; color: var(--ink-2); }
 .log .who { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .log p { min-width: 0; overflow-wrap: anywhere; }
 .log pre { grid-column: 1 / -1; margin: var(--s-4) 0 var(--s-4) 144px; padding: var(--s-10) var(--s-12); border-radius: var(--r-s); background: var(--inset); font-family: var(--font-data); font-size: 12.5px; white-space: pre-wrap; overflow-wrap: anywhere; }
@@ -409,6 +409,8 @@ th.num .th-sort { flex-direction: row-reverse; }
 .rates :is(td, th) { text-align: right; padding-left: var(--s-20); }
 .rates :is(td, th):first-child { text-align: left; padding-left: 0; }
 .rates .inp { width: 84px; }
+.rates td { white-space: nowrap; }
+.rates .unit { display: inline-block; width: 14px; }
 .splitrow { display: grid; grid-template-columns: repeat(10, 1fr); gap: var(--s-6); max-width: 640px; }
 .splitrow label { display: grid; gap: 2px; font-size: 12px; color: var(--ink-2); text-align: center; }
 .splitrow .inp { padding: 0 var(--s-4); text-align: center; }
