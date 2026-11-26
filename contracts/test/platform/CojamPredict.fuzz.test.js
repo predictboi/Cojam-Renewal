@@ -405,13 +405,17 @@ async function runOne(seed) {
       };
       await send(true, "keeper settleMany", () => predict.settleMany(users, day), () => { for (const u of users) applyFor(u); });
     }],
-    [1, async function setCorrected() {
+    [2, async function setCorrected() {
       await tick(); now -= 1n; await time.setNextBlockTimestamp(now + 1n);
       const t = now + 1n;
-      const id = anyMarket((i, m) => m.outcome !== 0 && t >= m.settlesAt && m.corrected === 0) ?? anyMarket(() => true);
+      // prefer a market someone was settled on, with the answer that player picked against the outcome
+      const settledOn = (i) => named.some((x) => ((UD(x.address, i / 5n).settled >> Number(i % 5n)) & 1) === 1);
+      const id = anyMarket((i, m) => m.outcome !== 0 && t >= m.settlesAt && m.corrected === 0 && settledOn(i))
+        ?? anyMarket((i, m) => m.outcome !== 0 && t >= m.settlesAt && m.corrected === 0) ?? anyMarket(() => true);
       if (id === null) return;
       const m = M.markets.get(id);
-      const o = 1 + r.int(2);
+      const picks = named.map((x) => UD(x.address, id / 5n).choices[Number(id % 5n)]).filter((c) => c && c !== m.outcome);
+      const o = picks.length && r.chance(0.8) ? r.pick(picks) : 1 + r.int(2);
       const ok = m.outcome !== 0 && t >= m.settlesAt && m.corrected === 0 && m.outcome !== o;
       await send(ok, "setCorrectedOutcome", () => own.setCorrectedOutcome(id, o), () => { m.corrected = o; });
     }],
