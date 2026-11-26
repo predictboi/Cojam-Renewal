@@ -35,7 +35,7 @@
       '<div class="two">' + C.btn(t("dp.share"), { icon: "share", id: "share" }) + C.btn(t("common.copy") + " CT", { icon: "copy", attrs: 'data-copy="' + M.token + '" data-toast="' + App.esc(t("common.copied")) + '" aria-label="' + App.esc(t("w.token.copy")) + '"' }) + "</div>";
   }
   App.mount({ tab: "wallet", back: "wallet.html", title: t("dp.title"), body: body(), pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
-    var sh = $("#share"); if (sh) sh.addEventListener("click", function () { if (navigator.share) navigator.share({ text: a }).catch(function () {}); else { try { navigator.clipboard.writeText(a); } catch (e) {} App.toast(t("w.copied")); } });
+    var sh = $("#share"); if (sh) sh.addEventListener("click", function () { if (navigator.share) navigator.share({ text: a }).catch(function () {}); else { try { navigator.clipboard.writeText(a); } catch (e) {} App.toast(t("w.copied", { a: "<b>" + F.short(a) + "</b>" })); } });
     if (S === "arrived") setTimeout(function () {
       $("#watch").innerHTML = C.tag(t("dp.arrived", { a: "250" }), "up", "check"); App.toast(t("dp.toast", { a: "250" }));
     }, 1400);

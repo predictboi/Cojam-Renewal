@@ -469,7 +469,7 @@ button.pin { cursor: pointer; }
 .note ul { display: grid; gap: var(--s-6); }
 .note li { position: relative; padding-left: var(--s-12); }
 .note li::before { content: ""; position: absolute; left: 0; top: 0.62em; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-.note a { color: inherit; font-weight: var(--fw-bold); padding: 13px 0; }
+.note a { color: inherit; font-weight: var(--fw-bold); padding: 15px 0; }
 .banner { display: flex; align-items: center; gap: var(--s-10); min-height: 52px; padding: var(--s-4) var(--s-4) var(--s-4) var(--s-16); border-radius: var(--r-field); background: var(--sky); color: var(--ink); font-size: var(--fs-14); font-weight: var(--fw-semi); }
 .banner > span:not(.spin) { flex: 1; min-width: 0; padding: var(--s-8) 0; }
 .banner .spin { border-color: var(--spin-track); border-top-color: var(--ink); }
@@ -629,7 +629,7 @@ button.pin { cursor: pointer; }
 :lang(ko) .auth h1, :lang(ja) .auth h1 { line-height: 1.12; font-size: var(--fs-32); }
 .auth-lede { color: var(--on-brand-2); max-width: 34ch; }
 .auth .panel .fine { font-size: var(--fs-13); color: var(--ink-2); }
-.auth .panel .fine a { color: var(--ink); font-weight: var(--fw-semi); padding: 13px 0; }   /* inline padding: a 44 px touch area without changing the line height */
+.auth .panel .fine a { color: var(--ink); font-weight: var(--fw-semi); padding: 15px 0; }   /* inline padding: a 44 px touch area without changing the line height */
 .auth .facts { padding: 0 var(--s-4); }
 .auth .facts li { min-height: 32px; font-size: var(--fs-14); }
 .sys-link { color: var(--on-brand); font-size: var(--fs-14); font-weight: var(--fw-bold); min-height: var(--target); display: inline-flex; align-items: center; }
