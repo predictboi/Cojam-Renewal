@@ -15,3 +15,7 @@ Founder decisions for the operating platform (recorded 2026-11-26). The developm
 | Languages | English source, Korean and Japanese, each reviewed for native voice |
 | Legal | Deferred by the founder |
 | Process | Screen spec and development plan drafted by Opus agents, reviewed by Fable; design by Fable in the landing's colours; match needed UI components |
+| Sponsored gas with Privy | Verify first whether Privy embedded wallets can sign Kaia fee delegated transactions. If not, users sign a message and a Cojam relayer sends the transaction (contracts designed for that). Same experience either way |
+| Deposits | Existing holders send new CT from their own wallet (Kaia Wallet and others) to their Privy wallet address; the PWA needs a deposit screen |
+| Answer setting | Fully automatic by AI, no human approval step. Markets are point markets, so the risk is small; a wrong answer is checked afterwards and compensated |
+| Points | On chain |
