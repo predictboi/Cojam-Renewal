@@ -5,7 +5,7 @@ Source: `contracts/platform/CojamPredict.sol`, `contracts/platform/PredictLogic.
 ## 1. Shape
 
 * One immutable contract, no proxy. Roles through `AccessControlDefaultAdminRules` (owner transfer delay 3 days), `Pausable`, `ReentrancyGuard`, `SafeERC20`.
-* Deployment links the stateless library `PredictLogic` (parameter bounds, `createDay` checks and writes, airdrop winner checks, the `pendingHits` view, parameter storage copies). It runs by DELEGATECALL in the contract's context, has no state and no owner. It exists only to keep `CojamPredict` under the 24,576 byte limit (runtime size 24,055 bytes; library about 6,700 bytes). Deploy order: `PredictLogic`, then `CojamPredict(ct, owner, operator, treasury)` linked to it.
+* Deployment links the stateless library `PredictLogic` (parameter bounds, `createDay` checks and writes, airdrop winner checks, the `pendingHits` view, parameter storage copies). It runs by DELEGATECALL in the contract's context, has no state and no owner. It exists only to keep `CojamPredict` under the 24,576 byte limit (runtime size 24,055 bytes; library 6,632 bytes). Deploy order: `PredictLogic`, then `CojamPredict(ct, owner, operator, treasury)` linked to it.
 * Constructor: CT must report 18 decimals; owner, operator and treasury must not be zero. The owner gets `DEFAULT_ADMIN_ROLE` and `PAUSER_ROLE`; the operator gets `OPERATOR_ROLE` and `PAUSER_ROLE`. Default parameters are set and emitted as `ParamsApplied`.
 
 ## 2. Points ledger
