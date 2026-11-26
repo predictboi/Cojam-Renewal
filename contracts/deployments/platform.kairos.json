@@ -1,0 +1,150 @@
+{
+  "network": "kairos",
+  "chainId": 1001,
+  "note": "Platform test deploy on Kairos with the throwaway test key. Owner, operator, treasury and pauser are all the test key. stakingShortLock is a TEST build (StakingShortLock, short days), never the main staking contract.",
+  "updatedAt": "2026-11-26T17:26:28.090Z",
+  "owner": "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+  "operator": "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+  "treasury": "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+  "pauser": "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+  "contracts": {
+    "ct": {
+      "contract": "CojamToken",
+      "address": "0xa8e540C5b5804D4BF2Dd2110a307a99E76C6Bd9E",
+      "reused": "deployments/kairos.json newToken (rehearsal Cojam Token, 18 decimals, held by the test key)"
+    },
+    "predictLogic": {
+      "contract": "PredictLogic",
+      "address": "0x756cB14a044962aEBc4CC9C195f8f050236380c0",
+      "deployBlock": 234069403,
+      "tx": "0xfc49c25ea154fc9c3483acc9b7244ff187593ef058fe526a9b8f56f3d3fe02b6",
+      "constructorArgs": [],
+      "gas": {
+        "tx": "0xfc49c25ea154fc9c3483acc9b7244ff187593ef058fe526a9b8f56f3d3fe02b6",
+        "block": 234069403,
+        "gasUsed": 1495089,
+        "gasPriceGkei": 25.000000001,
+        "feeKaia": 0.03737722500149509
+      },
+      "sourcify": {
+        "status": "verified",
+        "match": "exact_match",
+        "verificationId": "302b2247-8b33-44e0-bc93-8aa09b82750d",
+        "checkedAt": "2026-11-26T17:27:12.174Z",
+        "url": "https://repo.sourcify.dev/1001/0x756cB14a044962aEBc4CC9C195f8f050236380c0"
+      }
+    },
+    "predict": {
+      "contract": "CojamPredict",
+      "address": "0x8bF58c00a9F6b1894eE6562A30630fabF1Ca0B7b",
+      "deployBlock": 234069406,
+      "tx": "0xdbc9a55cdec559a1349b34dcd19d11815243f13c83bd029b06769cbf8ac36980",
+      "constructorArgs": [
+        "0xa8e540C5b5804D4BF2Dd2110a307a99E76C6Bd9E",
+        "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+        "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+        "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1"
+      ],
+      "libraries": {
+        "PredictLogic": "0x756cB14a044962aEBc4CC9C195f8f050236380c0"
+      },
+      "gas": {
+        "tx": "0xdbc9a55cdec559a1349b34dcd19d11815243f13c83bd029b06769cbf8ac36980",
+        "block": 234069406,
+        "gasUsed": 5564060,
+        "gasPriceGkei": 25.000000001,
+        "feeKaia": 0.13910150000556407
+      },
+      "sourcify": {
+        "status": "verified",
+        "match": "exact_match",
+        "verificationId": "ed0c8108-4e91-4e29-b1cb-4183c684fab8",
+        "checkedAt": "2026-11-26T17:27:31.866Z",
+        "url": "https://repo.sourcify.dev/1001/0x8bF58c00a9F6b1894eE6562A30630fabF1Ca0B7b"
+      }
+    },
+    "staking": {
+      "contract": "CojamStaking",
+      "address": "0x4978C46902a626437f6f092abB1cfa91705d3017",
+      "deployBlock": 234069409,
+      "tx": "0x4af5a0dc333a6fc5e6203cddf9a43a194bf057e813f3425018c2445783d29cea",
+      "constructorArgs": [
+        "0xa8e540C5b5804D4BF2Dd2110a307a99E76C6Bd9E",
+        "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+        "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+        "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1"
+      ],
+      "gas": {
+        "tx": "0x4af5a0dc333a6fc5e6203cddf9a43a194bf057e813f3425018c2445783d29cea",
+        "block": 234069409,
+        "gasUsed": 3340634,
+        "gasPriceGkei": 25.000000001,
+        "feeKaia": 0.08351585000334064
+      },
+      "sourcify": {
+        "status": "verified",
+        "match": "exact_match",
+        "verificationId": "cfb20817-cb9c-4365-b115-aec9f80bc11c",
+        "checkedAt": "2026-11-26T17:27:45.129Z",
+        "url": "https://repo.sourcify.dev/1001/0x4978C46902a626437f6f092abB1cfa91705d3017"
+      }
+    },
+    "stakingShortLock": {
+      "contract": "StakingShortLock",
+      "address": "0xA0BE33166871862DC37164f1c9cBf1c6da82613D",
+      "deployBlock": 234069412,
+      "tx": "0x5a1541ea82ca2600c11068491cc214d7176d2c624f46b4af5a469f7516fe7e4f",
+      "constructorArgs": [
+        "0xa8e540C5b5804D4BF2Dd2110a307a99E76C6Bd9E",
+        "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+        "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+        "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+        "2"
+      ],
+      "gas": {
+        "tx": "0x5a1541ea82ca2600c11068491cc214d7176d2c624f46b4af5a469f7516fe7e4f",
+        "block": 234069412,
+        "gasUsed": 3358129,
+        "gasPriceGkei": 25.000000001,
+        "feeKaia": 0.08395322500335813
+      },
+      "sourcify": {
+        "status": "verified",
+        "match": "exact_match",
+        "verificationId": "0c78fd2f-f0d8-49fc-bd6d-f8eb8d3b0bef",
+        "checkedAt": "2026-11-26T17:27:59.152Z",
+        "url": "https://repo.sourcify.dev/1001/0xA0BE33166871862DC37164f1c9cBf1c6da82613D"
+      }
+    }
+  },
+  "stakingShortLockSecondsPerDay": 2,
+  "funding": [
+    {
+      "to": "predict",
+      "address": "0x8bF58c00a9F6b1894eE6562A30630fabF1Ca0B7b",
+      "amountCt": "100000",
+      "tx": "0x58d0a8538c363915124003eb562b696ab0a2d143987f66b5e8efaabadd5ccac2",
+      "block": 234069510,
+      "gasUsed": 51610,
+      "at": "2026-11-26T17:28:19.621Z"
+    },
+    {
+      "to": "staking",
+      "address": "0x4978C46902a626437f6f092abB1cfa91705d3017",
+      "amountCt": "100000",
+      "tx": "0x8966d54edad01f36a2081baa24509e539a515d8c4d6abe405950b41258a49466",
+      "block": 234069513,
+      "gasUsed": 51622,
+      "at": "2026-11-26T17:28:22.120Z"
+    },
+    {
+      "to": "stakingShortLock",
+      "address": "0xA0BE33166871862DC37164f1c9cBf1c6da82613D",
+      "amountCt": "100000",
+      "tx": "0xabbb3a0222822bb5268adc49ba7d2dcc972ba5125d5463042dd5119ee4f24149",
+      "block": 234069517,
+      "gasUsed": 51622,
+      "at": "2026-11-26T17:28:26.638Z"
+    }
+  ]
+}

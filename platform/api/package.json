@@ -1,0 +1,44 @@
+{
+  "name": "@cojam/app-api",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cojam Daily Prediction: web API (cojam-app-api) and background worker (cojam-app-worker)",
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start:api": "tsx src/server/main.ts",
+    "start:worker": "tsx src/worker/main.ts",
+    "dev:api": "tsx watch --env-file=.env src/server/main.ts",
+    "dev:seed": "tsx --env-file-if-exists=.env src/db/seed.ts",
+    "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate-cli.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:api": "vitest run test/api",
+    "test:worker": "vitest run test/worker"
+  },
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.14.0",
+    "@fastify/cors": "^11.4.3",
+    "@kaiachain/js-ext-core": "2.1.0",
+    "@privy-io/node": "^0.42.0",
+    "fastify": "^5.12.8",
+    "jose": "^6.2.18",
+    "kysely": "^0.29.9",
+    "pg": "^8.23.1",
+    "pg-boss": "^12.40.0",
+    "tsx": "^4.23.15",
+    "viem": "^2.58.7",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@kaiachain/ethers-ext": "^2.1.0",
+    "@types/node": "^22.19.0",
+    "@types/pg": "^8.23.1",
+    "ethers": "^6.15.0",
+    "typescript": "^5.9.3",
+    "vitest": "^5.1.2"
+  }
+}
