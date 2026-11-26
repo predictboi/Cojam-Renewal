@@ -530,12 +530,12 @@ describe("CojamStaking: per user principal cap", function () {
     // 1,000 CT sent, 990 CT arrive: exactly at the cap.
     await staking.connect(alice).stake(CT(1_000), 0);
     expect(await staking.principalOf(alice.address)).to.equal(CT(990));
-    await staking.connect(owner).setCaps(20, 0, CT(1_089));
-    // 101 CT sent, 99.99 CT arrive: room is 99 CT, so this is refused on the received amount.
-    await expect(staking.connect(alice).stake(CT(101), 0))
-      .to.be.revertedWithCustomError(staking, "UserCapReached").withArgs(CT(99), CT(101) - CT(101) / 100n);
-    await staking.connect(owner).setCaps(20, 0, CT(990) + CT(101) - CT(101) / 100n);
-    await staking.connect(alice).stake(CT(101), 0);
+    await staking.connect(owner).setCaps(20, 0, CT(1_188));
+    // 201 CT sent, 198.99 CT arrive: the room of 198 CT is checked against what arrived.
+    await expect(staking.connect(alice).stake(CT(201), 0))
+      .to.be.revertedWithCustomError(staking, "UserCapReached").withArgs(CT(198), CT(201) - CT(201) / 100n);
+    await staking.connect(owner).setCaps(20, 0, CT(990) + CT(201) - CT(201) / 100n);
+    await staking.connect(alice).stake(CT(201), 0); // exactly at the cap after the fee
   });
 
   it("the total cap is checked before the user cap", async function () {
