@@ -384,7 +384,8 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
     // Days and markets (OPERATOR)
     // ------------------------------------------------------------------
 
-    /// @notice Publishes the 5 markets of `dayId`, before the day opens.
+    /// @notice Publishes the 5 markets of `dayId`, before the day opens or late while at least 1 hour of
+    /// the day remains; once per day, never for a past day.
     /// @dev Every `closesAt` equals the day's end (open + 1 day); `resolvesAt` lies in
     /// [closesAt + minResolveGap, open + 2 days]; every content hash is set. See `PredictLogic.createDay`.
     function createDay(uint32 dayId, MarketInput[5] calldata m) external onlyRole(OPERATOR_ROLE) {

@@ -371,10 +371,37 @@ describe("CojamPredict: days", function () {
     await expect(op.createDay(d, m)).to.be.revertedWithCustomError(predict, "BadTimes");
     m = good(); m[1].contentHash = ethers.ZeroHash;
     await expect(op.createDay(d, m)).to.be.revertedWithCustomError(predict, "EmptyContentHash");
-    // at the open it is too late
-    await goTo(open - 1n);
-    await at(open);
-    await expect(op.createDay(d, good())).to.be.revertedWithCustomError(predict, "BadTimes");
+    // a past day can never be created
+    await expect(op.createDay(day0 - 2n, marketsFor(day0 - 2n))).to.be.revertedWithCustomError(predict, "BadTimes");
+  });
+
+  it("a missed day can still be created after it opened, until 1 hour before its end; then players can complete it", async function () {
+    const { predict, op, alice, day0 } = await loadFixture(fixture);
+    // at the open
+    const a = day0 + 10n;
+    await goTo(dayOpen(a) - 1n);
+    await at(dayOpen(a));
+    await expect(op.createDay(a, marketsFor(a))).to.emit(predict, "DayCreated");
+    await expect(op.createDay(a, marketsFor(a))).to.be.revertedWithCustomError(predict, "DayExists");
+    // mid day, and the day is playable at once
+    const b = day0 + 11n;
+    await goTo(dayOpen(b) + 12n * H);
+    await op.createDay(b, marketsFor(b));
+    await play(predict, alice, b, [1, 1, 1, 1, 1]);
+    expect((await predict.dayOf(alice.address, b)).completed).to.equal(true);
+    // the last allowed second: dayEnd - 1 hour
+    const c = day0 + 12n;
+    await goTo(dayOpen(c + 1n) - H - 1n);
+    await at(dayOpen(c + 1n) - H);
+    await op.createDay(c, marketsFor(c));
+    // one second too late
+    const e = day0 + 13n;
+    await goTo(dayOpen(e + 1n) - H);
+    await at(dayOpen(e + 1n) - H + 1n);
+    await expect(op.createDay(e, marketsFor(e))).to.be.revertedWithCustomError(predict, "BadTimes");
+    // and the day after has passed: still refused
+    await goTo(dayOpen(e + 2n));
+    await expect(op.createDay(e, marketsFor(e))).to.be.revertedWithCustomError(predict, "BadTimes");
   });
 
   it("the resolve gap parameter is applied at creation", async function () {

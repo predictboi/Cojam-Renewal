@@ -66,6 +66,13 @@ const schema = z.object({
   PRIVY_ADMIN_APP_SECRET: optStr,
   PRIVY_ADMIN_VERIFICATION_KEY: optStr,
   ADMIN_OWNER_EMAIL: optStr,
+  /** Hex SHA-256 of the operations agent's service token (docs/platform/OPS-AGENT.md). Unset: the path is off. */
+  ADMIN_SERVICE_TOKEN_SHA256: z
+    .string()
+    .optional()
+    .transform((v) => (v === undefined || v === "" ? undefined : v.toLowerCase()))
+    .pipe(z.string().regex(/^[0-9a-f]{64}$/, "must be a hex SHA-256").optional()),
+  ADMIN_SERVICE_PER_MINUTE: int(120),
   /** Dev only: trust the X-Dev-User header instead of a Privy token. Refused when NODE_ENV=production. */
   AUTH_DEV_BYPASS: bool,
 

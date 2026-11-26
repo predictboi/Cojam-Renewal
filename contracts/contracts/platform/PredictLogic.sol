@@ -70,7 +70,9 @@ library PredictLogic {
         emit ParamsApplied(p);
     }
 
-    /// @notice Checks and writes the 5 markets of `dayId` (before the day opens). Every `closesAt` equals
+    /// @notice Checks and writes the 5 markets of `dayId`: before the day opens, or after it opened while at
+    /// least 1 hour remains before its end (`block.timestamp + 1 hours <= dayEnd`), so a missed run does not
+    /// lose the day. Every `closesAt` equals
     /// the day's end, open + 1 day (DECISIONS "Question timing": all five stay open the whole day); each
     /// `resolvesAt` lies in [closesAt + gap, open + 2 days]; every content hash is set. Outcomes are refused
     /// from 48 hours after the close (`RESOLVE_DEADLINE`).
@@ -82,7 +84,8 @@ library PredictLogic {
         uint256 gap
     ) external returns (bytes32[5] memory hashes) {
         uint256 open = uint256(dayId) * 1 days;
-        if (block.timestamp >= open) revert BadTimes();
+        // Before the open, or late (a missed run) while at least 1 hour of the day remains; never a past day.
+        if (block.timestamp + 1 hours > open + 1 days) revert BadTimes();
         uint256 first = uint256(dayId) * SLOTS;
         if (markets[first].closesAt != 0) revert DayExists();
         for (uint256 i = 0; i < SLOTS; ++i) {
