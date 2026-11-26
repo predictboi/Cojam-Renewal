@@ -32,20 +32,21 @@
     /* 1. the player's own address comes first, with a text button: this is what people come here to copy */
     return (off ? C.note("warn", t("w.offline")) : "") +
       '<section class="card card--ink addr-card" aria-labelledby="addr-h"><h2 class="card-h" id="addr-h">' + t("w.addr") + '</h2><p class="addr-v" translate="no">' + F.groups(a) + "</p>" +
-      '<div class="addr-acts">' + C.btn(t("w.copy"), { block: true, icon: "copy", id: "copy-addr", attrs: 'data-copy="' + a + '" data-toast="' + App.esc(t("w.copied", { a: "<b>" + F.short(a) + "</b>" })) + '" data-done="' + App.esc(t("w.copy.done")) + '"' }) +
-      '<a class="btn btn-icon" href="https://kaiascan.io/address/' + a + '" target="_blank" rel="noopener" aria-label="' + App.esc(t("w.scan")) + '">' + C.icon("ext", 18) + "</a></div>" +
+      '<div class="addr-acts">' + /* the button itself turns into "Copied": no toast repeats it. The explorer link carries its name. */
+      C.btn(t("w.copy"), { block: true, icon: "copy", id: "copy-addr", attrs: 'data-copy="' + a + '" data-done="' + App.esc(t("w.copy.done")) + '"' }) +
+      C.btn("Kaiascan", { href: "https://kaiascan.io/address/" + a, ext: true, iconEnd: "ext", cls: "btn-onink", attrs: 'translate="no" aria-label="' + App.esc(t("w.scan")) + '"' }) + "</div>" +
       '<p class="addr-note">' + t("w.addr.note") + "</p></section>" +
-      /* 2. points */
-      '<section class="card stack-12"><div><h2 class="card-h">' + t("w.points") + '</h2><p class="fig">' + F.int(pts) + "<small>P</small></p></div>" +
-      '<p class="small muted">' + (canCt ? t("w.ready", { n: canCt }) : t("w.notyet", { g: F.int(1000 - pts) })) + "</p>" +
-      (S === "" || off ? '<hr class="hr">' + C.rows([[t("w.onway"), t("w.pendinghit", { p: u.pendingHit, time: "22:10" })]]) : "") +
-      C.btn(t("w.convert"), { kind: "primary", block: true, href: "convert.html" + (S === "new" || S === "zero" ? "?state=short" : ""), disabled: off }) + "</section>" +
-      /* 3. CT */
+      /* 2. CT comes before points: the balance is what a wallet is opened for */
       '<section class="card stack-12">' + (S === "error" ? C.note("warn", t("e.rpc"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" })) : "") +
       '<div><h2 class="card-h">CT</h2><p class="fig">' + F.dec(ct) + "<small>CT</small></p>" + (App.isKo ? '<p class="small muted">' + F.krw(ct) + "</p>" : "") + "</div>" +
       '<div class="two">' + C.btn(t("w.deposit"), { href: "deposit.html", icon: "download", disabled: off }) + C.btn(t("w.withdraw"), { href: "withdraw.html", icon: "share", disabled: off }) + "</div>" +
       '<hr class="hr"><a class="rowlink" href="stakes.html"><span class="muted">' + t("w.staked") + "</span><b>" + F.ct(staked) + "</b>" + C.icon("chev", 18) + "</a>" +
       '<hr class="hr"><div class="rowlink rowlink--static"><span class="muted">KAIA<small>' + t("w.kaia.note") + "</small></span><b>" + F.kaia(kaia) + "</b></div></section>" +
+      /* 3. points */
+      '<section class="card stack-12"><div><h2 class="card-h">' + t("w.points") + '</h2><p class="fig">' + F.int(pts) + "<small>P</small></p></div>" +
+      '<p class="small muted">' + (canCt ? t("w.ready", { n: canCt }) : t("w.notyet", { g: F.int(1000 - pts) })) + "</p>" +
+      (S === "" || off ? '<hr class="hr">' + C.rows([[t("w.onway"), t("w.pendinghit", { p: u.pendingHit, time: "22:10" })]]) : "") +
+      C.btn(t("w.convert"), { kind: "primary", block: true, href: "convert.html" + (S === "new" || S === "zero" ? "?state=short" : ""), disabled: off }) + "</section>" +
       /* 4. the token contract is reference only: collapsed, labelled as an address you must not send to, with its own toast */
       C.help(t("w.info"), '<p class="note note-warn">' + C.icon("warn", 18) + "<span>" + t("w.token") + '</span></p><p class="addr-v" translate="no">' + F.groups(M.token) + "</p>" +
         C.btn(t("w.token.copy"), { sm: true, icon: "copy", cls: "btn-quiet", attrs: 'data-copy="' + M.token + '" data-toast="' + App.esc(t("w.token.copied")) + '" data-done="' + App.esc(t("w.copy.done")) + '"' })) +

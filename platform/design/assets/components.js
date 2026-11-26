@@ -38,6 +38,22 @@
     groups: function (a) { return a.replace(/^0x/, "").match(/.{1,4}/g).map(function (g, i) { return "<span>" + (i === 0 ? "0x" : "") + g + "</span>"; }).join(""); }
   };
   App.isKo = App.lang === "ko";
+  /* Mock state that survives a page change inside one tab (sessionStorage): the picks made today, the 100P for the finished day and
+     stakes opened in this session. It belongs to one daily set (the UTC date) and is dropped when the set changes. */
+  App.sess = (function () {
+    var K = "cjp.sess", day = new Date().toISOString().slice(0, 10), d = null;
+    try { d = JSON.parse(sessionStorage.getItem(K) || "null"); } catch (e) {}
+    if (!d || d.day !== day || !d.picks || !d.stakes) d = { day: day, picks: {}, paid: false, stakes: [] };
+    var api = { data: d, save: function () { try { sessionStorage.setItem(K, JSON.stringify(api.data)); } catch (e) {} },
+      resetDay: function () { api.data.picks = {}; api.data.paid = false; api.save(); },
+      picked: function () { return M.set.filter(function (id) { return api.data.picks[id]; }).length; } };
+    return api;
+  })();
+  if (App.sess.data.paid) M.user.points += 100;
+  App.sess.data.stakes.forEach(function (s, i) {
+    M.user.ct = Math.round((M.user.ct - s.amount) * 1e4) / 1e4; M.user.staked += s.amount;
+    M.stakes.unshift({ id: "n" + i, amount: s.amount, days: s.days, rate: s.rate, start: new Date(s.start) });
+  });
   /* a question in the chosen language. The server sends title, choices and answer rule authored per language (see mock.js). */
   App.q = function (id) {
     var q = M.questions[id], L = q[App.lang] || q.en;
@@ -197,7 +213,9 @@
       '<div class="qcard-top"><span class="qchip">' + t("cat." + q.cat) + '</span><span class="qchip" aria-hidden="true">' + t("h.qn", { n: q.n }) + "</span></div>" +
       '<div class="qcard-body"><h2' + (long ? ' class="is-long"' : "") + ">" + esc(q.title) + "</h2>" +
       (o.failed ? '<p class="qcard-note">' + ic("warn", 16) + t("h.notsaved") + "</p>" : "") +
-      '<div class="qcard-meta"><span>' + ic("search", 14) + "<span>" + t("h.answer", { rule: esc(q.rule) }) + "</span></span><span>" + ic("clock", 14) + "<span>" + t("h.ai", { time: q.settle }) + "</span></span></div>" +
+      '<div class="qcard-meta"><span>' + ic("search", 14) + "<span>" + t("h.answer", { rule: esc(q.rule) }) + "</span></span>" +
+      (o.static ? "<span>" + ic("clock", 14) + "<span>" + t("h.ai", { time: q.settle }) + "</span></span>" :
+        '<button type="button" class="qmeta-btn" data-ai-info="' + id + '" aria-haspopup="dialog">' + ic("clock", 14) + "<span>" + t("h.ai", { time: q.settle }) + "</span>" + ic("info", 14) + "</button>") + "</div>" +
       '<div class="choices">' + choice("l") + choice("r") + "</div>" +
       (o.final ? '<p class="qcard-final">' + t("h.final") + "</p>" : "") +
       "</div></article>";
@@ -254,7 +272,16 @@
     document.body.innerHTML = html;
     document.title = (cfg.docTitle || cfg.title || "Cojam") + " | Cojam";
     App.enhance(document.body);
+    App.pinFit();
     if (cfg.after) cfg.after();
+    App.pinFit();
+  };
+  /* the page's bottom padding equals the height of the pinned bar, whatever its content wraps to */
+  App.pinFit = function () {
+    var app = $(".app--pin"); if (!app) return;
+    function fit() { var p = $(".app--pin > .pin"); if (p) app.style.setProperty("--pin-h", p.offsetHeight + "px"); }
+    fit();
+    if (!app._ro && window.ResizeObserver) { app._ro = new ResizeObserver(fit); var p0 = $(".app--pin > .pin"); if (p0) app._ro.observe(p0); window.addEventListener("resize", fit); }
   };
   App.live = function (msg) { var l = $("#live"); if (l) { l.textContent = ""; setTimeout(function () { l.textContent = msg; }, 30); } };
 
@@ -267,8 +294,8 @@
       var end = Date.now() + (+el.getAttribute("data-cd")) * 1000, fmt = el.getAttribute("data-cd-fmt") || "inline", lastMin = -1;
       function tick() {
         var s = Math.max(0, Math.round((end - Date.now()) / 1000)), p = F.hms(s);
-        if (fmt === "clock") { var sp = $$("span", el); sp[0].textContent = p[0]; sp[1].textContent = p[1]; sp[2].textContent = p[2];
-          var sr = el.parentNode.querySelector("[data-cd-sr]"); if (sr && +p[1] !== lastMin) { lastMin = +p[1]; sr.textContent = t("d.next.sr", { h: +p[0], m: +p[1] }); } }
+        var sr = el.parentNode.querySelector("[data-cd-sr]"); if (sr && +p[1] !== lastMin) { lastMin = +p[1]; sr.textContent = t("d.next.sr", { h: +p[0], m: +p[1] }); }
+        if (fmt === "clock") { var sp = $$("span", el); sp[0].textContent = p[0]; sp[1].textContent = p[1]; sp[2].textContent = p[2]; }
         else if (fmt === "dh") el.textContent = t("k.dh", { d: Math.floor(s / 86400), h: Math.floor(s % 86400 / 3600) });
         else el.textContent = p.join(":");
         if (s === 0 && !el._zero) { el._zero = true; el.dispatchEvent(new CustomEvent("cd:zero", { bubbles: true })); }
@@ -344,7 +371,8 @@
 
   /* ---------- transaction sheet (staking, claim, withdraw principal, convert, withdraw CT). Never used for picks. ---------- */
   var HASH = "0x8c41f0a7d2be6953c1e07a4f9b25d83e61a0c7f4b9d2e8351a6f0c4d7e92b3a1";
-  var chipEl = null, txTimers = [];
+  var txTimers = [], lastBtn = null;
+  document.addEventListener("click", function (e) { var b = e.target.closest(".btn"); if (b && !b.closest("#sheet")) lastBtn = b; }, true);
   function txClear() { txTimers.forEach(clearTimeout); txTimers = []; }
   function later(fn, ms) { txTimers.push(setTimeout(fn, reduce ? Math.min(ms, 500) : ms)); }
   App.tx = {
@@ -381,24 +409,29 @@
       return h;
     },
     show: function (state, cfg) {
-      App.tx.cfg = cfg; App.tx.state = state; App.tx.chip(false);
+      App.tx.cfg = cfg; App.tx.state = state;
       App.sheet.open(App.tx.view(state, cfg), { closable: state === "review" || state === "success" || state === "failed", label: cfg.label, onClose: function () { txClear(); if (state === "success" && cfg.onDone) cfg.onDone(); } });
       App.live($("#sheet h2") ? $("#sheet h2").textContent : "");
     },
-    chip: function (on) {
-      if (chipEl) { chipEl.remove(); chipEl = null; }
-      if (!on) return;
-      chipEl = document.createElement("button"); chipEl.type = "button"; chipEl.className = "txchip";
-      chipEl.innerHTML = '<span class="spin"></span>' + t("tx.chip", { label: App.tx.cfg.label });
-      chipEl.addEventListener("click", function () { App.tx.hidden = false; App.tx.show(App.tx.state, App.tx.cfg); });
-      document.body.appendChild(chipEl);
+    /* While a transaction runs, the button that started it is disabled and carries the status ("Staking 500 CT: sending").
+       Nothing floats over the page, and the same action cannot be started twice. A screen can take this over with cfg.busy(on, label). */
+    busy: function (on) {
+      var cfg = App.tx.cfg; if (!cfg) return;
+      App.tx.pending = !!on;
+      var label = t("tx.chip", { label: cfg.label });
+      if (cfg.busy) { cfg.busy(!!on, label); return; }
+      var b = cfg._trigger; if (!b || !b.isConnected) return;
+      if (on) { if (b._tx) return; b._tx = { html: b.innerHTML, dis: b.disabled }; b.innerHTML = '<span class="spin"></span><span>' + label + "</span>"; b.disabled = true; b.classList.add("is-busy"); }
+      else if (b._tx) { b.innerHTML = b._tx.html; b.disabled = b._tx.dis; b.classList.remove("is-busy"); b._tx = null; }
     },
-    go: function (state) { App.tx.state = state; if (App.tx.hidden) { if (state === "success" || state === "failed") { App.tx.hidden = false; App.tx.show(state, App.tx.cfg); } } else App.tx.show(state, App.tx.cfg); },
+    go: function (state) { App.tx.state = state; if (state === "success" || state === "failed") App.tx.busy(false); if (App.tx.hidden) { if (state === "success" || state === "failed") { App.tx.hidden = false; App.tx.show(state, App.tx.cfg); } } else App.tx.show(state, App.tx.cfg); },
     /* run the whole mock flow with real waits */
     run: function (cfg) {
+      if (App.tx.pending) return;   /* one at a time */
       txClear(); App.tx.hidden = false; App.tx.cfg = cfg;
+      if (!$("#sheet-root.is-open")) cfg._trigger = lastBtn;
       if (cfg.review && !cfg._confirmed) { App.tx.show("review", cfg); return; }
-      App.tx.show("signing", cfg);
+      App.tx.show("signing", cfg); App.tx.busy(true);
       var at = 1100;
       if (cfg.steps) { later(function () { App.tx.go("steps"); }, at); at += 1500; later(function () { App.tx.go("steps2"); }, at); at += 1400; }
       later(function () { App.tx.go("sending"); }, at); at += 1700;
@@ -409,8 +442,8 @@
     var b = e.target.closest("[data-tx]"); if (!b) return;
     var a = b.getAttribute("data-tx"), cfg = App.tx.cfg;
     if (a === "confirm") { cfg._confirmed = true; App.tx.run(cfg); cfg._confirmed = false; }
-    else if (a === "cancel") { var running = App.tx.state !== "review" && App.tx.state !== "failed"; txClear(); App.sheet.close(true); if (running) App.toast(cfg.cancelMsg || t("tx.fail.cancel")); }
-    else if (a === "hide") { App.tx.hidden = true; App.sheet.close(true); App.tx.chip(true); }
+    else if (a === "cancel") { var running = App.tx.state !== "review" && App.tx.state !== "failed"; txClear(); App.tx.busy(false); App.sheet.close(true); if (running) App.toast(cfg.cancelMsg || t("tx.fail.cancel")); }
+    else if (a === "hide") { App.tx.hidden = true; App.sheet.close(true); }
     else if (a === "done") { App.sheet.close(true); if (cfg.onDone) cfg.onDone(); }
     else if (a === "retry") { cfg.fail = false; App.tx.run(cfg); }
   });
@@ -431,7 +464,7 @@
     if (c) {
       var text = c.getAttribute("data-copy");
       try { if (navigator.clipboard) navigator.clipboard.writeText(text).catch(function () {}); } catch (err) {}
-      App.toast(c.getAttribute("data-toast") || t("common.copied"));
+      if (c.hasAttribute("data-toast")) App.toast(c.getAttribute("data-toast"));   /* a button that turns into "Copied" needs no toast */
       var dn = c.getAttribute("data-done"), lab = $("span", c);
       if (dn && lab && !c._old) { c._old = lab.textContent; lab.textContent = dn; c.classList.add("is-done"); setTimeout(function () { lab.textContent = c._old; c._old = null; c.classList.remove("is-done"); }, 2000); }
       if (c.classList.contains("btn-icon")) { var old = c.innerHTML; c.classList.add("is-done"); c.innerHTML = ic("check", 18); setTimeout(function () { c.classList.remove("is-done"); c.innerHTML = old; }, 1600); }
@@ -449,6 +482,7 @@
     var hb = e.target.closest(".ah-back");
     if (hb) { var ref = document.referrer; if (ref && ref.indexOf(location.origin) === 0 && history.length > 1 && !/[?&]state=/.test(location.search)) { e.preventDefault(); history.back(); } return; }
     var bk = e.target.closest("[data-toast-msg]"); if (bk) App.toast(bk.getAttribute("data-toast-msg"));
+    var ai = e.target.closest("[data-ai-info]"); if (ai) App.aiSheet(ai.getAttribute("data-ai-info"));
   });
   document.addEventListener("keydown", function (e) {
     if (e.key === "Escape" && $("#sheet-root.is-open")) {
@@ -469,6 +503,14 @@
     document.addEventListener("pointermove", function (e) { if (y0 === null) return; sh.style.transform = "translateY(" + Math.max(0, e.clientY - y0) + "px)"; });
     document.addEventListener("pointerup", function (e) { if (y0 === null) return; var d = e.clientY - y0; y0 = null; sh.style.transition = ""; if (d > 80) App.sheet.close(); else sh.style.transform = ""; });
   })();
+
+  /* how an answer is set: opened from the "AI settles it" line of a question */
+  App.aiSheet = function (id) {
+    var q = App.q(id);
+    App.sheet.open("<h2>" + t("h.ai.h") + '</h2><ol class="txsteps txsteps--plain">' + ["h.ai.1", "h.ai.2", "h.ai.3"].map(function (k, i) { return '<li><span class="n">' + (i + 1) + "</span><span>" + t(k) + "</span></li>"; }).join("") + "</ol>" +
+      C.rows([[t("h.ai.src"), esc(q.rule)], [t("h.ai.when"), t("h.ai.after", { time: q.settle })]]) +
+      '<div class="sheet-acts">' + C.btn(t("common.close"), { block: true, attrs: "data-sheet-close" }) + "</div>");
+  };
 
   /* ---------- forgiving amount parser ---------- */
   App.parseAmount = function (s) {

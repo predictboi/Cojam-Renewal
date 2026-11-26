@@ -590,7 +590,28 @@
     "a.fact.3": ["Points turn into CT", "모은 포인트는 CT로 전환", "貯めたポイントはCTに交換"],
     "sys.blocked.contact": ["Contact support", "고객 지원에 문의", "サポートに問い合わせる"],
     "sys.blocked.note": ["If you think this is a mistake, tell us and we will look again.", "잘못된 것 같다면 알려 주세요. 다시 확인해 드릴게요.", "誤りだと思われる場合はご連絡ください。あらためて確認します。"],
-    "common.error.h": ["Something went wrong", "문제가 생겼어요", "問題が発生しました"]
+    "common.error.h": ["Something went wrong", "문제가 생겼어요", "問題が発生しました"],
+    /* ---------- third polish round ---------- */
+    "tab.stake": ["Staking", "스테이킹", "ステーク"],
+    "h.final": ["+50P if you are right. Undo within 3 seconds, then final.", "맞히면 +50P. 3초 안에만 되돌릴 수 있어요.", "的中で+50P。取り消せるのは3秒以内です。"],
+    "h.hint.touch": ["Swipe the card or tap an answer", "카드를 밀거나 답을 눌러 고르세요", "カードをスワイプするか、答えをタップ"],
+    "h.hint.keys": ["Drag the card, click an answer, or press the arrow keys", "카드를 끌거나 답을 누르거나, 방향키로 고르세요", "ドラッグ、クリック、または矢印キーで選べます"],
+    "h.ai.h": ["How answers are set", "정답은 이렇게 정해져요", "結果の決まり方"],
+    "h.ai.1": ["After the time shown, AI checks the source named on the card.", "카드에 적힌 시각이 지나면 AI가 정답 기준에 적힌 출처를 확인해요.", "カードに記載の時刻を過ぎると、AIが判定基準の情報源を確認します。"],
+    "h.ai.2": ["A second check follows before points are paid.", "포인트를 지급하기 전에 한 번 더 검증해요.", "ポイントを付与する前に、もう一度検証します。"],
+    "h.ai.3": ["If an answer turns out to be wrong, it is corrected and you are compensated.", "정답이 잘못된 것으로 확인되면 바로잡고 보상해 드려요.", "結果に誤りが見つかった場合は訂正し、補償します。"],
+    "h.ai.src": ["Source", "정답 기준", "判定基準"],
+    "h.ai.when": ["Answer set", "정답 확정", "結果の確定"],
+    "h.ai.after": ["After {time}", "{time} 이후", "{time}以降"],
+    "s.tier.cue0": ["1,000 CT or more earns +1%", "1,000 CT 이상이면 이율 +1%", "1,000 CT以上で年率+1%"],
+    "s.tier.cue1": ["+1% applied. +2% from 10,000 CT", "+1% 적용 중. 10,000 CT부터 +2%", "+1%適用中。10,000 CTから+2%"],
+    "s.tier.cue2": ["+2% applied: the top rate", "+2% 적용 중: 가장 높은 이율이에요", "+2%適用中：最高の年率です"],
+    "s.btn.dec": ["Up to 4 decimals", "소수점 4자리까지", "小数点以下4桁まで"],
+    "k.around": ["Around you", "내 주변", "あなたの前後"],
+    "k.around.sub": ["Ranks {a} to {b}", "{a}위~{b}위", "{a}位〜{b}位"],
+    "k.gap.sr.up": ["{n} points ahead of you", "나보다 {n}P 많아요", "あなたより{n}P多い"],
+    "k.gap.sr.down": ["{n} points behind you", "나보다 {n}P 적어요", "あなたより{n}P少ない"],
+    "k.gap.sr.same": ["Same points as you", "나와 점수가 같아요", "あなたと同じポイント"],
   };
 
   var LANGS = ["en", "ko", "ja"], dict = { en: {}, ko: {}, ja: {} };

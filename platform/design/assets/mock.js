@@ -99,7 +99,7 @@
     ],
     around: [
       { rank: 25, name: "0x77aa…c2d1", pts: 1000 },
-      { rank: 26, name: "sora", pts: 950 },
+      { rank: 26, name: "sora", pts: 1000 },
       { rank: 27, name: "minji", pts: 950, me: true },
       { rank: 28, name: "bongbong", pts: 900 },
       { rank: 29, name: "0x1e09…4b7f", pts: 900 }

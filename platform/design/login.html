@@ -28,7 +28,7 @@
   if (email === undefined) email = M.user.email;
   var step = CODE.indexOf(S) >= 0 ? "code" : SETUP.indexOf(S) >= 0 ? "setup" : "email";
   var off = S === "offline", providers = '<span translate="no">' + M.providerNames + "</span>";
-  var shortList = '<span translate="no">Gmail, Naver, Kakao, iCloud, Outlook, Yahoo! JAPAN</span>';
+  /* one list everywhere: the caption under the field and the "not supported" note name the same providers */
 
   /* a mistyped provider (gmial.com, naver.co, hanmail.com) is a typo, not an unsupported provider: suggest the fix */
   function dist(a, b) {
@@ -66,7 +66,7 @@
       (err && err.typo ? '<div class="typo" id="typo"><span>' + t("a.email.typo", { domain: '<b translate="no">' + err.typo + "</b>" }) + "</span>" + C.btn(t("a.email.typo.fix", { email: '<span translate="no">' + App.esc(err.fixed) + "</span>" }), { sm: true, attrs: 'data-fix-email="' + App.esc(err.fixed) + '"' }) + "</div>" : "") +
       (err && err.note ? '<div class="note note-warn" role="alert" id="prov-note">' + C.icon("warn", 18) + '<div class="note-body"><b>' + t("a.email.unsupported") + "</b><span>" + t("a.email.supported", { list: providers }) + "</span></div></div>" : "") + "</div>" +
       /* the provider rule is on screen before the player submits, not only after a failure */
-      (err && err.note ? "" : '<p class="field-cap" id="email-cap">' + t("a.email.cap", { list: shortList }) + "</p>") + "</div>" +
+      (err && err.note ? "" : '<p class="field-cap" id="email-cap">' + t("a.email.cap", { list: providers }) + "</p>") + "</div>" +
       '<button type="submit" class="btn btn-primary btn-block' + (sending ? " is-loading" : "") + '"' + (off ? " disabled" : "") + ">" + (sending ? '<span class="spin"></span>' : "") + "<span>" + t(sending ? "a.email.sending" : "a.email.btn") + "</span></button></form>" +
       C.help(t("a.help.q"), "<p>" + t("a.help.a") + "</p>") + terms();
   }
@@ -76,7 +76,7 @@
       '<div class="field"><div class="field-box field-box--code' + (err && S !== "short" ? " is-error" : "") + (locked ? " is-off" : "") + '"><input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" placeholder="000000" value="' + (S === "wrong" || S === "tries" ? "418205" : S === "short" ? code0 : busy ? "418250" : "") + '" aria-label="' + App.esc(t("a.code.label")) + '" aria-describedby="code-msg"' + (err && S !== "short" ? ' aria-invalid="true"' : "") + (busy || locked ? " disabled" : "") + "></div>" +
       '<div class="field-msg' + (err && S !== "short" ? " is-error" : "") + '" id="code-msg" aria-live="polite">' + (err ? "<span>" + err + "</span>" : "") + "</div></div>" +
       '<button type="submit" class="btn btn-primary btn-block' + (busy ? " is-loading" : "") + '"' + (S === "expired" || locked ? " disabled" : "") + ">" + (busy ? '<span class="spin"></span>' : "") + "<span>" + t(busy ? "a.code.verifying" : "a.code.btn") + "</span></button></form>" +
-      '<div class="stack-8"><p class="small muted" id="resend-in"' + (S === "expired" ? " hidden" : "") + ">" + t("a.code.resendin", { s: 60 }) + '</p><div class="row-between"><button type="button" class="linkish" id="resend"' + (S === "expired" ? "" : " disabled") + ">" + t("a.code.resend") + '</button><button type="button" class="linkish" id="change">' + t("a.code.change") + "</button></div>" +
+      '<div class="stack-8"><p class="small muted" id="resend-in"' + (S === "expired" || resendLeft() <= 0 ? " hidden" : "") + ">" + t("a.code.resendin", { s: '<b id="resend-s">' + resendLeft() + "</b>" }) + '</p><div class="row-between"><button type="button" class="linkish" id="resend"' + (S === "expired" || resendLeft() <= 0 ? "" : " disabled") + ">" + t("a.code.resend") + '</button><button type="button" class="linkish" id="change">' + t("a.code.change") + "</button></div>" +
       '<p class="small muted">' + t("a.code.tip") + "</p></div>";
   }
   var code0 = S === "short" ? "418" : "";
@@ -104,7 +104,7 @@
   var raw = '<div class="auth"><div class="gate-bar">' + C.logo() + C.lang() + '</div><div class="auth-main"><div class="stack-12"><h1 id="h1">' + headline() + '</h1><p class="auth-lede" id="lede"' + (step === "email" ? "" : " hidden") + ">" + t("a.lede") + '</p></div><section class="panel" id="panel">' + view() + "</section>" + facts + "</div></div>";
 
   /* the three facts fill the quiet lower part of the first step; they step aside when the form needs the room for feedback */
-  function showFacts() { return step === "email" && S !== "typo" && S !== "unsupported" && S !== "toomany"; }
+  function showFacts() { return step === "code" || (step === "email" && S !== "typo" && S !== "unsupported" && S !== "toomany"); }
   function runSetup() {
     var ol = $("#setup-steps"); if (!ol || S === "busy") return;
     var lis = App.$$("li", ol), i = +ol.getAttribute("data-done");
@@ -126,7 +126,7 @@
       fe.addEventListener("submit", function (e) {
         e.preventDefault(); email = em.value.trim(); var err = emailErr(email);
         if (err) { S = err.typo ? "typo" : err.note ? "unsupported" : email ? "bademail" : "empty"; paint(); return; }
-        S = "sending"; paint(); setTimeout(function () { step = "code"; S = "code"; paint(); countdown(); }, 900);
+        S = "sending"; paint(); setTimeout(function () { step = "code"; S = "code"; countdown(); paint(); }, 900);
       });
       /* feedback about the old value goes away as soon as the address changes */
       em.addEventListener("input", function () {
@@ -147,16 +147,19 @@
       fc.addEventListener("submit", function (e) { e.preventDefault(); if (code.value.length < 6) { code0 = code.value; S = "short"; paint(); return; } submit(); });
     }
     var ch = $("#change"); if (ch) ch.addEventListener("click", function () { step = "email"; S = ""; paint(); });
-    var rs = $("#resend"); if (rs) rs.addEventListener("click", function () { S = "code"; paint(); countdown(); });
+    var rs = $("#resend"); if (rs) rs.addEventListener("click", function () { S = "code"; countdown(); paint(); });
     var rt = $("#retry"); if (rt) rt.addEventListener("click", function () { S = "setup"; paint(); runSetup(); });
   }
-  var cdT;
+  /* the resend wait counts down every second from one deadline, so a repaint of the panel never restarts or freezes it */
+  var cdT, resendAt = 0;
+  function resendLeft() { return resendAt ? Math.max(0, Math.ceil((resendAt - Date.now()) / 1000)) : 60; }
   function countdown() {
-    clearInterval(cdT); var s = 60;
+    clearInterval(cdT); resendAt = Date.now() + 60000;
     cdT = setInterval(function () {
-      var el = $("#resend-in"), rs = $("#resend"); if (!el) { clearInterval(cdT); return; }
-      s--; if (s <= 0) { clearInterval(cdT); el.hidden = true; if (rs) rs.disabled = false; } else el.textContent = t("a.code.resendin", { s: s });
-    }, 1000);
+      var el = $("#resend-in"), n = $("#resend-s"), rs = $("#resend"), s = resendLeft();
+      if (step !== "code") { clearInterval(cdT); return; }
+      if (s <= 0) { clearInterval(cdT); if (el) el.hidden = true; if (rs) rs.disabled = false; } else if (n) n.textContent = s;
+    }, 250);
   }
   App.mount({ bare: true, docTitle: headline(), raw: raw, after: function () {
     $("#facts").hidden = !showFacts();

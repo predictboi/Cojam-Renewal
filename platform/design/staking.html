@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="assets/components.css">
 </head>
 <body>
-<!-- S1 Staking, new stake. States: (none) 500 CT for 90 days, empty, below, above, zero, big, paused, full, fullnone, max20, loading, review, signing, steps, sending, slow, success, failed, hidden, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<!-- S1 Staking, new stake. States: (none) 500 CT for 90 days, empty, below, above, zero, big, paused, full, fullnone, max20, loading, review, signing, steps, sending, slow, success, failed, hidden (a stake is pending and its sheet is closed: the button is the status), error, offline. Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -31,14 +31,17 @@
   var PERIODS = [30, 90, 180, 365];
   function tier(a) { return a >= 10000 ? 2 : a >= 1000 ? 1 : 0; }
 
+  var narrow = matchMedia("(max-width: 379px)");
   function head() { return '<div class="ph-top"><h1>' + t("s.title") + "</h1></div>"; }
+  function sw() { return C.seg([{ label: t("s.new"), href: "staking.html", on: true }, { label: t("s.mine", { n: M.stakes.length }), href: "stakes.html" }], { label: t("s.switch"), name: "" }).replace('class="seg"', 'class="seg" id="sw"'); }
+  function avail() { return t("s.avail") + ' <b id="avail">' + F.ct(bal) + "</b>"; }
   function body() {
-    if (S === "error") return C.seg([{ label: t("s.new"), href: "staking.html", on: true }, { label: t("s.mine", { n: 2 }), href: "stakes.html" }], { label: t("s.switch") }) + C.error();
-    return C.seg([{ label: t("s.new"), href: "staking.html", on: true }, { label: t("s.mine", { n: 2 }), href: "stakes.html" }], { label: t("s.switch") }) +
+    if (S === "error") return sw() + C.error();
+    return sw() +
       (S === "paused" ? C.note("warn", t("s.paused")) : "") + (S === "fullnone" ? C.note("warn", t("s.full") + " " + t("s.full.none")) : "") + (S === "max20" ? C.note("warn", t("s.max20"), C.btn(t("s.mine", { n: 20 }), { sm: true, href: "stakes.html" })) : "") + '<div id="full-note"></div>' + (App.offline ? C.note("warn", t("s.offline")) : "") +
       (S === "zero" ? C.note("", t("s.zero"), '<div class="row">' + C.btn(t("w.deposit"), { sm: true, href: "deposit.html" }) + C.btn(t("w.convert"), { sm: true, href: "convert.html" }) + "</div>") : "") +
       '<section class="card stack">' +
-      C.amount({ id: "amt", label: t("s.amount"), unit: "CT", value: initial, disabled: blocked, side: S === "loading" ? C.skel("110px", "12px") : t("s.avail") + " <b>" + F.ct(bal) + "</b>", msg: t("s.min") }) +
+      C.amount({ id: "amt", label: t("s.amount"), unit: "CT", value: initial, disabled: blocked, side: S === "loading" ? C.skel("110px", "12px") : avail(), msg: t("s.min") }) +
       '<div><p class="field-label"><b id="per-l">' + t("s.period") + '</b></p><div class="period" role="group" aria-labelledby="per-l" id="period">' +
       PERIODS.map(function (d) { return '<button type="button" data-d="' + d + '" aria-pressed="' + (d === period) + '"' + (blocked ? " disabled" : "") + "><b>" + d + "<small>" + t("s.d") + '</small></b><span data-rate="' + d + '"></span></button>'; }).join("") + "</div></div>" +
       '<hr class="hr"><div id="sum" aria-live="polite"></div></section>' +
@@ -48,40 +51,65 @@
   }
   function txCfg(a) {
     var r = M.rates[period][tier(a)], unlock = F.dateLong(M.ahead(period)), amt = F.dec(a);
-    return { label: t("s.chip", { a: amt }), stepsTitle: t("tx.stake.h", { a: amt }), steps: [t("tx.step1", { a: amt }), t("tx.step2", { a: amt })],
+    return { label: t("s.chip", { a: amt }), busy: busy, onSuccess: function () { staked(a, period, r); }, stepsTitle: t("tx.stake.h", { a: amt }), steps: [t("tx.step1", { a: amt }), t("tx.step2", { a: amt })],
       cancelMsg: t("s.cancelled"),
       /* every amount is reviewed: a lock with no early exit never starts on one tap */
       review: { title: t("s.rv.h", { a: amt, d: period }), rows: [[t("s.amount"), F.ct(a)], [t("s.period"), t("s.days", { d: period })], [t("s.apr"), r + "%"], [t("s.interest", { d: period }), F.ct(a * r / 100 * period / 365), true], [t("s.unlock"), unlock]], warn: t("s.noexit", { date: unlock }), confirm: t("s.btn", { a: amt }) },
       success: { title: t("s.ok.h", { a: amt }), rows: [[t("s.unlock"), unlock], [t("s.apr"), r + "%"]], btn: { label: t("s.ok.btn"), href: "stakes.html" } } };
   }
+  /* while a stake is pending the primary button is disabled and is the status; a second stake waits until the first ends */
+  var pending = "", refresh = function () {};
+  function busy(on, label) { pending = on ? label : ""; refresh(); }
+  /* a finished stake leaves the available balance at once, here and on every screen that shows it (session mock state) */
+  function staked(a, days, rate) {
+    if (S === "" || S === "empty") { App.sess.data.stakes.push({ amount: a, days: days, rate: rate, start: Date.now() }); App.sess.save(); M.stakes.unshift({ id: "n", amount: a, days: days, rate: rate, start: new Date() }); }
+    bal = Math.round((bal - a) * 1e4) / 1e4; M.user.ct = bal; M.user.staked += a;
+    var av = $("#avail"); if (av) { av.textContent = F.ct(bal); av.classList.remove("is-bump"); void av.offsetWidth; av.classList.add("is-bump"); }
+    var mine = $('#sw a[href="stakes.html"]'); if (mine) mine.textContent = t("s.mine", { n: M.stakes.length });
+    var inp = $("#amt"); if (inp) inp.value = "";
+    refresh();
+  }
   var act = S === "error" ? "" : C.actbar(C.btn("", { kind: "primary", block: true, id: "go", disabled: true }), t("s.fee"));
   App.mount({ tab: "stake", docTitle: t("s.title"), head: head(), body: body(), pin: act, pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
     var inp = $("#amt"); if (!inp) return;
     var msg = $("#amt-msg"), box = inp.closest(".field-box"), go = $("#go"), sum = $("#sum"); if (!go) return;
+    var lastTier = null;
     function update() {
       var p = App.parseAmount(inp.value), a = p.value || 0, err = "", fix = "", why = "s.btn.empty";
       if (p.bad) { err = t("s.e.nan"); why = "s.btn.nan"; }
-      else if (p.decimals > 4) { var cut = Math.floor(a * 1e4) / 1e4; err = t("s.e.dec"); why = "s.btn.nan"; fix = C.btn(t("s.fix.dec", { b: F.dec(cut) }), { sm: true, attrs: 'data-fix="' + cut + '"' }); }
+      else if (p.decimals > 4) { var cut = Math.floor(a * 1e4) / 1e4; err = t("s.e.dec"); why = "s.btn.dec"; fix = C.btn(t("s.fix.dec", { b: F.dec(cut) }), { sm: true, attrs: 'data-fix="' + cut + '"' }); }
       else if (!p.empty && a < M.minStake) { err = t("s.e.min"); why = "s.btn.min"; if (bal >= M.minStake) fix = C.btn(t("s.fix.min"), { sm: true, attrs: 'data-fix="100"' }); }
       else if (a > bal) { err = t("s.e.bal", { b: F.dec(bal) }); why = "s.btn.bal"; fix = C.btn(t("s.fix.bal", { b: F.dec(bal) }), { sm: true, attrs: 'data-fix="' + bal + '"' }); }
       box.classList.toggle("is-error", !!err); inp.setAttribute("aria-invalid", err ? "true" : "false");
-      msg.className = "field-msg" + (err ? " is-error" : ""); msg.innerHTML = err ? "<span>" + err + "</span>" + fix : "<span>" + t("s.min") + (App.isKo && a ? " · " + F.krw(a) : "") + "</span>";
+      msg.className = "field-msg" + (err ? " is-error" : ""); /* under the field, in place: the minimum until it is met, then what the next tier adds */
+      var ti = tier(a), cue = a < M.minStake ? t("s.min") : t("s.tier.cue" + ti);
+      msg.innerHTML = err ? "<span>" + err + "</span>" + fix : '<span class="tier-cue' + (a >= M.minStake && ti ? " is-on" : "") + '">' + (a >= M.minStake ? C.icon(ti ? "check" : "chart", 14) : "") + "<span>" + cue + "</span></span>" + (App.isKo && a ? "<span>" + F.krw(a) + "</span>" : "");
       var over = !err && a > room;
       $("#full-note").innerHTML = over ? C.note("warn", t("s.full") + " " + t("s.full.room", { x: F.dec(room), d: period }), C.btn(t("s.fix.stake", { x: F.dec(room) }), { sm: true, attrs: 'data-fix="' + room + '"' })) : "";
-      var ti = tier(a), valid = !err && !p.empty && !blocked && !over;
-      PERIODS.forEach(function (d) { $('[data-rate="' + d + '"]').textContent = M.rates[d][ti] + "%"; });
+      var valid = !err && !p.empty && !blocked && !over;
+      /* the rates on the period buttons roll to the new tier, one after the other */
+      PERIODS.forEach(function (d, i) {
+        var el = $('[data-rate="' + d + '"]'), v = M.rates[d][ti] + "%"; if (el.textContent === v) return;
+        el.textContent = v;
+        if (lastTier !== null && lastTier !== ti) { el.style.setProperty("--i", i); el.classList.remove("is-up", "is-down"); void el.offsetWidth; el.classList.add(ti > lastTier ? "is-up" : "is-down"); }
+      });
+      lastTier = ti;
       var r = M.rates[period][ti], interest = a * r / 100 * period / 365;
       /* the summary never shows interest for an amount that cannot be staked */
       var shown = !err && !p.empty;
+      /* on a narrow phone the annual rate row is dropped (the chosen period button already shows it), so the unlock date stays above the action bar */
       sum.innerHTML = S === "loading" ? C.skel("100%") + C.skel("100%", "14px", "margin-top:14px") + C.skel("100%", "14px", "margin-top:14px") : C.rows([
-        [t("s.apr"), r + "%"],
+        narrow.matches ? null : [t("s.apr"), r + "%"],
         [t("s.interest", { d: period }), shown ? F.ct(interest) + (App.isKo ? "<small>" + F.krw(interest) + "</small>" : "") : "–", true],
         [t("s.unlock"), F.dateLong(M.ahead(period))]]);
       $("#rules").textContent = t("s.rules", { d: period });
-      go.disabled = !valid; go.querySelector("span").textContent = valid ? t("s.btn", { a: F.dec(a) }) : t(why);
-      return valid ? a : 0;
+      go.disabled = !valid || !!pending; go.classList.toggle("is-busy", !!pending);
+      go.innerHTML = (pending ? '<span class="spin"></span>' : "") + "<span>" + (pending ? pending : valid ? t("s.btn", { a: F.dec(a) }) : t(why)) + "</span>";
+      return valid && !pending ? a : 0;
     }
+    refresh = update;
     inp.addEventListener("input", update);
+    if (narrow.addEventListener) narrow.addEventListener("change", update);
     document.addEventListener("click", function (e) {
       var f = e.target.closest("[data-fix]"); if (f) { inp.value = F.dec(+f.getAttribute("data-fix")); update(); return; }
       if (e.target.closest("[data-max]")) { inp.value = F.dec(bal); update(); return; }
@@ -91,7 +119,7 @@
     var a0 = update();
     var show = { review: "review", signing: "signing", steps: "steps2", sending: "sending", slow: "slow", success: "success", failed: "failed" }[S];
     if (show) App.tx.show(show, txCfg(a0 || 500));
-    if (S === "hidden") { App.tx.cfg = txCfg(500); App.tx.state = "sending"; App.tx.chip(true); }
+    if (S === "hidden") { App.tx.cfg = txCfg(500); App.tx.state = "sending"; App.tx.hidden = true; App.tx.busy(true); }
   } });
 })();
 </script>

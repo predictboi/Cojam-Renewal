@@ -53,13 +53,27 @@
   function row(r) {
     return '<li class="krow' + (r.rank <= 3 ? " is-top" : "") + (r.rank === 1 ? " is-first" : "") + (r.me ? " is-me" : "") + '"><span class="krow-rank"><span class="sr-only">' + t("k.rank.sr", { n: r.rank }) + '</span><span aria-hidden="true">' + r.rank + "</span></span>" +
       '<div class="grow"><p class="krow-name"><span translate="no">' + App.esc(r.name) + "</span>" + (r.me ? C.tag(t("k.you"), "ink") : "") + '</p><p class="krow-pts">' + F.pts(r.pts) + "</p></div>" +
-      (r.prize === undefined ? "" : '<p class="krow-prize">' + prize(r.prize) + "<small>CT</small></p>") + "</li>";
+      (r.prize === undefined ? "" : '<p class="krow-prize">' + prize(r.prize) + "<small>CT</small></p>") +
+      (r.gap === undefined || r.me ? "" : '<p class="krow-gap"><span aria-hidden="true">' + (r.gap > 0 ? "+" : r.gap < 0 ? "\u2212" : "") + F.pts(Math.abs(r.gap)) + '</span><span class="sr-only">' + t(r.gap > 0 ? "k.gap.sr.up" : r.gap < 0 ? "k.gap.sr.down" : "k.gap.sr.same", { n: F.int(Math.abs(r.gap)) }) + "</span></p>") + "</li>";
+  }
+  /* "Around you": the rank just above, the player, the rank just below, each with its distance in points */
+  function aroundRows(w) {
+    var rows = M.around.slice(1, 4);
+    if (w === "last") rows = rows.map(function (r, i) { return Object.assign({}, r, { rank: 30 + i, pts: 1250 - i * 50 }); });
+    var mine = rows.filter(function (r) { return r.me; })[0];
+    return rows.map(function (r) { return Object.assign({}, r, { gap: r.pts - mine.pts }); });
+  }
+  function hasAround(w) { return S !== "loading" && S !== "unranked" && !(w === "this" && S === "top10"); }
+  function around(w) {
+    if (!hasAround(w)) return "";
+    var rows = aroundRows(w);
+    return '<section class="stack-8" id="around" tabindex="-1"><div class="sect-h"><h2 class="sect-h">' + t("k.around") + '</h2><span class="muted">' + t("k.around.sub", { a: rows[0].rank, b: rows[rows.length - 1].rank }) + '</span></div><ol class="list">' + rows.map(row).join("") + "</ol></section>";
   }
   function list(w) {
-    if (S === "loading") return '<ul class="list" aria-busy="true">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function () { return '<li class="krow">' + C.skel("32px", "32px", "border-radius:50%") + "<div>" + C.skel("120px", "14px") + C.skel("60px", "10px", "margin-top:8px") + "</div>" + C.skel("64px", "16px") + "</li>"; }).join("") + "</ul>";
+    if (S === "loading") return '<ul class="list" id="top10" aria-busy="true">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function () { return '<li class="krow">' + C.skel("32px", "32px", "border-radius:50%") + "<div>" + C.skel("120px", "14px") + C.skel("60px", "10px", "margin-top:8px") + "</div>" + C.skel("64px", "16px") + "</li>"; }).join("") + "</ul>";
     var rows = rowsFor(w), voids = "";
     for (var i = rows.length + 1; i <= 10; i++) voids += '<li class="krow is-void"><span class="krow-rank" aria-hidden="true">' + i + '</span><p class="krow-name">' + t("k.void") + '</p><p class="krow-prize"></p></li>';
-    return '<ol class="list">' + rows.map(row).join("") + voids + "</ol>";
+    return '<ol class="list" id="top10">' + rows.map(row).join("") + voids + "</ol>";
   }
   /* the pinned bar: the player's own rank, with "This week" on the points so they are not read as the balance in the header pill */
   function pin(w) {
@@ -73,15 +87,18 @@
     if (S === "top10") return bar(7, t("k.in"), t("k.prize", { c: "51.36" }), 1150, t("r.week"));
     return bar(me.rank, t("k.you"), t("k.gap", { gap: F.int(me.gap) }), me.pts, t("r.week"));
   }
-  function aroundSheet() {
-    App.sheet.open("<h2>" + t("k.around.h") + '</h2><ol class="list">' + M.around.map(row).join("") + '</ol><p class="tie-line">' + C.icon("info", 16) + "<span>" + t("k.tie") + '</span></p><div class="sheet-acts">' + C.btn(t("common.close"), { block: true, attrs: "data-sheet-close" }) + "</div>");
+  /* the pinned bar jumps to the "Around you" block under rank 10 */
+  function toAround() {
+    var a = $("#around"); if (!a) return;
+    a.scrollIntoView({ behavior: App.reduce ? "auto" : "smooth", block: "center" }); a.focus({ preventScroll: true });
+    a.classList.remove("is-flash"); void a.offsetWidth; a.classList.add("is-flash");
   }
   function view(w) {
     var note = "";
     if (w === "last") note = S === "sent" ? C.note("ok", t("k.sent") + ' <a href="https://kaiascan.io/" target="_blank" rel="noopener">' + t("w.scan") + "</a>") : C.note("sky", t("k.closed", { time: t("k.final.time") }));
     else if (S === "winner") note = C.note("sky", t("k.last", { rank: 4, amount: "119.60" }));
     return note + pool(w) + '<section class="stack-8"><div class="sect-h"><h2 class="sect-h">' + t("k.top") + "</h2>" + (S === "loading" || w === "last" ? "" : '<span class="live"><span class="live-dot"></span><span data-stamp="12">' + t("common.updated", { n: 12 }) + "</span></span>") + "</div>" +
-      list(w) + '<p class="tie-line">' + C.icon("info", 16) + "<span>" + t("k.tie") + "</span></p></section>";
+      list(w) + '<p class="tie-line">' + C.icon("info", 16) + "<span>" + t("k.tie") + "</span></p></section>" + around(w);
   }
   function body() {
     if (S === "error") return C.error();
@@ -91,11 +108,11 @@
     document.addEventListener("seg", function (e) {
       if (e.detail.name !== "week") return; week = e.detail.value;
       var v = $("#view"); v.innerHTML = view(week); v.classList.remove("pg-fade"); void v.offsetWidth; v.classList.add("pg-fade");
-      var p = $("#pin"); if (p) p.outerHTML = pin(week); App.enhance(document.body);
+      var p = $("#pin"); if (p) p.outerHTML = pin(week); App.enhance(document.body); App.pinFit();
     });
     document.addEventListener("click", function (e) {
       if (e.target.closest("#how")) howSheet();
-      else if (e.target.closest("button#pin")) aroundSheet();
+      else if (e.target.closest("button#pin")) toAround();
     });
   } });
 })();

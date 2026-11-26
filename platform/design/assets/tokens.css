@@ -54,7 +54,7 @@
   --font-display: "Archivo", "Pretendard Variable", Pretendard, "Pretendard Fallback", system-ui, sans-serif;
   --font-display-ja: "Archivo", "Pretendard JP Variable", "Pretendard JP", "Pretendard Fallback", system-ui, sans-serif;
   --font-data: ui-monospace, "SF Mono", Menlo, Consolas, monospace;   /* addresses and hashes only */
-  --fs-11: 11px;              /* tab bar labels only */
+  --fs-11: 11px;              /* the count on a tab badge only */
   --fs-12: 12px; --fs-13: 13px; --fs-14: 14px; --fs-15: 15px; --fs-16: 16px; --fs-18: 18px; --fs-20: 20px; --fs-22: 22px; --fs-24: 24px; --fs-28: 28px; --fs-32: 32px; --fs-40: 40px;
   --fs-hero: clamp(40px, 12.4vw, 54px);    /* gate headline */
   --fs-clock: clamp(38px, 12vw, 50px);     /* day done countdown */
@@ -100,7 +100,7 @@
   /* ---------- pattern ---------- */
   --band: linear-gradient(var(--grid-line) 1px, transparent 1px) -1px -1px / 44px 44px, linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) -1px -1px / 44px 44px, var(--brand);
   --stripes: repeating-linear-gradient(-45deg, var(--volt) 0 5px, transparent 5px 10px);
-  --card-scrim: linear-gradient(180deg, rgba(11, 21, 48, 0) 0, rgba(11, 21, 48, 0.82) 52px, rgba(11, 21, 48, 0.96) 132px);   /* behind the question on an image card: white text starts at 52px, so it never sits on less than 82% ink (5.9:1 over pure volt, more elsewhere) */
+  --card-scrim: linear-gradient(180deg, rgba(11, 21, 48, 0) 0, rgba(11, 21, 48, 0.72) 28px, rgba(11, 21, 48, 0.985) 54px);   /* behind the question on an image card: the picture fades out over 54px and the text starts at 56px on solid ink, so no part of any picture passes behind the words */
   --chip-on-img: rgba(11, 21, 48, 0.78);
   --stripes-ink: repeating-linear-gradient(-45deg, var(--ink) 0 2px, transparent 2px 7px);
 

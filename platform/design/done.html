@@ -23,14 +23,20 @@
 <script>
 (function () {
   var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$;
+  var sess = App.sess;
+  if (S === "moment" && sess.data.paid) S = "";   /* the reward moment plays once; a reload shows the settled screen */
   var phase = S === "moment" || S === "saving" ? "saving" : "paid";
-  var basePts = phase === "paid" ? M.user.points + 100 : M.user.points;
+  /* points: the 100P already counted in this tab is in M.user.points; a preset opened on its own adds it for the picture */
+  var basePts = phase === "paid" && !sess.data.paid ? M.user.points + 100 : M.user.points;
   if (phase === "paid") M.user.points = basePts;
-  var picks = [["q1", "r"], ["q2", "r"], ["q3", "l"], ["q4", "r"], ["q5", "r"]];
+  /* the picks are the ones actually made on the home screen in this tab; a preset opened on its own falls back to sample picks */
+  var sample = { q1: "r", q2: "r", q3: "l", q4: "r", q5: "r" };
+  var picks = M.set.map(function (id) { return [id, sess.data.picks[id] || sample[id]]; });
   var outcome = S === "results" ? ["wait", "pend", "miss", "wait", "wait"] : ["wait", "wait", "wait", "wait", "wait"];
   var waiting = outcome.filter(function (o) { return o === "wait"; }).length;
 
-  /* the one reward moment: the lime badge and the +100P chip. No toast repeats it; the header pill counts up instead. */
+  /* the one reward moment: badge and chip flash lime as they pop, then settle to white and ink, so at rest the progress band and
+     the primary button are the only lime. No toast repeats it; the header pill counts up instead. */
   function reward(p) {
     if (p === "saving") return '<p class="reward" id="reward"><span class="spin"></span>' + t("d.saving") + "</p>";
     return '<p class="reward is-paid" id="reward">' + C.icon("check", 16) + t("d.paid") + "</p>";
@@ -48,9 +54,10 @@
   }
   function body() {
     var secs = S === "zero" ? 0 : M.untilNextSet();
-    return '<section class="card card--ink clock-card" aria-label="' + t("d.next") + '"><p class="card-h">' + t("d.next") + "</p>" +
-      (S === "zero" ? '<p class="watch"><span class="spin"></span>' + t("d.loading") + "</p>" : C.clock(secs, "clock")) +
-      (App.offline ? '<p class="tiny muted">' + t("off.bar") + "</p>" : "") + "</section>" +
+    /* the countdown is one compact row (label left, time right), so the picks list starts higher */
+    return '<section class="card card--ink clock-row" aria-label="' + t("d.next") + '"><p class="card-h">' + C.icon("clock", 16) + t("d.next") + "</p>" +
+      (S === "zero" ? '<p class="watch"><span class="spin"></span>' + t("d.loading") + "</p>" :
+        '<p class="fig fig--md" id="clock" data-cd="' + secs + '" aria-hidden="true"></p><p class="sr-only" data-cd-sr></p>') + "</section>" +
       C.btn(t("d.rank"), { kind: "primary", block: true, href: "ranking.html", iconEnd: "right" }) +
       '<section class="stack-12"><div class="sect-h"><h2 class="sect-h">' + t("d.picks") + '</h2><span class="muted">' + (waiting ? t("d.waitn", { n: waiting }) : "") + "</span></div>" +
       '<ul class="list">' + picks.map(pickRow).join("") + "</ul>" +
@@ -63,7 +70,7 @@
     /* the day done moment: the fifth pick is mined (the 100P is credited in that same transaction), only then "+100P paid" and the count up */
     var day5 = $("#day5"), wrap = $("#reward-wrap");
     setTimeout(function () { day5.children[4].className = "is-done is-fill"; }, 800);
-    setTimeout(function () { var sp = App.$("#pts .spin"); if (sp) sp.remove(); wrap.innerHTML = reward("paid"); App.$("#reward").classList.add("is-pop"); day5.classList.remove("is-flash"); day5.classList.add("is-wave"); App.burst(App.$(".done-badge"), 18); try { if (navigator.vibrate) navigator.vibrate([12, 40, 18]); } catch (e) {} App.addPoints(100); App.live(t("toast.paid", { n: 100 })); }, 1500);
+    setTimeout(function () { var sp = App.$("#pts .spin"); if (sp) sp.remove(); wrap.innerHTML = reward("paid"); App.$("#reward").classList.add("is-pop"); sess.data.paid = true; sess.save(); day5.classList.remove("is-flash"); day5.classList.add("is-wave"); App.burst(App.$(".done-badge"), 18); try { if (navigator.vibrate) navigator.vibrate([12, 40, 18]); } catch (e) {} App.addPoints(100); App.live(t("toast.paid", { n: 100 })); }, 1500);
   } });
 })();
 </script>
