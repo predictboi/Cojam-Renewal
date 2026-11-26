@@ -243,14 +243,19 @@ html { scrollbar-color: var(--line-strong) transparent; scrollbar-width: thin; }
 .choices { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-10); }
 .choice { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-6); min-height: 54px; padding: 0 var(--s-10); border: var(--edge); border-radius: var(--r-pill); background: var(--surface); color: var(--ink); font-size: var(--fs-16); font-weight: var(--fw-heavy); line-height: 1.15; box-shadow: 0 3px 0 var(--ink); margin-bottom: 3px;
   transition: transform var(--dur-release) var(--ease-spring), background-color var(--dur-fast) var(--ease), box-shadow var(--dur-release) var(--ease-out); }
-@media (hover: hover) { .choice:not([disabled]):hover { background: var(--inset); } .tb a:hover { color: var(--ink); } .rowlink:hover b, .rowlink:hover > span:first-child { text-decoration: underline; text-underline-offset: 3px; } .hub-states a:hover { background: var(--line); } .field-max:hover { background: var(--inset); } .period button:not([disabled], [aria-pressed="true"]):hover { background: var(--inset); } }
-.choice.is-hot { background: var(--volt); transform: scale(1.04); }
-.choice.is-pressed { background: var(--volt); transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); transition-duration: var(--dur-press); }
+@media (hover: hover) { .choice[data-dir="l"]:not([disabled]):hover { background: var(--pick-l-hot); } .choice[data-dir="r"]:not([disabled]):hover { background: var(--pick-r-hot); } .tb a:hover { color: var(--ink); } .rowlink:hover b, .rowlink:hover > span:first-child { text-decoration: underline; text-underline-offset: 3px; } .hub-states a:hover { background: var(--line); } .field-max:hover { background: var(--inset); } .period button:not([disabled], [aria-pressed="true"]):hover { background: var(--inset); } }
+/* each answer keeps its own colour everywhere: the button, the drag stamp and the pick line */
+.choice[data-dir="l"]:not([disabled]) { background: var(--pick-l); color: var(--on-pick); }
+.choice[data-dir="r"]:not([disabled]) { background: var(--pick-r); color: var(--on-pick); }
+.choice.is-hot { transform: scale(1.04); }
+.choice[data-dir="l"].is-hot, .choice[data-dir="l"].is-pressed { background: var(--pick-l-hot); }
+.choice[data-dir="r"].is-hot, .choice[data-dir="r"].is-pressed { background: var(--pick-r-hot); }
+.choice.is-pressed { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); transition-duration: var(--dur-press); }
 .choice[disabled] { background: var(--inset); border-color: var(--line-strong); color: var(--ink-2); box-shadow: none; cursor: not-allowed; }
 .qcard .choice:focus-visible { outline-offset: 3px; }
 /* the stamp only hints below the commit threshold (JS caps it at 0.4); armed, it is solid and snaps up a size */
 .qstamp { position: absolute; top: 60px; z-index: 4; padding: var(--s-8) var(--s-12); border: var(--edge); border-radius: var(--r-control); background: var(--volt); color: var(--on-volt); font-family: var(--font-display); font-weight: var(--fw-black); font-stretch: var(--wide); font-size: var(--fs-24); line-height: 1; text-transform: uppercase; opacity: 0; pointer-events: none; box-shadow: 4px 4px 0 var(--ink); max-width: 70%; --tilt: 0deg; transform: rotate(var(--tilt)) scale(0.92); transition: transform var(--dur-fast) var(--ease-spring); }
-.qstamp--l { right: var(--s-16); --tilt: 8deg; }
+.qstamp--l { right: var(--s-16); --tilt: 8deg; background: var(--pick-l); color: var(--on-pick); }
 .qstamp--r { left: var(--s-16); --tilt: -8deg; }
 .qstamp.is-armed { transform: rotate(var(--tilt)) scale(1.06); }
 /* behind the last card: shown while the fifth pick can still be undone */
