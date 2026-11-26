@@ -28,6 +28,8 @@
   var sess = App.sess, live = S === "" || S === "fresh";   /* only the plain screen carries real progress; every other state is a fixed preset */
   if (S === "fresh") { sess.resetDay(); S = ""; }
   /* the day is already finished in this tab: home is the day done screen */
+  /* picks that were still inside their undo window when the player left this screen were sent at once; coming back says so */
+  var leftSaved = live ? sess.takeLeft() : 0;
   if (live && sess.picked() === 5) { location.replace(sess.data.paid ? "done.html" : "done.html?state=moment"); return; }
   var answered = { partial: [1, 2], syncing: [1, 2, 3], slow: [1, 2], failed: [1, 3], offline: [1, 2], reconnect: [1], reconnectfail: [1] }[S] || [];
   /* coming back mid set keeps the progress: picks made earlier in this tab are still answered */
@@ -40,30 +42,34 @@
 
   /* one header pattern: title row (with the view switch), then one status row: counter, day progress, time left */
   function head() {
-    var sw = '<div class="viewsw" role="group" aria-label="' + t("h.view.label") + '"><a href="home-cards.html" aria-current="page" aria-label="' + t("h.view.card") + '">' + C.icon("cards", 20) + '</a><a href="home-terminal.html' + (S ? "?state=" + S : "") + '" aria-label="' + t("h.view.term") + '">' + C.icon("list", 20) + "</a></div>";
-    var cd = S === "empty" || S === "closed" ? "" : S === "loading" ? C.skel("96px", "12px") : '<span class="ph-cd">' + C.icon("clock", 14) + '<span class="sr-only">' + t("h.closes") + '</span><b data-cd="' + M.untilNextSet() + '"></b></span>';
+    var sw = C.viewSwitch("card", S);
+    var cd = S === "empty" || S === "closed" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet());
     return '<div class="ph-top"><h1>' + t("h.title") + "</h1>" + sw + "</div>" +
       '<div class="ph-line"><span class="ph-count"><span id="cnt">' + (S === "loading" ? "0" : count) + "</span><small>/5</small></span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs, { band: true, id: "day5" }) + cd + "</div>";
   }
   function body() {
-    if (S === "loading") return '<div class="deck" aria-busy="true"><div class="qcard" data-pos="0"><div class="qimg"></div><div class="qcard-top">' + C.skel("72px", "28px", "border-radius:999px") + C.skel("52px", "28px", "border-radius:999px") +
-      '</div><div class="qcard-body">' + C.skel("92%", "22px") + C.skel("60%", "22px") + '<div class="qcard-meta">' + C.skel("80%") + C.skel("66%") + '</div><div class="choices">' + C.skel("100%", "54px", "border-radius:999px") + C.skel("100%", "54px", "border-radius:999px") + '</div></div></div></div><p class="sr-only" role="status">' + t("common.loading") + "</p>";
+    if (S === "loading") return '<div class="deck" aria-busy="true"><div class="qcard" data-pos="0"><div class="qimg"></div><div class="qcard-top">' + C.skel("72px", "28px") + C.skel("52px", "28px") +
+      '</div><div class="qcard-body">' + C.skel("92%", "22px") + C.skel("60%", "22px") + '<div class="qcard-meta">' + C.skel("80%") + C.skel("66%") + '</div><div class="choices">' + C.skel("100%", "54px") + C.skel("100%", "54px") + '</div></div></div></div><p class="sr-only" role="status">' + t("common.loading") + "</p>";
     if (S === "empty") return C.empty({ icon: "clock", title: t("h.empty.h"), body: t("h.empty.b", { time: t("time.kst9") }), extra: '<p class="fig fig--md" data-cd="' + M.untilNextSet() + '"></p>' });
     if (S === "closed") return C.empty({ icon: "refresh", title: t("h.closed"), action: C.btn(t("h.closed.btn"), { kind: "primary", href: "home-cards.html" }) });
     if (S === "error") return C.error();
     if (S === "otherdevice") return C.otherDevice();
     var cards = Q.filter(function (q) { return answered.indexOf(q.n) < 0; });
     if (S === "failed") cards.sort(function (a, b) { return (a.n === 2 ? -1 : 0) - (b.n === 2 ? -1 : 0); });
-    return (App.offline ? C.note("warn", t("h.offline")) : "") + C.playBanner(S) +
-      '<div class="deck" id="deck"><div class="deck-end" aria-hidden="true"><h2>' + t("h.end.h") + "</h2><p>" + t("h.end.b") + "</p></div>" +
+    /* offline: the bar under the header says so, the answers are drawn switched off, and a tap on one says why */
+    return C.playBanner(S) +
+      /* behind the last card: the countdown of the fifth pick (a ring and "Finishing in 3") and a button that ends the wait */
+      '<div class="deck" id="deck"><div class="deck-end" id="deck-end" aria-hidden="true"><div class="end-ring" aria-hidden="true"><svg class="ring" viewBox="0 0 92 92"><circle class="trk" cx="46" cy="46" r="40"/><circle class="run" id="end-run" cx="46" cy="46" r="40"/></svg>' + C.icon("check", 32) + "</div>" +
+      "<h2>" + t("h.end.h") + '</h2><p id="end-p"></p><div id="end-act"></div></div>' +
       cards.map(function (q) { return C.qcard(q.id, { failed: S === "failed" && q.n === 2, disabled: App.offline, noimg: S === "noimage" && q.n === 1, top: S === "imagetop", final: true }); }).join("") + "</div>" +
       '<div class="pickbar" id="pickbar"></div>';
   }
 
-  App.mount({ tab: "home", cls: "is-home", docTitle: t("h.title"), head: head(), body: body(), badges: { home: 5 - count ? "dot" : 0, results: 2 }, after: function () {
+  App.mount({ tab: "home", cls: "is-home" + (App.offline ? " is-offline" : ""), docTitle: t("h.title"), head: head(), body: body(), badges: { home: 5 - count ? "dot" : 0, results: 2 }, after: function () {
     var deckEl = $("#deck"); if (!deckEl) return;
     var day5 = $("#day5"), cnt = $("#cnt"), bar = $("#pickbar");
     if (S === "failed") { App.toast(t("h.toast.fail", { n: 2 }), { btn: t("common.retry") }); }
+    if (leftSaved) App.toast(leftSaved > 1 ? t("h.left.savedn", { n: leftSaved }) : t("h.left.saved"));
 
     /* picks still inside their undo window, oldest first. Undo always acts on the last one. */
     var held = [], shown = null, fade;
@@ -77,7 +83,23 @@
       if (count === 0) return '<span class="pickbar-hint">' + C.icon("left", 14) + "<span>" + t(canHover ? "h.hint.keys" : "h.hint.touch") + "</span>" + C.icon("right", 14) + "</span>";
       return left ? '<span class="pickbar-hint"><span>' + t("h.left", { n: left }) + "</span></span>" : "";
     }
+    /* the finishing panel behind the last card: the time left of the newest held pick, as a ring and a number */
+    var endEl = $("#deck-end"), endP = $("#end-p"), endRun = $("#end-run"), endAct = $("#end-act"), endT, endFor = null;
+    /* the button exists only while there is a wait to end, so the home screen carries no lime at rest */
+    function finishBtn(on) { if (on === !!endAct.firstChild) return; endAct.innerHTML = on ? C.btn(t("h.end.now"), { kind: "primary", id: "finish" }) : ""; }
+    function endPanel() {
+      var p = held[held.length - 1], on = count === 5 && !!deck && !deck.live().length;
+      endEl.setAttribute("aria-hidden", on ? "false" : "true");
+      clearInterval(endT);
+      if (!on) { endFor = null; finishBtn(false); return; }
+      if (!p) { endP.textContent = t("h.end.b"); endRun.style.animation = "none"; endRun.style.strokeDashoffset = 251.4; finishBtn(false); endFor = null; return; }
+      finishBtn(true);
+      if (endFor !== p) { endFor = p; endRun.style.strokeDashoffset = ""; endRun.style.animation = "none"; void endRun.getBoundingClientRect(); endRun.style.animation = ""; endRun.style.animationDuration = UNDO_MS + "ms"; endRun.style.animationDelay = "-" + (Date.now() - p.t0) + "ms"; }
+      function tick() { endP.innerHTML = t("h.end.in", { n: "<b>" + Math.max(1, Math.ceil((UNDO_MS - (Date.now() - p.t0)) / 1000)) + "</b>" }); }
+      tick(); endT = setInterval(tick, 100);
+    }
     function render() {
+      endPanel();
       clearTimeout(fade);
       var p = held[held.length - 1];
       if (p) {
@@ -95,7 +117,12 @@
       }
       bar.innerHTML = rest();
     }
-    function finishDay() { if (count === 5 && !held.length) setTimeout(function () { location.href = "done.html?state=moment"; }, App.reduce ? 0 : 500); }
+    var leaving = false;
+    function finishDay(now) { if (count === 5 && !held.length && !leaving) { leaving = true; setTimeout(function () { location.href = "done.html?state=moment"; }, now || App.reduce ? 0 : 500); } }
+    /* "Finish now": every pick still inside its undo window is sent at once and the day done screen opens */
+    function finishNow() { held.slice().forEach(function (p) { clearTimeout(p.timer); held.splice(held.indexOf(p), 1); p.state = "saving"; shown = p; }); render(); finishDay(true); }
+    /* leaving the screen inside an undo window: the held picks are sent at once, and home says "Pick saved" on return */
+    window.addEventListener("pagehide", function () { if (live && held.length && !leaving) sess.leave(held.length); });
     /* the undo window closed: now the pick is sent (optimistic, in the background) */
     function send(p) {
       held.splice(held.indexOf(p), 1);
@@ -105,7 +132,7 @@
     }
     var deck = App.deck(deckEl, {
       disabled: function () { return App.offline; },
-      onBlocked: function () { App.live(t("h.offline")); },
+      onBlocked: function () { App.toast(t("h.offline"), { key: "offline" }); },   /* offline: the answers look switched off, and a tap says why */
       onCommit: function (n, dir, remaining, card) {
         var p = { n: n, id: card.getAttribute("data-id"), dir: dir, card: card, t0: Date.now(), state: "held" };
         p.timer = setTimeout(function () { send(p); }, UNDO_MS);
@@ -127,6 +154,7 @@
       App.live(t("h.undone", { n: p.n }));
     }
     bar.addEventListener("click", function (e) { if (e.target.closest("#undo")) undo(); });
+    endAct.addEventListener("click", function (e) { if (e.target.closest("#finish")) finishNow(); });
     /* Undo from the keyboard while the window is open: Z or Backspace (the hint sits on the button on devices with a pointer) */
     document.addEventListener("keydown", function (e) {
       if ((e.key !== "z" && e.key !== "Z" && e.key !== "Backspace") || e.repeat || e.altKey || e.ctrlKey || e.metaKey || !held.length || $("#sheet-root.is-open")) return;
@@ -150,7 +178,6 @@
     deckEl.addEventListener("pointerdown", stopNudge, true);
     document.addEventListener("keydown", stopNudge, true);
     render();
-    document.addEventListener("pointerdown", function (e) { var u = e.target.closest(".undo"); if (!u) return; u.classList.add("is-pressed"); setTimeout(function () { u.classList.remove("is-pressed"); }, 160); });
     deckEl.focus({ preventScroll: true });   /* arrow keys pick at once, no tabbing into the card */
 
     document.addEventListener("click", function (e) {   /* "Retry now" on the slow pick banner */

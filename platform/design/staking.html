@@ -31,7 +31,6 @@
   var PERIODS = [30, 90, 180, 365];
   function tier(a) { return a >= 10000 ? 2 : a >= 1000 ? 1 : 0; }
 
-  var narrow = matchMedia("(max-width: 379px)");
   function head() { return '<div class="ph-top"><h1>' + t("s.title") + "</h1></div>"; }
   function sw() { return C.seg([{ label: t("s.new"), href: "staking.html", on: true }, { label: t("s.mine", { n: M.stakes.length }), href: "stakes.html" }], { label: t("s.switch"), name: "" }).replace('class="seg"', 'class="seg" id="sw"'); }
   function avail() { return t("s.avail") + ' <b id="avail">' + F.ct(bal) + "</b>"; }
@@ -40,12 +39,12 @@
     return sw() +
       (S === "paused" ? C.note("warn", t("s.paused")) : "") + (S === "fullnone" ? C.note("warn", t("s.full") + " " + t("s.full.none")) : "") + (S === "max20" ? C.note("warn", t("s.max20"), C.btn(t("s.mine", { n: 20 }), { sm: true, href: "stakes.html" })) : "") + '<div id="full-note"></div>' + (App.offline ? C.note("warn", t("s.offline")) : "") +
       (S === "zero" ? C.note("", t("s.zero"), '<div class="row">' + C.btn(t("w.deposit"), { sm: true, href: "deposit.html" }) + C.btn(t("w.convert"), { sm: true, href: "convert.html" }) + "</div>") : "") +
-      '<section class="card stack">' +
+      '<section class="sec" id="form">' +
       C.amount({ id: "amt", label: t("s.amount"), unit: "CT", value: initial, disabled: blocked, side: S === "loading" ? C.skel("110px", "12px") : avail(), msg: t("s.min") }) +
       '<div><p class="field-label"><b id="per-l">' + t("s.period") + '</b></p><div class="period" role="group" aria-labelledby="per-l" id="period">' +
       PERIODS.map(function (d) { return '<button type="button" data-d="' + d + '" aria-pressed="' + (d === period) + '"' + (blocked ? " disabled" : "") + "><b>" + d + "<small>" + t("s.d") + '</small></b><span data-rate="' + d + '"></span></button>'; }).join("") + "</div></div>" +
-      '<hr class="hr"><div id="sum" aria-live="polite"></div></section>' +
-      '<p class="small muted" id="rules"></p>' +
+      '<div id="sum" aria-live="polite"></div>' +
+      '<p class="small muted" id="rules"></p></section>' +
       C.help(t("s.help.q"), "<p>" + t("s.help.a") + '</p><div class="scrollx"><table class="ratetable"><tr><th>' + t("s.th.lock") + "</th><th>" + t("s.th.1") + "</th><th>" + t("s.th.2") + "</th><th>" + t("s.th.3") + "</th></tr>" +
         PERIODS.map(function (d) { return "<tr><td>" + t("s.days", { d: d }) + "</td>" + M.rates[d].map(function (r) { return "<td>" + r + "%</td>"; }).join("") + "</tr>"; }).join("") + "</table></div>");
   }
@@ -82,7 +81,8 @@
       else if (a > bal) { err = t("s.e.bal", { b: F.dec(bal) }); why = "s.btn.bal"; fix = C.btn(t("s.fix.bal", { b: F.dec(bal) }), { sm: true, attrs: 'data-fix="' + bal + '"' }); }
       box.classList.toggle("is-error", !!err); inp.setAttribute("aria-invalid", err ? "true" : "false");
       msg.className = "field-msg" + (err ? " is-error" : ""); /* under the field, in place: the minimum until it is met, then what the next tier adds */
-      var ti = tier(a), cue = a < M.minStake ? t("s.min") : t("s.tier.cue" + ti);
+      /* while the amount is in error the period buttons keep the base tier rates: no rate is promised for an amount that cannot be staked */
+      var ti = err ? 0 : tier(a), cue = a < M.minStake ? t("s.min") : t("s.tier.cue" + ti);
       msg.innerHTML = err ? "<span>" + err + "</span>" + fix : '<span class="tier-cue' + (a >= M.minStake && ti ? " is-on" : "") + '">' + (a >= M.minStake ? C.icon(ti ? "check" : "chart", 14) : "") + "<span>" + cue + "</span></span>" + (App.isKo && a ? "<span>" + F.krw(a) + "</span>" : "");
       var over = !err && a > room;
       $("#full-note").innerHTML = over ? C.note("warn", t("s.full") + " " + t("s.full.room", { x: F.dec(room), d: period }), C.btn(t("s.fix.stake", { x: F.dec(room) }), { sm: true, attrs: 'data-fix="' + room + '"' })) : "";
@@ -97,19 +97,17 @@
       var r = M.rates[period][ti], interest = a * r / 100 * period / 365;
       /* the summary never shows interest for an amount that cannot be staked */
       var shown = !err && !p.empty;
-      /* on a narrow phone the annual rate row is dropped (the chosen period button already shows it), so the unlock date stays above the action bar */
+      /* no "Annual rate" row: the chosen period button already shows it */
       sum.innerHTML = S === "loading" ? C.skel("100%") + C.skel("100%", "14px", "margin-top:14px") + C.skel("100%", "14px", "margin-top:14px") : C.rows([
-        narrow.matches ? null : [t("s.apr"), r + "%"],
         [t("s.interest", { d: period }), shown ? F.ct(interest) + (App.isKo ? "<small>" + F.krw(interest) + "</small>" : "") : "–", true],
         [t("s.unlock"), F.dateLong(M.ahead(period))]]);
-      $("#rules").textContent = t("s.rules", { d: period });
+      $("#rules").textContent = t("s.rules", { date: F.dateLong(M.ahead(period)) });
       go.disabled = !valid || !!pending; go.classList.toggle("is-busy", !!pending);
       go.innerHTML = (pending ? '<span class="spin"></span>' : "") + "<span>" + (pending ? pending : valid ? t("s.btn", { a: F.dec(a) }) : t(why)) + "</span>";
       return valid && !pending ? a : 0;
     }
     refresh = update;
     inp.addEventListener("input", update);
-    if (narrow.addEventListener) narrow.addEventListener("change", update);
     document.addEventListener("click", function (e) {
       var f = e.target.closest("[data-fix]"); if (f) { inp.value = F.dec(+f.getAttribute("data-fix")); update(); return; }
       if (e.target.closest("[data-max]")) { inp.value = F.dec(bal); update(); return; }

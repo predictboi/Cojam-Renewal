@@ -1,6 +1,6 @@
 // Touch walk through of the primary task with assertions (login, five cards, undo, day done, ranking, a 500 CT stake, copy the wallet address).
 // Serve first: python3 -m http.server 8820 -d platform/design (another port: PORT=8816).
-// Run: node platform/design/tests/e2e-touch.js <en|ko|ja> <width> <height> [captureDir]   Captures are named v4-<screen>-<lang>-<width>.png
+// Run: node platform/design/tests/e2e-touch.js <en|ko|ja> <width> <height> [captureDir]   Captures are named v5-<screen>-<lang>-<width>.png
 const {chromium}=require('playwright');
 const [lang,W,H,OUT]=[process.argv[2]||'en',+process.argv[3]||390,+process.argv[4]||844,process.argv[5]];
 const B='http://localhost:'+(process.env.PORT||8820)+'/';
@@ -11,7 +11,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const ctx=await b.newContext({viewport:{width:W,height:H},deviceScaleFactor:2,isMobile:true,hasTouch:true,permissions:['clipboard-read','clipboard-write']});
   const pg=await ctx.newPage();const errs=[];pg.on('pageerror',e=>errs.push(e.message));
   const cdp=await ctx.newCDPSession(pg);
-  const shot=async n=>{ if(OUT) await pg.screenshot({path:`${OUT}/v4-${n}-${lang}-${W}.png`}); };
+  const shot=async n=>{ if(OUT) await pg.screenshot({path:`${OUT}/v5-${n}-${lang}-${W}.png`}); };
   const touch=(type,x,y)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:type==='touchEnd'?[]:[{x,y}]});
   const stamps=()=>pg.evaluate(()=>{const c=document.querySelector('.qcard[data-pos="0"]');if(!c)return null;const s=d=>+getComputedStyle(c.querySelector('.qstamp--'+d)).opacity;const g=q=>getComputedStyle(c.querySelector(q)).backgroundColor;const h=c.querySelector('.choice.is-hot');return {l:s('l'),r:s('r'),hot:c.querySelectorAll('.choice.is-hot').length,stampL:g('.qstamp--l'),stampR:g('.qstamp--r'),tint:g('.qtint'),tintOn:+getComputedStyle(c.querySelector('.qtint')).opacity,hotBg:h?getComputedStyle(h).backgroundColor:''};});
   async function drag(x0,y0,dx,{steps=12,stepMs=16,hold=0,release=true,shotName}={}){
@@ -33,6 +33,10 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   // ---------- 1. login
   await pg.goto(B+'login.html?state=unsupported'+(lang==='en'?'':'&lang='+lang)); await pg.waitForTimeout(600);
   const noteTxt=await pg.locator('#prov-note').innerText();
+  ok('login: Send code is disabled while the unsupported note shows', await pg.locator('#send').isDisabled());
+  await pg.locator('#email').fill('minji@naver.com'); await pg.waitForTimeout(150);
+  ok('login: changing the address clears the note and frees the button', await pg.locator('#prov-note').count()===0 && !(await pg.locator('#send').isDisabled()));
+  await pg.goto(B+'login.html?state=unsupported'+(lang==='en'?'':'&lang='+lang)); await pg.waitForTimeout(500);
   await pg.goto(B+'login.html'+(lang==='en'?'':'?lang='+lang)); await pg.waitForTimeout(900);
   if(lang==='en') ok('language: English by default with a Korean device', await pg.evaluate(()=>document.documentElement.lang)==='en');
   ok('login: email field focused on load', await pg.evaluate(()=>document.activeElement&&document.activeElement.id==='email'));
@@ -43,13 +47,16 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   ok('login: language control present', await pg.locator('select[data-lang]').count()===1);
   if(lang!=='en'){ const h=await pg.evaluate(()=>{const s=getComputedStyle(document.querySelector('.auth h1'));return {w:s.fontWeight,fs:parseFloat(s.fontSize),ls:parseFloat(s.letterSpacing)};});
     ok('type: login headline is weight 900, 34px, tighter tracking in '+lang, h.w==='900'&&h.fs===34&&h.ls<-1, JSON.stringify(h)); }
-  await pg.keyboard.type('minji@gmial.com'); await pg.keyboard.press('Enter'); await pg.waitForTimeout(300);
+  await pg.keyboard.type('Minji@Gmial.com'); await pg.keyboard.press('Enter'); await pg.waitForTimeout(300);
   ok('login: typo suggestion offered (gmail.com)', (await pg.locator('#typo').innerText().catch(()=>'')).includes('gmail.com'));
   ok('login: typo is not treated as unsupported', await pg.locator('#prov-note').count()===0);
+  const tf=await pg.evaluate(()=>{const f=document.querySelector('#facts');const fits=!f.hidden&&f.getBoundingClientRect().bottom<=innerHeight;f.hidden=false;const would=f.getBoundingClientRect().bottom<=innerHeight-8;f.hidden=!fits;return {fits,would,scroll:document.documentElement.scrollHeight<=innerHeight};});
+  ok('login: the three facts stay in the typo state when the height allows', tf.fits===tf.would, JSON.stringify(tf));
   await shot('a1-login-typo-suggestion');
   await pg.locator('[data-fix-email]').tap(); await pg.waitForTimeout(200);
-  ok('login: one tap fix sets gmail.com', await pg.inputValue('#email')==='minji@gmail.com');
-  await pg.keyboard.press('Enter'); await pg.waitForTimeout(1300);
+  await pg.waitForTimeout(1300);
+  ok('login: one tap on the suggestion fixes the address (lower case) and sends the code', await pg.locator('#code').count()===1 && (await pg.locator('#f-code').innerText()).includes('minji@gmail.com'));
+
   ok('login: code step headline swapped', await pg.locator('#code').count()===1 && !(await pg.locator('#lede').isVisible()));
   const facts=await pg.evaluate(()=>{const f=document.querySelector('#facts'),p=document.querySelector('#panel').getBoundingClientRect();const r=f.getBoundingClientRect();return {vis:!f.hidden&&r.height>0,n:f.children.length,below:r.top>=p.bottom,inView:r.bottom<=innerHeight};});
   ok('login: the code step shows the three benefit lines under the panel', facts.vis&&facts.n===3&&facts.below&&facts.inView, JSON.stringify(facts));
@@ -72,6 +79,9 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   await pg.waitForTimeout(1500);
   ok('H1: the nudge ends on its own and is remembered', await pg.evaluate(()=>!document.querySelector('#deck').hasAttribute('data-nudge') && localStorage.getItem('cjp.nudged')==='1' && document.querySelector('.qcard[data-pos="0"]').getAnimations().length===0));
   ok('H1: header title on one line', await pg.evaluate(()=>{const h=document.querySelector('.ph h1');return h.getBoundingClientRect().height<parseFloat(getComputedStyle(h).fontSize)*1.6;}));
+  const hd=await pg.evaluate(()=>{const cd=document.querySelector('.ph-cd'),sw=document.querySelector('.viewsw a[aria-current]');return {cd:cd.innerText.replace(/\s+/g,' ').trim(),word:App.t('h.closes'),sw:sw.innerText.trim(),want:App.t('h.view.card'),lig:getComputedStyle(document.body).fontVariantLigatures};});
+  ok('H1: the header timer shows its word ("Closes in 12:48:08")', hd.cd.startsWith(hd.word) && /\d\d:\d\d:\d\d$/.test(hd.cd), hd.cd);
+  ok('H1: the view switch names the selected view in words', hd.sw===hd.want, hd.sw);
   if(lang!=='en'){ const h=await pg.evaluate(()=>{const s=getComputedStyle(document.querySelector('.ph h1'));return {w:s.fontWeight,fs:parseFloat(s.fontSize),ls:parseFloat(s.letterSpacing)};});
     ok('type: page title is weight 900, 2px larger, tighter tracking in '+lang, h.w==='900'&&h.fs===(W>=380?26:24)&&h.ls<-0.7, JSON.stringify(h)); }
   const tabs=await pg.evaluate(()=>[...document.querySelectorAll('.tb a')].map(a=>{const s=a.lastElementChild;return {fs:parseFloat(getComputedStyle(a).fontSize),fits:s.scrollWidth<=a.clientWidth-4};}));
@@ -131,7 +141,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   ok('guard: two taps 120 ms apart answer one question', await cnt()===1, await cnt());
   // five rapid taps do not finish the day
   for(let i=0;i<4;i++){ await pg.touchscreen.tap(yes.x,yes.y); await sleep(60); }
-  ok('guard: rapid taps cannot run through the set', await cnt()<=2, await cnt());
+  ok('guard: four rapid taps (60 ms apart) answer at most one card per 200 ms guard, never the whole set', await cnt()<=3, await cnt());
   // bring the deck back to: q1 picked only
   while(await cnt()>1){ await pg.locator('#undo').tap(); await sleep(450); }
   ok('undo acts on the most recent pick only', await cnt()===1 && await front()===2);
@@ -161,7 +171,9 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   await pg.evaluate(()=>document.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowRight',repeat:true,bubbles:true}))); await sleep(100);
   ok('keyboard: repeated key event ignored', await cnt()===2);
   await pg.keyboard.press('ArrowRight'); await sleep(100); await pg.keyboard.press('ArrowRight'); await sleep(500);
-  ok('keyboard: arrow picks without tabbing, second press 100 ms later ignored', await cnt()===3 && await front()===4, await cnt());
+  ok('keyboard: arrow picks without tabbing; a second press 100 ms later is queued and answers the next card (not lost, not doubled)', await cnt()===4 && await front()===5, await cnt());
+  await pg.keyboard.press('z'); await sleep(600);
+  ok('keyboard: Z takes back the queued pick only', await cnt()===3 && await front()===4, await cnt());
   // keyboard undo: Z, then Backspace, while the window is open
   await pg.keyboard.press('z'); await sleep(600);
   ok('keyboard: Z undoes the pick while the window is open', await cnt()===2 && await front()===3, await cnt());
@@ -174,47 +186,55 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   ok('button picks question 4', await cnt()===4 && await front()===5);
   c=await cardBox(); await drag(cx,cy,c.w*0.45,{}); await sleep(600);
   ok('fifth pick: stays on the deck screen while Undo is open', /home-cards/.test(pg.url()) && await pg.locator('#undo').count()===1);
+  const fin=await pg.evaluate(()=>{const e=document.querySelector('#deck-end'),r=document.querySelector('.end-ring').getBoundingClientRect(),b=document.querySelector('#finish'),br=b.getBoundingClientRect(),d=document.querySelector('#deck').getBoundingClientRect();return {vis:getComputedStyle(e).visibility==='visible'&&e.getAttribute('aria-hidden')==='false',ring:r.width>=80&&r.top>=d.top&&r.bottom<=d.bottom,anim:document.querySelector('#end-run').getAnimations().length>0,txt:document.querySelector('#end-p').innerText.trim(),btn:b.innerText.trim(),want:App.t('h.end.now'),inDeck:br.bottom<=d.bottom,h:br.height};});
+  ok('fifth pick: the deck area shows the ring, "Finishing in N" and a "Finish now" button (no dead wait)', fin.vis&&fin.ring&&fin.anim&&/[123]/.test(fin.txt)&&fin.btn===fin.want&&fin.inDeck&&fin.h>=44, JSON.stringify(fin));
   await shot('h1-fifth-pick-undo');
   await pg.locator('#undo').tap(); await sleep(600);
   ok('fifth pick undone: card 5 back', await front()===5 && await cnt()===4);
   const t0=Date.now(); await pg.locator('.qcard[data-pos="0"] .choice[data-dir="r"]').tap();
   await pg.waitForURL(/done\.html/,{timeout:9000}).catch(()=>{}); const waited=Date.now()-t0;
-  ok('day done shows only after the 3 s window', /done\.html/.test(pg.url()) && waited>=3000, waited+' ms');
+  ok('without "Finish now" the day done screen opens only after the 3 s window', /done\.html/.test(pg.url()) && waited>=3000, waited+' ms');
 
   // ---------- 3. day done
   await pg.waitForTimeout(400); const p0=await pg.locator('#pts-val').innerText();
   await pg.waitForTimeout(2600); const p1=await pg.locator('#pts-val').innerText();
+  const mom=await css('#done-fig','color');
+  ok('done: during the moment the +100P figure is lime', mom===LIME, mom);
   ok('done: header pill counts 1,250P to 1,350P', p1==='1,350P', p0+' -> '+p1);
   ok('done: no duplicate +100P toast', await pg.locator('.toast').count()===0);
   await pg.waitForTimeout(1200);
   const dn=await pg.evaluate(()=>{const g=s=>getComputedStyle(document.querySelector(s));const lime='rgb(214, 255, 61)';
-    const limeEls=[...document.querySelectorAll('.app *')].filter(e=>{const r=e.getBoundingClientRect();return r.width>1&&r.height>1&&getComputedStyle(e).backgroundColor===lime&&!e.closest('.tb');}).map(e=>e.tagName==='I'?'day5':(e.className||e.tagName).toString().split(' ')[0]);
-    const row=document.querySelector('.clock-row').getBoundingClientRect(),lab=document.querySelector('.clock-row .card-h').getBoundingClientRect(),tm=document.querySelector('#clock').getBoundingClientRect();
-    return {badge:g('.done-badge').backgroundColor,tick:g('.done-badge').color,chip:g('.reward').backgroundColor,chipTxt:g('.reward').color,lime:[...new Set(limeEls)].join(','),rowH:row.height,sameRow:Math.abs((lab.top+lab.height/2)-(tm.top+tm.height/2))<6&&lab.right<tm.left,listTop:document.querySelector('.list').getBoundingClientRect().top,
+    const limeEls=[...document.querySelectorAll('.app *')].filter(e=>{const r=e.getBoundingClientRect();const s=getComputedStyle(e);return r.width>1&&r.height>1&&(s.backgroundColor===lime||s.color===lime)&&!e.closest('.tb');}).map(e=>e.tagName==='I'?'day5':e.closest('.btn')?'btn':(e.className||e.tagName).toString().split(' ')[0]);
+    const f=document.querySelector('#done-fig'),fr=f.getBoundingClientRect(),h=document.querySelector('.done-side h1').getBoundingClientRect(),nx=document.querySelector('#next').getBoundingClientRect();
+    return {fig:g('#done-fig').color,fs:g('#done-fig').fontSize,ff:g('#done-fig').fontFamily,txt:f.textContent,beside:h.left>=fr.right&&h.top<fr.bottom&&h.bottom>fr.top,lime:[...new Set(limeEls)].join(','),nextH:nx.height,nextTxt:document.querySelector('#next').innerText.replace(/\s+/g,' ').trim(),boxes:[...document.querySelectorAll('#main .pg *')].filter(e=>{const s=getComputedStyle(e);return parseFloat(s.borderTopWidth)>=1.5&&!e.closest('.btn')&&e.getBoundingClientRect().width>60;}).length,note:document.querySelectorAll('.plain-note p').length,listTop:document.querySelector('.list').getBoundingClientRect().top,
       picks:[...document.querySelectorAll('.pick-c .pk')].map(e=>e.textContent),dots:[...document.querySelectorAll('.pick-c .pk > i')].map(e=>getComputedStyle(e).backgroundColor),expect:['r','l','r','r','r'].map((d,i)=>App.q(MOCK.set[i])[d])};});
-  ok('done: after the animation the badge is white with an ink tick', dn.badge==='rgb(255, 255, 255)'&&dn.tick==='rgb(11, 21, 48)', dn.badge);
-  ok('done: the "+100P paid" chip is white on ink', dn.chip==='rgb(11, 21, 48)'&&dn.chipTxt==='rgb(253, 253, 255)', dn.chip+' / '+dn.chipTxt);
+  ok('done: "+100P" is the hero: display face, 40px, beside the headline, white at rest', dn.txt==='+100P'&&dn.fs==='40px'&&/Archivo/.test(dn.ff)&&dn.beside&&dn.fig==='rgb(255, 255, 255)', dn.fs+' '+dn.fig+' beside '+dn.beside);
   ok('done: at rest only the progress band and the primary button are lime', dn.lime==='day5,btn', dn.lime);
-  ok('done: the countdown is one compact row (label left, time right)', dn.rowH<=64&&dn.sameRow, 'height '+dn.rowH+', list starts at '+Math.round(dn.listTop));
+  ok('done: "Next set in" is one quiet line and nothing on the page is a bordered card', dn.nextH<=32&&/\d\d:\d\d:\d\d/.test(dn.nextTxt)&&dn.boxes===0, 'height '+dn.nextH+', bordered blocks '+dn.boxes+', list starts at '+Math.round(dn.listTop));
+  ok('done: the payout note is two short plain lines', dn.note===2);
   ok('done: the list shows the picks made in this session, each with the dot of its answer colour', dn.picks.join('|')===dn.expect.join('|') && dn.dots.join('|')===[SKY,CORAL,SKY,SKY,SKY].join('|'), dn.picks.join(' | '));
   await shot('h3-day-done');
   await pg.goto(B+'home-cards.html'); await pg.waitForTimeout(900);
-  ok('home after the day is done: the day done screen, settled, 1,350P kept', /done\.html$/.test(pg.url()) && await pg.locator('#pts-val').innerText()==='1,350P' && await css('.done-badge','backgroundColor')==='rgb(255, 255, 255)', pg.url());
+  ok('home after the day is done: the day done screen, settled, 1,350P kept', /done\.html$/.test(pg.url()) && await pg.locator('#pts-val').innerText()==='1,350P' && await css('#done-fig','color')==='rgb(255, 255, 255)', pg.url());
   await pg.locator('a.btn-primary').tap(); await pg.waitForURL(/ranking/); await pg.waitForTimeout(900);
 
   // ---------- 4. ranking
-  const rk=await pg.evaluate(()=>{const pin=document.querySelector('#pin').getBoundingClientRect().top;const rows=[...document.querySelectorAll('#top10 .krow')].filter(r=>r.getBoundingClientRect().bottom<=pin).length;const ranks=[...document.querySelectorAll('#top10 .krow-rank [aria-hidden]')].map(e=>e.textContent);
-    const m=[...document.querySelectorAll('#top10 .krow.is-top .krow-rank')].map(e=>{const s=getComputedStyle(e);return s.backgroundColor+'/'+s.color+'/'+getComputedStyle(e,'::after').content;});
-    const ar=[...document.querySelectorAll('#around .krow')].map(r=>({rank:r.querySelector('.krow-rank [aria-hidden]').textContent,me:r.classList.contains('is-me'),gap:(r.querySelector('.krow-gap [aria-hidden]')||{}).textContent||''}));
+  const rk=await pg.evaluate(()=>{const pin=document.querySelector('#pin').getBoundingClientRect().top;const rows=[...document.querySelectorAll('#top10 .krow')].filter(r=>r.getBoundingClientRect().bottom<=pin).length;const ranks=[...document.querySelectorAll('#top10 [data-rank]')].map(e=>e.dataset.rank);
+    const pods=[...document.querySelectorAll('#top10 .pod')].map(e=>{const st=e.querySelector('.pod-step'),s=getComputedStyle(st),r=st.getBoundingClientRect(),er=e.getBoundingClientRect();return {rank:e.dataset.rank,bg:s.backgroundColor,h:Math.round(r.height),w:Math.round(r.width),x:Math.round(er.left),bottom:Math.round(r.bottom)};});
+    const nm=document.querySelectorAll('#top10 .pod-name span')[1],ns=getComputedStyle(nm);
+    const ar=[...document.querySelectorAll('#around .krow')].map(r=>({rank:r.dataset.rank,me:r.classList.contains('is-me'),gap:(r.querySelector('.krow-gap')||{}).textContent||''}));
     const order=document.querySelector('#top10').compareDocumentPosition(document.querySelector('#around'))&4;
-    return {rows,ranks,m,ar,order,tied:/Tied|동점|同点/.test(document.querySelector('#top10').innerText),pin:document.querySelector('#pin').innerText,pill:document.querySelector('#pts-val').textContent};});
-  ok('ranking: at least 3 full rows on the first screen', rk.rows>=3, rk.rows);
+    return {rows,ranks,pods,pin,name:nm.textContent,lig:ns.fontVariantLigatures,ar,order,up:App.t('k.gap.up',{n:50}),down:App.t('k.gap.down',{n:50}),cols:[...document.querySelectorAll('.cols')].map(c=>c.innerText.replace(/\s+/g,' ').trim()),colWant:[App.t('k.col.prize'),App.t('k.col.gap')],boxes:[...document.querySelectorAll('#main .pg *')].filter(e=>{const s=getComputedStyle(e);return parseFloat(s.borderTopWidth)>=1.5&&e.getBoundingClientRect().width>60;}).length,tied:/Tied|동점|同点/.test(document.querySelector('#top10').innerText),pinTxt:document.querySelector('#pin').innerText,pill:document.querySelector('#pts-val').textContent};});
+  ok('ranking: the podium and at least one plain row are on the first screen', rk.pods.every(p=>p.bottom<=rk.pin)&&rk.rows>=1, rk.rows+' rows, podium bottom '+rk.pods[0].bottom+' <= '+rk.pin);
   ok('ranking: ranks are distinct 1 to 10', rk.ranks.join()==='1,2,3,4,5,6,7,8,9,10');
-  ok('ranking: the top three medals are filled ink with white numerals, no lime dot', rk.m.length===3&&rk.m.every(x=>x==='rgb(11, 21, 48)/rgb(253, 253, 255)/none'), rk.m[0]);
-  ok('ranking: "Around you" sits under rank 10: the rank above, the player, the rank below, with point gaps', !!rk.order&&rk.ar.length===3&&rk.ar[1].me&&rk.ar.map(r=>r.rank).join()==='26,27,28'&&rk.ar[0].gap==='+50P'&&rk.ar[2].gap==='−50P', JSON.stringify(rk.ar));
+  ok('ranking: ranks 1 to 3 stand on a podium: first in the middle and tallest, steps in ink, blue and sky, no lime', rk.pods.length===3&&rk.pods[0].h>rk.pods[1].h&&rk.pods[1].h>rk.pods[2].h&&rk.pods[1].x<rk.pods[0].x&&rk.pods[0].x<rk.pods[2].x&&rk.pods[0].bg==='rgb(11, 21, 48)'&&rk.pods[1].bg==='rgb(18, 76, 196)'&&rk.pods[2].bg==='rgb(151, 219, 255)'&&rk.pods.every(p=>p.w>=90), JSON.stringify(rk.pods));
+  ok('ranking: an address keeps its x (ligatures and contextual forms are off for names)', rk.name.startsWith('0x')&&rk.lig==='none', rk.name+' / '+rk.lig);
+  ok('ranking: no bordered cards on the page', rk.boxes===0, rk.boxes);
+  ok('ranking: "Around you" sits under rank 10: the rank above, the player, the rank below, with the gap in words', !!rk.order&&rk.ar.length===3&&rk.ar[1].me&&rk.ar.map(r=>r.rank).join()==='26,27,28'&&rk.ar[0].gap===rk.up&&rk.ar[2].gap===rk.down, JSON.stringify(rk.ar));
+  ok('ranking: the prize column and the gap column are labelled', rk.cols.length===2&&rk.cols[0].endsWith(rk.colWant[0])&&rk.cols[1].endsWith(rk.colWant[1]), rk.cols.join(' | '));
   ok('ranking: no Tied tag', !rk.tied);
   ok('ranking: tie rule line on screen', await pg.locator('.tie-line').first().isVisible());
-  ok('ranking: pinned figure labelled as this week', /950P/.test(rk.pin), rk.pin.replace(/\s+/g,' ')+' | pill '+rk.pill);
+  ok('ranking: pinned figure labelled as this week', /950P/.test(rk.pinTxt), rk.pinTxt.replace(/\s+/g,' ')+' | pill '+rk.pill);
   await shot('k1-ranking');
   await pg.locator('#pin').tap(); await pg.waitForTimeout(900);
   const av=await pg.evaluate(()=>{const a=document.querySelector('#around').getBoundingClientRect(),pin=document.querySelector('#pin').getBoundingClientRect().top;return {top:a.top,bottom:a.bottom,pin,sheet:!!document.querySelector('#sheet-root.is-open')};});
@@ -227,13 +247,15 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   // ---------- 5. staking 500 CT
   await pg.goto(B+'staking.html'); await pg.waitForTimeout(900);
   const sk=await pg.evaluate(()=>{const g=document.querySelector('#go').getBoundingClientRect(),pin=document.querySelector('.pin--act'),pr=pin.getBoundingClientRect(),tab=document.querySelector('.tb').getBoundingClientRect().top;
-    const seg=document.querySelector('#sw').getBoundingClientRect(),card=document.querySelector('.pg > .card').getBoundingClientRect(),un=[...document.querySelectorAll('#sum .rows > div')].pop().getBoundingClientRect();
+    const seg=document.querySelector('#sw').getBoundingClientRect(),card=document.querySelector('#form').getBoundingClientRect(),un=[...document.querySelectorAll('#sum .rows > div')].pop().getBoundingClientRect();
     return {bottom:g.bottom,tab,label:document.querySelector('#go').innerText,gap:Math.round(card.top-seg.bottom),pad:parseFloat(getComputedStyle(document.querySelector('.pg')).paddingBottom),pinH:pr.height,tabH:innerHeight-tab,fade:getComputedStyle(pin,'::before').height,border:getComputedStyle(pin).borderTopWidth,
-      rows:document.querySelectorAll('#sum .rows > div').length,unlockBottom:un.bottom,pinTop:pr.top,cue:document.querySelector('#amt-msg').innerText.trim(),avail:document.querySelector('#avail').textContent};});
+      rules:document.querySelector('#rules').textContent,rulesWant:App.t('s.rules',{date:App.fmt.dateLong(MOCK.ahead(90))}),rulesBottom:document.querySelector('#rules').getBoundingClientRect().bottom,rulesLines:Math.round(document.querySelector('#rules').getBoundingClientRect().height/parseFloat(getComputedStyle(document.querySelector('#rules')).lineHeight)),rowTxt:document.querySelector('#sum').innerText,apr:App.t('s.apr'),boxes:[...document.querySelectorAll('#main .pg > section')].filter(e=>parseFloat(getComputedStyle(e).borderLeftWidth)>0).length,rows:document.querySelectorAll('#sum .rows > div').length,unlockBottom:un.bottom,pinTop:pr.top,cue:document.querySelector('#amt-msg').innerText.trim(),avail:document.querySelector('#avail').textContent};});
   ok('staking: primary action in view above the tab bar', sk.bottom<=sk.tab, Math.round(sk.bottom)+' <= '+sk.tab);
   ok('staking: 16px between the switch and the form card (as on ranking)', sk.gap===16, sk.gap);
   ok('staking: page bottom padding is the bar height plus its 16px fade', Math.abs(sk.pad-(sk.tabH+sk.pinH+16))<1.5 && sk.fade==='16px' && sk.border==='0px', sk.pad+' = '+sk.tabH+' + '+sk.pinH+' + 16');
-  ok('staking: '+(W<380?'at this width the annual rate row is dropped (2 rows)':'summary has 3 rows')+' and "Unlocks on" is visible above the bar', sk.rows===(W<380?2:3)&&sk.unlockBottom<=sk.pinTop-16, sk.rows+' rows, '+Math.round(sk.unlockBottom)+' <= '+Math.round(sk.pinTop-16));
+  ok('staking: the summary has 2 rows (no "Annual rate" row repeating the period button) and "Unlocks on" is above the bar', sk.rows===2&&!sk.rowTxt.includes(sk.apr)&&sk.unlockBottom<=sk.pinTop-16, sk.rows+' rows, '+Math.round(sk.unlockBottom)+' <= '+Math.round(sk.pinTop-16));
+  ok('staking: the rules line is short ("Locked until {date}. No early exit."), at most 2 lines and never under the action bar', sk.rules===sk.rulesWant&&sk.rulesLines<=2&&sk.rulesBottom<=sk.pinTop, sk.rules+' | '+sk.rulesLines+' lines, '+Math.round(sk.rulesBottom)+' <= '+Math.round(sk.pinTop));
+  ok('staking: the form is a flat section, not a bordered card', sk.boxes===0, sk.boxes);
   ok('staking: the caption under the amount states the tier cue (1,000 CT earns +1%)', /1,000 CT/.test(sk.cue)&&/\+1%/.test(sk.cue), sk.cue.replace(/\s+/g,' '));
   await shot('s1-staking');
   await pg.fill('#amt','50'); await pg.waitForTimeout(150);
@@ -242,6 +264,9 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   await pg.fill('#amt','1.23456'); await pg.waitForTimeout(150);
   const ldec=(await pg.locator('#go').innerText()).trim(), wantDec=await pg.evaluate(()=>App.t('s.btn.dec'));
   ok('staking: excess decimals: the button reads "Up to 4 decimals"', ldec===wantDec && (lang!=='en'||ldec==='Up to 4 decimals'), ldec);
+  await pg.fill('#amt','5000'); await pg.waitForTimeout(150);
+  const er=await pg.evaluate(()=>[...document.querySelectorAll('#period [data-rate]')].map(e=>e.textContent).join());
+  ok('staking: while the amount is in error the period buttons keep the base tier rates', er==='8%,12%,18%,25%' && await pg.locator('.field-box.is-error').count()===1, er);
   await pg.fill('#amt','500'); await pg.waitForTimeout(150); const r0=await pg.locator('[data-rate="90"]').innerText();
   await pg.fill('#amt','1000'); await pg.waitForTimeout(60);
   const tr=await pg.evaluate(()=>({rate:document.querySelector('[data-rate="90"]').textContent,anim:[...document.querySelectorAll('#period [data-rate]')].every(e=>e.classList.contains('is-up')&&e.getAnimations().length>0),cue:document.querySelector('#amt-msg').innerText}));
@@ -274,16 +299,21 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   await pg.locator('[data-tx="done"]').tap(); await pg.waitForTimeout(400);
   ok('staking: after the stake the button is free again', await pg.evaluate(()=>{const g=document.querySelector('#go');return !g.querySelector('.spin')&&!g.classList.contains('is-busy');}));
   await pg.goto(B+'stakes.html'); await pg.waitForTimeout(700);
-  ok('my stakes: the new 500 CT stake is listed first (3 stakes, 2,000 CT)', await pg.evaluate(()=>{const c=document.querySelectorAll('.stake');return c.length===3&&/^500/.test(c[0].querySelector('.fig').textContent)&&/2,000/.test(document.querySelector('.card--ink .fig').textContent);}));
+  ok('my stakes: the new 500 CT stake is listed first (3 stakes, 2,000 CT)', await pg.evaluate(()=>{const c=document.querySelectorAll('.stake');return c.length===3&&/^500/.test(c[0].querySelector('.fig').textContent)&&/2,000/.test(document.querySelector('#total .fig').textContent);}));
 
   // ---------- 6. wallet: copy the address
   await pg.goto(B+'wallet.html'); await pg.waitForTimeout(900);
-  const wl=await pg.evaluate(()=>{const b=document.querySelector('#copy-addr').getBoundingClientRect();const d=document.querySelector('details.help');const k=document.querySelector('.addr-acts a');return {bottom:b.bottom,h:b.height,ih:innerHeight,text:document.querySelector('#copy-addr').innerText.trim(),open:d.open,heads:[...document.querySelectorAll('#main h2.card-h')].map(e=>e.textContent),scan:k.innerText.trim(),scanH:k.getBoundingClientRect().height,figs:[...document.querySelectorAll('#main .card .fig')].map(e=>e.textContent),staked:document.querySelector('.rowlink b').textContent,ctTop:document.querySelectorAll('#main .card .fig')[0].getBoundingClientRect().bottom,tab:document.querySelector('.tb').getBoundingClientRect().top};});
-  ok('wallet: own address is the first block, with a text Copy button', wl.text.length>3 && wl.h>=44, wl.text+' | first block: '+wl.heads[0]);
-  ok('wallet: copy button on the first screen', wl.bottom<wl.ih-62, Math.round(wl.bottom));
+  const wl=await pg.evaluate(()=>{const b=document.querySelector('#copy-addr').getBoundingClientRect();const d=document.querySelector('details.help');const k=document.querySelector('#scan');const top=s=>document.querySelector(s).getBoundingClientRect().top;
+    const rows=[...document.querySelectorAll('#addr > span')].map(r=>({n:r.children.length,h:Math.round(r.getBoundingClientRect().height),w:Math.round(r.getBoundingClientRect().width),txt:r.textContent}));
+    return {bottom:b.bottom,h:b.height,ih:innerHeight,text:document.querySelector('#copy-addr').innerText.trim(),open:d.open,scan:k.innerText.trim(),scanH:k.getBoundingClientRect().height,ct:document.querySelector('#ct-fig').textContent,ctLabel:document.querySelector('#ct-h').textContent,ctFs:getComputedStyle(document.querySelector('#ct-fig')).fontSize,pt:document.querySelector('#pt-fig').textContent,ptLabel:document.querySelector('#pt-h').textContent,staked:document.querySelector('#staked').textContent,
+      order:top('#ct-fig')<top('.acts')&&top('.acts')<top('#addr')&&top('#addr')<top('#pt-fig'),rows,addrW:document.querySelector('#addr').clientWidth,tints:document.querySelectorAll('#main .tint').length,boxes:[...document.querySelectorAll('#main .pg *')].filter(e=>{const s=getComputedStyle(e);return parseFloat(s.borderTopWidth)>=1.5&&!e.closest('.btn')&&e.getBoundingClientRect().width>60;}).length,tab:document.querySelector('.tb').getBoundingClientRect().top};});
+  ok('wallet: the balance figure comes first, then the actions, then the address block, then points', wl.order&&wl.ctFs==='40px', wl.ctFs);
+  ok('wallet: one label per balance (no "CT" above "1,340.5 CT", no "P" after the points)', wl.ctLabel!=='CT'&&/CT$/.test(wl.ct)&&/^[\d,]+$/.test(wl.pt)&&wl.ptLabel.length>1, wl.ctLabel+' '+wl.ct+' | '+wl.ptLabel+' '+wl.pt);
+  ok('wallet: the address is two equal lines of five groups, on one line each', wl.rows.length===2&&wl.rows.every(r=>r.n===5&&r.h<=26&&r.w<=wl.addrW)&&wl.rows[0].txt.startsWith('0x'), JSON.stringify(wl.rows)+' in '+wl.addrW);
+  ok('wallet: the address is the one tinted block and nothing is a bordered card', wl.tints===1&&wl.boxes===0, wl.tints+' tinted, '+wl.boxes+' bordered');
+  ok('wallet: text Copy button on the first screen', wl.text.length>3&&wl.h>=44&&wl.bottom<wl.tab, wl.text+' '+Math.round(wl.bottom));
   ok('wallet: the explorer button is labelled "Kaiascan"', wl.scan==='Kaiascan'&&wl.scanH>=44, wl.scan);
-  ok('wallet: the CT card comes before Points and its figure is on the first screen', wl.heads[1]==='CT'&&/CT$/.test(wl.figs[0])&&/P$/.test(wl.figs[1])&&wl.ctTop<wl.tab, wl.heads.join(' > '));
-  ok('wallet: the balance reflects the stake (1,340.5 CT available, 2,000 CT staked)', /^1,340\.5/.test(wl.figs[0])&&wl.staked==='2,000 CT', wl.figs[0]+' | '+wl.staked);
+  ok('wallet: the balance reflects the stake (1,340.5 CT available, 2,000 CT staked)', /^1,340\.5/.test(wl.ct)&&wl.staked==='2,000 CT', wl.ct+' | '+wl.staked);
   ok('wallet: token contract collapsed by default', wl.open===false);
   await shot('w1-wallet');
   await pg.locator('#copy-addr').tap(); await pg.waitForTimeout(300);
@@ -299,6 +329,35 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const toast2=await pg.locator('.toast').innerText().catch(()=>'');
   ok('wallet: the contract address copy keeps its warning toast', await pg.locator('.toast').count()===1 && toast2===await pg.evaluate(()=>App.t('w.token.copied')), toast2);
   await shot('w1-wallet-token-info');
+
+
+  // ---------- 7. tab bar, stakes, offline, leaving inside the undo window
+  const tb=await pg.evaluate(()=>{const lime='rgb(214, 255, 61)';const cur=document.querySelector('.tb a[aria-current="page"]'),other=document.querySelector('.tb a:not([aria-current])');const s=getComputedStyle(cur),o=getComputedStyle(other);
+    return {lime:[...document.querySelectorAll('.tb *')].filter(e=>getComputedStyle(e).backgroundColor===lime).length,curCol:s.color,curW:s.fontWeight,othCol:o.color,othW:o.fontWeight,filled:!!cur.querySelector('svg [fill="currentColor"]'),othFilled:!!other.querySelector('svg [fill="currentColor"]'),target:[...document.querySelectorAll('.tb a')].every(a=>{const r=a.getBoundingClientRect();return r.width>=44&&r.height>=44;}),badge:document.querySelectorAll('.tb .tb-n, .tb .tb-dot').length};});
+  ok('tab bar: no lime pill; the current tab is ink with a filled icon and a heavy label, the others muted; 44px targets and the badges stay', tb.lime===0&&tb.curCol==='rgb(11, 21, 48)'&&+tb.curW>=800&&tb.othCol==='rgb(74, 86, 114)'&&+tb.othW<=500&&tb.filled&&!tb.othFilled&&tb.target&&tb.badge>=1, JSON.stringify(tb));
+  await pg.goto(B+'stakes.html'); await pg.waitForTimeout(700);
+  const wd=await pg.evaluate(()=>{const b=document.querySelector('[data-wd]');const n=parseFloat(b.innerText.replace(/[^\d.]/g,''));return {txt:b.innerText.trim(),n,line:b.parentNode.querySelector('p').innerText.trim()};});
+  ok('my stakes: the withdraw button states the full amount that leaves (principal plus interest)', wd.n>500&&wd.n<520&&/500/.test(wd.line), wd.txt+' | '+wd.line);
+  await shot('s2-my-stakes');
+  await pg.goto(B+'home-cards.html?state=offline'); await pg.waitForTimeout(900);
+  const of=await pg.evaluate(()=>[...document.querySelectorAll('.qcard[data-pos="0"] .choice')].map(e=>{const s=getComputedStyle(e);return e.getAttribute('aria-disabled')+'|'+e.disabled+'|'+s.backgroundColor+'|'+s.boxShadow;}));
+  ok('offline: both answers look switched off (mist, no drop) but are not removed from the tap', of.length===2&&of.every(x=>x==='true|false|rgb(238, 242, 249)|none'), of[0]);
+  await pg.locator('.qcard[data-pos="0"] .choice[data-dir="r"]').tap({force:true}); await pg.waitForTimeout(400);
+  const ot=await pg.locator('.toast').innerText().catch(()=>'');
+  ok('offline: a tap on an answer says why and picks nothing', ot===await pg.evaluate(()=>App.t('h.offline')) && await cnt()===2 && await front()===3, ot);
+  await shot('h1-offline-tap');
+  const ctx2=await b.newContext({viewport:{width:W,height:H},deviceScaleFactor:2,isMobile:true,hasTouch:true}); const p2=await ctx2.newPage(); p2.on('pageerror',e=>errs.push(e.message));
+  await p2.goto(B+'home-cards.html'+(lang==='en'?'':'?lang='+lang)); await p2.waitForTimeout(3000);
+  await p2.locator('.qcard[data-pos="0"] .choice[data-dir="r"]').tap(); await p2.waitForTimeout(500);
+  await p2.goto(B+'ranking.html'); await p2.waitForTimeout(400); await p2.goto(B+'home-cards.html'); await p2.waitForTimeout(900);
+  const lv=await p2.evaluate(()=>({toast:(document.querySelector('.toast')||{}).innerText||'',want:App.t('h.left.saved'),cnt:+document.querySelector('#cnt').textContent,front:+document.querySelector('.qcard[data-pos="0"]').dataset.q,done:document.querySelectorAll('#day5 .is-done').length,undo:!!document.querySelector('#undo')}));
+  ok('leaving home inside the undo window: the pick is sent at once and home says "Pick saved" on return, state consistent', lv.toast.trim()===lv.want&&lv.cnt===1&&lv.front===2&&lv.done===1&&!lv.undo, JSON.stringify(lv));
+  if(OUT) await p2.screenshot({path:`${OUT}/v5-h1-pick-saved-on-return-${lang}-${W}.png`});
+  // "Finish now": four picks, then the fifth, then the button ends the wait
+  for(let i=0;i<4;i++){ await p2.waitForTimeout(350); await p2.locator('.qcard[data-pos="0"] .choice[data-dir="r"]').tap(); }
+  await p2.waitForTimeout(500); const f0=Date.now(); await p2.locator('#finish').tap(); await p2.waitForURL(/done\.html/,{timeout:5000}).catch(()=>{});
+  ok('"Finish now" ends the wait: the day done screen opens in under 1.5 s', /done\.html/.test(p2.url()) && Date.now()-f0<1500, (Date.now()-f0)+' ms');
+  await ctx2.close();
 
   ok('no page errors', errs.length===0, errs.join(' | '));
   await b.close();

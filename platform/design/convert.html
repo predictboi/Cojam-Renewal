@@ -29,16 +29,16 @@
   var blocked = S === "cap" || S === "capglobal" || S === "paused" || S === "wait" || S === "loading" || App.state === "offline";
   function gate(icon, title, bodyText, extra, action) { return C.empty({ icon: icon, title: title, body: bodyText, extra: extra, action: action }); }
   function body() {
-    if (S === "short") return '<section class="card card--mist row-between"><span class="muted">' + t("c.avail") + '</span><b class="fig fig--md">' + F.pts(bal) + "</b></section>" +
+    if (S === "short") return '<section class="lead-fig"><h2 class="lbl">' + t("c.avail") + '</h2><p class="fig">' + F.pts(bal) + "</p></section>" +
       gate("bolt", t("c.short.h"), t("c.short.b", { p: F.int(bal), g: F.int(1000 - bal) }), "", C.btn(t("k.play"), { kind: "primary", href: "home-cards.html" }));
     var waitNote = "";
     if (S === "wait") { var d = M.user.firstConvert, secs = (d - Date.now()) / 1000;
       waitNote = C.note("sky", t("c.wait.b", { date: "<b>" + F.date(d, true) + "</b>" }) + "<br><b>" + t("c.wait.left", { d: Math.floor(secs / 86400), h: Math.floor(secs % 86400 / 3600) }) + "</b>"); }
     return waitNote + (S === "cap" ? C.note("warn", t("c.cap.hit", { time: t("time.kst9") })) : "") + (S === "capglobal" ? C.note("warn", t("c.cap.global", { time: t("time.kst9") })) : "") + (S === "paused" ? C.note("warn", t("c.paused")) : "") + (App.offline ? C.note("warn", t("w.offline")) : "") +
-      '<section class="card stack">' +
+      '<section class="sec">' +
       C.amount({ id: "amt", label: t("c.amount"), unit: "P", mode: "numeric", value: initial, disabled: blocked, side: S === "loading" ? C.skel("96px", "12px") : t("c.avail") + " <b>" + F.pts(bal) + "</b>", msg: t("c.step") }) +
-      '<hr class="hr"><div class="row-between"><span class="muted">' + t("c.get") + '</span><b class="fig" id="get" aria-live="polite">0<small>CT</small></b></div></section>' +
-      '<section class="card card--mist">' + C.rows([[t("c.rate"), "1,000P = 1 CT"], [t("c.minimum"), "1,000P"], [t("c.capleft"), t("c.capof", { n: capLeft })], [t("c.fee"), t("c.fee.v")]]) + "</section>";
+      '<div class="row-between"><span class="lbl">' + t("c.get") + '</span><b class="fig" id="get" aria-live="polite">0<small>CT</small></b></div></section>' +
+      '<section class="sec">' + C.rows([[t("c.rate"), "1,000P = 1 CT"], [t("c.minimum"), "1,000P"], [t("c.capleft"), t("c.capof", { n: capLeft })], [t("c.fee"), t("c.fee.v")]]) + "</section>";
   }
   function cfg(p) { var n = p / 1000; return { label: t("c.chip", { p: F.int(p) }), success: { title: t("c.ok.h", { p: F.int(p), n: n }), rows: [[t("c.ok.left"), F.pts(bal - p)], [t("c.ok.ct"), F.ct(M.user.ct + n)]] }, onSuccess: function () { App.addPoints(-p); } }; }
   App.mount({ tab: "wallet", back: "wallet.html", title: t("c.title"), body: body(), pin: S === "short" ? "" : C.actbar(C.btn("", { kind: "primary", block: true, id: "go", disabled: true }), t("c.rank")), points: bal, pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {

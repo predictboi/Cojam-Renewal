@@ -49,7 +49,7 @@
     if (!v) return { text: t("a.email.empty") };
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return { text: t("a.email.bad") };
     var dom = v.split("@")[1].toLowerCase();
-    if (M.emailProviders.indexOf(dom) < 0) { var sg = suggest(dom); return sg ? { typo: sg, fixed: v.split("@")[0] + "@" + sg } : { note: true }; }
+    if (M.emailProviders.indexOf(dom) < 0) { var sg = suggest(dom); return sg ? { typo: sg, fixed: (v.split("@")[0] + "@" + sg).toLowerCase() } : { note: true }; }   /* the fix is the whole address in lower case */
     return null;
   }
   function terms() {
@@ -63,11 +63,12 @@
       '<div class="field-box field-box--text' + (bad ? " is-error" : "") + (off ? " is-off" : "") + '">' + C.icon("mail", 20) + '<input id="email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" enterkeyhint="send" placeholder="you@gmail.com" value="' + App.esc(email) + '" aria-describedby="email-msg email-cap"' + (bad ? ' aria-invalid="true"' : "") + (off || sending ? " disabled" : "") + "></div>" +
       '<div id="email-fb" aria-live="polite">' +
       (msg ? '<div class="field-msg' + (bad ? " is-error" : "") + '" id="email-msg"><span>' + msg + "</span></div>" : "") +
-      (err && err.typo ? '<div class="typo" id="typo"><span>' + t("a.email.typo", { domain: '<b translate="no">' + err.typo + "</b>" }) + "</span>" + C.btn(t("a.email.typo.fix", { email: '<span translate="no">' + App.esc(err.fixed) + "</span>" }), { sm: true, attrs: 'data-fix-email="' + App.esc(err.fixed) + '"' }) + "</div>" : "") +
+      (err && err.typo ? '<div class="typo" id="typo"><span>' + t("a.email.typo", { domain: '<b translate="no">' + err.typo + "</b>" }) + "</span>" + C.btn(t("a.email.typo.fix", { email: '<span translate="no">' + App.esc(err.fixed) + "</span>" }), { sm: true, wrap: true, attrs: 'data-fix-email="' + App.esc(err.fixed) + '"' }) + "</div>" : "") +
       (err && err.note ? '<div class="note note-warn" role="alert" id="prov-note">' + C.icon("warn", 18) + '<div class="note-body"><b>' + t("a.email.unsupported") + "</b><span>" + t("a.email.supported", { list: providers }) + "</span></div></div>" : "") + "</div>" +
       /* the provider rule is on screen before the player submits, not only after a failure */
       (err && err.note ? "" : '<p class="field-cap" id="email-cap">' + t("a.email.cap", { list: providers }) + "</p>") + "</div>" +
-      '<button type="submit" class="btn btn-primary btn-block' + (sending ? " is-loading" : "") + '"' + (off ? " disabled" : "") + ">" + (sending ? '<span class="spin"></span>' : "") + "<span>" + t(sending ? "a.email.sending" : "a.email.btn") + "</span></button></form>" +
+      /* while the "not supported" note shows there is nothing to send: the button is disabled until the address changes */
+      '<button type="submit" id="send" class="btn btn-primary btn-block' + (sending ? " is-loading" : "") + '"' + (off || (err && err.note) ? " disabled" : "") + ">" + (sending ? '<span class="spin"></span>' : "") + "<span>" + t(sending ? "a.email.sending" : "a.email.btn") + "</span></button></form>" +
       C.help(t("a.help.q"), "<p>" + t("a.help.a") + "</p>") + terms();
   }
   function codeView() {
@@ -104,7 +105,12 @@
   var raw = '<div class="auth"><div class="gate-bar">' + C.logo() + C.lang() + '</div><div class="auth-main"><div class="stack-12"><h1 id="h1">' + headline() + '</h1><p class="auth-lede" id="lede"' + (step === "email" ? "" : " hidden") + ">" + t("a.lede") + '</p></div><section class="panel" id="panel">' + view() + "</section>" + facts + "</div></div>";
 
   /* the three facts fill the quiet lower part of the first step; they step aside when the form needs the room for feedback */
-  function showFacts() { return step === "code" || (step === "email" && S !== "typo" && S !== "unsupported" && S !== "toomany"); }
+  function showFacts() { return step === "code" || (step === "email" && S !== "toomany"); }
+  /* in the typo and unsupported states the facts stay when the screen is tall enough for them; they never push the page into a scroll */
+  function fitFacts() {
+    var f = $("#facts"); f.hidden = !showFacts(); if (f.hidden) return;
+    if (f.getBoundingClientRect().bottom > innerHeight - 8) f.hidden = true;
+  }
   function runSetup() {
     var ol = $("#setup-steps"); if (!ol || S === "busy") return;
     var lis = App.$$("li", ol), i = +ol.getAttribute("data-done");
@@ -115,10 +121,11 @@
     })();
   }
   function paint(keepFocus) {
-    $("#panel").innerHTML = view(); $("#h1").textContent = headline(); $("#lede").hidden = step !== "email"; $("#facts").hidden = !showFacts();
+    $("#panel").innerHTML = view(); $("#h1").textContent = headline(); $("#lede").hidden = step !== "email"; fitFacts();
     document.title = headline() + " | Cojam";
     bind(); var f = $("#panel input:not([disabled])"); if (f && keepFocus !== false) { f.focus(); try { f.setSelectionRange(f.value.length, f.value.length); } catch (e) {} }
   }
+  function send() { S = "sending"; paint(); setTimeout(function () { step = "code"; S = "code"; countdown(); paint(); }, 900); }
   function bind() {
     var fe = $("#f-email"), fc = $("#f-code");
     if (fe) {
@@ -126,14 +133,16 @@
       fe.addEventListener("submit", function (e) {
         e.preventDefault(); email = em.value.trim(); var err = emailErr(email);
         if (err) { S = err.typo ? "typo" : err.note ? "unsupported" : email ? "bademail" : "empty"; paint(); return; }
-        S = "sending"; paint(); setTimeout(function () { step = "code"; S = "code"; countdown(); paint(); }, 900);
+        send();
       });
       /* feedback about the old value goes away as soon as the address changes */
       em.addEventListener("input", function () {
         if (S === "") return; S = ""; email = em.value;
         var fb = $("#email-fb"); if (fb) fb.innerHTML = ""; em.removeAttribute("aria-invalid"); em.closest(".field-box").classList.remove("is-error");
+        var sb = $("#send"); if (sb && !off) sb.disabled = false; fitFacts();
       });
-      fe.addEventListener("click", function (e) { var fx = e.target.closest("[data-fix-email]"); if (!fx) return; email = fx.getAttribute("data-fix-email"); S = ""; paint(); });
+      /* one tap on the suggestion fixes the address and sends the code */
+      fe.addEventListener("click", function (e) { var fx = e.target.closest("[data-fix-email]"); if (!fx) return; e.preventDefault(); email = fx.getAttribute("data-fix-email"); send(); });
     }
     if (fc) {
       var code = $("#code");
@@ -162,7 +171,7 @@
     }, 250);
   }
   App.mount({ bare: true, docTitle: headline(), raw: raw, after: function () {
-    $("#facts").hidden = !showFacts();
+    fitFacts();
     bind(); if (step === "code" && S !== "expired") countdown(); if (S === "setup" || S === "returning") runSetup();
     var f = $("#panel input:not([disabled])"); if (f) f.focus({ preventScroll: true });   /* the email field is ready to type in on load */
   } });

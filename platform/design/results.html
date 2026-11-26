@@ -30,12 +30,12 @@
   var SEG = { hit: "done", pend: "pend", corr: "done", miss: "miss", wait: "wait", none: "", "void": "" };
 
   function head() { return '<div class="ph-top"><h1>' + t("r.title") + "</h1></div>"; }
+  /* the week leads with its points, in the display face on the page; hits and days follow as two smaller figures; no boxes */
   function summary() {
-    if (S === "loading") return '<section class="card stack-12" aria-busy="true">' + C.skel("80px") + '<div class="stats">' + [1, 2, 3].map(function () { return '<div class="stat">' + C.skel("60px", "22px") + C.skel("70%", "10px", "margin-top:8px") + "</div>"; }).join("") + "</div>" + C.skel("100%") + "</section>";
-    return '<section class="card stack-12"><h2 class="card-h">' + t("r.week") + '</h2><div class="stats">' +
-      '<div class="stat"><b>' + F.pts(M.week.pts) + "</b><span>" + t("r.earned") + "</span></div>" +
-      '<div class="stat"><b>' + M.week.hits + "/" + M.week.answered + "</b><span>" + t("r.hits") + "</span></div>" +
-      '<div class="stat"><b>' + M.week.days + "/7</b><span>" + t("r.days") + "</span></div></div>" +
+    if (S === "loading") return '<section class="sec" aria-busy="true">' + C.skel("80px") + C.skel("150px", "40px") + '<div class="stats">' + [1, 2].map(function () { return '<div class="stat">' + C.skel("60px", "22px") + C.skel("70px", "10px", "margin-top:8px") + "</div>"; }).join("") + "</div>" + C.skel("100%") + "</section>";
+    return '<section class="sec"><div class="row-between"><div class="lead-fig"><h2 class="lbl">' + t("r.week") + '</h2><p class="fig">' + F.pts(M.week.pts) + "</p></div>" +
+      '<div class="stats"><div class="stat"><b>' + M.week.hits + "/" + M.week.answered + "</b><span>" + t("r.hits") + "</span></div>" +
+      '<div class="stat"><b>' + M.week.days + "/7</b><span>" + t("r.days") + "</span></div></div></div>" +
       C.rows([[t("r.all"), F.pts(M.all.pts) + "<small>" + t("r.rate") + " " + M.all.rate + "%</small>"], [t("r.pending"), "+" + F.pts(M.user.pendingHit) + "<small>" + t("r.pending.note") + "</small>"]]) + "</section>";
   }
   function outcome(r) {
@@ -63,17 +63,17 @@
   }
   function group(g, gi) {
     var d = M.ago(g.day), label = g.day === 0 ? t("common.today") : g.day === 1 ? t("common.yesterday") : F.weekday(d);
-    return '<section class="list" data-group><div class="day-h"><b>' + label + '</b><span class="day-total">+' + F.pts(g.total) + '</span><span class="day-sub">' +
+    return '<section class="sec" data-group><div class="day-h"><b>' + label + '</b><span class="day-total">+' + F.pts(g.total) + '</span><span class="day-sub">' +
       C.day5(g.rows.map(function (r) { return SEG[r.out]; }), { size: "sm", label: label }) + "<span>" + (g.done ? t("r.g.done") : t("r.g.part", { k: g.answered })) + (g.pending ? ", " + t("r.g.pending", { q: g.pending }) : "") + "</span></span></div>" +
-      "<ul>" + g.rows.map(function (r, ri) { return row(r, gi, ri, d); }).join("") + "</ul></section>";
+      "<ul class=\"list\">" + g.rows.map(function (r, ri) { return row(r, gi, ri, d); }).join("") + "</ul></section>";
   }
   function body() {
     if (S === "error") return C.error();
     if (S === "empty") return C.empty({ icon: "list", title: t("r.empty.h"), body: t("r.empty.b"), action: C.btn(t("r.empty.btn"), { kind: "primary", href: "home-cards.html" }) });
     var seg = C.seg([{ label: t("r.f.all"), value: "all", on: filter === "all" }, { label: t("r.f.wait"), value: "wait", on: filter === "wait" }, { label: t("r.f.set"), value: "set", on: filter === "set" }], { name: "filter", label: t("r.filter") });
-    if (S === "loading") return summary() + seg + [1, 2, 3].map(function () { return '<section class="list" aria-busy="true"><div class="day-h">' + C.skel("90px", "16px") + C.skel("48px", "16px") + "</div>" + [1, 2].map(function () { return '<div class="rrow">' + C.skel("90%", "16px") + C.skel("50%", "12px", "margin-top:10px") + "</div>"; }).join("") + "</section>"; }).join("");
+    if (S === "loading") return summary() + seg + [1, 2, 3].map(function () { return '<section class="sec" aria-busy="true"><div class="day-h">' + C.skel("90px", "16px") + C.skel("48px", "16px") + "</div>" + [1, 2].map(function () { return '<div class="rrow">' + C.skel("90%", "16px") + C.skel("50%", "12px", "margin-top:10px") + "</div>"; }).join("") + "</section>"; }).join("");
     return summary() + seg + '<div class="stack" id="groups">' + days.map(group).join("") + '</div><div id="fempty" hidden></div>' +
-      C.btn(t("r.more"), { block: true, id: "more", icon: "down" });
+      C.btn(t("r.more"), { block: true, id: "more", icon: "down", kind: "ghost" });
   }
   App.mount({ tab: "results", docTitle: t("r.title"), head: head(), body: body(), pts: S === "" ? "hits" : S === "loading" ? "loading" : "", badges: { home: "dot" }, after: function () {
     var groups = $("#groups"); if (!groups) return;

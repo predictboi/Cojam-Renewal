@@ -7,6 +7,7 @@
   var qs = new URLSearchParams(location.search);
   var reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   var App = window.App = { state: qs.get("state") || "", lang: I.lang, t: t, reduce: reduce };
+  App.offline = App.state === "offline";   /* known before a screen builds its body, so offline controls are drawn switched off */
   var C = window.C = {};
 
   /* ---------- helpers ---------- */
@@ -35,7 +36,11 @@
     weekday: function (d) { return new Intl.DateTimeFormat(App.lang, { weekday: "short", month: "short", day: "numeric" }).format(d); },
     hms: function (s) { var h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60), x = s % 60; return [h, m, x].map(function (v) { return (v < 10 ? "0" : "") + v; }); },
     short: function (a) { return a.slice(0, 6) + "…" + a.slice(-4); },
-    groups: function (a) { return a.replace(/^0x/, "").match(/.{1,4}/g).map(function (g, i) { return "<span>" + (i === 0 ? "0x" : "") + g + "</span>"; }).join(""); }
+    /* a full address is two equal lines of five groups of four (the first group carries 0x), whatever the width */
+    groups: function (a) {
+      var g = a.replace(/^0x/, "").match(/.{1,4}/g).map(function (x, i) { return "<i>" + (i === 0 ? "0x" : "") + x + "</i>"; });
+      return "<span>" + g.slice(0, 5).join("") + "</span><span>" + g.slice(5).join("") + "</span>";
+    }
   };
   App.isKo = App.lang === "ko";
   /* Mock state that survives a page change inside one tab (sessionStorage): the picks made today, the 100P for the finished day and
@@ -43,9 +48,13 @@
   App.sess = (function () {
     var K = "cjp.sess", day = new Date().toISOString().slice(0, 10), d = null;
     try { d = JSON.parse(sessionStorage.getItem(K) || "null"); } catch (e) {}
-    if (!d || d.day !== day || !d.picks || !d.stakes) d = { day: day, picks: {}, paid: false, stakes: [] };
+    if (!d || d.day !== day || !d.picks || !d.stakes) d = { day: day, picks: {}, paid: false, stakes: [], left: 0 };
     var api = { data: d, save: function () { try { sessionStorage.setItem(K, JSON.stringify(api.data)); } catch (e) {} },
-      resetDay: function () { api.data.picks = {}; api.data.paid = false; api.save(); },
+      resetDay: function () { api.data.picks = {}; api.data.paid = false; api.data.left = 0; api.save(); },
+      /* Leaving the home screen inside an undo window sends the held picks at once (they can no longer be undone). The count is kept so the
+         home screen can say "Pick saved" when the player comes back. */
+      leave: function (n) { if (n > 0) { api.data.left = (api.data.left || 0) + n; api.save(); } },
+      takeLeft: function () { var n = api.data.left || 0; if (n) { api.data.left = 0; api.save(); } return n; },
       picked: function () { return M.set.filter(function (id) { return api.data.picks[id]; }).length; } };
     return api;
   })();
@@ -102,6 +111,13 @@
     sun: '<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.600 5.600l1.400 1.400M17 17l1.400 1.400M18.400 5.600L17 7M7 17l-1.400 1.400"/>',
     ball: '<circle cx="12" cy="12" r="8.500"/><path d="M12 8.500l3.300 2.400-1.300 3.900h-4l-1.300-3.900zM12 3.500v5M20 10.500l-4.700.400M17 19l-3-4.200M7 19l3-4.200M4 10.500l4.700.400"/>',
     film: '<rect x="4" y="5" width="16" height="14" rx="2.500"/><path d="M8 5v14M16 5v14M4 9.500h4M4 14.500h4M16 9.500h4M16 14.500h4"/>',
+    /* the current tab: the same shapes, filled (details cut out in the page colour) */
+    cardsOn: '<rect x="5" y="7" width="14" height="13" rx="3" fill="currentColor"/><path d="M8 3.5h8"/>',
+    listOn: '<rect x="3" y="3" width="18" height="18" rx="4.500" fill="currentColor"/><g stroke="var(--snow)"><path d="M6.500 8.200l1.300 1.300 2.200-2.500"/><path d="M6.500 15.200l1.300 1.300 2.200-2.500"/><path d="M13.500 8.500h4M13.500 15.500h4"/></g>',
+    podiumOn: '<path d="M9 20V9h6v11z" fill="currentColor"/><path d="M3 20v-6h6v6z" fill="currentColor"/><path d="M15 20v-8h6v8z" fill="currentColor"/><path d="M2 20h20"/>',
+    lockOn: '<rect x="5" y="11" width="14" height="9" rx="2.500" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><path d="M12 14.500v2" stroke="var(--snow)"/>',
+    walletOn: '<path d="M4 7.500A2.500 2.500 0 0 1 6.500 5H17v3"/><rect x="4" y="8" width="16" height="11" rx="2.500" fill="currentColor"/><path d="M15.500 13.500h1.500" stroke="var(--snow)"/>',
+    undo: '<path d="M9 7L4.500 11.500 9 16"/><path d="M4.500 11.500H14a5 5 0 0 1 0 10h-2"/>',
     spark: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.500 2.500M15.500 15.500L18 18M18 6l-2.500 2.500M8.500 15.500L6 18"/>'
   };
   C.icon = function (name, size, cls) {
@@ -160,7 +176,7 @@
     return '<div class="empty"><div class="empty-ic">' + ic(o.icon || "inbox", 32) + "</div><h2>" + o.title + "</h2>" + (o.body ? "<p>" + o.body + "</p>" : "") + (o.extra || "") + (o.action || "") + "</div>";
   };
   C.error = function (key) {
-    return '<div class="card">' + C.note("error", t(key || "e.load"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" })) + "</div>";
+    return C.note("error", t(key || "e.load"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" }));
   };
   C.actbar = function (btn, note) { return '<div class="pin pin--act">' + btn + (note ? '<p class="pin-note">' + note + "</p>" : "") + "</div>"; };
   C.skel = function (w, h, extra) { return '<span class="skel" style="width:' + w + ";height:" + (h || "14px") + ";" + (extra || "") + '"></span>'; };
@@ -206,7 +222,7 @@
     /* the title is clamped to 3 lines; long ones step down a size (questions are written to stay under about 70 characters) */
     var long = /[\u3000-\u9fff\uac00-\ud7af]/.test(q.title) ? q.title.length > 22 : q.title.length > 44;
     function choice(d) {
-      return '<button type="button" class="choice" data-dir="' + d + '"' + (o.disabled ? " disabled" : "") + (o.static ? ' tabindex="-1"' : "") + ' aria-label="' + esc(t("h.pick.aria", { choice: q[d], q: q.title })) + '">' +
+      return '<button type="button" class="choice" data-dir="' + d + '"' + (o.disabled ? ' aria-disabled="true"' : "") + (o.static ? ' tabindex="-1"' : "") + ' aria-label="' + esc(t("h.pick.aria", { choice: q[d], q: q.title })) + '">' +
         (d === "l" ? ic("left", 18) : "") + "<span>" + esc(q[d]) + "</span>" + (d === "r" ? ic("right", 18) : "") + "</button>";
     }
     return '<article class="qcard' + (o.top ? " qcard--top" : "") + '" data-q="' + q.n + '" data-id="' + id + '" data-pos="' + (o.pos || 0) + '" role="group" aria-label="' + esc(t("h.qn.sr", { n: q.n }) + ": " + q.title) + '">' +
@@ -222,6 +238,13 @@
       (o.final ? '<p class="qcard-final">' + t("h.final") + "</p>" : "") +
       "</div></article>";
   };
+  /* the view switch on the home header: the selected view is named in words, the other one is its icon (the title keeps one line at 360) */
+  C.viewSwitch = function (cur, state) {
+    function a(id, file, icon) { var on = id === cur; return '<a href="' + file + (on || !state ? "" : "?state=" + state) + '"' + (on ? ' aria-current="page"' : ' aria-label="' + esc(t("h.view." + id)) + '"') + ">" + (on ? "<span>" + t("h.view." + id) + "</span>" : ic(icon, 20)) + "</a>"; }
+    return '<div class="viewsw" role="group" aria-label="' + esc(t("h.view.label")) + '">' + a("card", "home-cards.html", "cards") + a("term", "home-terminal.html", "list") + "</div>";
+  };
+  /* time left on the home header, with its word: "Closes in 12:48:08" */
+  C.closes = function (secs) { return '<span class="ph-cd"><span>' + t("h.closes") + '</span><b data-cd="' + secs + '"></b></span>'; };
   var CAT_ICON = { crypto: "coin", markets: "chart", weather: "sun", sports: "ball", culture: "film" };
   C.thumb = function (q) { if (typeof q === "string") q = App.q(q); return '<span class="trow-thumb" aria-hidden="true">' + (q.img ? '<img src="' + q.img + '" alt="" width="52" height="52" loading="lazy">' : ic(CAT_ICON[q.cat] || "spark", 24)) + "</span>"; };
 
@@ -239,7 +262,7 @@
       var b = badges[tb.id], badge = "";
       if (b === "dot") badge = '<span class="tb-dot"></span><span class="sr-only">' + t("tab.badge." + tb.id) + "</span>";
       else if (b) badge = '<span class="tb-n" aria-hidden="true">' + (b > 9 ? "9+" : b) + '</span><span class="sr-only">' + t("tab.badge.results", { n: b }) + "</span>";
-      return '<a href="' + tb.href() + '"' + (tb.id === current ? ' aria-current="page"' : "") + '><span class="tb-ic">' + ic(tb.icon, 22) + badge + "</span><span>" + t("tab." + tb.id) + "</span></a>";
+      return '<a href="' + tb.href() + '"' + (tb.id === current ? ' aria-current="page"' : "") + '><span class="tb-ic">' + ic(tb.id === current ? tb.icon + "On" : tb.icon, 22) + badge + "</span><span>" + t("tab." + tb.id) + "</span></a>";
     }).join("") + "</nav>";
   };
   C.header = function (o) {
@@ -338,10 +361,15 @@
 
   /* ---------- toast: one visible, the rest queue ---------- */
   var tq = [], tBusy = false;
-  App.toast = function (msg, o) { tq.push({ msg: msg, o: o || {} }); if (!tBusy) nextToast(); };
+  var tKey = "";
+  App.toast = function (msg, o) {
+    o = o || {};
+    if (o.key && (tKey === o.key || tq.some(function (q) { return q.o.key === o.key; }))) return;   /* the same notice is never stacked */
+    tq.push({ msg: msg, o: o }); if (!tBusy) nextToast();
+  };
   function nextToast() {
-    var it = tq.shift(), box = $("#toasts"); if (!it || !box) { tBusy = false; return; }
-    tBusy = true;
+    var it = tq.shift(), box = $("#toasts"); if (!it || !box) { tBusy = false; tKey = ""; return; }
+    tBusy = true; tKey = it.o.key || "";
     var el = document.createElement("div"); el.className = "toast";
     el.innerHTML = "<span>" + it.msg + "</span>" + (it.o.btn ? '<button type="button">' + it.o.btn + "</button>" : "");
     box.appendChild(el);
@@ -456,7 +484,7 @@
 
   /* ---------- global behaviours: press feedback, copy, seg, sheet close, max, reload ---------- */
   document.addEventListener("pointerdown", function (e) {
-    var el = e.target.closest(".btn, .choice, .seg-btn, .field-max, .period button"); if (!el || el.disabled) return;
+    var el = e.target.closest(".btn, .choice, .seg-btn, .field-max, .period button, .undo"); if (!el || el.disabled || el.getAttribute("aria-disabled") === "true") return;
     el.classList.add("is-pressed"); var t0 = Date.now();
     function up() { setTimeout(function () { el.classList.remove("is-pressed"); }, Math.max(0, 90 - (Date.now() - t0))); window.removeEventListener("pointerup", up); window.removeEventListener("pointercancel", up); }
     window.addEventListener("pointerup", up); window.addEventListener("pointercancel", up);
@@ -525,13 +553,19 @@
 
   /* ---------- swipe card stack (spec 6.3) ----------
      Drag follows the finger, a release past the threshold (or a fling) throws the card, the next one springs forward.
-     Guards: input is ignored for 400 ms after a commit, key repeat is ignored, arrow keys work without focus inside the card.
+     Guards: for 200 ms after a commit a tap on an answer is dropped (a double tap never answers two cards), while a swipe or a key press
+     in that time is a second deliberate pick: one is queued and plays when the guard ends, so a quick pick is not lost.
+     Key repeat is ignored, arrow keys work without focus inside the card.
      A thrown card is kept so restore() can fly it back in (Undo). */
   App.deck = function (root, o) {
     o = o || {};
-    var ARM = 0.35, GUARD = 400, lastCommit = 0;
+    var ARM = 0.35, GUARD = 200, guardUntil = 0, queued = null, qTimer = null;
     function live() { return $$(".qcard:not(.is-out)", root); }
-    function guarded() { return Date.now() - lastCommit < GUARD; }
+    function guarded() { return Date.now() < guardUntil; }
+    function queue(dir) {
+      queued = dir; clearTimeout(qTimer);
+      qTimer = setTimeout(function () { var d = queued, c = live()[0]; queued = null; if (d && c) commit(c, d, 0, 0, 0, "queue"); }, Math.max(0, guardUntil - Date.now()) + 10);
+    }
     function layout() {
       var cards = live();
       cards.forEach(function (c, i) {
@@ -562,11 +596,11 @@
     function reset(card) { card.classList.remove("is-drag"); card.style.transform = ""; paint(card, 0, false); }
     function off(sign, w, dy) { return "translate(" + sign * (innerWidth * 0.5 + w) + "px," + ((dy || 0) * 0.4 + 30).toFixed(0) + "px) rotate(" + sign * 22 + "deg)"; }
     /* throw: the card leaves on its side with the speed of the release; the deck advances with a spring (CSS, on data-pos) */
-    function commit(card, dir, v, dx, dy) {
+    function commit(card, dir, v, dx, dy, src) {
       if (card.classList.contains("is-out")) return;
-      if (guarded()) { reset(card); return; }
       if (o.disabled && o.disabled()) { reset(card); if (o.onBlocked) o.onBlocked(); return; }
-      lastCommit = Date.now();
+      if (guarded()) { reset(card); if (src !== "tap") queue(dir); return; }
+      guardUntil = Date.now() + GUARD;
       var w = card.offsetWidth, sign = dir === "r" ? 1 : -1, dist = innerWidth * 0.5 + w - Math.abs(dx || 0);
       var ms = reduce ? 200 : Math.round(Math.max(190, Math.min(380, dist / Math.max(v || 0, 1.6))));
       card.classList.remove("is-drag"); card.classList.add("is-out"); card.setAttribute("data-pos", "out");
@@ -592,12 +626,12 @@
       card.setAttribute("data-pos", "0");
       void card.offsetWidth;
       layout();
-      lastCommit = Date.now() - GUARD + 250;   /* the tap that undid cannot also pick */
+      guardUntil = Date.now() + 250; queued = null; clearTimeout(qTimer);   /* the tap that undid cannot also pick */
       root.focus({ preventScroll: true });
     }
     var drag = null, swallow = 0;
     root.addEventListener("pointerdown", function (e) {
-      var card = e.target.closest('.qcard[data-pos="0"]'); if (!card || guarded() || card.classList.contains("is-out") || (e.pointerType === "mouse" && e.button !== 0)) return;
+      var card = e.target.closest('.qcard[data-pos="0"]'); if (!card || card.classList.contains("is-out") || (e.pointerType === "mouse" && e.button !== 0)) return;
       drag = { card: card, x: e.clientX, y: e.clientY, id: e.pointerId, lock: false, armed: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
     });
     root.addEventListener("pointermove", function (e) {
@@ -619,14 +653,14 @@
       swallow = Date.now();
       var dx = e.clientX - d.x, dy = e.clientY - d.y, w = d.card.offsetWidth, a = d.pts[0], b = d.pts[d.pts.length - 1], v = b.t > a.t ? Math.abs(b.x - a.x) / (b.t - a.t) : 0;
       var k = Math.abs(dx) / w;
-      if (e.type !== "pointercancel" && (k >= ARM || (v >= 0.5 && k >= 0.15))) commit(d.card, dx > 0 ? "r" : "l", v, dx, dy); else reset(d.card);
+      if (e.type !== "pointercancel" && (k >= ARM || (v >= 0.5 && k >= 0.15))) commit(d.card, dx > 0 ? "r" : "l", v, dx, dy, "swipe"); else reset(d.card);
     }
     root.addEventListener("pointerup", end); root.addEventListener("pointercancel", end);
     root.addEventListener("click", function (e) {
       var b = e.target.closest(".choice"); if (!b || b.disabled) return;
       if (Date.now() - swallow < 250) { e.preventDefault(); return; }
       var card = b.closest(".qcard"); if (card.getAttribute("data-pos") !== "0") return;
-      commit(card, b.getAttribute("data-dir"), 0, 0, 0);   /* a tap plays the same throw */
+      commit(card, b.getAttribute("data-dir"), 0, 0, 0, "tap");   /* a tap plays the same throw */
     });
     /* arrow keys pick from anywhere on the screen, unless a form control, a link or a sheet has the focus. A held key never repeats a pick. */
     if (!o.nokeys) document.addEventListener("keydown", function (e) {
@@ -635,19 +669,19 @@
       var a = document.activeElement;
       if (a && a !== document.body && a !== root && !root.contains(a) && /^(INPUT|TEXTAREA|SELECT|BUTTON|A|SUMMARY)$/.test(a.tagName)) return;
       var card = live()[0]; if (!card) return;
-      e.preventDefault(); commit(card, e.key === "ArrowRight" ? "r" : "l", 0, 0, 0);
+      e.preventDefault(); commit(card, e.key === "ArrowRight" ? "r" : "l", 0, 0, 0, "key");
     });
     root.setAttribute("tabindex", "-1");
     layout();
     return { layout: layout, live: live, restore: restore };
   };
-  /* payoff: a short burst of pieces from an element (day done, success) */
+  /* payoff: a burst of pieces from an element (the day done figure) */
   App.burst = function (el, count) {
     if (reduce || !el) return;
     var b = document.createElement("span"); b.className = "burst"; b.setAttribute("aria-hidden", "true"); count = count || 16;
-    for (var i = 0; i < count; i++) { var a = (i / count) * Math.PI * 2 + Math.random() * 0.4, r = 56 + Math.random() * 54;
+    for (var i = 0; i < count; i++) { var a = (i / count) * Math.PI * 2 + Math.random() * 0.4, r = 70 + Math.random() * 130;
       b.innerHTML += '<i style="--n:' + i + ";--x:" + (Math.cos(a) * r).toFixed(0) + "px;--y:" + (Math.sin(a) * r - 10).toFixed(0) + "px;--r:" + Math.round(Math.random() * 360) + 'deg"></i>'; }
-    el.appendChild(b); setTimeout(function () { b.remove(); }, 1100);
+    el.appendChild(b); setTimeout(function () { b.remove(); }, 2200);
   };
 
   /* ---------- QR code: byte mode, error correction Q, versions 1 to 6 (enough for a URL or an address) ---------- */

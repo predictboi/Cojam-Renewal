@@ -9,8 +9,9 @@
 :root {
   /* ---------- colour ----------
      One loud colour (blue: header and page head band), two quiet ones (snow content, ink cards and text),
-     one key colour (volt) with four jobs only: the primary action, the current selection, the day progress and the one reward payoff
-     (day done badge and the +P chip). Figures, medals, the points pill and illustration grounds use ink, white, blue or sky.
+     one key colour (volt) with four jobs only: the primary action, the current selection (a chosen period, the profile avatar), the day progress
+     and the one reward payoff (the "+100P" figure during the day done moment). The current tab and the segmented switch are ink, not volt.
+     Figures, the podium, the points pill and illustration grounds use ink, white, blue or sky.
      Checked pairs: snow on blue 7.35, volt on blue 6.38, sky on blue 4.86, on-brand-2 on blue 5.64, ink on volt 15.7,
      ink-2 on snow 7.21, ink-2 on mist 6.53, ink-soft on ink 8.70, blue on snow 7.24, up on snow 5.29, down on snow 6.47, warn on warn-tint 5.81.
      Never: volt or sky as text on snow (1.2 and 1.5), blue text on ink (2.6). */
@@ -34,6 +35,7 @@
   --inset: #EEF2F9;           /* mist */
   --line: #DCE3EF;
   --line-strong: #C3CDDF;
+  --line-field: #8390AC;      /* the edge of an input or an unselected option: 3.2:1 on white, so the control is found without the ink edge */
   --ink: #0B1530;
   --ink-2: #4A5672;
   --ink-soft: #A9B4D0;        /* secondary text on ink */
@@ -61,7 +63,7 @@
   --fs-11: 11px;              /* the count on a tab badge only */
   --fs-12: 12px; --fs-13: 13px; --fs-14: 14px; --fs-15: 15px; --fs-16: 16px; --fs-18: 18px; --fs-20: 20px; --fs-22: 22px; --fs-24: 24px; --fs-28: 28px; --fs-32: 32px; --fs-40: 40px;
   --fs-hero: clamp(40px, 12.4vw, 54px);    /* gate headline */
-  --fs-clock: clamp(38px, 12vw, 50px);     /* day done countdown */
+  --fs-clock: clamp(38px, 12vw, 50px);     /* large countdown */
   --fw-regular: 400; --fw-medium: 500; --fw-semi: 600; --fw-bold: 700; --fw-heavy: 800; --fw-black: 900;
   --wide: 118%;               /* display width for Latin titles and figures */
   --wide-max: 125%;
@@ -71,6 +73,7 @@
   --s-2: 2px; --s-4: 4px; --s-6: 6px; --s-8: 8px; --s-10: 10px; --s-12: 12px; --s-16: 16px; --s-20: 20px; --s-24: 24px; --s-32: 32px; --s-40: 40px; --s-48: 48px;
   --gutter: 16px;
   --stack: 16px;              /* between blocks on a screen */
+  --sect: 28px;               /* between sections of a flat page */
   --pad-card: 16px;
   --app-w: 430px;             /* the phone column on wide screens */
   --head-h: 56px;
@@ -79,21 +82,26 @@
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
 
-  /* ---------- shape ---------- */
-  --r-4: 4px; --r-6: 6px; --r-8: 8px;
-  --r-control: 14px;
-  --r-field: 18px;
-  --r-card: 24px;
+  /* ---------- shape ----------
+     Three radii, each with one job. Small: chips, tags, small blocks. Medium: buttons, inputs, list and tinted blocks, toasts.
+     Large: the prediction card, sheets and the login panel. Full pills only for small chips, the points pill and the view switch.
+     The heavy ink edge (and the hard drop below) marks what is pressed as the main action and the prediction card; nothing else carries it. */
+  --r-s: 6px;
+  --r-m: 12px;
+  --r-l: 24px;
   --r-pill: 999px;
   --edge: 2px solid var(--ink);
   --edge-thin: 1.5px solid var(--ink);
   --hair: 1px solid var(--line);
+  --hair-strong: 1.5px solid var(--line-field);   /* inputs and unselected options */
 
   /* ---------- shadow ---------- */
-  --shadow-hard: 0 4px 0 var(--ink);        /* volt buttons: a hard ink drop that presses down */
+  --shadow-hard: 0 4px 0 var(--ink);        /* the primary button: a hard ink drop that presses down */
   --shadow-hard-down: 0 1px 0 var(--ink);
-  --shadow-card: 5px 5px 0 var(--ink);
-  --shadow-deck: 0 18px 30px -14px rgba(11, 21, 48, 0.55), 5px 5px 0 var(--ink);   /* the front card of the deck: a hard drop plus soft depth */      /* the live question card and sheets */
+  --shadow-answer: 0 3px 0 var(--ink);      /* the two answer buttons */
+  --shadow-card: 5px 5px 0 var(--ink);      /* the login panel and the gate preview */
+  --shadow-deck: 0 18px 30px -14px rgba(11, 21, 48, 0.55), 5px 5px 0 var(--ink);   /* the front card of the deck: a hard drop plus soft depth */
+  --shadow-soft: 0 1px 2px rgba(11, 21, 48, 0.14);   /* the selected segment of a switch */
   --shadow-toast: 0 10px 24px -10px rgba(11, 21, 48, 0.6), 0 0 0 1.5px var(--snow);
   --shadow-tab: 0 -1px 0 var(--line);
   --shadow-stage: 0 0 0 1px var(--ink-line), 0 30px 80px rgba(0, 0, 0, 0.5);
@@ -120,7 +128,7 @@
   --dur-slow: 320ms;
   --dur-count: 400ms;
   --dur-deck: 420ms;         /* the next card rises, straightens and sharpens */
-  --dur-burst: 700ms;
+  --dur-burst: 1300ms;
   --dur-stripes: 1.2s;
   --stagger: 50ms;
   --press-scale: 0.97;

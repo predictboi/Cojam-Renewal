@@ -24,15 +24,15 @@
 (function () {
   var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$, a = M.user.address;
   function body() {
-    if (S === "error") return '<div class="card">' + C.note("error", t("dp.err"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" })) + "</div>";
+    if (S === "error") return C.note("error", t("dp.err"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" }));
     var qr = S === "loading" ? '<div class="qr" aria-busy="true">' + C.skel("100%", "auto") + "</div>" : C.qr(a, t("dp.qr"));
     return '<p class="lead">' + t("dp.lead") + "</p>" + qr +
       (S === "loading" ? '<div class="addr addr--lg">' + C.skel("100%", "44px") + "</div>" : C.addr(a, { lg: true })) +
       C.btn(t("w.copy"), { kind: "primary", block: true, icon: "copy", attrs: 'data-copy="' + a + '" data-done="' + App.esc(t("w.copy.done")) + '"', disabled: S === "loading" }) +
       '<p class="watch" id="watch" role="status">' + (App.offline ? C.icon("offline", 16) + "<span>" + t("dp.offline") + "</span>" : '<span class="live-dot"></span><span>' + t("dp.watch") + "</span>") + "</p>" +
-      '<section class="card card--mist">' + C.rows([[t("dp.net"), t("dp.net.v")], [t("dp.token"), t("dp.token.v") + '<small class="mono" translate="no">' + M.token + "</small>"]]) + "</section>" +
+      '<section class="sec sec-rule">' + C.rows([[t("dp.net"), t("dp.net.v")], [t("dp.token"), t("dp.token.v") + '<span class="addr-v" translate="no">' + F.groups(M.token) + "</span>"]]) + "</section>" +
       '<div class="note note-warn">' + C.icon("warn", 18) + '<div class="note-body"><ul><li>' + t("dp.w1") + "</li><li>" + t("dp.w2") + ' <a href="https://cojam.app/migrate/" target="_blank" rel="noopener">' + t("g.swap.btn") + "</a></li><li>" + t("dp.w3") + "</li></ul></div></div>" +
-      '<div class="two">' + C.btn(t("dp.share"), { icon: "share", id: "share" }) + C.btn(t("common.copy") + " CT", { icon: "copy", attrs: 'data-copy="' + M.token + '" data-toast="' + App.esc(t("common.copied")) + '" aria-label="' + App.esc(t("w.token.copy")) + '"' }) + "</div>";
+      '<div class="two">' + C.btn(t("dp.share"), { icon: "share", id: "share", kind: "ghost" }) + C.btn(t("common.copy") + " CT", { icon: "copy", kind: "ghost", attrs: 'data-copy="' + M.token + '" data-toast="' + App.esc(t("common.copied")) + '" aria-label="' + App.esc(t("w.token.copy")) + '"' }) + "</div>";
   }
   App.mount({ tab: "wallet", back: "wallet.html", title: t("dp.title"), body: body(), pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
     var sh = $("#share"); if (sh) sh.addEventListener("click", function () { if (navigator.share) navigator.share({ text: a }).catch(function () {}); else { try { navigator.clipboard.writeText(a); } catch (e) {} App.toast(t("w.copied", { a: "<b>" + F.short(a) + "</b>" })); } });

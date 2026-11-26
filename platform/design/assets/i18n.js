@@ -612,6 +612,29 @@
     "k.gap.sr.up": ["{n} points ahead of you", "나보다 {n}P 많아요", "あなたより{n}P多い"],
     "k.gap.sr.down": ["{n} points behind you", "나보다 {n}P 적어요", "あなたより{n}P少ない"],
     "k.gap.sr.same": ["Same points as you", "나와 점수가 같아요", "あなたと同じポイント"],
+
+    /* ---------- round 5: flat surfaces, podium, finishing panel ---------- */
+    "w.avail": ["Available", "사용 가능", "利用可能"],
+    "s.avail": ["Available", "사용 가능", "利用可能"],
+    "h.end.h": ["That is all five", "5문제를 모두 골랐어요", "5問すべて選びました"],
+    "h.end.in": ["Finishing in {n}", "{n}초 뒤에 마무리해요", "{n}秒後に完了します"],
+    "h.end.b": ["Saving your last pick", "마지막 선택을 저장하고 있어요", "最後の予想を保存しています"],
+    "h.end.now": ["Finish now", "지금 마무리하기", "今すぐ完了する"],
+    "h.left.saved": ["Pick saved", "선택이 저장됐어요", "予想を保存しました"],
+    "h.left.savedn": ["{n} picks saved", "선택 {n}개가 저장됐어요", "予想{n}件を保存しました"],
+    "d.paid.st": ["Paid", "지급 완료", "付与済み"],
+    "d.saving.st": ["Saving your last pick", "마지막 선택을 저장하고 있어요", "最後の予想を保存しています"],
+    "d.hit.1": ["Each right pick pays +50P about 6 hours after its answer.", "맞힌 문제마다 정답 확정 약 6시간 뒤에 +50P를 받아요.", "的中1問ごとに、結果確定の約6時間後に+50Pが入ります。"],
+    "d.hit.2": ["All answers are set within 48 hours.", "모든 정답은 48시간 안에 확정돼요.", "すべての結果は48時間以内に確定します。"],
+    "k.gap.up": ["{n}P ahead", "{n}P 앞", "{n}P リード"],
+    "k.gap.down": ["{n}P behind", "{n}P 뒤", "{n}P ビハインド"],
+    "k.gap.same": ["Level", "같은 점수", "同じポイント"],
+    "k.col.player": ["Player and points", "참가자와 포인트", "プレイヤーとポイント"],
+    "k.col.prize": ["Prize", "상금", "賞金"],
+    "k.col.gap": ["Gap to you", "나와의 차이", "あなたとの差"],
+    "s.rules": ["Locked until {date}. No early exit.", "{date}까지 잠겨요. 중도 해지는 없어요.", "{date}までロックされます。途中解約はできません。"],
+    "m.withint": ["{p} CT stake + {i} CT interest", "원금 {p} CT + 이자 {i} CT", "元本 {p} CT + 利息 {i} CT"],
+    "a.email.typo.fix": ["Send code to {email}", "{email} 주소로 코드 받기", "{email} にコードを送る"],
   };
 
   var LANGS = ["en", "ko", "ja"], dict = { en: {}, ko: {}, ja: {} };

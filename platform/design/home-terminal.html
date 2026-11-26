@@ -26,6 +26,7 @@
   /* picks: n -> { dir, sync: "ok" | "saving" | "fail" } */
   var picks = {}, sess = App.sess, live = S === "" || S === "fresh";
   if (S === "fresh") sess.resetDay();
+  var leftSaved = live ? sess.takeLeft() : 0;   /* picks sent at once because the player left inside their undo window */
   if (live && sess.picked() === 5) { location.replace(sess.data.paid ? "done.html" : "done.html?state=moment"); return; }
   /* picks made in this tab (in either view) carry over; with none, the plain screen shows its two sample picks */
   if (S === "" && sess.picked()) M.set.forEach(function (id, i) { if (sess.data.picks[id]) picks[i + 1] = { dir: sess.data.picks[id], sync: "ok" }; });
@@ -41,8 +42,8 @@
 
   function head() {
     var c = S === "loading" ? 0 : count();
-    var sw = '<div class="viewsw" role="group" aria-label="' + t("h.view.label") + '"><a href="home-cards.html' + (S && S !== "fresh" ? "?state=" + S : "") + '" aria-label="' + t("h.view.card") + '">' + C.icon("cards", 20) + '</a><a href="home-terminal.html" aria-current="page" aria-label="' + t("h.view.term") + '">' + C.icon("list", 20) + "</a></div>";
-    var cd = S === "empty" || S === "closed" ? "" : S === "loading" ? C.skel("96px", "12px") : '<span class="ph-cd">' + C.icon("clock", 14) + '<span class="sr-only">' + t("h.closes") + '</span><b data-cd="' + M.untilNextSet() + '"></b></span>';
+    var sw = C.viewSwitch("term", S === "fresh" ? "" : S);
+    var cd = S === "empty" || S === "closed" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet());
     return '<div class="ph-top"><h1>' + t("h.title") + "</h1>" + sw + "</div>" +
       '<div class="ph-line"><span class="ph-count"><span id="cnt">' + c + "</span><small>/5</small></span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs(), { band: true, id: "day5" }) + cd + "</div>";
   }
@@ -60,17 +61,17 @@
         (failed ? '<span class="trow-state">' + C.icon("warn", 16) + t("h.t.notsaved") + "</span>" : "") + "</div></div>" + C.thumb(q) +
         '<div class="trow-body"><div class="qcard-meta"><span>' + C.icon("search", 14) + "<span>" + t("h.answer", { rule: App.esc(q.rule) }) + "</span></span>" + '<button type="button" class="qmeta-btn" data-ai-info="' + q.id + '" aria-haspopup="dialog">' + C.icon("clock", 14) + "<span>" + t("h.ai", { time: q.settle }) + "</span>" + C.icon("info", 14) + "</button></div>" +
         '<div class="choices">' + ["l", "r"].map(function (d) {
-          return '<button type="button" class="choice" data-pick="' + n + '" data-dir="' + d + '"' + (App.offline ? " disabled" : "") + ' aria-label="' + App.esc(t("h.pick.aria", { choice: q[d], q: q.title })) + '">' + (d === "l" ? C.icon("left", 18) : "") + "<span>" + App.esc(q[d]) + "</span>" + (d === "r" ? C.icon("right", 18) : "") + "</button>";
+          return '<button type="button" class="choice" data-pick="' + n + '" data-dir="' + d + '"' + (App.offline ? ' aria-disabled="true"' : "") + ' aria-label="' + App.esc(t("h.pick.aria", { choice: q[d], q: q.title })) + '">' + (d === "l" ? C.icon("left", 18) : "") + "<span>" + App.esc(q[d]) + "</span>" + (d === "r" ? C.icon("right", 18) : "") + "</button>";
         }).join("") + "</div>" + (App.offline ? '<p class="small muted">' + t("h.offline") + "</p>" : '<p class="qcard-final">' + t("h.final") + "</p>") + "</div></li>";
     }
     return '<li class="trow' + (failed ? " is-fail" : "") + '">' + num + '<div><p class="trow-q">' + App.esc(q.title) + '</p><div class="trow-foot">' + tag +
       (failed ? '<span class="trow-state">' + C.icon("warn", 16) + t("h.t.notsaved") + "</span>" : "") +
-      C.btn(failed ? t("h.t.again") : t("h.t.pick"), { sm: true, cls: "btn-quiet", attrs: 'data-open="' + n + '"' }) + "</div></div>" + C.thumb(q) + "</li>";
+      C.btn(failed ? t("h.t.again") : t("h.t.pick"), { sm: true, attrs: 'data-open="' + n + '"' }) + "</div></div>" + C.thumb(q) + "</li>";
   }
   function list() { return Q.map(row).join(""); }
   function keep() { if (!live) return; sess.data.picks = {}; Q.forEach(function (q) { var p = picks[q.n]; if (p && p.sync !== "fail") sess.data.picks[q.id] = p.dir; }); sess.save(); }
   function body() {
-    if (S === "loading") return viewSwitch() + '<ol class="term" aria-busy="true">' + [1, 2, 3, 4, 5].map(function (n) { return '<li class="trow"><span class="trow-n" aria-hidden="true">0' + n + "</span><div>" + C.skel("94%", "16px") + '<div class="trow-foot">' + C.skel("64px", "22px", "border-radius:999px") + C.skel("72px") + "</div></div></li>"; }).join("") + '</ol><p class="sr-only" role="status">' + t("common.loading") + "</p>";
+    if (S === "loading") return viewSwitch() + '<ol class="term" aria-busy="true">' + [1, 2, 3, 4, 5].map(function (n) { return '<li class="trow"><span class="trow-n" aria-hidden="true">0' + n + "</span><div>" + C.skel("94%", "16px") + '<div class="trow-foot">' + C.skel("64px", "22px") + C.skel("72px") + "</div></div></li>"; }).join("") + '</ol><p class="sr-only" role="status">' + t("common.loading") + "</p>";
     if (S === "empty") return viewSwitch() + C.empty({ icon: "clock", title: t("h.empty.h"), body: t("h.empty.b", { time: t("time.kst9") }), extra: '<p class="fig fig--md" data-cd="' + M.untilNextSet() + '"></p>' });
     if (S === "closed") return viewSwitch() + C.empty({ icon: "refresh", title: t("h.closed"), action: C.btn(t("h.closed.btn"), { kind: "primary", href: "home-terminal.html" }) });
     if (S === "error") return viewSwitch() + C.error();
@@ -82,6 +83,9 @@
   App.mount({ tab: "home", docTitle: t("h.title"), head: head(), body: body(), badges: { home: "dot", results: 2 }, after: function () {
     var term = $("#term"), lastPick = 0; if (!term) return;
     if (S === "failed") App.toast(t("h.toast.fail", { n: 2 }), { btn: t("common.retry") });
+    if (leftSaved) App.toast(leftSaved > 1 ? t("h.left.savedn", { n: leftSaved }) : t("h.left.saved"));
+    var leaving = false;
+    window.addEventListener("pagehide", function () { var n = Q.filter(function (q) { return picks[q.n] && picks[q.n].sync === "held"; }).length; if (live && n && !leaving) sess.leave(n); });
     function paint(focus) {
       term.innerHTML = list();
       var day5 = $("#day5"), sg = segs(); for (var i = 0; i < 5; i++) day5.children[i].className = sg[i] ? "is-" + sg[i] : "";
@@ -99,14 +103,15 @@
         clearTimeout(up.timer); delete picks[un]; keep(); current = un; paint(true); App.live(t("h.undone", { n: un })); return;
       }
       var b = e.target.closest("[data-pick]"); if (!b || b.disabled) return;
-      if (Date.now() - lastPick < 400) return;   /* a double tap never answers two questions */
+      if (App.offline) { App.toast(t("h.offline"), { key: "offline" }); return; }   /* the answers look switched off, and a tap says why */
+      if (Date.now() - lastPick < 200) return;   /* a double tap never answers two questions */
       lastPick = Date.now();
       var n = +b.getAttribute("data-pick"), dir = b.getAttribute("data-dir");
       var p = picks[n] = { dir: dir, sync: "held", t0: Date.now() }; keep(); current = firstOpen();
       p.timer = setTimeout(function () {
         p.sync = "saving"; paint(false); confirm(n);
         var open = Q.some(function (q) { return picks[q.n] && picks[q.n].sync === "held"; });
-        if (count() === 5 && !open) setTimeout(function () { location.href = "done.html?state=moment"; }, 500);
+        if (count() === 5 && !open) { leaving = true; setTimeout(function () { location.href = "done.html?state=moment"; }, 500); }
       }, UNDO_MS);
       try { if (navigator.vibrate) navigator.vibrate(10); } catch (err) {}
       App.live(t("h.live.picked", { choice: Q[n - 1][dir], k: 5 - count() }));

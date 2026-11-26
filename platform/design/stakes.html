@@ -37,12 +37,14 @@
 
   function head() { return '<div class="ph-top"><h1>' + t("s.title") + "</h1></div>"; }
   function sw() { return C.seg([{ label: t("s.new"), href: "staking.html" }, { label: t("s.mine", { n: S === "empty" ? 0 : stakes.length }), href: "stakes.html", on: true }], { label: t("s.switch") }); }
+  function out(s) { return Math.round((s.amount + calc(s).interest) * 1e4) / 1e4; }
   function card(s) {
     var c = calc(s), actions;
-    if (c.unlocked) actions = C.btn(t("m.withdraw", { a: F.dec(s.amount) }), { kind: "primary", block: true, attrs: 'data-wd="' + s.id + '"', disabled: App.offline }) + '<p class="tiny muted center">' + t("m.withint", { i: F.dec(c.interest, 4) }) + "</p>";
+    /* the button states everything that leaves the stake: principal plus interest, and the line under it shows the two parts */
+    if (c.unlocked) actions = C.btn(t("m.withdraw", { a: F.dec(out(s), 4) }), { kind: "primary", block: true, attrs: 'data-wd="' + s.id + '"', disabled: App.offline }) + '<p class="tiny muted center">' + t("m.withint", { p: F.dec(s.amount), i: F.dec(c.interest, 4) }) + "</p>";
     else if (c.interest >= M.minClaim) actions = C.btn(t("m.claim", { i: F.dec(c.interest, 2) }), { block: true, attrs: 'data-claim="' + s.id + '"', disabled: App.offline });
     else actions = C.btn(t("m.claim", { i: F.dec(c.interest, 2) }), { block: true, disabled: true }) + '<p class="tiny muted center">' + t("m.claim.gap", { g: F.dec(M.minClaim - c.interest, 2) }) + "</p>";
-    return '<article class="card stake" data-stake="' + s.id + '"><div class="stake-top"><div><p class="fig fig--md">' + F.dec(s.amount) + '<small>CT</small></p><p class="small muted">' + t("m.card.period", { d: s.days, r: s.rate }) + "</p></div>" +
+    return '<article class="sec stake" data-stake="' + s.id + '"><div class="stake-top"><div><p class="fig fig--md">' + F.dec(s.amount) + '<small>CT</small></p><p class="small muted">' + t("m.card.period", { d: s.days, r: s.rate }) + "</p></div>" +
       '<span data-status>' + (c.unlocked ? C.tag(t("m.unlocked"), "sky") : C.tag(t("m.locked"), "ink", "lock")) + "</span></div>" +
       '<div class="stack-8"><div class="bar' + (c.unlocked ? " is-full" : "") + '" role="img" aria-label="' + t("m.day", { x: c.day, d: s.days }) + '"><i style="width:' + c.pct.toFixed(1) + '%"></i></div>' +
       '<div class="row-between tiny muted"><span>' + t("m.started", { date: F.date(s.start) }) + "</span><span>" + t("m.day", { x: c.day, d: s.days }) + "</span><span>" + t("m.unlocks", { date: F.date(c.unlock) }) + "</span></div></div>" +
@@ -52,10 +54,11 @@
   function body() {
     if (S === "error") return sw() + C.error();
     if (S === "empty") return sw() + C.empty({ icon: "lock", title: t("m.empty.h"), body: t("m.empty.b"), action: C.btn(t("m.empty.btn"), { kind: "primary", href: "staking.html" }) });
-    if (S === "loading") return sw() + '<section class="card card--ink stack-12" aria-busy="true">' + C.skel("90px") + C.skel("170px", "34px") + C.skel("100%", "52px") + "</section>" + [1, 2].map(function () { return '<article class="card stack-12" aria-busy="true">' + C.skel("120px", "26px") + C.skel("100%", "10px") + C.skel("100%") + C.skel("100%", "44px", "border-radius:999px") + "</article>"; }).join("");
+    if (S === "loading") return sw() + '<section class="sec" aria-busy="true">' + C.skel("90px") + C.skel("170px", "40px") + C.skel("70%", "22px") + "</section>" + [1, 2].map(function () { return '<article class="sec" aria-busy="true">' + C.skel("120px", "26px") + C.skel("100%", "8px") + C.skel("100%") + C.skel("100%", "44px") + "</article>"; }).join("");
     return sw() +
-      '<section class="card card--ink stack-12"><div><p class="card-h">' + t("m.staked") + '</p><p class="fig fig--xl">' + F.dec(total) + "<small>CT</small></p></div>" +
-      '<div class="two"><div class="stat"><b><span data-tick="' + sofar + "|" + perAll + '">' + F.dec(sofar, 6) + "</span></b><span>" + t("m.sofar") + ' (CT)</span></div><div class="stat"><b>' + F.dec(claimable, 2) + "</b><span>" + t("m.claimable") + " (CT)</span></div></div></section>" +
+      /* the total leads, on the page: one label, the figure, then the two interest figures beside each other */
+      '<section class="sec" id="total"><div class="lead-fig"><h2 class="lbl">' + t("m.staked") + '</h2><p class="fig">' + F.dec(total) + "<small>CT</small></p></div>" +
+      '<div class="stats"><div class="stat"><b><span data-tick="' + sofar + "|" + perAll + '">' + F.dec(sofar, 6) + "</span></b><span>" + t("m.sofar") + ' (CT)</span></div><div class="stat"><b>' + F.dec(claimable, 2) + "</b><span>" + t("m.claimable") + " (CT)</span></div></div></section>" +
       stakes.map(card).join("") +
       C.help(t("m.closed.q", { n: M.stakesClosed.length }), M.stakesClosed.map(function (s) { return '<div class="row-between"><span>' + F.ct(s.amount) + ", " + t("m.card.period", { d: s.days, r: s.rate }) + "</span>" + C.tag(t("m.closed"), "line") + '</div><p class="tiny">' + t("m.paidout", { a: F.dec(s.paid, 2) }) + "</p>"; }).join(""));
   }
@@ -64,7 +67,7 @@
     document.addEventListener("click", function (e) {
       var c = e.target.closest("[data-claim]"), w = e.target.closest("[data-wd]");
       if (c) { var s = find(c.getAttribute("data-claim")), i = F.dec(calc(s).interest, 2); App.tx.run({ label: t("m.chip.claim", { i: i }), success: { title: t("m.ok.claim", { i: i }) } }); }
-      if (w) { var s2 = find(w.getAttribute("data-wd")), a = F.dec(s2.amount); App.tx.run({ label: t("m.chip.wd", { a: a }), success: { title: t("m.ok.wd", { a: a }) }, onDone: function () { var el = $('[data-stake="' + s2.id + '"]'); if (el) el.remove(); } }); }
+      if (w) { var s2 = find(w.getAttribute("data-wd")), a = F.dec(out(s2), 4); App.tx.run({ label: t("m.chip.wd", { a: a }), success: { title: t("m.ok.wd", { a: a }) }, onDone: function () { var el = $('[data-stake="' + s2.id + '"]'); if (el) el.remove(); } }); }
     });
     if (S === "claim") App.tx.show("success", { label: "", success: { title: t("m.ok.claim", { i: "263.01" }) } });
     if (S === "unlocking") setTimeout(function () {   /* the unlock moment: tag flips and the withdraw button appears, no reload */
