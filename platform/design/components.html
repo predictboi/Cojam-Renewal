@@ -13,6 +13,9 @@
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
 <link rel="stylesheet" href="assets/tokens.css">
 <link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/screens/home.css">
+<link rel="stylesheet" href="assets/screens/money.css">
+<link rel="stylesheet" href="assets/screens/rank.css">
 </head>
 <body>
 <!-- Component library: every component of the spec inventory (section 6), built from the same C.* builders the screens use. -->
@@ -86,8 +89,8 @@
     '<li class="trow"><span class="trow-n">04</span><div><p class="trow-q">' + App.q("q4").title + '</p><div class="trow-foot">' + C.tag(t("cat.sports")) + C.btn(t("h.t.pick"), { sm: true }) + "</div></div></li>" +
     '<li class="trow is-fail"><span class="trow-n">05</span><div><p class="trow-q">' + App.q("q5").title + '</p><div class="trow-foot">' + C.tag(t("cat.crypto")) + '<span class="trow-state">' + C.icon("warn", 16) + t("h.t.notsaved") + "</span>" + C.btn(t("h.t.again"), { sm: true }) + "</div></div></li></ol>")]);
   html += sec("Countdown and the day done moment", "\"+100P\" is the hero, in the display face beside the headline: quiet blue while the last pick is saved, lime with a burst when it is paid, white at rest. The next set is one quiet line.", [
-    demo("Day done head: saving", '<div class="ph"><div class="done-hero"><p class="done-fig is-wait">+100P</p><div class="done-side"><h1>' + t("d.h1") + '</h1><p class="done-st"><span class="spin"></span>' + t("d.saving.st") + '</p></div></div><div class="ph-line"><span class="ph-count">5<small>/5</small></span>' + C.day5(["done", "done", "done", "done", "pend"], { band: true }) + "</div></div>", "blue"),
-    demo("Day done head: paid. Tap the figure to replay the moment", '<div class="ph"><div class="done-hero"><p class="done-fig" id="lib-fig">+100P</p><div class="done-side"><h1>' + t("d.h1") + '</h1><p class="done-st">' + C.icon("check", 14) + t("d.paid.st") + '</p></div></div><div class="ph-line"><span class="ph-count">5<small>/5</small></span>' + C.day5(["done", "done", "done", "done", "done"], { band: true }) + "</div></div>", "blue"),
+    demo("Day done head: saving", '<div class="ph"><div class="done-stack"><h1>' + t("d.h1") + '</h1><p class="done-fig is-wait">+100P</p><p class="done-st"><span class="spin"></span>' + t("d.saving.st") + '</p></div><div class="ph-line"><span class="ph-count">5<small>/5</small></span>' + C.day5(["done", "done", "done", "done", "pend"], { band: true }) + "</div></div>", "blue"),
+    demo("Day done head: paid. Tap the figure to replay the moment", '<div class="ph"><div class="done-stack"><h1>' + t("d.h1") + '</h1><p class="done-fig" id="lib-fig">+100P</p><p class="done-st">' + C.icon("check", 14) + t("d.paid.st") + '</p></div><div class="ph-line"><span class="ph-count">5<small>/5</small></span>' + C.day5(["done", "done", "done", "done", "done"], { band: true }) + "</div></div>", "blue"),
     demo("Next set: one quiet line", '<p class="watch">' + C.icon("clock", 16) + "<span>" + t("d.next") + '</span> <b class="clock-inline" data-cd="' + M.untilNextSet() + '"></b></p>'),
     demo("Payout rule: two short plain lines", '<div class="plain-note"><p>' + t("d.hit.1") + "</p><p>" + t("d.hit.2") + '</p><a class="linkish" href="#">' + t("d.results") + "</a></div>")
   ]);
@@ -140,18 +143,16 @@
     demo("System screen", '<div class="sys"><div class="sys-ic">' + C.icon("offline", 38) + "</div><h1>" + t("sys.off.h") + "</h1><p>" + t("sys.off.b") + "</p>" + C.btn(t("common.retry"), { kind: "primary" }) + "</div>")
   ]);
   html += sec("QR block, address block, install steps", "The QR codes are real: scan them. A full address is always two equal lines of five groups.", [
-    demo("Address block: the full address in two rows of five groups, one secondary button, one text link", '<section class="addr-block"><h2 class="lbl">' + t("w.addr") + '</h2><p class="addr-v" translate="no">' + F.groups(M.user.address) + '</p><div class="addr-acts">' + C.btn(t("w.copy"), { block: true, icon: "copy" }) + C.btn("Kaiascan", { kind: "ghost", iconEnd: "ext" }) + '</div><p class="addr-note">' + t("w.addr.note") + "</p></section>"),
+    demo("Address block (deposit): the full address in two rows of five groups, one secondary button", '<section class="msec maddr"><h2 class="lbl">' + t("w.addr") + '</h2><p class="addr-v" translate="no">' + F.groups(M.user.address) + "</p>" + C.btn(t("w.copy"), { block: true, icon: "copy" }) + '<p class="addr-note">' + t("w.addr.note") + "</p></section>"),
     demo("QR with the centre mark", C.qr(M.user.address, t("dp.qr"))),
-    demo("Address chip: full, with copy and explorer", C.addr(M.user.address, { scan: true })),
-    demo("Address chip: large (deposit)", C.addr(M.user.address, { lg: true })),
-    demo("Address chip: short", C.addr(M.user.address, { short: true })),
+    demo("Address chip (wallet, profile): the short address; the whole chip copies the full one and reads \"Copied\" for 2 s", C.addr(M.user.address)),
     demo("Install steps", C.steps([[t("g.ios.1"), "share"], [t("g.ios.2"), "addhome"], [t("g.ios.3"), "phone"]]))
   ]);
   document.getElementById("lib").innerHTML = html;
   App.enhance(document.body);
   var deckHtml = document.getElementById("lib-deck").innerHTML;
   var libDeck = App.deck(document.getElementById("lib-deck"), { nokeys: false, onCommit: function (n, dir) { App.toast(t("h.sync", { n: n, choice: App.q("q" + n)[dir] })); } });
-  document.getElementById("lib-fig").addEventListener("click", function () { var f = this; f.classList.remove("is-pop"); void f.offsetWidth; f.classList.add("is-pop"); App.burst(f, 36); });
+  document.getElementById("lib-fig").addEventListener("click", function () { var f = this; f.classList.remove("is-pop"); void f.offsetWidth; f.classList.add("is-pop"); });
   document.getElementById("lib-reset").addEventListener("click", function () { document.getElementById("lib-deck").innerHTML = deckHtml; libDeck.layout(); });
   var cfg = { label: t("s.chip", { a: 500 }), stepsTitle: t("tx.stake.h", { a: 500 }), steps: [t("tx.step1", { a: 500 }), t("tx.step2", { a: 500 })], review: { rows: [[t("s.amount"), "12,000 CT"], [t("s.apr"), "14%"]], confirm: t("s.btn", { a: "12,000" }) }, success: { title: t("s.ok.h", { a: 500 }), rows: [[t("s.apr"), "12%"]] } };
   document.addEventListener("click", function (e) {

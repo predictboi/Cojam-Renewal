@@ -110,12 +110,16 @@
       clearTimeout(fade);
       var p = held[held.length - 1];
       if (p) {
+        /* the Undo of the same pick stays in place: an older pick being sent or saved repaints nothing, so a finger already on Undo never loses its tap */
+        if (bar._held === p && $("#undo", bar)) return;
+        bar._held = p;
         var gone = Date.now() - p.t0;
         bar.innerHTML = '<span class="pickbar-msg" id="pick-msg">' + C.icon("check", 16) + "<span>" + label(p) + "</span></span>" +
           '<button type="button" class="undo" id="undo" aria-label="' + App.esc(t("h.undo.aria", { n: p.n, choice: App.q(p.id)[p.dir] })) + '">' +
           '<svg class="undo-ring" viewBox="0 0 22 22" aria-hidden="true"><circle class="trk" cx="11" cy="11" r="8"/><circle class="run" cx="11" cy="11" r="8" style="animation-duration:' + UNDO_MS + "ms;animation-delay:-" + gone + 'ms"/></svg><span>' + t("h.undo") + '</span><kbd aria-hidden="true">Z</kbd></button>';
         return;
       }
+      bar._held = null;
       if (shown && shown.state === "saving") { bar.innerHTML = '<span class="pickbar-msg is-quiet" role="status"><span class="spin"></span><span>' + t("common.saving") + ": " + label(shown) + "</span></span>"; return; }
       if (shown && shown.state === "saved") {
         bar.innerHTML = '<span class="pickbar-msg is-quiet" role="status">' + C.icon("check", 16) + "<span>" + t("h.saved") + ": " + label(shown) + "</span></span>";

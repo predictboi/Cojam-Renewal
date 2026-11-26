@@ -26,7 +26,7 @@
   var view = App.store.get("view", "card");
   function linkRow(label, href, ext) { return '<a class="rowlink" href="' + href + '"' + (ext ? ' target="_blank" rel="noopener"' : "") + "><span>" + label + "</span>" + C.icon(ext ? "ext" : "chev", 18) + "</a>"; }
   /* one flat page. Identity leads: the display name, then rank and points as display figures. Under it, sections between ink rules with hairline rows.
-     The wallet address is shown in full, as on the wallet screen. Log out is a row of the Account section. */
+     The wallet address is the short chip that copies the full one, as on the wallet screen; the explorer link is the row under it. Log out is a row of the Account section. */
   var me = M.around && M.around[2] ? M.around[2] : null;
   function ident() {
     var nm = M.user.name || F.short(M.user.address);
@@ -40,7 +40,8 @@
     return ident() +
       '<section class="sec"><h2 class="lbl">' + t("p.account") + '</h2><div class="list">' +
       '<div class="prow">' + C.icon("mail", 20) + '<p class="grow">' + t("p.login", { email: '<b translate="no">' + M.user.email + "</b>" }) + "</p></div>" +
-      '<div class="prow-addr"><p class="lbl">' + t("w.addr") + '</p><p class="addr-v" translate="no">' + F.groups(a) + "</p>" + C.iconBtn("copy", t("w.copy"), 'data-copy="' + a + '" data-toast="' + App.esc(t("w.copied", { a: F.short(a) })) + '"') + "</div>" +
+      '<div class="prow-addr"><p class="lbl">' + t("w.addr") + "</p>" + C.addr(a) + "</div>" +
+      linkRow(t("w.scan"), "https://kaiascan.io/address/" + a, true) +
       '<div class="stack-8 prow-dev">' + device() + "</div>" +
       '<button type="button" class="rowlink rowlink--danger" id="logout"><span>' + t("p.logout") + "</span>" + C.icon("chev", 18) + "</button></div></section>" +
       '<section class="sec"><div class="field"><div class="field-label"><label for="name"><b>' + t("p.name") + '</b></label></div><div class="field-box field-box--text' + (S === "nameerror" ? " is-error" : "") + '"><input id="name" name="nickname" type="text" autocomplete="nickname" spellcheck="false" maxlength="24" value="' + (S === "nameerror" ? "cojam_admin" : S === "nameword" ? "f**k" : M.user.name) + '" aria-describedby="name-msg"></div>' +

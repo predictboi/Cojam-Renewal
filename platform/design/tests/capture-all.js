@@ -1,4 +1,4 @@
-// Captures every screen at 390x844 and 360x780 in EN and KO, JA at 390x844, as v5-<screen>-<lang>-<width>.png.
+// Captures every screen at 390x844 and 360x780 in EN and KO, JA at 390x844, as v6-<screen>-<lang>-<width>.png.
 // Serve first: python3 -m http.server 8823 -d platform/design (another port: PORT=8816). Run: node platform/design/tests/capture-all.js platform/design/captures
 const {chromium}=require('playwright');const OUT=process.argv[2];const B='http://localhost:'+(process.env.PORT||8823)+'/';
 const SCREENS=[['g1-gate','gate.html?state=android'],['a1-login','login.html'],['a1-login-typo','login.html?state=typo'],['a1-login-unsupported','login.html?state=unsupported'],['a1-login-code','login.html?state=code'],['a2-first-run','first-run.html'],
@@ -10,6 +10,6 @@ const SCREENS=[['g1-gate','gate.html?state=android'],['a1-login','login.html'],[
   const ctx=await b.newContext({viewport:{width:W,height:H},deviceScaleFactor:2,isMobile:true,hasTouch:true});const pg=await ctx.newPage();pg.on('pageerror',e=>errs.push(e.message));
   for(const l of langs) for(const [n,u] of SCREENS){ if(u.includes('moment')) await pg.evaluate(()=>{try{sessionStorage.clear()}catch(e){}});   /* the reward moment plays once per session */
     await pg.goto(B+u+(u.includes('?')?'&':'?')+'lang='+l); await pg.evaluate(()=>document.fonts.ready); await pg.waitForTimeout(u.includes('moment')?2150:u.startsWith('done')||u.includes('review')?1500:u.startsWith('home-cards.html')&&!u.includes('?')?2600:800);
-    await pg.screenshot({path:`${OUT}/v5-${n}-${l}-${W}.png`}); }
+    await pg.screenshot({path:`${OUT}/v6-${n}-${l}-${W}.png`}); }
   await ctx.close(); }
  console.log('captured',errs.length?('pageerrors: '+errs.join(' | ')):'no page errors');await b.close();})();

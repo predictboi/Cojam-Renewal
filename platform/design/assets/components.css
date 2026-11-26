@@ -99,10 +99,15 @@ p, li, dd, summary { text-wrap: pretty; }
 .ph-cd { display: inline-flex; align-items: baseline; gap: var(--s-4); font-size: var(--fs-13); color: var(--on-brand-2); white-space: nowrap; }
 .ph-cd b { color: var(--on-brand); font-weight: var(--fw-bold); min-width: 7ch; }
 .ph-note { font-size: var(--fs-13); color: var(--on-brand-2); }
-/* icon switch on the band (card view / list view) */
-.viewsw { display: flex; gap: var(--s-2); padding: var(--s-2); border-radius: var(--r-pill); background: var(--band-chip); }
-.viewsw a { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; height: 44px; padding: 0 var(--s-12); border-radius: var(--r-pill); color: var(--on-brand); font-size: var(--fs-13); font-weight: var(--fw-heavy); line-height: 1; white-space: nowrap; text-decoration: none; }
+/* view switch on the band (card view / list view): two pages, so it is navigation in the line language, not a pill with a thumb.
+   A white 2 px outline track with a medium radius; the current view is the white filled half with ink text, the other half is its icon. */
+.viewsw { display: flex; border-radius: var(--r-m); box-shadow: inset 0 0 0 2px var(--snow); }
+.viewsw a { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; height: 44px; padding: 0 var(--s-12); color: var(--snow); font-size: var(--fs-13); font-weight: var(--fw-heavy); line-height: 1; white-space: nowrap; text-decoration: none; }
+.viewsw a:first-child { border-radius: var(--r-m) 0 0 var(--r-m); }
+.viewsw a:last-child { border-radius: 0 var(--r-m) var(--r-m) 0; }
 .viewsw a[aria-current="page"] { background: var(--snow); color: var(--ink); }
+.viewsw a:focus-visible { outline: 3px solid var(--snow); outline-offset: 2px; }
+@media (hover: hover) { .viewsw a:not([aria-current="page"]):hover { background: var(--band-chip); } }
 
 /* ---------- bottom tab bar ---------- */
 /* the current tab is the ink one: a filled icon and a heavy label. No pill, no lime. The others are muted. */
@@ -118,7 +123,7 @@ p, li, dd, summary { text-wrap: pretty; }
 
 /* ---------- buttons ---------- */
 /* Three looks, no more. Primary: the one main action of a screen, lime with the ink edge and the hard drop (the only button that carries them).
-   Secondary (.btn, also .btn-quiet, .btn-onband, .btn-onink, .undo, .field-max): a 2 px ink outline on white, medium radius, no shadow.
+   Secondary (.btn, also .btn-onband, .btn-onink, .undo, .field-max): a 2 px ink outline on white, medium radius, no shadow.
    Text link (.btn-ghost, .btn-danger, .linkish): underlined words, no box. There is no grey filled button anywhere. */
 .btn { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: var(--s-8); min-height: var(--target); padding: 0 var(--s-16); border: var(--edge); border-radius: var(--r-m); background: var(--surface); color: var(--ink); font-size: var(--fs-15); font-weight: var(--fw-bold); line-height: 1.15; text-decoration: none; text-align: center; white-space: nowrap; user-select: none;
   transition: transform var(--dur-release) var(--ease-spring), box-shadow var(--dur-release) var(--ease-out), background-color var(--dur-fast) var(--ease), color var(--dur-fast) var(--ease); }
@@ -394,15 +399,11 @@ p, li, dd, summary { text-wrap: pretty; }
 /* ---------- day done moment ----------
    "+100P" is the hero, in the display face, beside the headline. While the last pick is being saved it waits in the quiet blue;
    when the points are paid it pops in lime with a long burst and settles to white, so at rest the day progress and the primary button are the only lime. */
-.done-hero { display: flex; align-items: center; gap: var(--s-12); min-height: 60px; }
 .done-fig { position: relative; flex: none; font-family: var(--font-display); font-weight: var(--fw-black); font-stretch: var(--wide); font-size: var(--fs-40); line-height: 1; letter-spacing: -0.03em; color: var(--on-brand); white-space: nowrap; }
 .done-fig.is-wait { color: var(--on-brand-2); }
 .done-fig.is-pop { animation: fig-pop 560ms var(--ease-spring) both, fig-lime 2600ms var(--ease) both; }
 @keyframes fig-pop { from { transform: scale(0.55) rotate(-6deg); } }
 @keyframes fig-lime { 0%, 72% { color: var(--volt); } }
-.done-side { display: grid; gap: var(--s-2); min-width: 0; }
-.ph .done-side h1 { font-size: var(--fs-20); }
-:lang(ko) .ph .done-side h1, :lang(ja) .ph .done-side h1 { font-size: var(--fs-20); }
 .done-st { display: flex; align-items: center; gap: var(--s-6); min-height: 20px; font-size: var(--fs-13); line-height: 1.35; color: var(--on-brand-2); }
 .done-st .spin { width: 12px; height: 12px; }
 .burst { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; z-index: 2; }
@@ -605,19 +606,21 @@ button.pin { cursor: pointer; }
 .scrollx { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 
 /* ---------- address chip, QR, link box ---------- */
-.addr { display: flex; align-items: center; gap: var(--s-8); padding: var(--s-8) var(--s-8) var(--s-8) var(--s-12); border-radius: var(--r-m); background: var(--inset); min-width: 0; }
+/* the address chip: short address in the data face, 2 px ink outline, the whole chip copies (44 px tall); sky while it reads "Copied" */
+.addr-chip { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-8); min-height: var(--target); padding: 0 var(--s-12); border: var(--edge); border-radius: var(--r-m); background: var(--surface); color: var(--ink); font-size: var(--fs-14); font-weight: var(--fw-bold); line-height: 1; white-space: nowrap; cursor: pointer; }
+.addr-chip-v { font-family: var(--font-data); font-variant-ligatures: none; font-feature-settings: "calt" 0, "liga" 0; }
+.addr-chip.is-done { background: var(--sky); }
+.addr-chip.is-done .addr-chip-v { font-family: inherit; }
+.addr-chip svg { flex: none; }
+@media (hover: hover) { .addr-chip:hover { background: var(--sky-tint); } }
 /* a full address is always two equal lines of five groups of four, at every width */
 .addr-v { flex: 1; min-width: 0; font-family: var(--font-data); font-size: var(--fs-14); line-height: 1.6; color: var(--ink); }
 .addr-v > span { display: block; white-space: nowrap; }
 .addr-v i { font-style: normal; margin-right: 0.45em; }
 .addr-v i:last-child { margin-right: 0; }
 .rows .addr-v { display: block; margin-top: var(--s-2); font-size: var(--fs-13); font-weight: var(--fw-regular); color: var(--ink-2); }
-.addr .btn-icon.is-done, .btn.is-done { background: var(--sky); }
-.addr-acts { display: grid; grid-template-columns: 1fr auto; gap: var(--s-8); }
-.addr-block { display: grid; gap: var(--s-10); }
-.addr-block .addr-v { font-size: var(--fs-15); }
+.btn.is-done { background: var(--sky); }
 .addr-note { font-size: var(--fs-13); color: var(--ink-2); }
-.addr--lg { padding: var(--s-12); }
 .qr { position: relative; width: 216px; max-width: 100%; margin: 0 auto; padding: var(--s-12); border: var(--hair); border-radius: var(--r-m); background: var(--surface); }
 .qr svg { width: 100%; height: auto; }
 .qr-mark { position: absolute; left: 50%; top: 50%; width: 42px; height: 42px; margin: -21px 0 0 -21px; padding: 5px; border-radius: var(--r-s); background: var(--surface); }
@@ -688,7 +691,7 @@ button.pin { cursor: pointer; }
 .offbar { display: flex; align-items: flex-start; gap: var(--s-8); padding: var(--s-8) var(--gutter); background: var(--ink); color: var(--snow); font-size: var(--fs-13); line-height: 1.45; }
 .offbar svg { color: var(--sky); margin-top: 1px; }
 .offbar small { display: block; font-size: var(--fs-12); color: var(--ink-soft); }
-.stamp { display: flex; align-items: center; justify-content: center; gap: var(--s-6); font-size: var(--fs-13); color: var(--ink-2); }
+.stamp { display: flex; align-items: center; justify-content: center; gap: var(--s-6); font-size: var(--fs-13); font-weight: var(--fw-regular); line-height: 1.4; color: var(--ink-2); }
 
 /* ---------- skeleton, empty, block error, system screen ---------- */
 .skel { display: block; height: 14px; border-radius: var(--r-s); background: linear-gradient(90deg, var(--inset) 0%, var(--line) 50%, var(--inset) 100%) 0 0 / 200% 100%; animation: skel 1.3s ease-in-out infinite; }
@@ -810,9 +813,9 @@ button.rowlink { width: 100%; padding: 0; border: 0; background: none; text-alig
 .prow { display: flex; align-items: center; gap: var(--s-10); min-height: 52px; padding: var(--s-10) 0; font-size: var(--fs-15); min-width: 0; }
 .prow > svg { color: var(--ink); }
 .prow-dev { padding: var(--s-12) 0; }
-.prow-addr { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: var(--s-4) var(--s-12); padding: var(--s-12) 0; }
-.prow-addr .lbl { grid-column: 1 / -1; font-size: var(--fs-13); }
-.prow-addr .addr-v { font-size: var(--fs-15); }
+.prow-addr { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); min-height: 60px; padding: var(--s-8) 0; }
+.prow-addr .lbl { min-width: 0; font-size: var(--fs-15); font-weight: var(--fw-regular); color: var(--ink); }
+.prow-addr .addr-chip { flex: none; }
 
 /* ---------- hub and library pages ---------- */
 .doc { max-width: 760px; margin: 0 auto; min-height: 100dvh; background: var(--snow); }

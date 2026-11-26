@@ -40,7 +40,7 @@
       C.amount({ id: "amt", label: t("c.amount"), unit: "P", mode: "numeric", value: initial, disabled: blocked, side: S === "loading" ? C.skel("96px", "12px") : t("c.avail") + " <b>" + F.pts(bal) + "</b>", msg: t("c.step") }) +
       "</section>" +
       /* the result is the figure of this screen: its own section between the ink rules */
-      '<section class="msec"><div class="mhero"><h2 class="lbl">' + t("c.get") + '</h2><p class="fig" id="get" aria-live="polite">0<small>CT</small></p></div></section>' +
+      '<section class="msec mgrow"><div class="mhero"><h2 class="lbl">' + t("c.get") + '</h2><p class="fig" id="get" aria-live="polite">0<small>CT</small></p></div></section>' +
       '<section class="msec">' + C.rows([[t("c.rate"), "1,000P = 1 CT"], [t("c.minimum"), "1,000P"], [t("c.capleft"), t("c.capof", { n: capLeft })], [t("c.fee"), t("c.fee.v")]]) + "</section>";
   }
   function cfg(p) { var n = p / 1000; return { label: t("c.chip", { p: F.int(p) }), success: { title: t("c.ok.h", { p: F.int(p), n: n }), rows: [[t("c.ok.left"), F.pts(bal - p)], [t("c.ok.ct"), F.ct(M.user.ct + n)]] }, onSuccess: function () { App.addPoints(-p); } }; }

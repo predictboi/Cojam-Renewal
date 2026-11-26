@@ -35,7 +35,7 @@
       '<section class="msec">' +
       '<div class="field"><div class="field-label"><label for="to"><b>' + t("x.to") + '</b></label></div><div class="field-box field-box--mono' + (blocked ? " is-off" : "") + '"><input id="to" name="to" type="text" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="0x…" value="' + addr0 + '" aria-describedby="to-msg"' + (blocked ? " disabled" : "") + '><button type="button" class="field-max" id="paste"' + (blocked ? " disabled" : "") + ">" + t("x.paste") + '</button></div><div class="field-msg" id="to-msg" aria-live="polite"></div></div>' +
       C.amount({ id: "amt", label: t("x.amount"), unit: "CT", value: amt0, disabled: blocked, side: S === "loading" ? C.skel("110px", "12px") : t("x.avail", { c: "<b>" + F.dec(bal) + "</b>" }) }) + "</section>" +
-      '<section class="msec">' + C.rows([[t("x.kaia"), F.kaia(kaia)], [t("x.fee"), t("x.fee.v", { f: fee })], [t("dp.net"), t("dp.net.v")]]) + "</section>" +
+      '<section class="msec mend">' + C.rows([[t("x.kaia"), F.kaia(kaia)], [t("x.fee"), t("x.fee.v", { f: fee })], [t("dp.net"), t("dp.net.v")]]) + "</section>" +
       '<div id="kaia-note"></div>';
   }
   function cfg(to, a) {
