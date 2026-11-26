@@ -41,12 +41,13 @@ describe("CojamStaking: randomized sequences keep the solvency invariant", funct
         pos: new Map(users.map((u) => [u.address, []])),
         P: 0n, C: 0n, paid: 0n,
         rates: RATES.map((row) => [...row]), tiers: [...TIERS],
-        minStake: CT(100), minClaim: CT(10), maxOpen: 20, cap: 0n, paused: false,
+        minStake: CT(100), minClaim: CT(10), maxOpen: 20, cap: 0n, userCap: CT(1_000_000), paused: false,
       };
       const counts = {};
       const note = (k) => { counts[k] = (counts[k] || 0) + 1; };
       const tierOf = (a) => (a < m.tiers[0] ? 0 : a < m.tiers[1] ? 1 : 2);
       const openOf = (u) => m.pos.get(u).filter((p) => !p.closed).length;
+      const principalOf = (u) => m.pos.get(u).filter((p) => !p.closed).reduce((a, p) => a + p.principal, 0n);
 
       async function nextTime() {
         const latest = BigInt(await time.latest());
@@ -66,6 +67,14 @@ describe("CojamStaking: randomized sequences keep the solvency invariant", funct
         expect(bal >= m.P + m.C, "solvency").to.equal(true);
         expect(await staking.availableRewards()).to.equal(bal - m.P - m.C);
         expect(await staking.totalInterestPaid()).to.equal(m.paid);
+        // Per user open principal matches the model and sums to totalPrincipal.
+        let sum = 0n;
+        for (const u of users) {
+          const v = await staking.principalOf(u.address);
+          expect(v).to.equal(principalOf(u.address));
+          sum += v;
+        }
+        expect(sum).to.equal(m.P);
       }
 
       for (let step = 0; step < STEPS; step++) {
@@ -94,6 +103,7 @@ describe("CojamStaking: randomized sequences keep the solvency invariant", funct
           else if (amount < m.minStake) err = "BelowMinStake";
           else if (openOf(u.address) >= m.maxOpen) err = "TooManyPositions";
           else if (m.cap !== 0n && m.P + amount > m.cap) err = "TotalCapReached";
+          else if (m.userCap !== 0n && principalOf(u.address) + amount > m.userCap) err = "UserCapReached";
           else {
             apr = BigInt(m.rates[lock][tierOf(amount)]);
             interest = (amount * apr * LOCK_DAYS[lock] * DAY) / (BPS * YEAR);
@@ -189,9 +199,11 @@ describe("CojamStaking: randomized sequences keep the solvency invariant", funct
         } else if (roll < 83) {
           const mo = 1 + r.int(20);
           const cap = r.int(3) !== 0 ? 0n : m.P + r.big(CT(200_000));
+          const uroll = r.int(4);
+          const userCap = uroll === 0 ? 0n : uroll === 1 ? CT(1_000_000) : CT(10_000) + r.big(CT(150_000));
           await nextTime();
-          await staking.connect(owner).setCaps(mo, cap);
-          m.maxOpen = mo; m.cap = cap;
+          await staking.connect(owner).setCaps(mo, cap, userCap);
+          m.maxOpen = mo; m.cap = cap; m.userCap = userCap;
           note("caps");
         } else if (roll < 91) {
           // fund rewards by a plain transfer

@@ -16,6 +16,7 @@ describe("CojamStaking: gas", function () {
     g["stake (first position of a user)"] = await gas(staking.connect(bob).stake(CT(1_000), 1));
     g["stake (a later position)"] = await gas(staking.connect(alice).stake(CT(1_000), 1));
     for (let i = 0; i < 17; i++) await staking.connect(alice).stake(CT(100), 0);
+    g["stake (a later position, near the per user cap)"] = await gas(staking.connect(bob).stake(CT(990_000) - CT(1_000), 1));
     g["stake (20th open position)"] = await gas(staking.connect(alice).stake(CT(100), 0));
     await time.increase(60n * DAY);
     g["claimInterest (first claim, locked)"] = await gas(staking.connect(alice).claimInterest(0));
@@ -25,7 +26,7 @@ describe("CojamStaking: gas", function () {
     g["claimInterest (after the lock)"] = await gas(staking.connect(alice).claimInterest(1));
     g["withdraw (after claims)"] = await gas(staking.connect(alice).withdraw(0));
     g["withdraw (never claimed)"] = await gas(staking.connect(alice).withdraw(2));
-    g["withdraw (never claimed, last open position of a user)"] = await gas(staking.connect(bob).withdraw(0));
+    g["withdraw (never claimed, another user)"] = await gas(staking.connect(bob).withdraw(0));
 
     if (process.env.STAKING_GAS_LOG) {
       for (const [k, v] of Object.entries(g)) console.log(`      ${k}: ${v}`);

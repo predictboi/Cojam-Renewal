@@ -48,6 +48,8 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
     /// @notice Role that may pause new predictions and conversions (not unpause).
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
+    /// @notice After registration, `setReferrer` may link an inviter only during this window.
+    uint64 public constant INVITE_WINDOW = 24 hours;
     /// @notice Longest lifetime of a play key binding.
     uint64 public constant MAX_PLAY_KEY_TTL = 90 days;
     /// @notice Every market is resolved (or voidable by anyone) within this time after its day's end.
@@ -138,6 +140,8 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
     event ReferrerSet(address indexed player, address indexed referrer);
     /// @notice Invite bonus, not ranked.
     event ReferralPaid(address indexed referrer, address indexed player, uint8 sourceKind, uint256 amount);
+    /// @notice Invite bonus not minted because the inviter was on hold (frozen); it is never paid later.
+    event ReferralSkipped(address indexed referrer, address indexed player, uint8 sourceKind, uint256 amount);
     /// @notice Welcome bonus, not ranked.
     event WelcomePaid(address indexed player, address indexed referrer, uint32 dayId, uint256 amount);
     event OutcomeSet(uint256 indexed marketId, uint8 outcome, bool correction);
@@ -303,7 +307,8 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
         }
     }
 
-    /// @notice Links `referrer` as the inviter of `player`, once, before the player's first completed day.
+    /// @notice Links `referrer` as the inviter of `player`, once, within `INVITE_WINDOW` (24 hours) of the
+    /// player's registration, when registration set no inviter.
     function setReferrer(address player, address referrer) external onlyRole(OPERATOR_ROLE) {
         _setReferrer(player, referrer);
     }
@@ -766,7 +771,7 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
         Player storage p = players[player];
         if (!p.registered) revert NotRegistered();
         if (p.referrer != address(0)) revert ReferrerAlreadySet();
-        if (p.completedOnce) revert InviteWindowClosed();
+        if (block.timestamp >= uint256(p.registeredAt) + INVITE_WINDOW) revert InviteWindowClosed();
         _link(player, referrer);
     }
 
@@ -802,7 +807,7 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
         uint256 wp = _params.welcomePoints;
         if (r == address(0) || wp == 0) return;
         Player memory rp = players[r];
-        if (!rp.registered || rp.frozen) return;
+        if (rp.frozen) return; // a linked inviter is always registered
         _mint(player, wp);
         emit WelcomePaid(player, r, dayId, wp);
     }
@@ -821,10 +826,14 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
         if (r == address(0) || p.frozen) return;
         uint256 bps = _params.referralBps;
         if (bps == 0) return;
-        Player memory rp = players[r];
-        if (!rp.registered || rp.frozen) return;
         uint256 bonus = (amount * bps) / BPS;
         if (bonus == 0) return;
+        // A linked inviter is always registered. While the inviter is on hold the bonus is not minted
+        // and never owed later (DECISIONS "On hold: staking and invites").
+        if (players[r].frozen) {
+            emit ReferralSkipped(r, player, kind, bonus);
+            return;
+        }
         _mint(r, bonus);
         referralStats[r].points += SafeCast.toUint128(bonus);
         emit ReferralPaid(r, player, kind, bonus);

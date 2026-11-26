@@ -120,6 +120,9 @@ async function runOne(seed) {
       } else if (parsed.name === "ReferralPaid") {
         add(ev.referral, a.referrer, a.amount);
         expect(P(a.player).referrer).to.equal(a.referrer);
+      } else if (parsed.name === "ReferralSkipped") {
+        expect(P(a.referrer).frozen, "skipped for an active inviter").to.equal(true);
+        expect(P(a.player).referrer).to.equal(a.referrer);
       } else if (parsed.name === "WelcomePaid") {
         expect(ev.welcome.has(a.player), "welcome twice").to.equal(false);
         ev.welcome.set(a.player, a.amount);
@@ -212,7 +215,8 @@ async function runOne(seed) {
     [2, async function setReferrer() {
       const w = r.pick(named).address, ref = r.pick(all).address;
       const p = P(w), rp = P(ref);
-      const ok = p.registered && p.referrer === Z && !p.completedOnce && ref !== w && rp.registered && !rp.frozen && rp.referrer !== w;
+      const t = BigInt(await time.latest()) + 1n;
+      const ok = p.registered && p.referrer === Z && t < p.registeredAt + 24n * H && ref !== w && rp.registered && !rp.frozen && rp.referrer !== w;
       await send(ok, "setReferrer", () => op.setReferrer(w, ref), () => { p.referrer = ref; add(M.refCount, ref, 1n); });
     }],
     [2, async function freeze() {

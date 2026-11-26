@@ -126,7 +126,7 @@ describe("CojamPredict: players, invites and freezes", function () {
     expect((await predict.players(ok[199])).registered).to.equal(true);
   });
 
-  it("setReferrer links once, before the first completed day, with every refusal", async function () {
+  it("setReferrer links once, within 24 hours of registration, with every refusal", async function () {
     const { predict, op, alice, bob, carol, dave, eve, day0 } = await loadFixture(fixture);
     await expect(op.setReferrer(bob.address, carol.address)).to.emit(predict, "ReferrerSet").withArgs(bob.address, carol.address);
     expect(await predict.referredCount(carol.address)).to.equal(1n);
@@ -139,11 +139,28 @@ describe("CojamPredict: players, invites and freezes", function () {
     await op.setFrozen(alice.address, true, ethers.ZeroHash);
     await expect(op.setReferrer(carol.address, alice.address)).to.be.revertedWithCustomError(predict, "BadReferrer"); // frozen
     await op.setFrozen(alice.address, false, ethers.ZeroHash);
-    // carol completes a day: the window closes
+    // the window: accepted at registeredAt + 24 h - 1, refused from registeredAt + 24 h
+    expect(await predict.INVITE_WINDOW()).to.equal(24n * H);
+    const reg = (await predict.players(carol.address)).registeredAt;
+    await goTo(reg + 24n * H - 2n);
+    await at(reg + 24n * H);
+    await expect(op.setReferrer(carol.address, alice.address)).to.be.revertedWithCustomError(predict, "InviteWindowClosed");
+    expect(day0).to.be.a("bigint");
+  });
+
+  it("the 24 hour window: open at its last second, even after a completed day (no welcome bonus then)", async function () {
+    const { predict, op, alice, carol, day0 } = await loadFixture(fixture);
     await goTo(dayOpen(day0));
     await play(predict, carol, day0, [1, 1, 1, 1, 1]);
-    expect((await predict.players(carol.address)).completedOnce).to.equal(true);
-    await expect(op.setReferrer(carol.address, alice.address)).to.be.revertedWithCustomError(predict, "InviteWindowClosed");
+    expect(await predict.balanceOf(carol.address)).to.equal(100n);
+    const reg = (await predict.players(carol.address)).registeredAt;
+    await goTo(reg + 24n * H - 2n);
+    await at(reg + 24n * H - 1n);
+    await expect(op.setReferrer(carol.address, alice.address)).to.emit(predict, "ReferrerSet");
+    await goTo(dayOpen(day0 + 1n));
+    await play(predict, carol, day0 + 1n, [1, 1, 1, 1, 1]);
+    expect(await predict.balanceOf(carol.address)).to.equal(200n); // the first completed day is past: no welcome
+    expect(await predict.balanceOf(alice.address)).to.equal(10n); // the 10% stream starts at the link
   });
 
   it("setReferrer is still open after 4 answers and allowed for a frozen player", async function () {
@@ -426,7 +443,7 @@ describe("CojamPredict: predict", function () {
     expect(await predict.balanceOf(alice.address)).to.equal(200n);
   });
 
-  it("completion points of 0 credit nothing but still close the invite window", async function () {
+  it("completion points of 0 credit nothing; the invite window closes 24 hours after registration", async function () {
     const { predict, op, master, treasury, bob, carol } = await loadFixture(fixture);
     await predict.connect(master).proposeParams({ ...DEFAULTS, treasury: treasury.address, completionPoints: 0n });
     await time.increase(48n * H);

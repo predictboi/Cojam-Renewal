@@ -20,6 +20,10 @@ import {ICojamStaking} from "./interfaces/ICojamStaking.sol";
 /// `withdraw` after the lock pays the principal plus all remaining interest. There is no
 /// early exit.
 ///
+/// Caps: at most `maxOpenPositions` (20) open positions and `maxUserPrincipal`
+/// (1,000,000 CT by default) of open principal per address, and optionally
+/// `maxTotalPrincipal` over all addresses. All three are checked on the measured amount.
+///
 /// Solvency: when a position opens, its whole interest for the lock (`maxInterest`) is
 /// reserved out of the reward CT the contract holds. The contract therefore never promises
 /// interest it does not hold: `CT.balanceOf(this) >= totalPrincipal + totalCommitted`.

@@ -40,6 +40,7 @@ describe("CojamStaking: deployment", function () {
     expect(await staking.minClaim()).to.equal(CT(10));
     expect(await staking.maxOpenPositions()).to.equal(20n);
     expect(await staking.maxTotalPrincipal()).to.equal(0n);
+    expect(await staking.maxUserPrincipal()).to.equal(CT(1_000_000));
     expect(await staking.tierThresholds(0)).to.equal(TIERS[0]);
     expect(await staking.tierThresholds(1)).to.equal(TIERS[1]);
     const table = await staking.rates();
@@ -63,7 +64,7 @@ describe("CojamStaking: deployment", function () {
     const { staking, treasury } = await loadFixture(fixture);
     const tx = staking.deploymentTransaction();
     await expect(tx).to.emit(staking, "MinimumsSet").withArgs(CT(100), CT(10));
-    await expect(tx).to.emit(staking, "CapsSet").withArgs(20n, 0n);
+    await expect(tx).to.emit(staking, "CapsSet").withArgs(20n, 0n, CT(1_000_000));
     await expect(tx).to.emit(staking, "TreasurySet").withArgs(ethers.ZeroAddress, treasury.address);
     await expect(tx).to.emit(staking, "TiersSet");
     await expect(tx).to.emit(staking, "RatesSet");
@@ -119,6 +120,7 @@ describe("CojamStaking: stake", function () {
     expect(await staking.totalCommitted()).to.equal(max);
     expect(await staking.availableRewards()).to.equal(REWARDS - max);
     expect(await staking.openPositions(alice.address)).to.equal(1n);
+    expect(await staking.principalOf(alice.address)).to.equal(amount);
     expect(await staking.positionCount(alice.address)).to.equal(1n);
     const p = await staking.positionOf(alice.address, 0);
     expect(p.id).to.equal(0n);
@@ -174,7 +176,7 @@ describe("CojamStaking: stake", function () {
 
   it("respects the optional total principal cap and reports the room left", async function () {
     const { staking, owner, alice, bob } = await loadFixture(fixture);
-    await staking.connect(owner).setCaps(20, CT(1_500));
+    await staking.connect(owner).setCaps(20, CT(1_500), CT(1_000_000));
     await staking.connect(alice).stake(CT(1_000), 0);
     await expect(staking.connect(bob).stake(CT(501), 0))
       .to.be.revertedWithCustomError(staking, "TotalCapReached").withArgs(CT(500), CT(501));
@@ -183,10 +185,10 @@ describe("CojamStaking: stake", function () {
     await expect(staking.connect(bob).stake(CT(100), 0))
       .to.be.revertedWithCustomError(staking, "TotalCapReached").withArgs(0n, CT(100));
     // A cap below the current total stops new stakes only, with zero room.
-    await staking.connect(owner).setCaps(20, CT(1_000));
+    await staking.connect(owner).setCaps(20, CT(1_000), CT(1_000_000));
     await expect(staking.connect(bob).stake(CT(100), 0))
       .to.be.revertedWithCustomError(staking, "TotalCapReached").withArgs(0n, CT(100));
-    await staking.connect(owner).setCaps(20, 0); // 0 removes the cap
+    await staking.connect(owner).setCaps(20, 0, CT(1_000_000)); // 0 removes the cap
     await staking.connect(bob).stake(CT(100_000), 0);
   });
 
@@ -406,6 +408,7 @@ describe("CojamStaking: withdraw", function () {
     expect(await staking.totalPrincipal()).to.equal(0n);
     expect(await staking.totalCommitted()).to.equal(0n);
     expect(await staking.openPositions(alice.address)).to.equal(0n);
+    expect(await staking.principalOf(alice.address)).to.equal(0n);
     const p = await staking.positionOf(alice.address, 0);
     expect(p.closed).to.equal(true);
     expect(p.claimed).to.equal(a.maxInterest);
@@ -462,6 +465,84 @@ describe("CojamStaking: withdraw", function () {
     await staking.connect(bob).withdraw(0); // Bob's own position 0
     expect(await token.balanceOf(alice.address)).to.equal(aliceBefore);
     expect((await staking.positionOf(alice.address, 0)).closed).to.equal(false);
+  });
+});
+
+describe("CojamStaking: per user principal cap", function () {
+  const CAP = CT(1_000_000);
+
+  it("allows exactly 1,000,000 CT of open principal per address and refuses one wei more", async function () {
+    const { staking, alice, bob } = await loadFixture(fixture);
+    await staking.connect(alice).stake(CT(600_000), 0);
+    await expect(staking.connect(alice).stake(CT(400_000) + 1n, 0))
+      .to.be.revertedWithCustomError(staking, "UserCapReached").withArgs(CT(400_000), CT(400_000) + 1n);
+    await staking.connect(alice).stake(CT(400_000), 0); // exactly at the cap
+    expect(await staking.principalOf(alice.address)).to.equal(CAP);
+    await expect(staking.connect(alice).stake(CT(100), 0))
+      .to.be.revertedWithCustomError(staking, "UserCapReached").withArgs(0n, CT(100));
+    await staking.connect(bob).stake(CT(100), 0); // per address
+    expect(await staking.principalOf(bob.address)).to.equal(CT(100));
+    expect(await staking.totalPrincipal()).to.equal(CAP + CT(100));
+  });
+
+  it("a withdrawal frees room under the cap", async function () {
+    const { staking, alice } = await loadFixture(fixture);
+    await staking.connect(alice).stake(CT(300_000), 0);
+    await staking.connect(alice).stake(CT(700_000), 1);
+    await expect(staking.connect(alice).stake(CT(100), 0)).to.be.revertedWithCustomError(staking, "UserCapReached");
+    await time.increase(30n * DAY);
+    await staking.connect(alice).withdraw(0);
+    expect(await staking.principalOf(alice.address)).to.equal(CT(700_000));
+    await expect(staking.connect(alice).stake(CT(300_000) + 1n, 0))
+      .to.be.revertedWithCustomError(staking, "UserCapReached").withArgs(CT(300_000), CT(300_000) + 1n);
+    await staking.connect(alice).stake(CT(300_000), 0);
+    expect(await staking.principalOf(alice.address)).to.equal(CAP);
+  });
+
+  it("a cap of 0 means no cap", async function () {
+    const { staking, owner, alice } = await loadFixture(fixture);
+    await staking.connect(owner).setCaps(20, 0, 0);
+    await staking.connect(alice).stake(CT(1_500_000), 0);
+    await staking.connect(alice).stake(CT(500_000), 0);
+    expect(await staking.principalOf(alice.address)).to.equal(CT(2_000_000));
+  });
+
+  it("lowering the cap below a user's figure only stops that user's new stakes", async function () {
+    const { staking, token, owner, alice, bob } = await loadFixture(fixture);
+    const a = await open(staking, alice, CT(50_000), 0);
+    await expect(staking.connect(owner).setCaps(20, 0, CT(10_000)))
+      .to.emit(staking, "CapsSet").withArgs(20n, 0n, CT(10_000));
+    await expect(staking.connect(alice).stake(CT(100), 0))
+      .to.be.revertedWithCustomError(staking, "UserCapReached").withArgs(0n, CT(100));
+    await staking.connect(bob).stake(CT(10_000), 0);
+    // Alice's position is untouched and pays in full.
+    await time.increaseTo(a.end);
+    const before = await token.balanceOf(alice.address);
+    await staking.connect(alice).withdraw(0);
+    expect(await token.balanceOf(alice.address)).to.equal(before + CT(50_000) + a.maxInterest);
+    expect(await staking.principalOf(alice.address)).to.equal(0n);
+    await staking.connect(alice).stake(CT(10_000), 0);
+  });
+
+  it("is checked on what arrived (fee on transfer token)", async function () {
+    const { staking, owner, alice } = await loadFixture(feeFixture);
+    await staking.connect(owner).setCaps(20, 0, CT(990));
+    // 1,000 CT sent, 990 CT arrive: exactly at the cap.
+    await staking.connect(alice).stake(CT(1_000), 0);
+    expect(await staking.principalOf(alice.address)).to.equal(CT(990));
+    await staking.connect(owner).setCaps(20, 0, CT(1_089));
+    // 101 CT sent, 99.99 CT arrive: room is 99 CT, so this is refused on the received amount.
+    await expect(staking.connect(alice).stake(CT(101), 0))
+      .to.be.revertedWithCustomError(staking, "UserCapReached").withArgs(CT(99), CT(101) - CT(101) / 100n);
+    await staking.connect(owner).setCaps(20, 0, CT(990) + CT(101) - CT(101) / 100n);
+    await staking.connect(alice).stake(CT(101), 0);
+  });
+
+  it("the total cap is checked before the user cap", async function () {
+    const { staking, owner, alice } = await loadFixture(fixture);
+    await staking.connect(owner).setCaps(20, CT(500), CT(400));
+    await expect(staking.connect(alice).stake(CT(600), 0)).to.be.revertedWithCustomError(staking, "TotalCapReached");
+    await expect(staking.connect(alice).stake(CT(450), 0)).to.be.revertedWithCustomError(staking, "UserCapReached");
   });
 });
 
@@ -536,10 +617,10 @@ describe("CojamStaking: owner setters", function () {
 
   it("setCaps bounds the open position cap to 1 to 20", async function () {
     const { staking, owner, alice } = await loadFixture(fixture);
-    await expect(staking.connect(owner).setCaps(1, CT(5))).to.emit(staking, "CapsSet").withArgs(1n, CT(5));
-    await expect(staking.connect(owner).setCaps(0, 0)).to.be.revertedWithCustomError(staking, "MaxOpenPositionsOutOfBounds").withArgs(0n);
-    await expect(staking.connect(owner).setCaps(21, 0)).to.be.revertedWithCustomError(staking, "MaxOpenPositionsOutOfBounds").withArgs(21n);
-    await staking.connect(owner).setCaps(1, 0);
+    await expect(staking.connect(owner).setCaps(1, CT(5), CT(7))).to.emit(staking, "CapsSet").withArgs(1n, CT(5), CT(7));
+    await expect(staking.connect(owner).setCaps(0, 0, CT(1_000_000))).to.be.revertedWithCustomError(staking, "MaxOpenPositionsOutOfBounds").withArgs(0n);
+    await expect(staking.connect(owner).setCaps(21, 0, CT(1_000_000))).to.be.revertedWithCustomError(staking, "MaxOpenPositionsOutOfBounds").withArgs(21n);
+    await staking.connect(owner).setCaps(1, 0, CT(1_000_000));
     await staking.connect(alice).stake(CT(100), 0);
     await expect(staking.connect(alice).stake(CT(100), 0)).to.be.revertedWithCustomError(staking, "TooManyPositions").withArgs(1n, 1n);
   });
@@ -588,7 +669,7 @@ describe("CojamStaking: rewards and treasury", function () {
     await staking.connect(owner).setRates([[0, 0, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]]);
     await staking.connect(owner).setTiers([1n, 2n]);
     await staking.connect(owner).setMinimums(CT(100_000), CT(1_000));
-    await staking.connect(owner).setCaps(1, 1n);
+    await staking.connect(owner).setCaps(1, 1n, 1n);
     await staking.connect(owner).pause();
     await staking.connect(owner).proposeTreasury(owner.address);
     await time.increase(2n * DAY);
@@ -667,7 +748,7 @@ describe("CojamStaking: pause and access control", function () {
       (s) => s.setRates([[1, 1, 1], [1, 1, 1], [1, 1, 1], [1, 1, 1]]),
       (s) => s.setTiers([CT(1), CT(2)]),
       (s) => s.setMinimums(CT(100), CT(10)),
-      (s) => s.setCaps(20, 0),
+      (s) => s.setCaps(20, 0, CT(1_000_000)),
       (s) => s.withdrawRewards(1, treasury.address),
       (s) => s.proposeTreasury(stranger.address),
       (s) => s.cancelTreasury(),
@@ -697,7 +778,7 @@ describe("CojamStaking: pause and access control", function () {
     await staking.connect(stranger).acceptDefaultAdminTransfer();
     expect(await staking.owner()).to.equal(stranger.address);
     await staking.connect(stranger).unpause();
-    await expect(staking.connect(owner).setCaps(20, 0)).to.be.revertedWithCustomError(staking, "AccessControlUnauthorizedAccount");
+    await expect(staking.connect(owner).setCaps(20, 0, CT(1_000_000))).to.be.revertedWithCustomError(staking, "AccessControlUnauthorizedAccount");
   });
 });
 

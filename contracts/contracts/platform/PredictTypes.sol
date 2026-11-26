@@ -55,7 +55,7 @@ struct Player {
     uint64 registeredAt;
     bool registered;
     bool frozen;
-    bool completedOnce; // first full day done: closes the invite window and pays the welcome bonus once
+    bool completedOnce; // first full day done: the welcome bonus is paid (once) only at this moment
 }
 
 /// @notice A play key binding. One storage slot; key 0 = none.

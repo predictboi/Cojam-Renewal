@@ -378,7 +378,10 @@ describe("CojamPredict: friend invites and the welcome bonus", function () {
     const { predict, op, alice, dave, day0 } = await loadFixture(fixture);
     await goTo(dayOpen(day0));
     await op.setFrozen(alice.address, true, R);
-    await play(predict, dave, day0, [1, 1, 1, 1, 1]);
+    await expect(predict.connect(dave).predict(day0 * 5n, 1)).to.not.emit(predict, "ReferralSkipped");
+    await play(predict, dave, day0, [0, 1, 1, 1, 0]);
+    await expect(predict.connect(dave).predict(day0 * 5n + 4n, 1)).to.emit(predict, "ReferralSkipped").withArgs(alice.address, dave.address, 1, 10)
+      .and.not.to.emit(predict, "ReferralPaid").and.not.to.emit(predict, "WelcomePaid");
     expect(await predict.balanceOf(alice.address)).to.equal(0n);
     expect(await predict.balanceOf(dave.address)).to.equal(100n); // no welcome either: the inviter was frozen
     await op.setFrozen(alice.address, false, R);
@@ -394,6 +397,10 @@ describe("CojamPredict: friend invites and the welcome bonus", function () {
     await expect(predict.settle(dave.address, day0)).to.not.emit(predict, "ReferralPaid");
     expect(await predict.balanceOf(dave.address)).to.equal(450n);
     expect(await predict.balanceOf(alice.address)).to.equal(10n);
+    // bonus already minted is kept when the inviter goes on hold
+    await op.setFrozen(alice.address, true, R);
+    expect(await predict.balanceOf(alice.address)).to.equal(10n);
+    expect(await predict.referralPointsOf(alice.address)).to.equal(10n);
   });
 
   it("no welcome without an inviter, or with welcomePoints 0; the welcome earns the inviter nothing", async function () {
