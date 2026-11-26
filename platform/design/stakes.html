@@ -35,7 +35,7 @@
   var sofar = stakes.reduce(function (a, s) { return a + calc(s).interest; }, 0), perAll = stakes.reduce(function (a, s) { var c = calc(s); return a + (c.unlocked ? 0 : c.per); }, 0);
   var claimable = stakes.reduce(function (a, s) { var c = calc(s); return a + (c.unlocked || c.interest >= M.minClaim ? c.interest : 0); }, 0);
 
-  function head() { return "<div><h1>" + t("s.title") + '</h1><p class="ph-sub">' + t("s.sub") + "</p></div>"; }
+  function head() { return '<div class="ph-top"><h1>' + t("s.title") + "</h1></div>"; }
   function sw() { return C.seg([{ label: t("s.new"), href: "staking.html" }, { label: t("s.mine", { n: S === "empty" ? 0 : stakes.length }), href: "stakes.html", on: true }], { label: t("s.switch") }); }
   function card(s) {
     var c = calc(s), actions;
@@ -43,7 +43,7 @@
     else if (c.interest >= M.minClaim) actions = C.btn(t("m.claim", { i: F.dec(c.interest, 2) }), { block: true, attrs: 'data-claim="' + s.id + '"', disabled: App.offline });
     else actions = C.btn(t("m.claim", { i: F.dec(c.interest, 2) }), { block: true, disabled: true }) + '<p class="tiny muted center">' + t("m.claim.gap", { g: F.dec(M.minClaim - c.interest, 2) }) + "</p>";
     return '<article class="card stake" data-stake="' + s.id + '"><div class="stake-top"><div><p class="fig fig--md">' + F.dec(s.amount) + '<small>CT</small></p><p class="small muted">' + t("m.card.period", { d: s.days, r: s.rate }) + "</p></div>" +
-      '<span data-status>' + (c.unlocked ? C.tag(t("m.unlocked"), "volt") : C.tag(t("m.locked"), "ink", "lock")) + "</span></div>" +
+      '<span data-status>' + (c.unlocked ? C.tag(t("m.unlocked"), "sky") : C.tag(t("m.locked"), "ink", "lock")) + "</span></div>" +
       '<div class="stack-8"><div class="bar' + (c.unlocked ? " is-full" : "") + '" role="img" aria-label="' + t("m.day", { x: c.day, d: s.days }) + '"><i style="width:' + c.pct.toFixed(1) + '%"></i></div>' +
       '<div class="row-between tiny muted"><span>' + t("m.started", { date: F.date(s.start) }) + "</span><span>" + t("m.day", { x: c.day, d: s.days }) + "</span><span>" + t("m.unlocks", { date: F.date(c.unlock) }) + "</span></div></div>" +
       C.rows([[t("m.interest"), '<span data-tick="' + c.interest + "|" + (c.unlocked ? 0 : c.per) + "|" + c.cap + '">' + F.dec(c.interest, 6) + "</span> CT" + (App.offline ? "<small>" + t("m.paused") + "</small>" : ""), true]]) +

@@ -38,6 +38,11 @@
     groups: function (a) { return a.replace(/^0x/, "").match(/.{1,4}/g).map(function (g, i) { return "<span>" + (i === 0 ? "0x" : "") + g + "</span>"; }).join(""); }
   };
   App.isKo = App.lang === "ko";
+  /* a question in the chosen language. The server sends title, choices and answer rule authored per language (see mock.js). */
+  App.q = function (id) {
+    var q = M.questions[id], L = q[App.lang] || q.en;
+    return { id: id, n: q.n, img: q.img, cat: q.cat, title: L.title, l: L.left, r: L.right, rule: L.rule, settle: L.settle };
+  };
 
   /* ---------- icons: one stroke family, 24 grid ---------- */
   var IC = {
@@ -124,7 +129,7 @@
   C.addr = function (a, o) {
     o = o || {};
     return '<div class="addr' + (o.lg ? " addr--lg" : "") + '"><span class="addr-v" translate="no"' + (o.short ? ' aria-label="' + a + '"' : "") + ">" + (o.short ? F.short(a) : F.groups(a)) + "</span>" +
-      C.iconBtn("copy", o.label || t("w.copy"), 'data-copy="' + a + '" data-toast="' + esc(o.toast || t("w.copied")) + '"') +
+      C.iconBtn("copy", o.label || t("w.copy"), 'data-copy="' + a + '" data-toast="' + esc(o.toast || t("w.copied", { a: F.short(a) })) + '"') +
       (o.scan ? '<a class="btn btn-icon" href="https://kaiascan.io/address/' + a + '" target="_blank" rel="noopener" aria-label="' + esc(t("w.scan")) + '">' + ic("ext", 18) + "</a>" : "") + "</div>";
   };
   C.amount = function (o) {
@@ -139,6 +144,7 @@
   C.error = function (key) {
     return '<div class="card">' + C.note("error", t(key || "e.load"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" })) + "</div>";
   };
+  C.actbar = function (btn, note) { return '<div class="pin pin--act">' + btn + (note ? '<p class="pin-note">' + note + "</p>" : "") + "</div>"; };
   C.skel = function (w, h, extra) { return '<span class="skel" style="width:' + w + ";height:" + (h || "14px") + ";" + (extra || "") + '"></span>'; };
   C.help = function (q, a, open) { return '<details class="help"' + (open ? " open" : "") + "><summary>" + q + ic("down", 18) + '</summary><div class="help-body">' + a + "</div></details>"; };
   C.stamp = function (n) { return '<p class="stamp"><span class="live-dot"></span><span data-stamp="' + (n || 4) + '">' + t("common.updated", { n: n || 4 }) + "</span></p>"; };
@@ -173,26 +179,31 @@
     return C.empty({ icon: "phone", title: t("h.other.h"), body: t("h.other.b"), action: C.btn(t("h.other.btn"), { kind: "primary", attrs: "data-reload" }) });
   };
   /* a question card (used by the deck, the gate preview and the library) */
-  C.qcard = function (q, o) {
+  C.qcard = function (id, o) {
     o = o || {};
-    var id = q.id, qt = t(id + ".q"), img = o.noimg ? "" : q.img;
-    /* every question carries a picture (4:5, subject in the top 55%); with none, the card draws the category on the blue grid */
+    var q = App.q(id), img = o.noimg ? "" : q.img;
+    /* every question carries a picture (4:5, no text in it, subject in the top 45%); with none, the card draws the category on the blue grid */
     var media = img ? '<div class="qimg"><img src="' + img + '" alt="" width="800" height="1000" decoding="async" draggable="false"></div>' :
       '<div class="qimg qimg--fallback"><span class="qimg-tile">' + ic(CAT_ICON[q.cat] || "spark", 64) + "</span></div>";
-    return '<article class="qcard' + (o.top ? " qcard--top" : "") + '" data-q="' + q.n + '" data-pos="' + (o.pos || 0) + '" role="group" tabindex="' + (o.static ? "-1" : "0") + '" aria-label="' + esc(t("h.qn", { n: q.n }) + ": " + qt) + '">' +
+    /* the title is clamped to 3 lines; long ones step down a size (questions are written to stay under about 70 characters) */
+    var long = /[\u3000-\u9fff\uac00-\ud7af]/.test(q.title) ? q.title.length > 22 : q.title.length > 44;
+    function choice(d) {
+      return '<button type="button" class="choice" data-dir="' + d + '"' + (o.disabled ? " disabled" : "") + (o.static ? ' tabindex="-1"' : "") + ' aria-label="' + esc(t("h.pick.aria", { choice: q[d], q: q.title })) + '">' +
+        (d === "l" ? ic("left", 18) : "") + "<span>" + esc(q[d]) + "</span>" + (d === "r" ? ic("right", 18) : "") + "</button>";
+    }
+    return '<article class="qcard' + (o.top ? " qcard--top" : "") + '" data-q="' + q.n + '" data-id="' + id + '" data-pos="' + (o.pos || 0) + '" role="group" aria-label="' + esc(t("h.qn.sr", { n: q.n }) + ": " + q.title) + '">' +
       media + '<span class="qtint" aria-hidden="true"></span>' +
-      '<span class="qstamp qstamp--l" aria-hidden="true">' + t(id + ".l") + '</span><span class="qstamp qstamp--r" aria-hidden="true">' + t(id + ".r") + "</span>" +
-      '<div class="qcard-top"><span class="qchip">' + t("cat." + q.cat) + '</span><span class="qchip qchip--n">' + t("h.qn", { n: q.n }) + "</span></div>" +
-      '<div class="qcard-body"><h2 tabindex="-1">' + qt + "</h2>" +
+      '<span class="qstamp qstamp--l" aria-hidden="true">' + esc(q.l) + '</span><span class="qstamp qstamp--r" aria-hidden="true">' + esc(q.r) + "</span>" +
+      '<div class="qcard-top"><span class="qchip">' + t("cat." + q.cat) + '</span><span class="qchip" aria-hidden="true">' + t("h.qn", { n: q.n }) + "</span></div>" +
+      '<div class="qcard-body"><h2' + (long ? ' class="is-long"' : "") + ">" + esc(q.title) + "</h2>" +
       (o.failed ? '<p class="qcard-note">' + ic("warn", 16) + t("h.notsaved") + "</p>" : "") +
-      '<div class="qcard-meta"><span>' + ic("search", 14) + "<span>" + t("h.answer", { rule: t(id + ".rule") }) + "</span></span><span>" + ic("clock", 14) + "<span>" + t("h.ai", { time: t(id + ".time") }) + "</span></span></div>" +
-      '<div class="choices">' +
-      '<button type="button" class="choice" data-dir="l"' + (o.disabled ? " disabled" : "") + (o.static ? ' tabindex="-1"' : "") + ' aria-label="' + esc(t("h.pick.aria", { choice: t(id + ".l"), q: qt })) + '">' + ic("left", 18) + "<span>" + t(id + ".l") + "</span></button>" +
-      '<button type="button" class="choice" data-dir="r"' + (o.disabled ? " disabled" : "") + (o.static ? ' tabindex="-1"' : "") + ' aria-label="' + esc(t("h.pick.aria", { choice: t(id + ".r"), q: qt })) + '"><span>' + t(id + ".r") + "</span>" + ic("right", 18) + "</button>" +
-      "</div></div></article>";
+      '<div class="qcard-meta"><span>' + ic("search", 14) + "<span>" + t("h.answer", { rule: esc(q.rule) }) + "</span></span><span>" + ic("clock", 14) + "<span>" + t("h.ai", { time: q.settle }) + "</span></span></div>" +
+      '<div class="choices">' + choice("l") + choice("r") + "</div>" +
+      (o.final ? '<p class="qcard-final">' + t("h.final") + "</p>" : "") +
+      "</div></article>";
   };
   var CAT_ICON = { crypto: "coin", markets: "chart", weather: "sun", sports: "ball", culture: "film" };
-  C.thumb = function (q) { return '<span class="trow-thumb" aria-hidden="true">' + (q.img ? '<img src="' + q.img + '" alt="" width="52" height="52" loading="lazy">' : ic(CAT_ICON[q.cat] || "spark", 24)) + "</span>"; };
+  C.thumb = function (q) { if (typeof q === "string") q = App.q(q); return '<span class="trow-thumb" aria-hidden="true">' + (q.img ? '<img src="' + q.img + '" alt="" width="52" height="52" loading="lazy">' : ic(CAT_ICON[q.cat] || "spark", 24)) + "</span>"; };
 
   /* ---------- shell ---------- */
   var TABS = [
@@ -343,6 +354,7 @@
         var rv = cfg.review;
         h = "<h2>" + (rv.title || t("tx.review.h")) + "</h2>" + C.rows(rv.rows) +
           (rv.check ? '<label class="check"><input type="checkbox" id="tx-check"><span>' + rv.check + "</span></label>" : "") +
+          (rv.warn ? '<p class="sheet-warn">' + ic("lock", 18) + "<span>" + rv.warn + "</span></p>" : "") +
           '<div class="sheet-acts">' + C.btn(rv.confirm || t("tx.confirm"), { kind: "primary", block: true, attrs: "data-tx=\"confirm\"", disabled: !!rv.check, id: "tx-confirm" }) + C.btn(t("common.cancel"), { kind: "ghost", block: true, attrs: "data-tx=\"cancel\"" }) + "</div>";
       } else if (state === "signing") {
         h = '<div class="sheet-state"><div class="sheet-ic"><span class="spin"></span></div><h2>' + t("tx.sign.h") + '</h2><p class="sheet-lead">' + t("tx.sign.b") + "</p></div>" +
@@ -397,7 +409,7 @@
     var b = e.target.closest("[data-tx]"); if (!b) return;
     var a = b.getAttribute("data-tx"), cfg = App.tx.cfg;
     if (a === "confirm") { cfg._confirmed = true; App.tx.run(cfg); cfg._confirmed = false; }
-    else if (a === "cancel") { txClear(); App.sheet.close(true); }
+    else if (a === "cancel") { var running = App.tx.state !== "review" && App.tx.state !== "failed"; txClear(); App.sheet.close(true); if (running) App.toast(cfg.cancelMsg || t("tx.fail.cancel")); }
     else if (a === "hide") { App.tx.hidden = true; App.sheet.close(true); App.tx.chip(true); }
     else if (a === "done") { App.sheet.close(true); if (cfg.onDone) cfg.onDone(); }
     else if (a === "retry") { cfg.fail = false; App.tx.run(cfg); }
@@ -420,6 +432,8 @@
       var text = c.getAttribute("data-copy");
       try { if (navigator.clipboard) navigator.clipboard.writeText(text).catch(function () {}); } catch (err) {}
       App.toast(c.getAttribute("data-toast") || t("common.copied"));
+      var dn = c.getAttribute("data-done"), lab = $("span", c);
+      if (dn && lab && !c._old) { c._old = lab.textContent; lab.textContent = dn; c.classList.add("is-done"); setTimeout(function () { lab.textContent = c._old; c._old = null; c.classList.remove("is-done"); }, 2000); }
       if (c.classList.contains("btn-icon")) { var old = c.innerHTML; c.classList.add("is-done"); c.innerHTML = ic("check", 18); setTimeout(function () { c.classList.remove("is-done"); c.innerHTML = old; }, 1600); }
       return;
     }
@@ -437,7 +451,10 @@
     var bk = e.target.closest("[data-toast-msg]"); if (bk) App.toast(bk.getAttribute("data-toast-msg"));
   });
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape" && $("#sheet-root.is-open") && App.sheet.closable()) App.sheet.close();
+    if (e.key === "Escape" && $("#sheet-root.is-open")) {
+      if (App.sheet.closable()) App.sheet.close();
+      else { var vb = $('#sheet [data-tx="cancel"], #sheet [data-tx="hide"]'); if (vb) vb.click(); }
+    }
     if (e.key === "Tab" && $("#sheet-root.is-open")) {
       var f = $$("a[href], button:not([disabled]), input:not([disabled]), select", $("#sheet")); if (!f.length) return;
       var first = f[0], last = f[f.length - 1];
@@ -462,54 +479,81 @@
     return { value: parseFloat(s), decimals: dec };
   };
 
-  /* ---------- swipe card stack (spec 6.3) ---------- */
+  /* ---------- swipe card stack (spec 6.3) ----------
+     Drag follows the finger, a release past the threshold (or a fling) throws the card, the next one springs forward.
+     Guards: input is ignored for 400 ms after a commit, key repeat is ignored, arrow keys work without focus inside the card.
+     A thrown card is kept so restore() can fly it back in (Undo). */
   App.deck = function (root, o) {
     o = o || {};
+    var ARM = 0.35, GUARD = 400, lastCommit = 0;
     function live() { return $$(".qcard:not(.is-out)", root); }
+    function guarded() { return Date.now() - lastCommit < GUARD; }
     function layout() {
-      live().forEach(function (c, i) {
-        c.setAttribute("data-pos", i < 4 ? i : "x"); c.style.transform = ""; c.style.transition = "";
+      var cards = live();
+      cards.forEach(function (c, i) {
+        c.setAttribute("data-pos", i < 3 ? i : "x"); c.style.transform = ""; c.style.transition = ""; c.style.opacity = "";
         if (i === 0) c.removeAttribute("inert"); else c.setAttribute("inert", "");
         if (i === 1 || i === 2) { var im = $("img", c); if (im && im.decode) im.decode().catch(function () {}); }   /* decoded before it reaches the front */
       });
+      root.classList.toggle("is-empty", !cards.length);
     }
     function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
-    function paint(card, k) {   /* k: travel as a share of the card width, -1 to 1 */
-      var hot = Math.abs(k) >= 0.2 ? (k > 0 ? "r" : "l") : "";
-      $$(".choice", card).forEach(function (b) { b.classList.toggle("is-hot", b.getAttribute("data-dir") === hot); });
-      $(".qtint", card).style.opacity = Math.min(0.26, Math.abs(k) * 0.8);
-      $(".qstamp--l", card).style.opacity = k < 0 ? Math.min(1, -k * 3.2) : 0;
-      $(".qstamp--r", card).style.opacity = k > 0 ? Math.min(1, k * 3.2) : 0;
+    /* k: travel as a share of the card width, -1 to 1. Below the commit threshold the stamp only hints (0.4 at most) and no button lights:
+       the card never shows a pick it would not make on release. */
+    function paint(card, k, armed) {
+      var dir = k > 0 ? "r" : k < 0 ? "l" : "", a = Math.abs(k);
+      $$(".choice", card).forEach(function (b) { b.classList.toggle("is-hot", !!armed && b.getAttribute("data-dir") === dir); });
+      $(".qtint", card).style.opacity = armed ? 0.2 : 0;
+      var hint = armed ? 1 : Math.min(0.4, a * 1.6);
+      var sl = $(".qstamp--l", card), sr = $(".qstamp--r", card);
+      sl.style.opacity = dir === "l" ? hint : 0; sr.style.opacity = dir === "r" ? hint : 0;
+      sl.classList.toggle("is-armed", !!armed && dir === "l"); sr.classList.toggle("is-armed", !!armed && dir === "r");
     }
     function feedback(card, dx, dy) {
       var w = card.offsetWidth, k = Math.max(-1, Math.min(1, dx / w));
       card.style.transform = "translate(" + dx + "px," + (dy * 0.18).toFixed(1) + "px)" + (reduce ? "" : " rotate(" + (k * 8).toFixed(2) + "deg)");
-      paint(card, k);
+      paint(card, k, Math.abs(k) >= ARM);
       return k;
     }
-    function reset(card) { card.classList.remove("is-drag"); card.style.transform = ""; paint(card, 0); }
+    function reset(card) { card.classList.remove("is-drag"); card.style.transform = ""; paint(card, 0, false); }
+    function off(sign, w, dy) { return "translate(" + sign * (innerWidth * 0.5 + w) + "px," + ((dy || 0) * 0.4 + 30).toFixed(0) + "px) rotate(" + sign * 22 + "deg)"; }
     /* throw: the card leaves on its side with the speed of the release; the deck advances with a spring (CSS, on data-pos) */
     function commit(card, dir, v, dx, dy) {
       if (card.classList.contains("is-out")) return;
+      if (guarded()) { reset(card); return; }
       if (o.disabled && o.disabled()) { reset(card); if (o.onBlocked) o.onBlocked(); return; }
+      lastCommit = Date.now();
       var w = card.offsetWidth, sign = dir === "r" ? 1 : -1, dist = innerWidth * 0.5 + w - Math.abs(dx || 0);
       var ms = reduce ? 200 : Math.round(Math.max(190, Math.min(380, dist / Math.max(v || 0, 1.6))));
       card.classList.remove("is-drag"); card.classList.add("is-out"); card.setAttribute("data-pos", "out");
-      paint(card, sign * 0.5);
+      paint(card, sign * 0.5, true);
       card.style.transition = reduce ? "" : "transform " + ms + "ms cubic-bezier(0.3, 0.55, 0.4, 1), opacity " + ms + "ms cubic-bezier(0.6, 0, 0.9, 0.4)";
       void card.offsetWidth;
-      if (!reduce) card.style.transform = "translate(" + sign * (innerWidth * 0.5 + w) + "px," + ((dy || 0) * 0.4 + 30).toFixed(0) + "px) rotate(" + sign * 22 + "deg)";
+      if (!reduce) card.style.transform = off(sign, w, dy);
       card.style.opacity = 0;
       buzz(12);
-      var n = +card.getAttribute("data-q");
       layout();
-      var next = live()[0]; if (next) { var h = $("h2", next); if (h) h.focus({ preventScroll: true }); }
-      setTimeout(function () { card.remove(); }, ms + 40);
-      if (o.onCommit) o.onCommit(n, dir, live().length);
+      if (card.contains(document.activeElement)) root.focus({ preventScroll: true });
+      card._rm = setTimeout(function () { card.remove(); }, ms + 40);
+      if (o.onCommit) o.onCommit(+card.getAttribute("data-q"), dir, live().length, card);
+    }
+    /* Undo: the thrown card flies back in from the side it left and takes the front; the card that had advanced drops back behind it */
+    function restore(card, dir) {
+      clearTimeout(card._rm);
+      var first = live()[0] || null, sign = dir === "r" ? 1 : -1;
+      card.style.transition = "none"; card.style.opacity = 0;
+      if (!reduce) card.style.transform = off(sign, root.offsetWidth, 0);
+      card.classList.remove("is-out", "is-drag"); paint(card, 0, false);
+      root.insertBefore(card, first);
+      card.setAttribute("data-pos", "0");
+      void card.offsetWidth;
+      layout();
+      lastCommit = Date.now() - GUARD + 250;   /* the tap that undid cannot also pick */
+      root.focus({ preventScroll: true });
     }
     var drag = null, swallow = 0;
     root.addEventListener("pointerdown", function (e) {
-      var card = e.target.closest('.qcard[data-pos="0"]'); if (!card || card.classList.contains("is-out") || (e.pointerType === "mouse" && e.button !== 0)) return;
+      var card = e.target.closest('.qcard[data-pos="0"]'); if (!card || guarded() || card.classList.contains("is-out") || (e.pointerType === "mouse" && e.button !== 0)) return;
       drag = { card: card, x: e.clientX, y: e.clientY, id: e.pointerId, lock: false, armed: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
     });
     root.addEventListener("pointermove", function (e) {
@@ -522,7 +566,7 @@
       }
       e.preventDefault();
       drag.pts.push({ x: e.clientX, t: e.timeStamp }); if (drag.pts.length > 6) drag.pts.shift();
-      var k = feedback(drag.card, dx, dy), armed = Math.abs(k) >= 0.35;
+      var k = feedback(drag.card, dx, dy), armed = Math.abs(k) >= ARM;
       if (armed !== drag.armed) { drag.armed = armed; if (armed) buzz(5); }   /* a light tick when the release would commit */
     });
     function end(e) {
@@ -531,7 +575,7 @@
       swallow = Date.now();
       var dx = e.clientX - d.x, dy = e.clientY - d.y, w = d.card.offsetWidth, a = d.pts[0], b = d.pts[d.pts.length - 1], v = b.t > a.t ? Math.abs(b.x - a.x) / (b.t - a.t) : 0;
       var k = Math.abs(dx) / w;
-      if (e.type !== "pointercancel" && (k >= 0.35 || (v >= 0.5 && k >= 0.15))) commit(d.card, dx > 0 ? "r" : "l", v, dx, dy); else reset(d.card);
+      if (e.type !== "pointercancel" && (k >= ARM || (v >= 0.5 && k >= 0.15))) commit(d.card, dx > 0 ? "r" : "l", v, dx, dy); else reset(d.card);
     }
     root.addEventListener("pointerup", end); root.addEventListener("pointercancel", end);
     root.addEventListener("click", function (e) {
@@ -540,13 +584,18 @@
       var card = b.closest(".qcard"); if (card.getAttribute("data-pos") !== "0") return;
       commit(card, b.getAttribute("data-dir"), 0, 0, 0);   /* a tap plays the same throw */
     });
-    root.addEventListener("keydown", function (e) {
+    /* arrow keys pick from anywhere on the screen, unless a form control, a link or a sheet has the focus. A held key never repeats a pick. */
+    if (!o.nokeys) document.addEventListener("keydown", function (e) {
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
-      var card = live()[0]; if (!card || !card.contains(document.activeElement)) return;
+      if (e.repeat || e.altKey || e.ctrlKey || e.metaKey || $("#sheet-root.is-open")) return;
+      var a = document.activeElement;
+      if (a && a !== document.body && a !== root && !root.contains(a) && /^(INPUT|TEXTAREA|SELECT|BUTTON|A|SUMMARY)$/.test(a.tagName)) return;
+      var card = live()[0]; if (!card) return;
       e.preventDefault(); commit(card, e.key === "ArrowRight" ? "r" : "l", 0, 0, 0);
     });
+    root.setAttribute("tabindex", "-1");
     layout();
-    return { layout: layout, live: live };
+    return { layout: layout, live: live, restore: restore };
   };
   /* payoff: a short burst of pieces from an element (day done, success) */
   App.burst = function (el, count) {

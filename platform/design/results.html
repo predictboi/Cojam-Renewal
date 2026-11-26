@@ -29,7 +29,7 @@
   if (S === "noset") days = [{ day: 0, done: true, total: 100, rows: days[0].rows.map(function (r) { return Object.assign({}, r, { out: "wait", exp: r.exp || "16:00" }); }) }];
   var SEG = { hit: "done", pend: "pend", corr: "done", miss: "miss", wait: "wait", none: "", "void": "" };
 
-  function head() { return "<div><h1>" + t("r.title") + '</h1><p class="ph-sub">' + t("r.sub") + "</p></div>"; }
+  function head() { return '<div class="ph-top"><h1>' + t("r.title") + "</h1></div>"; }
   function summary() {
     if (S === "loading") return '<section class="card stack-12" aria-busy="true">' + C.skel("80px") + '<div class="stats">' + [1, 2, 3].map(function () { return '<div class="stat">' + C.skel("60px", "22px") + C.skel("70%", "10px", "margin-top:8px") + "</div>"; }).join("") + "</div>" + C.skel("100%") + "</section>";
     return '<section class="card stack-12"><h2 class="card-h">' + t("r.week") + '</h2><div class="stats">' +
@@ -56,9 +56,9 @@
     if (r.out === "void") extra = '<p class="rrow-line">' + t("r.o.void.line") + "</p>";
     if (r.out === "pend") extra = '<p class="rrow-line">' + t("r.o.pend.help") + "</p>";
     var set = r.out !== "wait" && r.out !== "none" && r.out !== "void";
-    return '<li data-out="' + (r.out === "wait" ? "wait" : "set") + '"><button type="button" class="rrow" aria-expanded="false" aria-controls="' + id + '"' + (set ? "" : " data-flat") + '><span class="rrow-q">' + t(r.q) + "</span>" +
-      '<span class="rrow-foot"><span class="row">' + C.tag(t("cat." + r.cat)) + (r.c ? "<span>" + t("r.you", { choice: t(r.c) }) + "</span>" : "") + "</span>" + outcome(r) + "</span>" + extra +
-      (set ? '<span class="rrow-more" id="' + id + '" hidden><span><b>' + t("r.x.answer") + ":</b> " + t(r.out === "miss" ? (r.c === "yes" ? "no" : "yes") : r.c) + "</span><span><b>" + t("r.x.evidence") + ":</b> " + t("p.evidence") + "</span><span><b>" + t("r.x.setat") + ":</b> " + F.date(date, true) + "</span></span>" : "") +
+    return '<li data-out="' + (r.out === "wait" ? "wait" : "set") + '"><button type="button" class="rrow" aria-expanded="false" aria-controls="' + id + '"' + (set ? "" : " data-flat") + '><span class="rrow-q">' + App.esc(App.q(r.q).title) + "</span>" +
+      '<span class="rrow-foot"><span class="row">' + C.tag(t("cat." + App.q(r.q).cat)) + (r.c ? "<span>" + t("r.you", { choice: App.esc(App.q(r.q)[r.c]) }) + "</span>" : "") + "</span>" + outcome(r) + "</span>" + extra +
+      (set ? '<span class="rrow-more" id="' + id + '" hidden><span><b>' + t("r.x.answer") + ":</b> " + App.esc(App.q(r.q)[r.out === "miss" ? (r.c === "r" ? "l" : "r") : r.c]) + "</span><span><b>" + t("r.x.evidence") + ":</b> " + t("p.evidence") + "</span><span><b>" + t("r.x.setat") + ":</b> " + F.date(date, true) + "</span></span>" : "") +
       "</button></li>";
   }
   function group(g, gi) {
@@ -94,7 +94,7 @@
     });
     $("#more").addEventListener("click", function () {
       var extra = { day: 3, done: true, total: 200, rows: [
-        { q: "p5.q", cat: "culture", c: "yes", out: "hit" }, { q: "p2.q", cat: "markets", c: "yes", out: "hit" }, { q: "p6.q", cat: "markets", c: "no", out: "miss" }, { q: "p7.q", cat: "markets", c: "yes", out: "miss" }, { q: "p3.q", cat: "weather", c: "no", out: "miss" }] };
+        { q: "p5", c: "r", out: "hit" }, { q: "p2", c: "r", out: "hit" }, { q: "p6", c: "l", out: "miss" }, { q: "p7", c: "r", out: "miss" }, { q: "p3", c: "l", out: "miss" }] };
       groups.insertAdjacentHTML("beforeend", group(extra, 9)); this.hidden = true;
     });
   } });

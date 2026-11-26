@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="assets/components.css">
 </head>
 <body>
-<!-- H1 Home, card view. States: (none) ready, noimage (fallback card), imagetop (the other layout), partial, syncing, slow, failed, reconnect, reconnectfail, otherdevice, loading, empty, closed, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<!-- H1 Home, card view. Each pick can be undone for 3 seconds (the bar under the deck), then it is sent. States: (none) ready, noimage (fallback card), imagetop (the other layout), partial, syncing, slow, failed, reconnect, reconnectfail, otherdevice, loading, empty, closed, error, offline. Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -23,68 +23,103 @@
 <script>
 (function () {
   var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$;
+  var UNDO_MS = 3000;   /* each pick can be undone for 3 seconds; only then is it sent */
   /* which questions are already answered when the screen opens, per state */
   var answered = { partial: [1, 2], syncing: [1, 2, 3], slow: [1, 2], failed: [1, 3], offline: [1, 2], reconnect: [1], reconnectfail: [1] }[S] || [];
-  var pending = S === "syncing" ? [2, 3] : S === "slow" ? [2] : [];
-  var segs = M.set.map(function (q) { return pending.indexOf(q.n) >= 0 ? "pend" : answered.indexOf(q.n) >= 0 ? "done" : (S === "failed" && q.n === 2 ? "fail" : ""); });
-  var count = answered.length, left = 5 - count;
+  var sending = S === "syncing" ? [2, 3] : S === "slow" ? [2] : [];
+  var Q = M.set.map(App.q);
+  var segs = Q.map(function (q) { return sending.indexOf(q.n) >= 0 ? "pend" : answered.indexOf(q.n) >= 0 ? "done" : (S === "failed" && q.n === 2 ? "fail" : ""); });
+  var count = answered.length;
   var noSet = S === "empty" || S === "closed" || S === "error" || S === "loading" || S === "otherdevice";
 
+  /* one header pattern: title row (with the view switch), then one status row: counter, day progress, time left */
   function head() {
-    return "<div><h1>" + t("h.title") + '</h1><p class="ph-sub">' + t("h.sub") + "</p></div>" +
-      '<div class="ph-line"><span class="ph-count"><span id="cnt">' + (S === "loading" ? "0" : count) + "</span><small>/5</small></span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs, { band: true, id: "day5" }) + "</div>" +
-      '<div class="ph-meta"><span id="left">' + (count && !noSet ? t("h.left", { n: left }) : "") + "</span>" +
-      (S === "empty" || S === "closed" ? "<span></span>" : S === "loading" ? C.skel("96px", "12px") : "<span>" + t("h.closes") + ' <b data-cd="' + M.untilNextSet() + '"></b></span>') + "</div>";
-  }
-  function viewSwitch() {
-    return C.seg([{ label: t("h.view.card"), href: "home-cards.html", on: true }, { label: t("h.view.term"), href: "home-terminal.html" + (S ? "?state=" + S : "") }], { label: t("h.view.label") });
+    var sw = '<div class="viewsw" role="group" aria-label="' + t("h.view.label") + '"><a href="home-cards.html" aria-current="page" aria-label="' + t("h.view.card") + '">' + C.icon("cards", 20) + '</a><a href="home-terminal.html' + (S ? "?state=" + S : "") + '" aria-label="' + t("h.view.term") + '">' + C.icon("list", 20) + "</a></div>";
+    var cd = S === "empty" || S === "closed" ? "" : S === "loading" ? C.skel("96px", "12px") : '<span class="ph-cd">' + C.icon("clock", 14) + '<span class="sr-only">' + t("h.closes") + '</span><b data-cd="' + M.untilNextSet() + '"></b></span>';
+    return '<div class="ph-top"><h1>' + t("h.title") + "</h1>" + sw + "</div>" +
+      '<div class="ph-line"><span class="ph-count"><span id="cnt">' + (S === "loading" ? "0" : count) + "</span><small>/5</small></span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs, { band: true, id: "day5" }) + cd + "</div>";
   }
   function body() {
-    if (S === "loading") return viewSwitch() + '<div class="deck" aria-busy="true"><div class="qcard qcard--top" data-pos="0"><div class="qimg"></div><div class="qcard-top">' + C.skel("72px", "24px", "border-radius:999px") + C.skel("88px", "24px", "border-radius:999px") +
-      '</div><div class="qcard-body">' + C.skel("92%", "20px") + C.skel("60%", "20px") + '<div class="qcard-meta">' + C.skel("80%") + C.skel("66%") + '</div><div class="choices">' + C.skel("100%", "54px", "border-radius:999px") + C.skel("100%", "54px", "border-radius:999px") + '</div></div></div></div><p class="sr-only" role="status">' + t("common.loading") + "</p>";
-    if (S === "empty") return viewSwitch() + C.empty({ icon: "clock", title: t("h.empty.h"), body: t("h.empty.b", { time: t("time.kst9") }), extra: '<p class="fig fig--md" data-cd="' + M.untilNextSet() + '"></p>' });
-    if (S === "closed") return viewSwitch() + C.empty({ icon: "refresh", title: t("h.closed"), action: C.btn(t("h.closed.btn"), { kind: "primary", href: "home-cards.html" }) });
-    if (S === "error") return viewSwitch() + C.error();
-    if (S === "otherdevice") return viewSwitch() + C.otherDevice();
-    var cards = M.set.filter(function (q) { return answered.indexOf(q.n) < 0; });
+    if (S === "loading") return '<div class="deck" aria-busy="true"><div class="qcard" data-pos="0"><div class="qimg"></div><div class="qcard-top">' + C.skel("72px", "28px", "border-radius:999px") + C.skel("52px", "28px", "border-radius:999px") +
+      '</div><div class="qcard-body">' + C.skel("92%", "22px") + C.skel("60%", "22px") + '<div class="qcard-meta">' + C.skel("80%") + C.skel("66%") + '</div><div class="choices">' + C.skel("100%", "54px", "border-radius:999px") + C.skel("100%", "54px", "border-radius:999px") + '</div></div></div></div><p class="sr-only" role="status">' + t("common.loading") + "</p>";
+    if (S === "empty") return C.empty({ icon: "clock", title: t("h.empty.h"), body: t("h.empty.b", { time: t("time.kst9") }), extra: '<p class="fig fig--md" data-cd="' + M.untilNextSet() + '"></p>' });
+    if (S === "closed") return C.empty({ icon: "refresh", title: t("h.closed"), action: C.btn(t("h.closed.btn"), { kind: "primary", href: "home-cards.html" }) });
+    if (S === "error") return C.error();
+    if (S === "otherdevice") return C.otherDevice();
+    var cards = Q.filter(function (q) { return answered.indexOf(q.n) < 0; });
     if (S === "failed") cards.sort(function (a, b) { return (a.n === 2 ? -1 : 0) - (b.n === 2 ? -1 : 0); });
-    return viewSwitch() +
-      (App.offline ? C.note("warn", t("h.offline")) : "") + C.playBanner(S) +
-      '<div class="deck" id="deck">' + cards.slice().reverse().map(function (q) { return C.qcard(q, { failed: S === "failed" && q.n === 2, disabled: App.offline, noimg: S === "noimage" && q.n === 1, top: S === "imagetop" }); }).join("") + "</div>" +
-      '<ul class="sync" id="sync" aria-label="' + t("common.saving") + '">' + pending.map(function (n) { return syncLine(n, "r"); }).join("") + "</ul>" +
-      '<p class="hint" id="hint">' + t("h.hint") + (S === "" ? " " + t("h.final") : "") + "</p>";
+    return (App.offline ? C.note("warn", t("h.offline")) : "") + C.playBanner(S) +
+      '<div class="deck" id="deck"><div class="deck-end" aria-hidden="true"><h2>' + t("h.end.h") + "</h2><p>" + t("h.end.b") + "</p></div>" +
+      cards.map(function (q) { return C.qcard(q.id, { failed: S === "failed" && q.n === 2, disabled: App.offline, noimg: S === "noimage" && q.n === 1, top: S === "imagetop", final: true }); }).join("") + "</div>" +
+      '<div class="pickbar" id="pickbar"></div>';
   }
-  function syncLine(n, dir) { return '<li data-n="' + n + '"><span class="spin"></span><span>' + t("h.sync", { n: n, choice: t("q" + n + "." + dir) }) + '</span><span class="sr-only">' + t("common.saving") + "</span></li>"; }
 
-  App.mount({ tab: "home", docTitle: t("h.title"), head: head(), body: body(), badges: { home: left ? "dot" : 0, results: 2 }, after: function () {
+  App.mount({ tab: "home", cls: "is-home", docTitle: t("h.title"), head: head(), body: body(), badges: { home: 5 - count ? "dot" : 0, results: 2 }, after: function () {
     var deckEl = $("#deck"); if (!deckEl) return;
-    /* DOM order is reversed so the first question paints on top; the deck reads cards from the end */
-    Array.prototype.slice.call(deckEl.children).reverse().forEach(function (c) { deckEl.appendChild(c); });
-    var day5 = $("#day5"), cnt = $("#cnt"), sync = $("#sync");
+    var day5 = $("#day5"), cnt = $("#cnt"), bar = $("#pickbar");
     if (S === "failed") { App.toast(t("h.toast.fail", { n: 2 }), { btn: t("common.retry") }); }
-    App.deck(deckEl, {
+
+    /* picks still inside their undo window, oldest first. Undo always acts on the last one. */
+    var held = [], shown = null, fade;
+    function label(p) { return t("h.sync", { n: p.n, choice: App.esc(App.q(p.id)[p.dir]) }); }
+    function seg(n, cls) { day5.children[n - 1].className = cls; }
+    function render() {
+      clearTimeout(fade);
+      var p = held[held.length - 1];
+      if (p) {
+        var gone = Date.now() - p.t0;
+        bar.innerHTML = '<span class="pickbar-msg" id="pick-msg">' + C.icon("check", 16) + "<span>" + label(p) + "</span></span>" +
+          '<button type="button" class="undo" id="undo" aria-label="' + App.esc(t("h.undo.aria", { n: p.n, choice: App.q(p.id)[p.dir] })) + '">' +
+          '<svg class="undo-ring" viewBox="0 0 22 22" aria-hidden="true"><circle class="trk" cx="11" cy="11" r="8"/><circle class="run" cx="11" cy="11" r="8" style="animation-duration:' + UNDO_MS + "ms;animation-delay:-" + gone + 'ms"/></svg><span>' + t("h.undo") + "</span></button>";
+        return;
+      }
+      if (shown && shown.state === "saving") { bar.innerHTML = '<span class="pickbar-msg is-quiet" role="status"><span class="spin"></span><span>' + t("common.saving") + ": " + label(shown) + "</span></span>"; return; }
+      if (shown && shown.state === "saved") {
+        bar.innerHTML = '<span class="pickbar-msg is-quiet" role="status">' + C.icon("check", 16) + "<span>" + t("h.saved") + ": " + label(shown) + "</span></span>";
+        fade = setTimeout(function () { var m = $(".pickbar-msg", bar); if (m) m.classList.add("is-out"); }, 1200);
+        return;
+      }
+      bar.innerHTML = "";
+    }
+    function finishDay() { if (count === 5 && !held.length) setTimeout(function () { location.href = "done.html?state=moment"; }, App.reduce ? 0 : 500); }
+    /* the undo window closed: now the pick is sent (optimistic, in the background) */
+    function send(p) {
+      held.splice(held.indexOf(p), 1);
+      p.state = "saving"; shown = p; render();
+      setTimeout(function () { p.state = "saved"; seg(p.n, "is-done is-fill"); if (shown === p) render(); }, 900 + Math.random() * 500);
+      finishDay();
+    }
+    var deck = App.deck(deckEl, {
       disabled: function () { return App.offline; },
       onBlocked: function () { App.live(t("h.offline")); },
-      onCommit: function (n, dir, remaining) {
-        var seg = day5.children[n - 1]; seg.className = "is-pend";
-        count++; cnt.textContent = count; $("#left").textContent = remaining ? t("h.left", { n: remaining }) : "";
-        var hint = $("#hint"); if (hint) hint.hidden = true;
-        sync.insertAdjacentHTML("beforeend", syncLine(n, dir));
-        App.live(t("h.live.picked", { choice: t("q" + n + "." + dir), k: remaining }));
-        /* optimistic: the pick confirms in the background, nothing waits for it */
-        setTimeout(function () {
-          seg.className = "is-done is-fill";
-          var li = sync.querySelector('[data-n="' + n + '"]'); if (li) { li.classList.add("is-ok"); setTimeout(function () { li.remove(); }, 1000); }
-        }, 1300 + Math.random() * 900);
-        if (remaining === 0) setTimeout(function () { location.href = "done.html?state=moment"; }, App.reduce ? 0 : 420);
+      onCommit: function (n, dir, remaining, card) {
+        var p = { n: n, id: card.getAttribute("data-id"), dir: dir, card: card, t0: Date.now(), state: "held" };
+        p.timer = setTimeout(function () { send(p); }, UNDO_MS);
+        held.push(p);
+        seg(n, "is-pend"); count++; cnt.textContent = count;
+        render();
+        App.live(t("h.live.picked", { choice: App.q(p.id)[dir], k: remaining }));
       }
     });
+    bar.addEventListener("click", function (e) {
+      if (!e.target.closest("#undo")) return;
+      var p = held.pop(); if (!p) return;
+      clearTimeout(p.timer);
+      seg(p.n, ""); count--; cnt.textContent = count;
+      deck.restore(p.card, p.dir);
+      render();   /* an earlier pick still inside its window takes the bar, with the time it has left */
+      App.live(t("h.undone", { n: p.n }));
+    });
+    document.addEventListener("pointerdown", function (e) { var u = e.target.closest(".undo"); if (!u) return; u.classList.add("is-pressed"); setTimeout(function () { u.classList.remove("is-pressed"); }, 160); });
+    deckEl.focus({ preventScroll: true });   /* arrow keys pick at once, no tabbing into the card */
+
     document.addEventListener("click", function (e) {   /* "Retry now" on the slow pick banner */
       if (!e.target.closest("[data-retry-now]")) return;
-      setTimeout(function () { day5.children[1].className = "is-done is-fill"; var b = $(".banner"); if (b) b.remove(); var li = sync.querySelector('[data-n="2"]'); if (li) li.remove(); }, 900);
+      setTimeout(function () { seg(2, "is-done is-fill"); var b = $(".banner"); if (b) b.remove(); }, 900);
     });
-    /* already pending picks of the syncing state confirm after a moment */
-    if (S !== "slow") pending.forEach(function (n, i) { setTimeout(function () { day5.children[n - 1].className = "is-done is-fill"; var li = sync.querySelector('[data-n="' + n + '"]'); if (li) { li.classList.add("is-ok"); setTimeout(function () { li.remove(); }, 1000); } }, 2600 + i * 1400); });
+    /* picks that were already being sent when the screen opened (syncing state) confirm after a moment */
+    if (sending.length) { shown = { n: sending[sending.length - 1], id: "q" + sending[sending.length - 1], dir: "r", state: "saving" }; render(); }
+    if (S !== "slow") sending.forEach(function (n, i) { setTimeout(function () { seg(n, "is-done is-fill"); if (shown && shown.n === n) { shown.state = "saved"; render(); } }, 2600 + i * 1400); });
   } });
 })();
 </script>

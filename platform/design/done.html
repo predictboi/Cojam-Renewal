@@ -26,32 +26,35 @@
   var phase = S === "moment" || S === "saving" ? "saving" : "paid";
   var basePts = phase === "paid" ? M.user.points + 100 : M.user.points;
   if (phase === "paid") M.user.points = basePts;
-  var picks = [["q1", "r"], ["q2", "l"], ["q3", "r"], ["q4", "r"], ["q5", "r"]];
-  var outcome = S === "results" ? ["hit", "pend", "miss", "wait", "wait"] : ["wait", "wait", "wait", "wait", "wait"];
+  var picks = [["q1", "r"], ["q2", "r"], ["q3", "l"], ["q4", "r"], ["q5", "r"]];
+  var outcome = S === "results" ? ["wait", "pend", "miss", "wait", "wait"] : ["wait", "wait", "wait", "wait", "wait"];
+  var waiting = outcome.filter(function (o) { return o === "wait"; }).length;
 
+  /* the one reward moment: the lime badge and the +100P chip. No toast repeats it; the header pill counts up instead. */
   function reward(p) {
     if (p === "saving") return '<p class="reward" id="reward"><span class="spin"></span>' + t("d.saving") + "</p>";
     return '<p class="reward is-paid" id="reward">' + C.icon("check", 16) + t("d.paid") + "</p>";
   }
   function head() {
-    var segs = phase === "saving" ? ["done", "done", "done", "pend", "pend"] : ["done", "done", "done", "done", "done"];
-    return '<div class="head-row"><span class="done-badge' + (S === "moment" ? " is-pop" : "") + '" aria-hidden="true">' + C.icon("check", 30) + '</span><h1 class="grow">' + t("d.h1") + "</h1></div>" +
-      C.day5(segs, { band: true, size: "lg", id: "day5", cls: S === "moment" ? "is-flash" : "", label: "5/5" }) +
+    var segs = phase === "saving" ? ["done", "done", "done", "done", "pend"] : ["done", "done", "done", "done", "done"];
+    return '<div class="ph-top"><h1>' + t("d.h1") + '</h1><span class="done-badge' + (S === "moment" ? " is-pop" : "") + '" aria-hidden="true">' + C.icon("check", 26) + "</span></div>" +
+      '<div class="ph-line"><span class="ph-count">5<small>/5</small></span>' + C.day5(segs, { band: true, id: "day5", cls: S === "moment" ? "is-flash" : "", label: "5/5" }) + "</div>" +
       '<div aria-live="polite" id="reward-wrap">' + reward(phase) + "</div>";
   }
   function pickRow(p, i) {
-    var o = outcome[i], cell = o === "hit" ? C.tag(t("d.hitp"), "up") : o === "pend" ? C.tag(t("d.hitpending", { time: "22:10" }), "up") : o === "miss" ? C.tag(t("d.miss")) : '<span class="pick-s">' + t("d.wait") + "</span>";
-    return '<li class="pick"><span class="pick-q">' + t(p[0] + ".q") + '</span><span class="pick-c">' + t("r.you", { choice: t(p[0] + "." + p[1]) }) + '</span><span class="pick-s">' + cell + "</span></li>";
+    var o = outcome[i], q = App.q(p[0]);
+    var sub = o === "pend" ? t("d.hitpending", { time: "22:10" }) : o === "miss" ? t("d.miss") : "";
+    return '<li class="pick"><span class="pick-q">' + App.esc(q.title) + '</span><span class="pick-c">' + App.esc(q[p[1]]) + (sub ? "<small>" + sub + "</small>" : "") + "</span></li>";
   }
   function body() {
     var secs = S === "zero" ? 0 : M.untilNextSet();
-    return '<section class="card card--ink center stack-8" aria-label="' + t("d.next") + '"><p class="card-h">' + t("d.next") + "</p>" +
+    return '<section class="card card--ink clock-card" aria-label="' + t("d.next") + '"><p class="card-h">' + t("d.next") + "</p>" +
       (S === "zero" ? '<p class="watch"><span class="spin"></span>' + t("d.loading") + "</p>" : C.clock(secs, "clock")) +
-      '<p class="tiny muted">' + (App.offline ? t("off.bar") : t("d.next.at")) + "</p></section>" +
+      (App.offline ? '<p class="tiny muted">' + t("off.bar") + "</p>" : "") + "</section>" +
       C.btn(t("d.rank"), { kind: "primary", block: true, href: "ranking.html", iconEnd: "right" }) +
-      '<section class="stack-12"><div class="sect-h"><h2 class="sect-h">' + t("d.picks") + '</h2><a class="linkish" href="results.html">' + t("d.results") + "</a></div>" +
+      '<section class="stack-12"><div class="sect-h"><h2 class="sect-h">' + t("d.picks") + '</h2><span class="muted">' + (waiting ? t("d.waitn", { n: waiting }) : "") + "</span></div>" +
       '<ul class="list">' + picks.map(pickRow).join("") + "</ul>" +
-      C.note("", t("d.hit")) + "</section>";
+      C.note("", t("d.hit"), '<a class="linkish" href="results.html">' + t("d.results") + "</a>") + "</section>";
   }
   App.mount({ tab: "home", docTitle: t("d.h1"), head: head(), body: body(), points: basePts, pts: phase === "saving" ? "pending" : S === "results" ? "hits" : "", badges: { results: 2 }, after: function () {
     document.addEventListener("cd:zero", function () { if (S !== "zero") setTimeout(function () { location.href = "home-cards.html"; }, 1200); });
@@ -59,9 +62,8 @@
     if (S !== "moment") return;
     /* the day done moment: the fifth pick is mined (the 100P is credited in that same transaction), only then "+100P paid" and the count up */
     var day5 = $("#day5"), wrap = $("#reward-wrap");
-    setTimeout(function () { day5.children[3].className = "is-done is-fill"; }, 900);
-    setTimeout(function () { day5.children[4].className = "is-done is-fill"; }, 1500);
-    setTimeout(function () { var sp = App.$("#pts .spin"); if (sp) sp.remove(); wrap.innerHTML = reward("paid"); App.$("#reward").classList.add("is-pop"); day5.classList.remove("is-flash"); day5.classList.add("is-wave"); App.burst(App.$(".done-badge"), 18); try { if (navigator.vibrate) navigator.vibrate([12, 40, 18]); } catch (e) {} App.addPoints(100); App.toast(t("toast.paid", { n: 100 })); }, 2300);
+    setTimeout(function () { day5.children[4].className = "is-done is-fill"; }, 800);
+    setTimeout(function () { var sp = App.$("#pts .spin"); if (sp) sp.remove(); wrap.innerHTML = reward("paid"); App.$("#reward").classList.add("is-pop"); day5.classList.remove("is-flash"); day5.classList.add("is-wave"); App.burst(App.$(".done-badge"), 18); try { if (navigator.vibrate) navigator.vibrate([12, 40, 18]); } catch (e) {} App.addPoints(100); App.live(t("toast.paid", { n: 100 })); }, 1500);
   } });
 })();
 </script>

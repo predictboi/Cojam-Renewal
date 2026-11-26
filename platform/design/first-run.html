@@ -31,7 +31,7 @@
     return '<div class="art-swap" aria-hidden="true"><span class="art-coin">1,000P</span>' + C.icon("right", 28) + '<span class="art-coin">1 CT</span></div>';
   }
   function panel(i) {
-    return '<li class="onb"' + (i === n ? "" : " hidden") + ' data-panel="' + i + '"><div class="onb-art">' + art(i) + '</div><div class="stack-12"><p class="onb-n" aria-hidden="true">0' + i + '</p><h1 tabindex="-1">' + t("o." + i + ".h") + '</h1><p class="auth-lede">' + t("o." + i + ".b") + "</p>" +
+    return '<li class="onb"' + (i === n ? "" : " hidden") + ' data-panel="' + i + '"><div class="onb-art">' + art(i) + '</div><div class="stack-12"><h1 tabindex="-1">' + t("o." + i + ".h") + '</h1><p class="auth-lede">' + t("o." + i + ".b") + "</p>" +
 "</div></li>";
   }
   var raw = '<div class="auth auth--onb"><div class="gate-bar"><div class="dots" role="img" aria-label="' + t("o.step", { n: n }) + '" id="dots">' + [1, 2, 3].map(function (i) { return "<i" + (i === n ? ' class="is-on"' : "") + "></i>"; }).join("") + "</div>" +

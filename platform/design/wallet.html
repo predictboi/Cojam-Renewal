@@ -25,25 +25,33 @@
   var t = App.t, F = App.fmt, S = App.state, M = MOCK, u = M.user;
   var pts = S === "zero" ? 0 : S === "new" ? 450 : u.points, ct = S === "zero" ? 0 : u.ct, staked = S === "zero" ? 0 : u.staked, kaia = S === "zero" ? 0 : u.kaia;
   var off = App.state === "offline";
-  function head() { return "<div><h1>" + t("w.title") + '</h1><p class="ph-sub">' + t("w.sub") + "</p></div>"; }
+  function head() { return '<div class="ph-top"><h1>' + t("w.title") + "</h1></div>"; }
   function body() {
-    if (S === "loading") return '<section class="card card--ink stack-12" aria-busy="true">' + C.skel("70px") + C.skel("160px", "38px") + C.skel("100%", "52px", "border-radius:999px") + '</section><section class="card stack-12" aria-busy="true">' + C.skel("40px") + C.skel("180px", "32px") + C.skel("100%") + C.skel("100%") + '</section><div class="two">' + C.skel("100%", "44px", "border-radius:999px") + C.skel("100%", "44px", "border-radius:999px") + '</div><p class="sr-only" role="status">' + t("common.loading") + "</p>";
-    var canCt = Math.floor(pts / 1000);
+    if (S === "loading") return '<section class="card card--ink stack-12" aria-busy="true">' + C.skel("120px") + C.skel("100%", "44px") + C.skel("100%", "44px", "border-radius:999px") + '</section><section class="card stack-12" aria-busy="true">' + C.skel("70px") + C.skel("160px", "32px") + C.skel("100%", "52px", "border-radius:999px") + '</section><section class="card stack-12" aria-busy="true">' + C.skel("40px") + C.skel("180px", "32px") + C.skel("100%") + '</section><p class="sr-only" role="status">' + t("common.loading") + "</p>";
+    var canCt = Math.floor(pts / 1000), a = u.address;
+    /* 1. the player's own address comes first, with a text button: this is what people come here to copy */
     return (off ? C.note("warn", t("w.offline")) : "") +
-      '<section class="card card--ink stack-12"><div><h2 class="card-h">' + t("w.points") + '</h2><p class="fig fig--xl fig--volt">' + F.int(pts) + "<small>P</small></p></div>" +
-      '<p class="small">' + (canCt ? t("w.ready", { n: canCt }) : t("w.notyet", { g: F.int(1000 - pts) })) + "</p>" +
-      (S === "" || off ? C.rows([[t("w.onway"), t("w.pendinghit", { p: u.pendingHit, time: "22:10" })]]) : "") +
+      '<section class="card card--ink addr-card" aria-labelledby="addr-h"><h2 class="card-h" id="addr-h">' + t("w.addr") + '</h2><p class="addr-v" translate="no">' + F.groups(a) + "</p>" +
+      '<div class="addr-acts">' + C.btn(t("w.copy"), { block: true, icon: "copy", id: "copy-addr", attrs: 'data-copy="' + a + '" data-toast="' + App.esc(t("w.copied", { a: "<b>" + F.short(a) + "</b>" })) + '" data-done="' + App.esc(t("w.copy.done")) + '"' }) +
+      '<a class="btn btn-icon" href="https://kaiascan.io/address/' + a + '" target="_blank" rel="noopener" aria-label="' + App.esc(t("w.scan")) + '">' + C.icon("ext", 18) + "</a></div>" +
+      '<p class="addr-note">' + t("w.addr.note") + "</p></section>" +
+      /* 2. points */
+      '<section class="card stack-12"><div><h2 class="card-h">' + t("w.points") + '</h2><p class="fig">' + F.int(pts) + "<small>P</small></p></div>" +
+      '<p class="small muted">' + (canCt ? t("w.ready", { n: canCt }) : t("w.notyet", { g: F.int(1000 - pts) })) + "</p>" +
+      (S === "" || off ? '<hr class="hr">' + C.rows([[t("w.onway"), t("w.pendinghit", { p: u.pendingHit, time: "22:10" })]]) : "") +
       C.btn(t("w.convert"), { kind: "primary", block: true, href: "convert.html" + (S === "new" || S === "zero" ? "?state=short" : ""), disabled: off }) + "</section>" +
+      /* 3. CT */
       '<section class="card stack-12">' + (S === "error" ? C.note("warn", t("e.rpc"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" })) : "") +
       '<div><h2 class="card-h">CT</h2><p class="fig">' + F.dec(ct) + "<small>CT</small></p>" + (App.isKo ? '<p class="small muted">' + F.krw(ct) + "</p>" : "") + "</div>" +
+      '<div class="two">' + C.btn(t("w.deposit"), { href: "deposit.html", icon: "download", disabled: off }) + C.btn(t("w.withdraw"), { href: "withdraw.html", icon: "share", disabled: off }) + "</div>" +
       '<hr class="hr"><a class="rowlink" href="stakes.html"><span class="muted">' + t("w.staked") + "</span><b>" + F.ct(staked) + "</b>" + C.icon("chev", 18) + "</a>" +
       '<hr class="hr"><div class="rowlink rowlink--static"><span class="muted">KAIA<small>' + t("w.kaia.note") + "</small></span><b>" + F.kaia(kaia) + "</b></div></section>" +
-      '<div class="two">' + C.btn(t("w.deposit"), { href: "deposit.html", icon: "download", disabled: off }) + C.btn(t("w.withdraw"), { href: "withdraw.html", icon: "share", disabled: off }) + "</div>" +
-      '<section class="stack-8"><h2 class="card-h">' + t("w.addr") + "</h2>" + C.addr(u.address, { scan: true }) + "</section>" +
-      '<section class="stack-8"><h2 class="card-h">' + t("w.token") + "</h2>" + C.addr(M.token, { label: t("w.token.copy") }) + "</section>" +
+      /* 4. the token contract is reference only: collapsed, labelled as an address you must not send to, with its own toast */
+      C.help(t("w.info"), '<p class="note note-warn">' + C.icon("warn", 18) + "<span>" + t("w.token") + '</span></p><p class="addr-v" translate="no">' + F.groups(M.token) + "</p>" +
+        C.btn(t("w.token.copy"), { sm: true, icon: "copy", cls: "btn-quiet", attrs: 'data-copy="' + M.token + '" data-toast="' + App.esc(t("w.token.copied")) + '" data-done="' + App.esc(t("w.copy.done")) + '"' })) +
       C.stamp(S === "error" ? 48 : 6);
   }
-  App.mount({ tab: "wallet", docTitle: t("w.title"), head: head(), body: body(), points: pts, pts: S === "loading" ? "loading" : S === "error" ? "stale" : S === "" ? "hits" : "", badges: { home: "dot", results: 2 } });
+  App.mount({ tab: "wallet", docTitle: t("w.title"), head: head(), body: body(), points: pts, pts: S === "loading" ? "loading" : S === "error" ? "stale" : "", badges: { home: "dot", results: 2 } });
 })();
 </script>
 </body>

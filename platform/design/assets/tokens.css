@@ -9,7 +9,8 @@
 :root {
   /* ---------- colour ----------
      One loud colour (blue: header and page head band), two quiet ones (snow content, ink cards and text),
-     one key colour (volt) with two jobs: the primary action and the current selection, plus the day progress it stands for.
+     one key colour (volt) with four jobs only: the primary action, the current selection, the day progress and the one reward payoff
+     (day done badge and the +P chip). Figures, medals, the points pill and illustration grounds use ink, white, blue or sky.
      Checked pairs: snow on blue 7.35, volt on blue 6.38, sky on blue 4.86, on-brand-2 on blue 5.64, ink on volt 15.7,
      ink-2 on snow 7.21, ink-2 on mist 6.53, ink-soft on ink 8.70, blue on snow 7.24, up on snow 5.29, down on snow 6.47, warn on warn-tint 5.81.
      Never: volt or sky as text on snow (1.2 and 1.5), blue text on ink (2.6). */
@@ -52,7 +53,7 @@
   --font-display-ja: "Archivo", "Pretendard JP Variable", "Pretendard JP", "Pretendard Fallback", system-ui, sans-serif;
   --font-data: ui-monospace, "SF Mono", Menlo, Consolas, monospace;   /* addresses and hashes only */
   --fs-11: 11px;              /* tab bar labels only */
-  --fs-12: 12px; --fs-13: 13px; --fs-14: 14px; --fs-15: 15px; --fs-16: 16px; --fs-18: 18px; --fs-20: 20px; --fs-24: 24px; --fs-28: 28px; --fs-32: 32px; --fs-40: 40px;
+  --fs-12: 12px; --fs-13: 13px; --fs-14: 14px; --fs-15: 15px; --fs-16: 16px; --fs-18: 18px; --fs-20: 20px; --fs-22: 22px; --fs-24: 24px; --fs-28: 28px; --fs-32: 32px; --fs-40: 40px;
   --fs-hero: clamp(40px, 12.4vw, 54px);    /* gate headline */
   --fs-clock: clamp(38px, 12vw, 50px);     /* day done countdown */
   --fw-regular: 400; --fw-medium: 500; --fw-semi: 600; --fw-bold: 700; --fw-heavy: 800; --fw-black: 900;
@@ -87,7 +88,7 @@
   --shadow-hard-down: 0 1px 0 var(--ink);
   --shadow-card: 5px 5px 0 var(--ink);
   --shadow-deck: 0 18px 30px -14px rgba(11, 21, 48, 0.55), 5px 5px 0 var(--ink);   /* the front card of the deck: a hard drop plus soft depth */      /* the live question card and sheets */
-  --shadow-toast: 0 4px 0 var(--volt);
+  --shadow-toast: 0 10px 24px -10px rgba(11, 21, 48, 0.6), 0 0 0 1.5px var(--snow);
   --shadow-tab: 0 -1px 0 var(--line);
   --shadow-stage: 0 0 0 1px var(--ink-line), 0 30px 80px rgba(0, 0, 0, 0.5);
   --ring: 0 0 0 3px var(--brand-tint);

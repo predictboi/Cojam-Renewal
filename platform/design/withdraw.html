@@ -34,15 +34,14 @@
       '<div class="field"><div class="field-label"><label for="to"><b>' + t("x.to") + '</b></label></div><div class="field-box field-box--mono' + (blocked ? " is-off" : "") + '"><input id="to" name="to" type="text" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="0x…" value="' + addr0 + '" aria-describedby="to-msg"' + (blocked ? " disabled" : "") + '><button type="button" class="field-max" id="paste"' + (blocked ? " disabled" : "") + ">" + t("x.paste") + '</button></div><div class="field-msg" id="to-msg" aria-live="polite"></div></div>' +
       C.amount({ id: "amt", label: t("x.amount"), unit: "CT", value: amt0, disabled: blocked, side: S === "loading" ? C.skel("110px", "12px") : t("x.avail", { c: "<b>" + F.dec(bal) + "</b>" }) }) + "</section>" +
       '<section class="card card--mist">' + C.rows([[t("x.fee"), t("x.fee.v", { f: fee })], [t("dp.net"), t("dp.net.v")]]) + "</section>" +
-      '<div id="kaia-note"></div>' +
-      C.btn("", { kind: "primary", block: true, id: "go", disabled: true });
+      '<div id="kaia-note"></div>';
   }
   function cfg(to, a) {
     var amt = F.dec(a);
     return { label: t("x.chip", { a: amt }), review: { title: t("x.rv.h", { a: amt }), rows: [[t("x.rv.to"), '<span class="mono" translate="no">' + to + "</span>"], [t("x.amount"), F.ct(a)], [t("x.fee"), t("x.fee.v", { f: fee })]], check: t("x.rv.check"), confirm: t("x.rv.h", { a: amt }) },
       success: { title: t("x.ok", { a: amt }) } };
   }
-  App.mount({ tab: "wallet", back: "wallet.html", title: t("x.title"), body: body(), pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
+  App.mount({ tab: "wallet", back: "wallet.html", title: t("x.title"), body: body(), pin: C.actbar(C.btn("", { kind: "primary", block: true, id: "go", disabled: true })), pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
     var to = $("#to"), inp = $("#amt"), go = $("#go"), toMsg = $("#to-msg"), aMsg = $("#amt-msg"), touched = !!addr0;
     function checkAddr(v) {
       if (!v) return touched ? "x.e.empty" : "";

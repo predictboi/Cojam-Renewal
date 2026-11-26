@@ -1,8 +1,9 @@
 /* Cojam Daily Prediction PWA: copy in EN (source), KO and JA.
    Each entry is [en, ko, ja], kept side by side so a reviewer can compare the three voices.
    The file builds one dictionary per language (CJ_I18N.dict.en / .ko / .ja) and exposes t(key, vars).
-   Language: ?lang=en|ko|ja wins, then the saved choice, then the device language.
+   Language: English by default for everyone; ?lang=en|ko|ja (review links) wins, then the saved choice. The device language is never read.
    Fixed terms. KO: 예측, 선택, 적중, 포인트, 전환, 스테이킹, 입금, 출금, 기존 CT, 새 CT. JA: 予想, 的中, ポイント, 交換, ステーク, 入金, 出金, 旧CT, 新CT.
+   Question text (title, choices, answer rule) is NOT here: it is authored per language and comes from the server (see mock.js).
    Fiat (KRW) lines exist in Korean only, by founder decision. */
 (function () {
   "use strict";
@@ -56,34 +57,7 @@
     "cat.weather": ["Weather", "날씨", "天気"],
     "cat.sports": ["Sports", "스포츠", "スポーツ"],
     "cat.culture": ["Culture", "문화", "カルチャー"],
-    "q1.q": ["Will Bitcoin close above $100,000 today?", "오늘 비트코인이 10만 달러 위에서 마감할까요?", "今日、ビットコインは10万ドルを上回って引ける？"],
-    "q1.l": ["No", "아니요", "いいえ"], "q1.r": ["Yes", "예", "はい"],
-    "q1.rule": ["Binance BTC/USDT daily close at 00:00 UTC", "바이낸스 BTC/USDT 일봉 종가 (UTC 0시)", "Binance BTC/USDTの日足終値（UTC 0時）"],
-    "q1.time": ["09:00 tomorrow", "내일 오전 9시", "明日の午前9時"],
-    "q2.q": ["Will the dollar close above 1,400 won today?", "오늘 원/달러 환율이 1,400원 위에서 마감할까요?", "今日のドル/ウォン相場は1,400ウォンを上回って引ける？"],
-    "q2.l": ["No", "아니요", "いいえ"], "q2.r": ["Yes", "예", "はい"],
-    "q2.rule": ["Seoul FX market close at 15:30 KST", "서울 외환시장 종가 (15:30)", "ソウル外為市場の終値（15:30）"],
-    "q2.time": ["16:00 today", "오늘 오후 4시", "今日の16時"],
-    "q3.q": ["Will Seoul reach 10°C or more tomorrow?", "내일 서울 낮 최고기온이 10°C를 넘을까요?", "明日、ソウルの最高気温は10°Cに届く？"],
-    "q3.l": ["No", "아니요", "いいえ"], "q3.r": ["Yes", "예", "はい"],
-    "q3.rule": ["KMA Seoul station daily high", "기상청 서울 관측소 일 최고기온", "韓国気象庁ソウル観測所の日最高気温"],
-    "q3.time": ["18:00 tomorrow", "내일 오후 6시", "明日の18時"],
-    "q4.q": ["Tonight's Premier League match: 3 goals or more?", "오늘 밤 프리미어리그 경기, 3골 이상 나올까요?", "今夜のプレミアリーグ、合計3ゴール以上になる？"],
-    "q4.l": ["2 or fewer", "2골 이하", "2点以下"], "q4.r": ["3 or more", "3골 이상", "3点以上"],
-    "q4.rule": ["Total goals at full time", "정규 시간 종료 기준 합계 골", "90分終了時点の合計得点"],
-    "q4.time": ["07:00 tomorrow", "내일 오전 7시", "明日の午前7時"],
-    "q5.q": ["KAIA at 09:00 tomorrow: higher or lower than now?", "내일 오전 9시, KAIA 가격은 지금보다 오를까요?", "明日の午前9時、KAIAは今より上がる？"],
-    "q5.l": ["Down", "하락", "下がる"], "q5.r": ["Up", "상승", "上がる"],
-    "q5.rule": ["Binance KAIA/USDT price at 09:00 KST", "바이낸스 KAIA/USDT 오전 9시 가격", "Binance KAIA/USDTの午前9時の価格"],
-    "q5.time": ["09:00 tomorrow", "내일 오전 9시", "明日の午前9時"],
     /* past questions for results */
-    "p1.q": ["Will Ethereum close above $3,500 today?", "오늘 이더리움이 3,500달러 위에서 마감할까요?", "今日、イーサリアムは3,500ドルを上回って引ける？"],
-    "p2.q": ["Will the KOSPI close higher than yesterday?", "오늘 코스피가 어제보다 높게 마감할까요?", "今日のKOSPIは前日より高く引ける？"],
-    "p3.q": ["Will it rain in Tokyo tomorrow?", "내일 도쿄에 비가 올까요?", "明日、東京で雨は降る？"],
-    "p4.q": ["Will the home team win tonight's V-League match?", "오늘 밤 V리그 경기에서 홈팀이 이길까요?", "今夜のVリーグ、ホームチームは勝つ？"],
-    "p5.q": ["Will this week's box office No. 1 change?", "이번 주 박스오피스 1위가 바뀔까요?", "今週の興行収入1位は入れ替わる？"],
-    "p6.q": ["Will gold close above $2,700 today?", "오늘 금값이 2,700달러 위에서 마감할까요?", "今日、金価格は2,700ドルを上回って引ける？"],
-    "p7.q": ["Will the Nikkei 225 close above 40,000?", "닛케이 225 지수가 40,000 위에서 마감할까요?", "日経平均は40,000円を上回って引ける？"],
     "p.evidence": ["The official closing figure was published and matches two independent sources.", "공식 종가가 발표됐고, 서로 다른 두 출처에서 같은 값으로 확인됐어요.", "公式の終値が発表され、独立した2つの情報源と一致しました。"],
     "yes": ["Yes", "예", "はい"], "no": ["No", "아니요", "いいえ"],
 
@@ -130,15 +104,15 @@
 
     /* ---------- A1 login ---------- */
     "a.h1": ["Log in to play", "로그인하고 시작하기", "ログインしてはじめる"],
-    "a.lede": ["Enter your email. We send you a code. Cojam creates a wallet for you on Kaia.", "이메일을 입력하면 코드를 보내 드려요. Kaia 지갑은 Cojam이 만들어 드려요.", "メールアドレスを入力すると、コードをお送りします。KaiaのウォレットはCojamがご用意します。"],
+    "a.lede": ["Enter your email and we send you a code. Cojam makes your Kaia wallet for you.", "이메일을 입력하면 코드를 보내 드려요. Kaia 지갑은 Cojam이 만들어 드려요.", "メールアドレスを入力すると、コードをお送りします。KaiaのウォレットはCojamがご用意します。"],
     "a.email.label": ["Email", "이메일", "メールアドレス"],
     "a.email.btn": ["Send code", "코드 받기", "コードを送る"],
     "a.email.sending": ["Sending code", "코드 보내는 중", "コードを送信中"],
     "a.email.bad": ["This does not look like an email address. Check it and try again.", "이메일 주소 형식이 아니에요. 확인하고 다시 입력해 주세요.", "メールアドレスの形式ではないようです。確認してもう一度入力してください。"],
-    "a.email.unsupported": ["This email provider is not supported yet", "아직 지원하지 않는 이메일 서비스예요", "このメールサービスにはまだ対応していません"],
-    "a.email.supported": ["To keep Cojam fair, you can sign up with these providers: {list}. Use an address from one of them.", "공정한 운영을 위해 다음 이메일로만 가입할 수 있어요: {list}. 이 중 하나의 주소를 써 주세요.", "公平に運営するため、登録できるのは次のメールサービスです：{list}。いずれかのアドレスをお使いください。"],
-    "a.code.h": ["Check your email", "메일을 확인하세요", "メールをご確認ください"],
-    "a.code.body": ["We sent a code to {email}.", "{email} 주소로 코드를 보냈어요.", "{email} にコードを送りました。"],
+    "a.email.unsupported": ["We cannot use this email provider yet", "아직 쓸 수 없는 이메일 서비스예요", "このメールサービスはまだご利用いただけません"],
+    "a.email.supported": ["To keep the game fair, sign up with one of these: {list}.", "공정한 운영을 위해 다음 이메일로만 가입할 수 있어요: {list}", "公平に運営するため、登録できるのは次のメールサービスです：{list}"],
+    "a.code.h": ["Enter the 6 digit code", "메일로 보낸 코드 6자리", "メールで届いた6桁のコード"],
+    "a.code.body": ["We sent it to {email}.", "{email} 주소로 보냈어요.", "{email} に送りました。"],
     "a.code.label": ["Code", "코드", "コード"],
     "a.code.btn": ["Log in", "로그인", "ログイン"],
     "a.code.verifying": ["Checking", "확인 중", "確認中"],
@@ -155,7 +129,7 @@
     "a.setup.fail": ["We could not set up your wallet. Try again.", "지갑을 만들지 못했어요. 다시 시도해 주세요.", "ウォレットを作成できませんでした。もう一度お試しください。"],
     "a.setup.refused": ["This account could not be registered.", "이 계정은 등록할 수 없어요.", "このアカウントは登録できません。"],
     "a.offline": ["Connect to the internet to log in.", "로그인하려면 인터넷에 연결해 주세요.", "ログインするにはインターネットに接続してください。"],
-    "a.fine": ["By continuing you agree to the Terms and Privacy Policy.", "계속하면 이용약관과 개인정보 처리방침에 동의하게 돼요.", "続行すると、利用規約とプライバシーポリシーに同意したことになります。"],
+    "a.fine": ["By continuing you agree to the {terms} and the {privacy}.", "계속하면 {terms}과 {privacy}에 동의한 것으로 봐요.", "続行すると、{terms}と{privacy}に同意したものとみなします。"],
     "a.help.q": ["What is the Cojam wallet?", "Cojam 지갑이 뭔가요?", "Cojamウォレットとは？"],
     "a.help.a": ["A wallet on Kaia made for your login. It holds your points and CT. Only you can use it.", "로그인할 때 만들어지는 Kaia 지갑이에요. 포인트와 CT가 여기에 담기고, 나만 쓸 수 있어요.", "ログイン時に作られるKaiaのウォレットです。ポイントとCTを保管し、使えるのはあなただけです。"],
 
@@ -171,23 +145,23 @@
     "o.2.a": ["all 5 done", "5개 완료", "5問完了"],
     "o.2.c": ["per hit", "적중마다", "的中ごと"],
     "o.3.h": ["Points to CT", "포인트를 CT로", "ポイントをCTに"],
-    "o.3.b": ["Turn every 1,000P into 1 CT, from 7 days after you join. The weekly Top 10 share a CT prize. You never pay a fee to play.", "가입 7일 뒤부터 1,000P마다 1 CT로 바꿀 수 있어요. 주간 Top 10은 CT 상금을 나눠 받아요. 플레이에는 수수료가 없어요.", "登録から7日後以降、1,000Pごとに1 CTと交換できます。週間トップ10にはCTの賞金も。プレイに手数料はかかりません。"],
+    "o.3.b": ["Turn every 1,000P into 1 CT, from 7 days after you join. Each week the top 10 win CT prizes. You never pay a fee to play.", "가입 7일 뒤부터 1,000P마다 1 CT로 바꿀 수 있어요. 매주 상위 10명은 CT 상금을 받아요. 플레이에는 수수료가 없어요.", "登録から7日後以降、1,000Pごとに1 CTと交換できます。毎週、トップ10にはCTの賞金も。プレイに手数料はかかりません。"],
     "o.3.wait": ["Ready to play", "플레이 준비 완료", "プレイの準備ができました"],
 
     /* ---------- H1, H2 home ---------- */
-    "h.title": ["Today's predictions", "오늘의 예측", "今日の予想"],
+    "h.title": ["Today's picks", "오늘의 예측", "今日の予想"],
     "h.sub": ["5 new predictions every day at 09:00 KST", "매일 오전 9시, 새로운 예측 5개", "毎朝9時に、新しい予想が5問"],
     "h.view.label": ["View", "보기 방식", "表示方法"],
-    "h.view.card": ["Card view", "카드 보기", "カード表示"],
-    "h.view.term": ["Terminal view", "터미널 보기", "ターミナル表示"],
+    "h.view.card": ["Cards", "카드", "カード"],
+    "h.view.term": ["List", "목록", "リスト"],
     "h.prog.sr": ["{n} of 5 answered", "5개 중 {n}개 선택함", "5問中{n}問を選択済み"],
     "h.closes": ["Closes in", "마감까지", "締切まで"],
     "h.left": ["{n} left today", "오늘 {n}개 남았어요", "今日はあと{n}問"],
-    "h.qn": ["Question {n} of 5", "문제 {n} / 5", "第{n}問 / 5"],
+    "h.qn": ["{n} / 5", "{n} / 5", "{n} / 5"],
     "h.answer": ["Answer: {rule}", "정답 기준: {rule}", "判定基準: {rule}"],
-    "h.ai": ["Set automatically by AI after {time}", "{time} 이후 AI가 자동으로 확정해요", "{time}以降にAIが自動で確定します"],
+    "h.ai": ["AI settles it after {time}", "{time} 이후 AI가 정답을 확정해요", "{time}以降にAIが結果を確定します"],
     "h.hint": ["Swipe left or right, or tap a choice.", "좌우로 밀거나 버튼을 눌러 고르세요.", "左右にスワイプするか、ボタンをタップして選びます。"],
-    "h.final": ["Picks are final once made.", "한 번 고르면 바꿀 수 없어요.", "一度選ぶと変更できません。"],
+    "h.final": ["Undo within 3 seconds. After that a pick is final.", "3초 안에는 되돌릴 수 있고, 그 뒤에는 바꿀 수 없어요.", "3秒以内なら取り消せます。その後は変更できません。"],
     "h.sync": ["Q{n}: {choice}", "{n}번: {choice}", "第{n}問: {choice}"],
     "h.notsaved": ["Not saved. Pick again.", "저장되지 않았어요. 다시 골라 주세요.", "保存できませんでした。もう一度選んでください。"],
     "h.toast.fail": ["Your pick on question {n} was not saved.", "{n}번 문제의 선택이 저장되지 않았어요.", "第{n}問の予想を保存できませんでした。"],
@@ -197,7 +171,7 @@
     "h.closed": ["Today's set has closed. A new set is ready.", "오늘의 문제가 마감됐어요. 새 문제가 준비됐어요.", "今日の問題は締め切りました。新しい問題が届いています。"],
     "h.closed.btn": ["Show new set", "새 문제 보기", "新しい問題を見る"],
     "h.offline": ["Connect to the internet to pick.", "예측하려면 인터넷에 연결해 주세요.", "予想するにはインターネットに接続してください。"],
-    "h.live.picked": ["Picked {choice}. {k} left.", "{choice} 선택. {k}개 남았어요.", "{choice}を選択。あと{k}問。"],
+    "h.live.picked": ["Picked {choice}. {k} left. You can undo for 3 seconds.", "{choice} 선택. {k}개 남았어요. 3초 안에 되돌릴 수 있어요.", "{choice}を選択。あと{k}問。3秒以内なら取り消せます。"],
     "h.pick.aria": ["Pick {choice} for: {q}", "{q} {choice} 선택", "{q} {choice}を選ぶ"],
     "h.t.pick": ["Pick", "선택하기", "予想する"],
     "h.t.chose": ["Chose {choice}", "{choice} 선택", "{choice}を選択"],
@@ -207,8 +181,8 @@
     "h.new": ["New predictions are open.", "새 예측이 열렸어요.", "新しい予想が始まりました。"],
 
     /* ---------- H3 day done ---------- */
-    "d.h1": ["Today's 5 predictions done", "오늘의 예측 5개 완료", "今日の5問、完了"],
-    "d.saving": ["Saving your picks. 100P follows.", "선택을 저장하고 있어요. 곧 100P가 들어와요.", "予想を保存しています。まもなく100Pが届きます。"],
+    "d.h1": ["All 5 done", "오늘의 5문제 완료", "今日の5問、完了"],
+    "d.saving": ["Saving your last pick. 100P follows.", "마지막 선택을 저장하고 있어요. 곧 100P가 들어와요.", "最後の予想を保存しています。まもなく100Pが届きます。"],
     "d.paid": ["+100P paid", "+100P 지급 완료", "+100P 付与済み"],
     "d.next": ["Next set in", "다음 문제까지", "次の問題まで"],
     "d.next.at": ["Opens at 09:00 KST", "오전 9시에 열려요", "午前9時に始まります"],
@@ -270,16 +244,16 @@
     "k.title": ["Weekly ranking", "주간 랭킹", "週間ランキング"],
     "k.sub": ["Ranked by points earned this week.", "이번 주에 받은 포인트로 순위를 매겨요.", "今週の獲得ポイントで順位が決まります。"],
     "k.pool": ["This week's pool", "이번 주 상금", "今週の賞金プール"],
-    "k.pool.line": ["{n} qualified players x 1 CT, up to 10,000 CT", "참여 자격을 갖춘 {n}명 x 1 CT, 최대 10,000 CT", "対象プレイヤー{n}人 x 1 CT、上限10,000 CT"],
+    "k.pool.line": ["Each qualified player adds 1 CT to the pool: {n} so far. The pool is capped at 10,000 CT.", "참여 자격을 갖춘 사람 한 명마다 1 CT가 쌓여요. 지금 {n}명이고, 최대 10,000 CT까지예요.", "対象プレイヤー1人につき1 CTが積み立てられます。現在{n}人、上限は10,000 CTです。"],
     "k.ends": ["Ends in", "마감까지", "終了まで"],
     "k.endat": ["Monday 09:00 KST", "월요일 오전 9시", "月曜 午前9時"],
     "k.dh": ["{d}d {h}h", "{d}일 {h}시간", "{d}日{h}時間"],
-    "k.split.q": ["How the pool works", "상금은 이렇게 정해져요", "賞金プールのしくみ"],
+    "k.split.q": ["How prizes work", "상금 안내", "賞金のしくみ"],
     "k.split.note": ["Players count when they play on 3 or more days of the week and joined more than 7 days ago. Prizes are sent on Wednesday at 21:00 KST, after every answer of the week is in.", "한 주에 3일 이상 플레이하고 가입한 지 7일이 넘은 사람이 집계돼요. 상금은 그 주의 정답이 모두 확정된 뒤, 수요일 오후 9시에 보내 드려요.", "その週に3日以上プレイし、登録から7日を過ぎたプレイヤーが対象です。賞金は、その週の結果がすべて確定したあと、水曜の21時に送られます。"],
-    "k.top": ["Top 10", "Top 10", "トップ10"],
+    "k.top": ["Top 10", "상위 10명", "トップ10"],
     "k.you": ["You", "나", "あなた"],
-    "k.gap": ["{gap}P to Top 10", "Top 10까지 {gap}P", "トップ10まであと{gap}P"],
-    "k.in": ["You are in the Top 10", "Top 10에 들었어요", "トップ10に入っています"],
+    "k.gap": ["{gap}P behind the top 10", "상위 10명까지 {gap}P", "トップ10まであと{gap}P"],
+    "k.in": ["You are in the top 10", "상위 10명에 들었어요", "トップ10に入っています"],
     "k.prize": ["Prize {c} CT", "상금 {c} CT", "賞金 {c} CT"],
     "k.none": ["No rank yet. Finish today's 5 to get on the board.", "아직 순위가 없어요. 오늘의 5문제를 끝내면 랭킹에 올라요.", "まだ順位がありません。今日の5問を終えるとランキングに載ります。"],
     "k.play": ["Play today's set", "오늘의 예측 하기", "今日の予想をする"],
@@ -311,7 +285,7 @@
     "s.interest": ["Interest over {d} days", "{d}일간 이자", "{d}日間の利息"],
     "s.unlock": ["Unlocks on", "잠금 해제일", "ロック解除日"],
     "s.value": ["Value", "원화 환산", "ウォン換算"],
-    "s.rules": ["Interest builds every second until the unlock date, then stops. While locked you can take interest out from 10 CT; after unlock, any amount. Your CT unlocks after {d} days. There is no early exit.", "이자는 잠금 해제일까지 매초 쌓이고, 그 뒤로는 멈춰요. 잠금 중에는 10 CT부터, 해제 뒤에는 금액과 상관없이 이자를 찾을 수 있어요. 원금은 {d}일 뒤에 풀리고, 중도 해지는 할 수 없어요.", "利息はロック解除日まで毎秒増え、その後は止まります。ロック中は10 CTから、解除後は金額を問わず利息を受け取れます。元本は{d}日後に解除され、途中解約はできません。"],
+    "s.rules": ["Interest builds every second until the unlock date. While locked you can take interest out from 10 CT. Your CT unlocks after {d} days and cannot be taken out earlier.", "이자는 잠금 해제일까지 매초 쌓여요. 잠금 중에는 이자를 10 CT부터 찾을 수 있어요. 원금은 {d}일 뒤에 풀리고, 그 전에는 찾을 수 없어요.", "利息はロック解除日まで毎秒増えます。ロック中は10 CTから利息を受け取れます。元本は{d}日後に解除され、それまでは引き出せません。"],
     "s.btn": ["Stake {a} CT", "{a} CT 스테이킹하기", "{a} CTをステーク"],
     "s.btn.empty": ["Enter an amount", "수량을 입력하세요", "数量を入力してください"],
     "s.fee": ["No fee: Cojam pays the network fee.", "수수료 없음: 네트워크 수수료는 Cojam이 내요.", "手数料なし：ネットワーク手数料はCojamが負担します。"],
@@ -322,9 +296,9 @@
     "s.th.2": ["1,000+", "1,000 이상", "1,000以上"],
     "s.th.3": ["10,000+", "10,000 이상", "10,000以上"],
     "s.e.nan": ["Enter an amount in CT, like 250.", "CT 수량을 숫자로 입력해 주세요. 예: 250", "CTの数量を数字で入力してください。例: 250"],
-    "s.e.min": ["The minimum stake is 100 CT.", "최소 스테이킹 수량은 100 CT예요.", "最小ステーク数量は100 CTです。"],
+    "s.e.min": ["The minimum is 100 CT.", "최소 100 CT부터 맡길 수 있어요.", "100 CTから預けられます。"],
     "s.fix.min": ["Stake 100 CT", "100 CT로 맞추기", "100 CTにする"],
-    "s.e.bal": ["You have {b} CT.", "보유 수량은 {b} CT예요.", "保有数量は{b} CTです。"],
+    "s.e.bal": ["That is more than your {b} CT.", "보유한 {b} CT보다 많아요.", "保有している{b} CTを超えています。"],
     "s.fix.bal": ["Use {b} CT", "{b} CT 입력", "{b} CTを入力"],
     "s.zero": ["You have no CT yet. Deposit CT or convert points first.", "아직 CT가 없어요. 먼저 CT를 입금하거나 포인트를 전환해 주세요.", "まだCTがありません。先にCTを入金するか、ポイントを交換してください。"],
     "s.paused": ["New stakes are paused. Your stakes keep earning and can be claimed and withdrawn.", "지금은 새 스테이킹을 받지 않아요. 기존 스테이킹은 이자가 계속 쌓이고, 이자 받기와 원금 찾기도 그대로 할 수 있어요.", "現在、新規ステークを停止しています。既存のステークは利息が増え続け、受け取りや引き出しも通常どおり行えます。"],
@@ -365,20 +339,20 @@
     "w.title": ["Wallet", "지갑", "ウォレット"],
     "w.sub": ["Your points, CT and wallet address.", "포인트와 CT, 그리고 지갑 주소예요.", "ポイント、CT、ウォレットアドレスです。"],
     "w.points": ["Points", "포인트", "ポイント"],
-    "w.ready": ["{n} CT ready to convert", "{n} CT로 바꿀 수 있어요", "{n} CTに交換できます"],
-    "w.notyet": ["{g}P more for your first CT", "{g}P만 더 모으면 CT로 바꿀 수 있어요", "あと{g}PでCTに交換できます"],
+    "w.ready": ["1,000P = 1 CT. You can convert {n} CT now.", "1,000P = 1 CT. 지금 {n} CT로 바꿀 수 있어요.", "1,000P = 1 CT。いま{n} CTに交換できます。"],
+    "w.notyet": ["1,000P = 1 CT. {g}P more for your first CT.", "1,000P = 1 CT. {g}P만 더 모으면 바꿀 수 있어요.", "1,000P = 1 CT。あと{g}Pで交換できます。"],
     "w.pendinghit": ["+{p}P, lands about {time}", "+{p}P, {time}쯤 지급", "+{p}P、{time}ごろ付与"],
     "w.convert": ["Convert points", "포인트 전환", "ポイントを交換"],
     "w.staked": ["Staked", "스테이킹 중", "ステーク中"],
     "w.kaia.note": ["Only needed to withdraw CT to another wallet.", "CT를 다른 지갑으로 출금할 때만 필요해요.", "CTを別のウォレットへ出金するときだけ必要です。"],
-    "w.addr": ["Your Cojam wallet on Kaia", "내 Cojam 지갑 (Kaia)", "あなたのCojamウォレット（Kaia）"],
+    "w.addr": ["Your wallet address (Kaia)", "내 지갑 주소 (Kaia)", "あなたのウォレットアドレス（Kaia）"],
     "w.copy": ["Copy address", "주소 복사", "アドレスをコピー"],
-    "w.copied": ["Address copied.", "주소를 복사했어요.", "アドレスをコピーしました。"],
+    "w.copied": ["Wallet address copied: {a}", "내 지갑 주소를 복사했어요: {a}", "ウォレットアドレスをコピーしました：{a}"],
     "w.scan": ["View on Kaiascan", "Kaiascan에서 보기", "Kaiascanで見る"],
     "w.deposit": ["Deposit", "입금", "入金"],
     "w.withdraw": ["Withdraw", "출금", "出金"],
-    "w.token": ["CT here is new CT", "여기서 CT는 새 CT예요", "ここでのCTは新CTです"],
-    "w.token.copy": ["Copy the new CT contract address", "새 CT 컨트랙트 주소 복사", "新CTのコントラクトアドレスをコピー"],
+    "w.token": ["New CT token contract. Do not send anything to this address.", "새 CT 토큰 컨트랙트예요. 이 주소로는 아무것도 보내지 마세요.", "新CTのトークンコントラクトです。このアドレスには何も送らないでください。"],
+    "w.token.copy": ["Copy contract address", "컨트랙트 주소 복사", "コントラクトアドレスをコピー"],
     "w.offline": ["Connect to the internet to convert, deposit or withdraw.", "전환, 입금, 출금을 하려면 인터넷에 연결해 주세요.", "交換・入金・出金にはインターネット接続が必要です。"],
 
     /* ---------- W2 convert ---------- */
@@ -535,8 +509,8 @@
     "p.device.setup": ["Set up this device", "이 기기 설정하기", "この端末を設定"],
     "p.device.other": ["Set up on another device", "다른 기기에 설정돼 있어요", "別の端末で設定されています"],
     "p.name.e.word": ["This name is not allowed. Pick another.", "쓸 수 없는 이름이에요. 다른 이름을 써 주세요.", "この名前は使えません。別の名前にしてください。"],
-    "sys.blocked.h": ["This account is on hold", "이 계정은 이용이 제한됐어요", "このアカウントは利用が制限されています"],
-    "sys.blocked.b": ["Predicting, converting and prizes are paused for this account while Cojam reviews it. Points you already earned are kept. If you think this is a mistake, contact Cojam support.", "Cojam이 확인하는 동안 이 계정의 예측, 전환, 상금 지급이 멈췄어요. 이미 받은 포인트는 그대로예요. 잘못된 것 같다면 Cojam 고객 지원으로 문의해 주세요.", "Cojamが確認している間、このアカウントの予想・交換・賞金の支払いを停止しています。獲得済みのポイントはそのままです。お心当たりがない場合は、Cojamサポートへお問い合わせください。"],
+    "sys.blocked.h": ["This account is on hold", "이 계정은 잠시 멈춰 있어요", "このアカウントは一時停止中です"],
+    "sys.blocked.b": ["We are reviewing this account, so predicting, converting and prizes are paused for now. The points you earned and the CT in your wallet stay yours.", "계정을 확인하는 동안 예측, 전환, 상금 지급을 잠시 멈췄어요. 이미 받은 포인트와 지갑의 CT는 그대로 내 것이에요.", "アカウントを確認しているため、予想・交換・賞金の支払いを一時停止しています。獲得済みのポイントとウォレットのCTは、そのままあなたのものです。"],
     "sys.blocked.btn": ["Open wallet", "지갑 보기", "ウォレットを見る"],
 
     /* ---------- transaction sheet ---------- */
@@ -556,7 +530,7 @@
     "tx.scan": ["View on Kaiascan", "Kaiascan에서 보기", "Kaiascanで見る"],
     "tx.fail.h": ["That did not go through", "처리되지 않았어요", "処理できませんでした"],
     "tx.fail.reverted": ["Kaia rejected this transaction. Nothing was taken from your balance.", "Kaia에서 거래가 거절됐어요. 잔액에서 빠져나간 것은 없어요.", "Kaiaでトランザクションが拒否されました。残高からは何も引かれていません。"],
-    "tx.fail.cancel": ["You cancelled. Nothing was sent.", "취소했어요. 아무것도 전송되지 않았어요.", "キャンセルしました。何も送信されていません。"],
+    "tx.fail.cancel": ["Cancelled. Nothing was sent and your CT has not moved.", "취소했어요. 아무것도 전송되지 않았고 CT는 그대로예요.", "キャンセルしました。何も送信されず、CTはそのままです。"],
     "tx.slow.h": ["Still waiting for Kaia", "아직 Kaia의 확정을 기다리고 있어요", "Kaiaの確定を待っています"],
     "tx.slow.b": ["Your transaction is sent. It can take a little longer when the network is busy.", "거래는 전송됐어요. 네트워크가 붐비면 조금 더 걸릴 수 있어요.", "トランザクションは送信済みです。混雑時は少し時間がかかることがあります。"],
     "tx.chip": ["{label}: sending", "{label}: 전송 중", "{label}：送信中"],
@@ -576,7 +550,47 @@
     "sys.off.b": ["Cojam needs the internet to load today's predictions.", "오늘의 예측을 불러오려면 인터넷 연결이 필요해요.", "今日の予想を読み込むには、インターネット接続が必要です。"],
     "sys.404.h": ["This page does not exist.", "없는 페이지예요.", "このページは存在しません。"],
     "sys.404.b": ["The link may be old. Today's predictions are one tap away.", "오래된 링크일 수 있어요. 오늘의 예측은 바로 볼 수 있어요.", "リンクが古い可能性があります。今日の予想はすぐに見られます。"],
-    "sys.404.btn": ["Go to Home", "홈으로 가기", "ホームへ"]
+    "sys.404.btn": ["Go to Home", "홈으로 가기", "ホームへ"],
+    /* ---------- added in the polish pass (v2) ---------- */
+    "h.qn.sr": ["Question {n} of 5", "{n}번 문제 (모두 5개)", "第{n}問（全5問）"],
+    "h.undo": ["Undo", "되돌리기", "取り消す"],
+    "h.undo.aria": ["Undo question {n}: {choice}", "{n}번 문제 선택 되돌리기: {choice}", "第{n}問の予想を取り消す：{choice}"],
+    "h.saved": ["Saved", "저장됨", "保存しました"],
+    "h.undone": ["Question {n} is back. Pick again.", "{n}번 문제를 되돌렸어요. 다시 골라 주세요.", "第{n}問を戻しました。もう一度選んでください。"],
+    "h.end.h": ["That is all five", "5문제를 모두 골랐어요", "5問すべて選びました"],
+    "h.end.b": ["Your last pick is sent in a moment.", "마지막 선택을 곧 저장할게요.", "最後の予想をまもなく保存します。"],
+    "d.waitn": ["{n} waiting for answers", "정답 대기 중 {n}개", "結果待ち {n}件"],
+    "k.tie": ["Same points: whoever got there first ranks higher.", "점수가 같으면 먼저 도달한 사람이 더 높은 순위예요.", "同じポイントなら、先に到達した人が上位です。"],
+    "k.tie.note": ["Every rank has its own prize, and prizes are never split.", "순위마다 상금이 따로 정해져 있고, 상금을 나누지 않아요.", "順位ごとに賞金が決まっていて、分け合うことはありません。"],
+    "k.around.h": ["Ranks around you", "내 주변 순위", "あなたの前後の順位"],
+    "k.around.open": ["Show the ranks around you", "내 주변 순위 보기", "前後の順位を見る"],
+    "k.split.share": ["Share of the pool", "상금 비율", "賞金の配分"],
+    "s.e.dec": ["CT has up to 4 decimals here.", "소수점 아래 4자리까지 입력할 수 있어요.", "小数点以下は4桁まで入力できます。"],
+    "s.fix.dec": ["Use {b} CT", "{b} CT 입력", "{b} CTを入力"],
+    "s.btn.min": ["Minimum 100 CT", "최소 100 CT부터", "100 CTから"],
+    "s.btn.bal": ["More than your balance", "보유 수량 초과", "保有数量を超えています"],
+    "s.btn.nan": ["Enter a number", "숫자로 입력하세요", "数字で入力してください"],
+    "s.noexit": ["No early exit: this CT stays locked until {date}.", "중도 해지 불가: 이 CT는 {date}까지 찾을 수 없어요.", "途中解約不可：このCTは{date}まで引き出せません。"],
+    "s.rv.h": ["Stake {a} CT for {d} days?", "{a} CT를 {d}일 동안 맡길까요?", "{a} CTを{d}日間預けますか？"],
+    "s.cancelled": ["Stake cancelled. Your CT has not moved.", "스테이킹을 취소했어요. CT는 그대로예요.", "ステークをキャンセルしました。CTはそのままです。"],
+    "w.copy.done": ["Copied", "복사됨", "コピーしました"],
+    "w.addr.note": ["Send only new CT or KAIA on the Kaia network to this address.", "이 주소로는 Kaia 네트워크의 새 CT나 KAIA만 보내 주세요.", "このアドレスには、Kaiaネットワークの新CTまたはKAIAのみ送ってください。"],
+    "w.info": ["Token info", "토큰 정보", "トークン情報"],
+    "w.token.copied": ["Contract address copied. Do not send funds to it.", "컨트랙트 주소를 복사했어요. 이 주소로 보내면 안 돼요.", "コントラクトアドレスをコピーしました。ここには送金しないでください。"],
+    "a.terms": ["Terms", "이용약관", "利用規約"],
+    "a.privacy": ["Privacy Policy", "개인정보 처리방침", "プライバシーポリシー"],
+    "a.email.cap": ["Works with {list}.", "{list} 메일로 가입할 수 있어요.", "{list} のメールで登録できます。"],
+    "a.email.typo": ["Did you mean {domain}?", "혹시 {domain} 아닌가요?", "{domain} のことですか？"],
+    "a.email.typo.fix": ["Use {email}", "{email} 주소로 바꾸기", "{email} に直す"],
+    "a.code.short": ["Enter all 6 digits.", "6자리를 모두 입력해 주세요.", "6桁すべて入力してください。"],
+    "a.code.h1": ["Check your email", "메일을 확인하세요", "メールをご確認ください"],
+    "a.setup.h1": ["Almost there", "거의 다 됐어요", "もう少しです"],
+    "a.fact.1": ["5 questions a day, about a minute", "하루 5문제, 1분이면 끝", "1日5問、約1分"],
+    "a.fact.2": ["Free to play: Cojam pays the network fees", "무료 플레이: 네트워크 수수료는 Cojam이 내요", "無料でプレイ：ネットワーク手数料はCojamが負担"],
+    "a.fact.3": ["Points turn into CT", "모은 포인트는 CT로 전환", "貯めたポイントはCTに交換"],
+    "sys.blocked.contact": ["Contact support", "고객 지원에 문의", "サポートに問い合わせる"],
+    "sys.blocked.note": ["If you think this is a mistake, tell us and we will look again.", "잘못된 것 같다면 알려 주세요. 다시 확인해 드릴게요.", "誤りだと思われる場合はご連絡ください。あらためて確認します。"],
+    "common.error.h": ["Something went wrong", "문제가 생겼어요", "問題が発生しました"]
   };
 
   var LANGS = ["en", "ko", "ja"], dict = { en: {}, ko: {}, ja: {} };
@@ -584,8 +598,9 @@
 
   var qs = new URLSearchParams(location.search), saved = null;
   try { saved = localStorage.getItem("cjp.lang"); } catch (e) {}
-  var nav = (navigator.language || "en").slice(0, 2);
-  var lang = qs.get("lang") || saved || (LANGS.indexOf(nav) >= 0 ? nav : "en");
+  /* English for everyone by default: the device language is never read. Korean and Japanese are the player's own choice
+     (language control on the Gate, Login, first run and Profile) and are remembered. ?lang= is kept for review links. */
+  var lang = qs.get("lang") || saved || "en";
   if (LANGS.indexOf(lang) < 0) lang = "en";
   if (qs.get("lang")) { try { localStorage.setItem("cjp.lang", lang); } catch (e) {} }
   document.documentElement.lang = lang;
@@ -602,5 +617,5 @@
     try { localStorage.setItem("cjp.lang", l); } catch (e) {}
     var u = new URL(location.href); u.searchParams.set("lang", l); location.replace(u.toString());
   }
-  window.CJ_I18N = { dict: dict, langs: LANGS, names: { en: "EN", ko: "한국어", ja: "日本語" }, lang: lang, t: t, setLang: setLang, has: function (k) { return dict.en[k] !== undefined; } };
+  window.CJ_I18N = { dict: dict, langs: LANGS, names: { en: "English", ko: "한국어", ja: "日本語" }, lang: lang, t: t, setLang: setLang, has: function (k) { return dict.en[k] !== undefined; } };
 })();

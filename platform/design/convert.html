@@ -38,12 +38,10 @@
       '<section class="card stack">' +
       C.amount({ id: "amt", label: t("c.amount"), unit: "P", mode: "numeric", value: initial, disabled: blocked, side: S === "loading" ? C.skel("96px", "12px") : t("c.avail") + " <b>" + F.pts(bal) + "</b>", msg: t("c.step") }) +
       '<hr class="hr"><div class="row-between"><span class="muted">' + t("c.get") + '</span><b class="fig" id="get" aria-live="polite">0<small>CT</small></b></div></section>' +
-      '<section class="card card--mist">' + C.rows([[t("c.rate"), "1,000P = 1 CT"], [t("c.minimum"), "1,000P"], [t("c.capleft"), t("c.capof", { n: capLeft })], [t("c.fee"), t("c.fee.v")]]) + "</section>" +
-      C.btn("", { kind: "primary", block: true, id: "go", disabled: true }) +
-      '<p class="small muted center">' + t("c.rank") + "</p>";
+      '<section class="card card--mist">' + C.rows([[t("c.rate"), "1,000P = 1 CT"], [t("c.minimum"), "1,000P"], [t("c.capleft"), t("c.capof", { n: capLeft })], [t("c.fee"), t("c.fee.v")]]) + "</section>";
   }
   function cfg(p) { var n = p / 1000; return { label: t("c.chip", { p: F.int(p) }), success: { title: t("c.ok.h", { p: F.int(p), n: n }), rows: [[t("c.ok.left"), F.pts(bal - p)], [t("c.ok.ct"), F.ct(M.user.ct + n)]] }, onSuccess: function () { App.addPoints(-p); } }; }
-  App.mount({ tab: "wallet", back: "wallet.html", title: t("c.title"), body: body(), points: bal, pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
+  App.mount({ tab: "wallet", back: "wallet.html", title: t("c.title"), body: body(), pin: S === "short" ? "" : C.actbar(C.btn("", { kind: "primary", block: true, id: "go", disabled: true }), t("c.rank")), points: bal, pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
     var inp = $("#amt"); if (!inp) return;
     var msg = $("#amt-msg"), box = inp.closest(".field-box"), go = $("#go"), get = $("#get"), maxP = Math.min(Math.floor(bal / 1000) * 1000, capLeft * 1000);
     function update() {

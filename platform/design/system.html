@@ -27,11 +27,12 @@
     maintenance: { icon: "tool", h: "sys.maint.h", b: "sys.maint.b", btn: "sys.maint.btn", extra: '<p class="sys-msg">' + t("sys.maint.msg") + '</p><p class="sys-meta">' + t("sys.maint.eta", { time: F.date(new Date(Date.now() + 40 * 60000), true) }) + "</p>", foot: t("sys.maint.auto") },
     update: { icon: "download", h: "sys.update.h", b: "sys.update.b", btn: "sys.update.btn" },
     offline: { icon: "offline", h: "sys.off.h", b: "sys.off.b", btn: "common.retry" },
-    blocked: { icon: "lock", h: "sys.blocked.h", b: "sys.blocked.b", btn: "sys.blocked.btn", href: "wallet.html" },
+    /* proposal: what a player sees when the account is blocked. Calm, says what it means and what stays theirs, and how to reach us. */
+    blocked: { icon: "clock", h: "sys.blocked.h", b: "sys.blocked.b", calm: true, extra: '<p class="sys-msg">' + t("sys.blocked.note") + "</p>" },
     notfound: { icon: "search", h: "sys.404.h", b: "sys.404.b", btn: "sys.404.btn", href: "home-cards.html" }
   }[S];
   var raw = '<div class="sys"><div class="sys-ic">' + C.icon(v.icon, 38) + "</div><h1>" + t(v.h) + "</h1><p>" + t(v.b) + "</p>" + (v.extra || "") +
-    C.btn(t(v.btn), { kind: "primary", href: v.href, id: "act" }) + (v.foot ? '<p class="sys-meta">' + v.foot + "</p>" : "") + "</div>";
+    (v.calm ? C.btn(t("sys.blocked.contact"), { href: "mailto:support@cojam.app", icon: "mail" }) + '<a class="sys-link" href="wallet.html">' + t("sys.blocked.btn") + "</a>" : C.btn(t(v.btn), { kind: "primary", href: v.href, id: "act" })) + (v.foot ? '<p class="sys-meta">' + v.foot + "</p>" : "") + "</div>";
   App.mount({ bare: true, docTitle: t(v.h), raw: raw, after: function () {
     var b = $("#act"); if (b && b.tagName === "BUTTON") b.addEventListener("click", function () { b.classList.add("is-loading"); b.innerHTML = '<span class="spin"></span><span>' + t("common.loading") + "</span>"; setTimeout(function () { location.reload(); }, 900); });
   } });

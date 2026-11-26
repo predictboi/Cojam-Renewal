@@ -31,7 +31,7 @@
   var PERIODS = [30, 90, 180, 365];
   function tier(a) { return a >= 10000 ? 2 : a >= 1000 ? 1 : 0; }
 
-  function head() { return "<div><h1>" + t("s.title") + '</h1><p class="ph-sub">' + t("s.sub") + "</p></div>"; }
+  function head() { return '<div class="ph-top"><h1>' + t("s.title") + "</h1></div>"; }
   function body() {
     if (S === "error") return C.seg([{ label: t("s.new"), href: "staking.html", on: true }, { label: t("s.mine", { n: 2 }), href: "stakes.html" }], { label: t("s.switch") }) + C.error();
     return C.seg([{ label: t("s.new"), href: "staking.html", on: true }, { label: t("s.mine", { n: 2 }), href: "stakes.html" }], { label: t("s.switch") }) +
@@ -40,9 +40,8 @@
       '<section class="card stack">' +
       C.amount({ id: "amt", label: t("s.amount"), unit: "CT", value: initial, disabled: blocked, side: S === "loading" ? C.skel("110px", "12px") : t("s.avail") + " <b>" + F.ct(bal) + "</b>", msg: t("s.min") }) +
       '<div><p class="field-label"><b id="per-l">' + t("s.period") + '</b></p><div class="period" role="group" aria-labelledby="per-l" id="period">' +
-      PERIODS.map(function (d) { return '<button type="button" data-d="' + d + '" aria-pressed="' + (d === period) + '"' + (blocked ? " disabled" : "") + "><b>" + d + "<small>" + t("s.d") + '</small></b><span data-rate="' + d + '"></span></button>'; }).join("") + "</div></div></section>" +
-      '<section class="card card--mist" id="sum" aria-live="polite"></section>' +
-      '<div class="stack-8">' + C.btn("", { kind: "primary", block: true, id: "go", disabled: true }) + '<p class="tiny muted center">' + t("s.fee") + "</p></div>" +
+      PERIODS.map(function (d) { return '<button type="button" data-d="' + d + '" aria-pressed="' + (d === period) + '"' + (blocked ? " disabled" : "") + "><b>" + d + "<small>" + t("s.d") + '</small></b><span data-rate="' + d + '"></span></button>'; }).join("") + "</div></div>" +
+      '<hr class="hr"><div id="sum" aria-live="polite"></div></section>' +
       '<p class="small muted" id="rules"></p>' +
       C.help(t("s.help.q"), "<p>" + t("s.help.a") + '</p><div class="scrollx"><table class="ratetable"><tr><th>' + t("s.th.lock") + "</th><th>" + t("s.th.1") + "</th><th>" + t("s.th.2") + "</th><th>" + t("s.th.3") + "</th></tr>" +
         PERIODS.map(function (d) { return "<tr><td>" + t("s.days", { d: d }) + "</td>" + M.rates[d].map(function (r) { return "<td>" + r + "%</td>"; }).join("") + "</tr>"; }).join("") + "</table></div>");
@@ -50,31 +49,36 @@
   function txCfg(a) {
     var r = M.rates[period][tier(a)], unlock = F.dateLong(M.ahead(period)), amt = F.dec(a);
     return { label: t("s.chip", { a: amt }), stepsTitle: t("tx.stake.h", { a: amt }), steps: [t("tx.step1", { a: amt }), t("tx.step2", { a: amt })],
-      review: a >= 10000 ? { rows: [[t("s.amount"), F.ct(a)], [t("s.period"), t("s.days", { d: period })], [t("s.apr"), r + "%"], [t("s.unlock"), unlock]], confirm: t("s.btn", { a: amt }) } : null,
+      cancelMsg: t("s.cancelled"),
+      /* every amount is reviewed: a lock with no early exit never starts on one tap */
+      review: { title: t("s.rv.h", { a: amt, d: period }), rows: [[t("s.amount"), F.ct(a)], [t("s.period"), t("s.days", { d: period })], [t("s.apr"), r + "%"], [t("s.interest", { d: period }), F.ct(a * r / 100 * period / 365), true], [t("s.unlock"), unlock]], warn: t("s.noexit", { date: unlock }), confirm: t("s.btn", { a: amt }) },
       success: { title: t("s.ok.h", { a: amt }), rows: [[t("s.unlock"), unlock], [t("s.apr"), r + "%"]], btn: { label: t("s.ok.btn"), href: "stakes.html" } } };
   }
-  App.mount({ tab: "stake", docTitle: t("s.title"), head: head(), body: body(), pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
+  var act = S === "error" ? "" : C.actbar(C.btn("", { kind: "primary", block: true, id: "go", disabled: true }), t("s.fee"));
+  App.mount({ tab: "stake", docTitle: t("s.title"), head: head(), body: body(), pin: act, pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
     var inp = $("#amt"); if (!inp) return;
-    var msg = $("#amt-msg"), box = inp.closest(".field-box"), go = $("#go"), sum = $("#sum");
+    var msg = $("#amt-msg"), box = inp.closest(".field-box"), go = $("#go"), sum = $("#sum"); if (!go) return;
     function update() {
-      var p = App.parseAmount(inp.value), a = p.value || 0, err = "", fix = "";
-      if (p.bad) err = t("s.e.nan");
-      else if (!p.empty && a < M.minStake) { err = t("s.e.min"); if (bal >= M.minStake) fix = C.btn(t("s.fix.min"), { sm: true, attrs: 'data-fix="100"' }); }
-      else if (a > bal) { err = t("s.e.bal", { b: F.dec(bal) }); fix = C.btn(t("s.fix.bal", { b: F.dec(bal) }), { sm: true, attrs: 'data-fix="' + bal + '"' }); }
+      var p = App.parseAmount(inp.value), a = p.value || 0, err = "", fix = "", why = "s.btn.empty";
+      if (p.bad) { err = t("s.e.nan"); why = "s.btn.nan"; }
+      else if (p.decimals > 4) { var cut = Math.floor(a * 1e4) / 1e4; err = t("s.e.dec"); why = "s.btn.nan"; fix = C.btn(t("s.fix.dec", { b: F.dec(cut) }), { sm: true, attrs: 'data-fix="' + cut + '"' }); }
+      else if (!p.empty && a < M.minStake) { err = t("s.e.min"); why = "s.btn.min"; if (bal >= M.minStake) fix = C.btn(t("s.fix.min"), { sm: true, attrs: 'data-fix="100"' }); }
+      else if (a > bal) { err = t("s.e.bal", { b: F.dec(bal) }); why = "s.btn.bal"; fix = C.btn(t("s.fix.bal", { b: F.dec(bal) }), { sm: true, attrs: 'data-fix="' + bal + '"' }); }
       box.classList.toggle("is-error", !!err); inp.setAttribute("aria-invalid", err ? "true" : "false");
-      msg.className = "field-msg" + (err ? " is-error" : ""); msg.innerHTML = err ? "<span>" + err + "</span>" + fix : "<span>" + t("s.min") + "</span>";
+      msg.className = "field-msg" + (err ? " is-error" : ""); msg.innerHTML = err ? "<span>" + err + "</span>" + fix : "<span>" + t("s.min") + (App.isKo && a ? " · " + F.krw(a) : "") + "</span>";
       var over = !err && a > room;
       $("#full-note").innerHTML = over ? C.note("warn", t("s.full") + " " + t("s.full.room", { x: F.dec(room), d: period }), C.btn(t("s.fix.stake", { x: F.dec(room) }), { sm: true, attrs: 'data-fix="' + room + '"' })) : "";
       var ti = tier(a), valid = !err && !p.empty && !blocked && !over;
       PERIODS.forEach(function (d) { $('[data-rate="' + d + '"]').textContent = M.rates[d][ti] + "%"; });
       var r = M.rates[period][ti], interest = a * r / 100 * period / 365;
+      /* the summary never shows interest for an amount that cannot be staked */
+      var shown = !err && !p.empty;
       sum.innerHTML = S === "loading" ? C.skel("100%") + C.skel("100%", "14px", "margin-top:14px") + C.skel("100%", "14px", "margin-top:14px") : C.rows([
-        [t("s.tier"), t("s.tier." + (ti + 1))], [t("s.apr"), r + "%"],
-        [t("s.interest", { d: period }), F.ct(interest) + (App.isKo && a ? "<small>" + F.krw(interest) + "</small>" : ""), true],
-        [t("s.unlock"), F.dateLong(M.ahead(period))],
-        App.isKo && a ? [t("s.value"), F.krw(a)] : null]);
+        [t("s.apr"), r + "%"],
+        [t("s.interest", { d: period }), shown ? F.ct(interest) + (App.isKo ? "<small>" + F.krw(interest) + "</small>" : "") : "–", true],
+        [t("s.unlock"), F.dateLong(M.ahead(period))]]);
       $("#rules").textContent = t("s.rules", { d: period });
-      go.disabled = !valid; go.querySelector("span").textContent = valid ? t("s.btn", { a: F.dec(a) }) : t("s.btn.empty");
+      go.disabled = !valid; go.querySelector("span").textContent = valid ? t("s.btn", { a: F.dec(a) }) : t(why);
       return valid ? a : 0;
     }
     inp.addEventListener("input", update);

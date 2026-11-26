@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="assets/components.css">
 </head>
 <body>
-<!-- A1 Login (email, then a one time code, then "Setting up your game"). States: (none) email, empty, bademail, unsupported, toomany, sendfail, sending, code, verifying, wrong, expired, tries, setup, returning, busy, walletfail, devicefail, refused-used, refused-provider, refused-many, refused, offline. Add ?lang=en|ko|ja. Mock data only. -->
+<!-- A1 Login (email, then a one time code, then "Setting up your game"). States: (none) email, empty, bademail, typo (did you mean), unsupported, toomany, sendfail, sending, code, verifying, wrong, short (incomplete code), expired, tries, setup, returning, busy, walletfail, devicefail, refused-used, refused-provider, refused-many, refused, offline. Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -23,39 +23,63 @@
 <script>
 (function () {
   var t = App.t, S = App.state, M = MOCK, $ = App.$;
-  var CODE = ["code", "verifying", "wrong", "expired", "tries"], SETUP = ["setup", "returning", "busy", "walletfail", "devicefail", "refused-used", "refused-provider", "refused-many", "refused"];
-  var email = { bademail: "minji@naver", unsupported: "minji@proton.me", empty: "", "": "", offline: "" }[S];
+  var CODE = ["code", "verifying", "wrong", "short", "expired", "tries"], SETUP = ["setup", "returning", "busy", "walletfail", "devicefail", "refused-used", "refused-provider", "refused-many", "refused"];
+  var email = { bademail: "minji@naver", unsupported: "minji@proton.me", typo: "minji@gmial.com", empty: "", "": "", offline: "" }[S];
   if (email === undefined) email = M.user.email;
   var step = CODE.indexOf(S) >= 0 ? "code" : SETUP.indexOf(S) >= 0 ? "setup" : "email";
   var off = S === "offline", providers = '<span translate="no">' + M.providerNames + "</span>";
+  var shortList = '<span translate="no">Gmail, Naver, Kakao, iCloud, Outlook, Yahoo! JAPAN</span>';
 
-  /* returns { text } for a plain field error, or { note } for the provider note */
+  /* a mistyped provider (gmial.com, naver.co, hanmail.com) is a typo, not an unsupported provider: suggest the fix */
+  function dist(a, b) {
+    var d = [], i, j; for (i = 0; i <= a.length; i++) d[i] = [i]; for (j = 1; j <= b.length; j++) d[0][j] = j;
+    for (i = 1; i <= a.length; i++) for (j = 1; j <= b.length; j++) d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    return d[a.length][b.length];
+  }
+  function suggest(domain) {
+    var best = null, bd = 3;
+    M.emailProviders.forEach(function (p) {
+      var d = dist(domain, p); if (domain.split(".")[0] === p.split(".")[0]) d = Math.min(d, 1);   /* right name, wrong ending */
+      if (d > 0 && d < bd) { bd = d; best = p; }
+    });
+    return best;
+  }
+  /* returns { text } for a plain field error, { typo } for a likely typo, or { note } for a provider we cannot use */
   function emailErr(v) {
     if (!v) return { text: t("a.email.empty") };
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) return { text: t("a.email.bad") };
-    if (M.emailProviders.indexOf(v.split("@")[1].toLowerCase()) < 0) return { note: true };
+    var dom = v.split("@")[1].toLowerCase();
+    if (M.emailProviders.indexOf(dom) < 0) { var sg = suggest(dom); return sg ? { typo: sg, fixed: v.split("@")[0] + "@" + sg } : { note: true }; }
     return null;
   }
+  function terms() {
+    return '<p class="fine">' + t("a.fine", { terms: '<a href="#terms">' + t("a.terms") + "</a>", privacy: '<a href="#privacy">' + t("a.privacy") + "</a>" }) + "</p>";
+  }
   function emailView() {
-    var sending = S === "sending", err = S === "empty" || S === "bademail" || S === "unsupported" ? emailErr(email) : null;
+    var sending = S === "sending", err = S === "empty" || S === "bademail" || S === "unsupported" || S === "typo" ? emailErr(email) : null;
     var msg = err && err.text ? err.text : S === "toomany" ? t("a.email.toomany") : S === "sendfail" ? t("a.email.sendfail") : off ? t("a.offline") : "";
-    var bad = !!err || S === "toomany" || S === "sendfail";
+    var bad = (!!err && !err.typo) || S === "toomany" || S === "sendfail";
     return '<form class="stack" id="f-email" novalidate><div class="field"><div class="field-label"><label for="email"><b>' + t("a.email.label") + '</b></label></div>' +
-      '<div class="field-box field-box--text' + (bad ? " is-error" : "") + (off ? " is-off" : "") + '">' + C.icon("mail", 20) + '<input id="email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" placeholder="you@example.com" value="' + email + '" aria-describedby="email-msg"' + (bad ? ' aria-invalid="true"' : "") + (off || sending ? " disabled" : "") + "></div>" +
-      '<div class="field-msg' + (bad ? " is-error" : "") + '" id="email-msg" aria-live="polite">' + (msg ? "<span>" + msg + "</span>" : "") + "</div>" +
+      '<div class="field-box field-box--text' + (bad ? " is-error" : "") + (off ? " is-off" : "") + '">' + C.icon("mail", 20) + '<input id="email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" enterkeyhint="send" placeholder="you@gmail.com" value="' + App.esc(email) + '" aria-describedby="email-msg email-cap"' + (bad ? ' aria-invalid="true"' : "") + (off || sending ? " disabled" : "") + "></div>" +
+      '<div id="email-fb" aria-live="polite">' +
+      (msg ? '<div class="field-msg' + (bad ? " is-error" : "") + '" id="email-msg"><span>' + msg + "</span></div>" : "") +
+      (err && err.typo ? '<div class="typo" id="typo"><span>' + t("a.email.typo", { domain: '<b translate="no">' + err.typo + "</b>" }) + "</span>" + C.btn(t("a.email.typo.fix", { email: '<span translate="no">' + App.esc(err.fixed) + "</span>" }), { sm: true, attrs: 'data-fix-email="' + App.esc(err.fixed) + '"' }) + "</div>" : "") +
       (err && err.note ? '<div class="note note-warn" role="alert" id="prov-note">' + C.icon("warn", 18) + '<div class="note-body"><b>' + t("a.email.unsupported") + "</b><span>" + t("a.email.supported", { list: providers }) + "</span></div></div>" : "") + "</div>" +
+      /* the provider rule is on screen before the player submits, not only after a failure */
+      (err && err.note ? "" : '<p class="field-cap" id="email-cap">' + t("a.email.cap", { list: shortList }) + "</p>") + "</div>" +
       '<button type="submit" class="btn btn-primary btn-block' + (sending ? " is-loading" : "") + '"' + (off ? " disabled" : "") + ">" + (sending ? '<span class="spin"></span>' : "") + "<span>" + t(sending ? "a.email.sending" : "a.email.btn") + "</span></button></form>" +
-      C.help(t("a.which.q"), "<p>" + t("a.which.a", { list: providers }) + "</p>") + C.help(t("a.help.q"), "<p>" + t("a.help.a") + "</p>") + '<p class="fine">' + t("a.fine") + "</p>";
+      C.help(t("a.help.q"), "<p>" + t("a.help.a") + "</p>") + terms();
   }
   function codeView() {
-    var err = S === "wrong" ? t("a.code.wrong") : S === "expired" ? t("a.code.expired") : S === "tries" ? t("a.code.tries") : "", busy = S === "verifying", locked = S === "tries";
+    var err = S === "wrong" ? t("a.code.wrong") : S === "short" ? t("a.code.short") : S === "expired" ? t("a.code.expired") : S === "tries" ? t("a.code.tries") : "", busy = S === "verifying", locked = S === "tries";
     return '<form class="stack" id="f-code" novalidate><div class="stack-8"><h2>' + t("a.code.h") + '</h2><p class="muted">' + t("a.code.body", { email: '<b translate="no">' + App.esc(email) + "</b>" }) + "</p></div>" +
-      '<div class="field"><div class="field-box field-box--code' + (err ? " is-error" : "") + (locked ? " is-off" : "") + '"><input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" placeholder="000000" value="' + (S === "wrong" || S === "tries" ? "418205" : busy ? "418250" : "") + '" aria-label="' + App.esc(t("a.code.label")) + '" aria-describedby="code-msg"' + (err ? ' aria-invalid="true"' : "") + (busy || locked ? " disabled" : "") + "></div>" +
-      '<div class="field-msg' + (err ? " is-error" : "") + '" id="code-msg" aria-live="polite">' + (err ? "<span>" + err + "</span>" : "") + "</div></div>" +
+      '<div class="field"><div class="field-box field-box--code' + (err && S !== "short" ? " is-error" : "") + (locked ? " is-off" : "") + '"><input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" placeholder="000000" value="' + (S === "wrong" || S === "tries" ? "418205" : S === "short" ? code0 : busy ? "418250" : "") + '" aria-label="' + App.esc(t("a.code.label")) + '" aria-describedby="code-msg"' + (err && S !== "short" ? ' aria-invalid="true"' : "") + (busy || locked ? " disabled" : "") + "></div>" +
+      '<div class="field-msg' + (err && S !== "short" ? " is-error" : "") + '" id="code-msg" aria-live="polite">' + (err ? "<span>" + err + "</span>" : "") + "</div></div>" +
       '<button type="submit" class="btn btn-primary btn-block' + (busy ? " is-loading" : "") + '"' + (S === "expired" || locked ? " disabled" : "") + ">" + (busy ? '<span class="spin"></span>' : "") + "<span>" + t(busy ? "a.code.verifying" : "a.code.btn") + "</span></button></form>" +
       '<div class="stack-8"><p class="small muted" id="resend-in"' + (S === "expired" ? " hidden" : "") + ">" + t("a.code.resendin", { s: 60 }) + '</p><div class="row-between"><button type="button" class="linkish" id="resend"' + (S === "expired" ? "" : " disabled") + ">" + t("a.code.resend") + '</button><button type="button" class="linkish" id="change">' + t("a.code.change") + "</button></div>" +
       '<p class="small muted">' + t("a.code.tip") + "</p></div>";
   }
+  var code0 = S === "short" ? "418" : "";
   function refused(key, btns) {
     return '<div class="setup"><div class="sheet-ic is-bad">' + C.icon("warn", 30) + "</div><h2>" + t("a.refused.h") + '</h2><p class="muted" role="alert">' + t(key, { list: providers }) + "</p></div>" + btns;
   }
@@ -74,8 +98,13 @@
       }).join("") + "</ol>";
   }
   function view() { return step === "email" ? emailView() : step === "code" ? codeView() : setupView(); }
-  var raw = '<div class="auth"><div class="gate-bar">' + C.logo() + C.lang() + '</div><div class="auth-main"><div class="stack-12"><h1>' + t("a.h1") + '</h1><p class="auth-lede">' + t("a.lede") + '</p></div><section class="panel" id="panel">' + view() + "</section></div></div>";
+  /* the page headline follows the step; the lede belongs to the email step only */
+  function headline() { return step === "email" ? t("a.h1") : step === "code" ? t("a.code.h1") : t("a.setup.h1"); }
+  var facts = '<ul class="facts" id="facts"><li>' + C.icon("bolt", 18) + t("a.fact.1") + "</li><li>" + C.icon("shield", 18) + t("a.fact.2") + "</li><li>" + C.icon("swap", 18) + t("a.fact.3") + "</li></ul>";
+  var raw = '<div class="auth"><div class="gate-bar">' + C.logo() + C.lang() + '</div><div class="auth-main"><div class="stack-12"><h1 id="h1">' + headline() + '</h1><p class="auth-lede" id="lede"' + (step === "email" ? "" : " hidden") + ">" + t("a.lede") + '</p></div><section class="panel" id="panel">' + view() + "</section>" + facts + "</div></div>";
 
+  /* the three facts fill the quiet lower part of the first step; they step aside when the form needs the room for feedback */
+  function showFacts() { return step === "email" && S !== "typo" && S !== "unsupported" && S !== "toomany"; }
   function runSetup() {
     var ol = $("#setup-steps"); if (!ol || S === "busy") return;
     var lis = App.$$("li", ol), i = +ol.getAttribute("data-done");
@@ -85,19 +114,37 @@
       lis[i].className = "is-now"; lis[i].querySelector(".st").innerHTML = '<span class="spin"></span>'; i++; setTimeout(next, 1000);
     })();
   }
-  function paint() { $("#panel").innerHTML = view(); bind(); var f = $("#panel input:not([disabled])"); if (f) f.focus(); }
+  function paint(keepFocus) {
+    $("#panel").innerHTML = view(); $("#h1").textContent = headline(); $("#lede").hidden = step !== "email"; $("#facts").hidden = !showFacts();
+    document.title = headline() + " | Cojam";
+    bind(); var f = $("#panel input:not([disabled])"); if (f && keepFocus !== false) { f.focus(); try { f.setSelectionRange(f.value.length, f.value.length); } catch (e) {} }
+  }
   function bind() {
     var fe = $("#f-email"), fc = $("#f-code");
-    if (fe) fe.addEventListener("submit", function (e) {
-      e.preventDefault(); email = $("#email").value.trim(); var err = emailErr(email);
-      if (err) { S = err.note ? "unsupported" : email ? "bademail" : "empty"; paint(); return; }
-      S = "sending"; paint(); setTimeout(function () { step = "code"; S = "code"; paint(); countdown(); }, 900);
-    });
+    if (fe) {
+      var em = $("#email");
+      fe.addEventListener("submit", function (e) {
+        e.preventDefault(); email = em.value.trim(); var err = emailErr(email);
+        if (err) { S = err.typo ? "typo" : err.note ? "unsupported" : email ? "bademail" : "empty"; paint(); return; }
+        S = "sending"; paint(); setTimeout(function () { step = "code"; S = "code"; paint(); countdown(); }, 900);
+      });
+      /* feedback about the old value goes away as soon as the address changes */
+      em.addEventListener("input", function () {
+        if (S === "") return; S = ""; email = em.value;
+        var fb = $("#email-fb"); if (fb) fb.innerHTML = ""; em.removeAttribute("aria-invalid"); em.closest(".field-box").classList.remove("is-error");
+      });
+      fe.addEventListener("click", function (e) { var fx = e.target.closest("[data-fix-email]"); if (!fx) return; email = fx.getAttribute("data-fix-email"); S = ""; paint(); });
+    }
     if (fc) {
       var code = $("#code");
       function submit() { S = "verifying"; paint(); setTimeout(function () { step = "setup"; S = "setup"; paint(); runSetup(); }, 900); }
-      code.addEventListener("input", function () { code.value = code.value.replace(/\D/g, "").slice(0, 6); if (code.value.length === 6) submit(); });   /* submits on its own at the last digit */
-      fc.addEventListener("submit", function (e) { e.preventDefault(); if (code.value.length < 6) { S = "wrong"; paint(); return; } submit(); });
+      code.addEventListener("input", function () {
+        code.value = code.value.replace(/\D/g, "").slice(0, 6);
+        if (S === "short" || S === "wrong") { S = "code"; var m = $("#code-msg"); m.innerHTML = ""; m.className = "field-msg"; code.closest(".field-box").classList.remove("is-error"); }
+        if (code.value.length === 6) submit();   /* submits on its own at the last digit */
+      });
+      /* an incomplete code is incomplete, not wrong */
+      fc.addEventListener("submit", function (e) { e.preventDefault(); if (code.value.length < 6) { code0 = code.value; S = "short"; paint(); return; } submit(); });
     }
     var ch = $("#change"); if (ch) ch.addEventListener("click", function () { step = "email"; S = ""; paint(); });
     var rs = $("#resend"); if (rs) rs.addEventListener("click", function () { S = "code"; paint(); countdown(); });
@@ -111,7 +158,11 @@
       s--; if (s <= 0) { clearInterval(cdT); el.hidden = true; if (rs) rs.disabled = false; } else el.textContent = t("a.code.resendin", { s: s });
     }, 1000);
   }
-  App.mount({ bare: true, docTitle: t("a.h1"), raw: raw, after: function () { bind(); if (step === "code" && S !== "expired") countdown(); if (S === "setup" || S === "returning") runSetup(); } });
+  App.mount({ bare: true, docTitle: headline(), raw: raw, after: function () {
+    $("#facts").hidden = !showFacts();
+    bind(); if (step === "code" && S !== "expired") countdown(); if (S === "setup" || S === "returning") runSetup();
+    var f = $("#panel input:not([disabled])"); if (f) f.focus({ preventScroll: true });   /* the email field is ready to type in on load */
+  } });
 })();
 </script>
 </body>
