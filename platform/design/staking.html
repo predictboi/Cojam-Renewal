@@ -78,11 +78,12 @@
     var msg = $("#amt-msg"), box = inp.closest(".field-box"), go = $("#go"); if (!go) return;
     var lastTier = null;
     function update() {
-      var p = App.parseAmount(inp.value), a = p.value || 0, err = "", fix = "", why = "s.btn.empty";
-      if (p.bad) { err = t("s.e.nan"); why = "s.btn.nan"; }
-      else if (p.decimals > 4) { var cut = Math.floor(a * 1e4) / 1e4; err = t("s.e.dec"); why = "s.btn.dec"; fix = C.btn(t("s.fix.dec", { b: F.dec(cut) }), { sm: true, attrs: 'data-fix="' + cut + '"' }); }
-      else if (!p.empty && a < M.minStake) { err = t("s.e.min"); why = "s.btn.min"; if (bal >= M.minStake) fix = C.btn(t("s.fix.min"), { sm: true, attrs: 'data-fix="100"' }); }
-      else if (a > bal) { err = t("s.e.bal", { b: F.dec(bal) }); why = "s.btn.bal"; fix = C.btn(t("s.fix.bal", { b: F.dec(bal) }), { sm: true, attrs: 'data-fix="' + bal + '"' }); }
+      /* an amount that cannot be staked: the reason is said once, in the line under the field; the button keeps its label "Stake" and is switched off */
+      var p = App.parseAmount(inp.value), a = p.value || 0, err = "", fix = "";
+      if (p.bad) { err = t("s.e.nan"); }
+      else if (p.decimals > 4) { var cut = Math.floor(a * 1e4) / 1e4; err = t("s.e.dec"); fix = C.btn(t("s.fix.dec", { b: F.dec(cut) }), { sm: true, attrs: 'data-fix="' + cut + '"' }); }
+      else if (!p.empty && a < M.minStake) { err = t("s.e.min"); if (bal >= M.minStake) fix = C.btn(t("s.fix.min"), { sm: true, attrs: 'data-fix="100"' }); }
+      else if (a > bal) { err = t("s.e.bal", { b: F.dec(bal) }); fix = C.btn(t("s.fix.bal", { b: F.dec(bal) }), { sm: true, attrs: 'data-fix="' + bal + '"' }); }
       box.classList.toggle("is-error", !!err); inp.setAttribute("aria-invalid", err ? "true" : "false");
       msg.className = "field-msg" + (err ? " is-error" : ""); /* under the field, in place: the minimum until it is met, then what the next tier adds */
       /* while the amount is in error the period buttons keep the base tier rates: no rate is promised for an amount that cannot be staked */
@@ -107,7 +108,7 @@
       var kr = $("#sum-k"); kr.hidden = !(App.isKo && shown); kr.textContent = shown ? F.krw(interest) : "";
       $("#rules").innerHTML = C.icon("lock", 18) + "<span>" + t("s.rules", { date: F.dateLong(M.ahead(period)) }) + "</span>";
       go.disabled = !valid || !!pending; go.classList.toggle("is-busy", !!pending);
-      go.innerHTML = (pending ? '<span class="spin"></span>' : "") + "<span>" + (pending ? pending : valid ? t("s.btn", { a: F.dec(a) }) : t(why)) + "</span>";
+      go.innerHTML = (pending ? '<span class="spin"></span>' : "") + "<span>" + (pending ? pending : valid ? t("s.btn", { a: F.dec(a) }) : t("s.btn.idle")) + "</span>";
       return valid && !pending ? a : 0;
     }
     refresh = update;

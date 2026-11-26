@@ -52,7 +52,7 @@
       '<span data-status>' + (c.unlocked ? C.tag(t("m.unlocked"), "sky") : C.tag(t("m.locked"), "", "lock")) + "</span></div>" +
       '<div class="stack-8"><div class="mbar' + (c.unlocked ? " is-full" : "") + '" role="img" aria-label="' + t("m.day", { x: c.day, d: s.days }) + '"><i style="width:' + c.pct.toFixed(1) + '%"></i></div>' +
       '<div class="mbar-meta"><span>' + t("m.started", { date: F.date(s.start) }) + "</span><b>" + t("m.day", { x: c.day, d: s.days }) + "</b><span>" + t("m.unlocks", { date: F.date(c.unlock) }) + "</span></div></div>" +
-      C.rows([[t("m.interest"), '<span data-tick="' + c.interest + "|" + (c.unlocked ? 0 : c.per) + "|" + c.cap + '">' + F.dec(c.interest, 6) + "</span> CT" + (App.offline ? "<small>" + t("m.paused") + "</small>" : ""), true]]) +
+      C.rows([[t("m.interest"), '<span data-tick="' + c.interest + "|" + (c.unlocked ? 0 : c.per) + "|" + c.cap + '">' + fix4(c.interest) + "</span> CT" + (App.offline ? "<small>" + t("m.paused") + "</small>" : ""), true]]) +
       actions + "</article>";
   }
   function body() {
@@ -60,13 +60,13 @@
     if (S === "empty") return sw() + C.empty({ icon: "lock", title: t("m.empty.h"), body: t("m.empty.b"), action: C.btn(t("m.empty.btn"), { kind: "primary", href: "staking.html" }) });
     if (S === "loading") return sw() + '<section class="msec" aria-busy="true">' + C.skel("90px") + C.skel("170px", "44px") + C.skel("70%", "22px") + "</section>" + [1, 2].map(function () { return '<article class="msec" aria-busy="true">' + C.skel("120px", "28px") + C.skel("100%", "14px") + C.skel("100%") + C.skel("100%", "44px") + "</article>"; }).join("");
     return sw() +
-      /* the total leads; under it the two interest figures side by side, both to six places so they read as one pair (the first one ticks) */
+      /* the total leads; under it the two interest figures side by side, both to four places, as on every other screen, so they read as one pair (the first one ticks) */
       '<section class="msec" id="total"><div class="mhero"><h2 class="lbl">' + t("m.staked") + '</h2><p class="fig">' + F.dec(total) + "<small>CT</small></p></div>" +
-      '<div class="stats mstats"><div class="stat"><b><span data-tick="' + sofar + "|" + perAll + '">' + F.dec(sofar, 6) + "</span></b><span>" + t("m.sofar") + ' (CT)</span></div><div class="stat"><b>' + fix6(claimable) + "</b><span>" + t("m.claimable") + " (CT)</span></div></div></section>" +
+      '<div class="stats mstats"><div class="stat"><b><span data-tick="' + sofar + "|" + perAll + '">' + fix4(sofar) + "</span></b><span>" + t("m.sofar") + ' (CT)</span></div><div class="stat"><b>' + fix4(claimable) + "</b><span>" + t("m.claimable") + " (CT)</span></div></div></section>" +
       stakes.map(card).join("") +
       C.help(t("m.closed.q", { n: M.stakesClosed.length }), M.stakesClosed.map(function (s) { return '<div class="mclosed"><div class="row-between"><span>' + F.ct(s.amount) + ", " + t("m.card.period", { d: s.days, r: s.rate }) + "</span>" + C.tag(t("m.closed"), "line") + '</div><p class="tiny">' + t("m.paidout", { a: F.dec(s.paid, 2) }) + "</p></div>"; }).join(""));
   }
-  function fix6(n) { return Number(n).toLocaleString("en-US", { minimumFractionDigits: 6, maximumFractionDigits: 6 }); }
+  function fix4(n) { return Number(n).toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 }); }
   function find(id) { return stakes.filter(function (s) { return s.id === id; })[0]; }
   App.mount({ tab: "stake", docTitle: t("s.title"), head: head(), body: body(), badges: { home: "dot", results: 2, stake: "dot" }, after: function () {
     document.addEventListener("click", function (e) {

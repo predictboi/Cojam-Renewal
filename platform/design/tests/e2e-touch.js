@@ -1,6 +1,6 @@
 // Touch walk through of the primary task with assertions (login, five cards, undo, day done, ranking, a 500 CT stake, copy the wallet address).
 // Serve first: python3 -m http.server 8820 -d platform/design (another port: PORT=8816).
-// Run: node platform/design/tests/e2e-touch.js <en|ko|ja> <width> <height> [captureDir]   Captures are named v6-<screen>-<lang>-<width>.png
+// Run: node platform/design/tests/e2e-touch.js <en|ko|ja> <width> <height> [captureDir]   Captures are named v7-<screen>-<lang>-<width>.png
 const {chromium}=require('playwright');
 const [lang,W,H,OUT]=[process.argv[2]||'en',+process.argv[3]||390,+process.argv[4]||844,process.argv[5]];
 const B='http://localhost:'+(process.env.PORT||8820)+'/';
@@ -11,7 +11,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const ctx=await b.newContext({viewport:{width:W,height:H},deviceScaleFactor:2,isMobile:true,hasTouch:true,permissions:['clipboard-read','clipboard-write']});
   const pg=await ctx.newPage();const errs=[];pg.on('pageerror',e=>errs.push(e.message));
   const cdp=await ctx.newCDPSession(pg);
-  const shot=async n=>{ if(OUT) await pg.screenshot({path:`${OUT}/v6-${n}-${lang}-${W}.png`}); };
+  const shot=async n=>{ if(OUT) await pg.screenshot({path:`${OUT}/v7-${n}-${lang}-${W}.png`}); };
   const touch=(type,x,y)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:type==='touchEnd'?[]:[{x,y}]});
   const stamps=()=>pg.evaluate(()=>{const c=document.querySelector('.qcard[data-pos="0"]');if(!c)return null;const s=d=>+getComputedStyle(c.querySelector('.qstamp--'+d)).opacity;const g=q=>getComputedStyle(c.querySelector(q)).backgroundColor;const h=c.querySelector('.choice.is-hot');return {l:s('l'),r:s('r'),hot:c.querySelectorAll('.choice.is-hot').length,stampL:g('.qstamp--l'),stampR:g('.qstamp--r'),tint:g('.qtint'),tintOn:+getComputedStyle(c.querySelector('.qtint')).opacity,hotBg:h?getComputedStyle(h).backgroundColor:''};});
   async function drag(x0,y0,dx,{steps=12,stepMs=16,hold=0,release=true,shotName}={}){
@@ -27,7 +27,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const cnt=()=>pg.evaluate(()=>+document.querySelector('#cnt').textContent);
   const cardBox=()=>pg.evaluate(()=>{const r=document.querySelector('.qcard[data-pos="0"]').getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};});
   const css=(sel,prop)=>pg.evaluate(([s,p])=>{const e=document.querySelector(s);return e?getComputedStyle(e)[p]:null;},[sel,prop]);
-  const CARDS=`[...document.querySelectorAll('#main .pg *')].filter(e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();const edged=(parseFloat(s.borderTopWidth)>=1&&parseFloat(s.borderLeftWidth)>=1&&parseFloat(s.borderBottomWidth)>=1)||/inset/.test(s.boxShadow)&&/ 0px 0px (1\\.5|2)px/.test(s.boxShadow);return edged&&r.width>120&&r.height>64&&!e.closest('.btn, button, a, input, .seg, .field-box, .tag, .period, .qr, .mtabs, .day5, .mbar, .pod, .ratetable');}).length`;
+  const CARDS=`[...document.querySelectorAll('#main .pg *')].filter(e=>{const s=getComputedStyle(e),r=e.getBoundingClientRect();const edged=(parseFloat(s.borderTopWidth)>=1&&parseFloat(s.borderLeftWidth)>=1&&parseFloat(s.borderBottomWidth)>=1)||/inset/.test(s.boxShadow)&&/ 0px 0px (1\\.5|2)px/.test(s.boxShadow);return edged&&r.width>120&&r.height>64&&!e.closest('.btn, button, a, input, .seg, .field-box, .tag, .period, .qr, .mtabs, .day5, .mbar, .pod, .ratetable, .note');}).length`;
   const cards=()=>pg.evaluate(CARDS);
   const LIME='rgb(214, 255, 61)', CORAL='rgb(255, 122, 102)', SKY='rgb(77, 176, 255)', CORAL_HOT='rgb(255, 103, 83)', SKY_HOT='rgb(63, 166, 250)';
   const PROVIDERS=['Gmail','Naver','Kakao','Daum','Hanmail','iCloud','Outlook','Hotmail','Yahoo! JAPAN'];
@@ -270,17 +270,19 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   ok('staking: the form starts 16 to 24px under the tabs', sk.gap>=16&&sk.gap<=24, sk.gap);
   ok('staking: page bottom padding is the bar height plus its 16px fade', Math.abs(sk.pad-(sk.tabH+sk.pinH+16))<1.5 && sk.fade==='16px' && sk.border==='0px', sk.pad+' = '+sk.tabH+' + '+sk.pinH+' + 16');
   ok('staking: the summary is one figure (interest for the period) with no rows: no "Annual rate", no "Unlocks on" (the date is said once, in the lock line)', sk.rows===0&&sk.sumL===sk.sumWant&&/^[\d.,]+ ?CT$/.test(sk.sumV)&&parseFloat(sk.sumFs)>=28&&!sk.rowTxt.includes(sk.apr)&&!sk.rowTxt.includes(sk.unlock), sk.sumL+': '+sk.sumV+' '+sk.sumFs);
-  ok('staking: no dead band above the pinned action (the summary takes the spare height)', sk.dead<=40, sk.dead);
+  const sg=await pg.evaluate(()=>{const f=document.querySelector('#form').getBoundingClientRect(),e=document.querySelector('.stk-sum'),r=e.getBoundingClientRect(),cs=getComputedStyle(e),l=document.querySelector('#rules').getBoundingClientRect();return {gap:Math.round(r.top-f.bottom),rule:cs.borderTopWidth,pad:cs.paddingTop,grow:cs.flexGrow,slack:Math.round(r.bottom-l.bottom)};});
+  ok('staking: the summary is an ordinary section (2px ink rule, the standard gap above and inside, nothing stretches)', sg.gap>=16&&sg.gap<=24&&sg.rule==='2px'&&sg.pad==='20px'&&sg.grow==='0'&&sg.slack<=1, JSON.stringify(sg));
   ok('staking: the rules line is short ("Locked until {date}. No early exit."), at most 2 lines and never under the action bar', sk.rules===sk.rulesWant&&sk.rulesLines<=2&&sk.rulesBottom<=sk.pinTop, sk.rules+' | '+sk.rulesLines+' lines, '+Math.round(sk.rulesBottom)+' <= '+Math.round(sk.pinTop));
   ok('staking: the form is a flat section, not a bordered card', sk.boxes===0, sk.boxes);
   ok('staking: the caption under the amount states the tier cue (1,000 CT earns +1%)', /1,000 CT/.test(sk.cue)&&/\+1%/.test(sk.cue), sk.cue.replace(/\s+/g,' '));
   await shot('s1-staking');
   await pg.fill('#amt','50'); await pg.waitForTimeout(150);
   const l50=await pg.locator('#go').innerText(); const i50=await pg.locator('#sum-v').innerText();
-  ok('staking: invalid amount gives the reason on the button and no interest', l50!==sk.label && !/\d\.\d+ CT/.test(i50), l50);
+  const idle=await pg.evaluate(()=>App.t('s.btn.idle')), m50=(await pg.locator('#amt-msg').innerText()).trim();
+  ok('staking: invalid amount: the button keeps its label "Stake" (disabled), the reason is in the error line only, no interest', l50.trim()===idle && (lang!=='en'||idle==='Stake') && await pg.locator('#go').isDisabled() && m50.includes(await pg.evaluate(()=>App.t('s.e.min'))) && !/\d\.\d+ CT/.test(i50), l50.trim()+' | '+m50.replace(/\s+/g,' '));
   await pg.fill('#amt','1.23456'); await pg.waitForTimeout(150);
-  const ldec=(await pg.locator('#go').innerText()).trim(), wantDec=await pg.evaluate(()=>App.t('s.btn.dec'));
-  ok('staking: excess decimals: the button reads "Up to 4 decimals"', ldec===wantDec && (lang!=='en'||ldec==='Up to 4 decimals'), ldec);
+  const ldec=(await pg.locator('#go').innerText()).trim(), mdec=(await pg.locator('#amt-msg').innerText()).trim(), wantDec=await pg.evaluate(()=>App.t('s.e.dec'));
+  ok('staking: excess decimals: the error line says so, the button still reads "Stake"', ldec===idle && mdec.includes(wantDec), ldec+' | '+mdec.replace(/\s+/g,' '));
   await pg.fill('#amt','5000'); await pg.waitForTimeout(150);
   const er=await pg.evaluate(()=>[...document.querySelectorAll('#period [data-rate]')].map(e=>e.textContent).join());
   ok('staking: while the amount is in error the period buttons keep the base tier rates', er==='8%,12%,18%,25%' && await pg.locator('.field-box.is-error').count()===1, er);
@@ -391,7 +393,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   await p2.goto(B+'ranking.html'); await p2.waitForTimeout(400); await p2.goto(B+'home-cards.html'); await p2.waitForTimeout(900);
   const lv=await p2.evaluate(()=>({toast:(document.querySelector('.toast')||{}).innerText||'',want:App.t('h.left.saved'),cnt:+document.querySelector('#cnt').textContent,front:+document.querySelector('.qcard[data-pos="0"]').dataset.q,done:document.querySelectorAll('#day5 .is-done').length,undo:!!document.querySelector('#undo')}));
   ok('leaving home inside the undo window: the pick is sent at once and home says "Pick saved" on return, state consistent', lv.toast.trim()===lv.want&&lv.cnt===1&&lv.front===2&&lv.done===1&&!lv.undo, JSON.stringify(lv));
-  if(OUT) await p2.screenshot({path:`${OUT}/v6-h1-pick-saved-on-return-${lang}-${W}.png`});
+  if(OUT) await p2.screenshot({path:`${OUT}/v7-h1-pick-saved-on-return-${lang}-${W}.png`});
   // "Finish now": four picks, then the fifth, then the button ends the wait
   for(let i=0;i<4;i++){ await p2.waitForTimeout(350); await p2.locator('.qcard[data-pos="0"] .choice[data-dir="r"]').tap(); }
   await p2.waitForTimeout(500); const f0=Date.now(); await p2.locator('#finish').tap(); await p2.waitForURL(/done\.html/,{timeout:5000}).catch(()=>{});

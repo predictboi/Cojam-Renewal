@@ -27,19 +27,17 @@
   function body() {
     if (S === "error") return C.note("error", t("dp.err"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" }));
     var qr = S === "loading" ? '<div class="qr" aria-busy="true">' + C.skel("100%", "auto") + "</div>" : C.qr(a, t("dp.qr"));
-    /* the address block is the wallet's: label, two rows of five groups, the copy button, then text links. Here copying is the screen's one primary action. */
+    /* the address block is the wallet's: label, two rows of five groups, the copy button, then the watch line. Here copying is the screen's one primary action. */
     return '<p class="lead">' + t("dp.lead") + '</p><section class="msec dp-qr">' + qr + "</section>" +
       '<section class="msec maddr" aria-labelledby="addr-h"><h2 class="lbl" id="addr-h">' + t("w.addr") + "</h2>" +
       (S === "loading" ? C.skel("100%", "50px") : '<p class="addr-v" id="addr" translate="no">' + F.groups(a) + "</p>") +
       C.btn(t("w.copy"), { kind: "primary", block: true, icon: "copy", id: "copy-addr", attrs: 'data-copy="' + a + '" data-done="' + App.esc(t("w.copy.done")) + '"', disabled: S === "loading" }) +
-      '<div class="maddr-links"><p class="watch" id="watch" role="status">' + (App.offline ? C.icon("offline", 16) + "<span>" + t("dp.offline") + "</span>" : '<span class="live-dot"></span><span>' + t("dp.watch") + "</span>") + "</p>" +
-      '<button type="button" class="linkish" id="share">' + C.icon("share", 16) + t("dp.share") + "</button></div></section>" +
+      '<div class="maddr-links"><p class="watch" id="watch" role="status">' + (App.offline ? C.icon("offline", 16) + "<span>" + t("dp.offline") + "</span>" : '<span class="live-dot"></span><span>' + t("dp.watch") + "</span>") + "</p></div></section>" +
       '<section class="msec">' + C.rows([[t("dp.net"), t("dp.net.v")], [t("dp.token"), t("dp.token.v")]]) +
       '<div class="dp-token"><p class="addr-v" translate="no">' + F.groups(M.token) + '</p><button type="button" class="linkish" data-copy="' + M.token + '" data-toast="' + App.esc(t("w.token.copied")) + '" aria-label="' + App.esc(t("w.token.copy")) + '">' + C.icon("copy", 16) + "<span>" + t("common.copy") + "</span></button></div>" +
       '<div class="note note-warn">' + C.icon("warn", 18) + '<div class="note-body"><ul><li>' + t("dp.w1") + "</li><li>" + t("dp.w2") + ' <a href="https://cojam.app/migrate/" target="_blank" rel="noopener">' + t("g.swap.btn") + "</a></li><li>" + t("dp.w3") + "</li></ul></div></div></section>";
   }
   App.mount({ tab: "wallet", back: "wallet.html", title: t("dp.title"), body: body(), pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
-    var sh = $("#share"); if (sh) sh.addEventListener("click", function () { if (navigator.share) navigator.share({ text: a }).catch(function () {}); else { try { navigator.clipboard.writeText(a); } catch (e) {} App.toast(t("w.copied", { a: "<b>" + F.short(a) + "</b>" })); } });
     if (S === "arrived") setTimeout(function () {
       $("#watch").innerHTML = C.tag(t("dp.arrived", { a: "250" }), "up", "check"); App.toast(t("dp.toast", { a: "250" }));
     }, 1400);

@@ -337,7 +337,7 @@
       if (el._tk) return; el._tk = true;
       var p = el.getAttribute("data-tick").split("|"), v = +p[0], rate = +p[1], t0 = Date.now(), cap = p[2] ? +p[2] : Infinity;
       if (App.offline) return;
-      timers.push(setInterval(function () { el.textContent = F.dec(Math.min(cap, v + rate * (Date.now() - t0) / 1000), 6); }, reduce ? 10000 : 1000));
+      timers.push(setInterval(function () { el.textContent = Number(Math.min(cap, v + rate * (Date.now() - t0) / 1000)).toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 }); }, reduce ? 10000 : 1000));
     });
   };
   document.addEventListener("visibilitychange", function () { document.documentElement.classList.toggle("is-hidden", document.hidden); });
