@@ -50,7 +50,7 @@
   function pickRow(p, i) {
     var o = outcome[i], q = App.q(p[0]);
     var sub = o === "pend" ? t("d.hitpending", { time: "22:10" }) : o === "miss" ? t("d.miss") : "";
-    return '<li class="pick"><span class="pick-q">' + App.esc(q.title) + '</span><span class="pick-c">' + App.esc(q[p[1]]) + (sub ? "<small>" + sub + "</small>" : "") + "</span></li>";
+    return '<li class="pick"><span class="pick-q">' + App.esc(q.title) + '</span><span class="pick-c">' + C.pick(p[1], App.esc(q[p[1]])) + (sub ? "<small>" + sub + "</small>" : "") + "</span></li>";
   }
   function body() {
     var secs = S === "zero" ? 0 : M.untilNextSet();

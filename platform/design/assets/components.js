@@ -134,6 +134,8 @@
     return '<div class="day5' + (o.band ? " day5--band" : "") + (o.size ? " day5--" + o.size : "") + (o.ink ? " day5--ink" : "") + (o.cls ? " " + o.cls : "") + '" role="img" aria-label="' + esc(o.label || t("h.prog.sr", { n: n })) + '"' + (o.id ? ' id="' + o.id + '"' : "") + ">" +
       states.map(function (s, i) { return '<i style="--i:' + i + '"' + (s ? ' class="is-' + s + '"' : "") + ">" + (o.size === "lg" ? ic("check", 24) : "") + "</i>"; }).join("") + "</div>";
   };
+  /* a made pick, wherever it is shown, carries the colour of its answer (coral left, sky right) as a dot */
+  C.pick = function (dir, text) { return '<span class="pk pk--' + dir + '"><i aria-hidden="true"></i>' + text + "</span>"; };
   C.tag = function (text, kind, icon) { return '<span class="tag' + (kind ? " tag-" + kind : "") + '">' + (icon ? ic(icon, 14) : "") + text + "</span>"; };
   C.rows = function (rows) {
     return '<dl class="rows">' + rows.filter(Boolean).map(function (r) { return "<div" + (r[2] ? ' class="is-em"' : "") + "><dt>" + r[0] + "</dt><dd>" + r[1] + "</dd></div>"; }).join("") + "</dl>";
@@ -545,7 +547,7 @@
     function paint(card, k, armed) {
       var dir = k > 0 ? "r" : k < 0 ? "l" : "", a = Math.abs(k);
       $$(".choice", card).forEach(function (b) { b.classList.toggle("is-hot", !!armed && b.getAttribute("data-dir") === dir); });
-      $(".qtint", card).style.opacity = armed ? 0.2 : 0;
+      var tint = $(".qtint", card); if (dir) tint.setAttribute("data-dir", dir); tint.style.opacity = armed ? 0.2 : 0;
       var hint = armed ? 1 : Math.min(0.4, a * 1.6);
       var sl = $(".qstamp--l", card), sr = $(".qstamp--r", card);
       sl.style.opacity = dir === "l" ? hint : 0; sr.style.opacity = dir === "r" ? hint : 0;

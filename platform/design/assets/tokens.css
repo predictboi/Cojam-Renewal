@@ -21,8 +21,12 @@
   --volt: #D6FF3D;
   --volt-hover: #CBF52A;
   --on-volt: #0B1530;
-  /* the two answers of a prediction: left (no, down, under) is coral, right (yes, up, over) is volt; ink text on both */
-  --pick-l: #FF6B57; --pick-l-hot: #FF5540; --pick-r: var(--volt); --pick-r-hot: var(--volt-hover); --on-pick: #0B1530;
+  /* The two answers of a prediction: left (no, down, under) is coral, right (yes, up, over) is sky. Neither is lime: lime keeps its four jobs.
+     The pair is tuned to the same visual weight on the ink card: equal OKLCH lightness (coral 0.731, sky 0.733) and close chroma (0.166, 0.147),
+     so neither answer looks like the recommended one. Ink text on both: 7.07:1 on coral, 7.70:1 on sky; against the ink ground the fills are 7.07 and 7.70.
+     The hot shades (armed drag, hover, press) step down together to lightness 0.70: ink text 6.29 and 6.91.
+     Used on the buttons, the drag stamps, the drag tint and the dot beside every made pick (pick line, list view, day done, results). */
+  --pick-l: #FF7A66; --pick-l-hot: #FF6753; --pick-r: #4DB0FF; --pick-r-hot: #3FA6FA; --on-pick: #0B1530;
   --sky: #97DBFF;
   --sky-tint: #E3F5FF;
   --snow: #FDFDFF;

@@ -67,7 +67,7 @@
 
     /* picks still inside their undo window, oldest first. Undo always acts on the last one. */
     var held = [], shown = null, fade;
-    function label(p) { return t("h.sync", { n: p.n, choice: App.esc(App.q(p.id)[p.dir]) }); }
+    function label(p) { return t("h.sync", { n: p.n, choice: C.pick(p.dir, App.esc(App.q(p.id)[p.dir])) }); }
     function seg(n, cls) { day5.children[n - 1].className = cls; }
     /* at rest the bar is not an empty band: it says how to pick (touch or keys), then how many are left */
     var canHover = matchMedia("(hover: hover) and (pointer: fine)").matches;

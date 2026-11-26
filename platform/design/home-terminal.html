@@ -52,7 +52,7 @@
     if (p && p.sync !== "fail") {
       var undo = p.sync === "held" ? '<button type="button" class="undo" data-undo="' + n + '" aria-label="' + App.esc(t("h.undo.aria", { n: n, choice: q[p.dir] })) + '"><svg class="undo-ring" viewBox="0 0 22 22" aria-hidden="true"><circle class="trk" cx="11" cy="11" r="8"/><circle class="run" cx="11" cy="11" r="8" style="animation-duration:' + UNDO_MS + "ms;animation-delay:-" + (Date.now() - p.t0) + 'ms"/></svg><span>' + t("h.undo") + "</span></button>" : "";
       return '<li class="trow is-done">' + num + '<div><p class="trow-q">' + App.esc(q.title) + '</p><div class="trow-foot">' + (undo ? "" : tag) + '<span class="trow-state">' +
-        (p.sync === "saving" ? '<span class="spin"></span><span class="sr-only">' + t("common.saving") + "</span>" : C.icon("check", 16)) + t("h.t.chose", { choice: App.esc(q[p.dir]) }) + "</span>" + undo + "</div></div>" + C.thumb(q) + "</li>";
+        (p.sync === "saving" ? '<span class="spin"></span><span class="sr-only">' + t("common.saving") + "</span>" : C.icon("check", 16)) + t("h.t.chose", { choice: C.pick(p.dir, App.esc(q[p.dir])) }) + "</span>" + undo + "</div></div>" + C.thumb(q) + "</li>";
     }
     var failed = p && p.sync === "fail";
     if (n === current) {

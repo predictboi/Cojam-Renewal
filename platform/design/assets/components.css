@@ -236,7 +236,7 @@ html { scrollbar-color: var(--line-strong) transparent; scrollbar-width: thin; }
 .qimg img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; pointer-events: none; }
 .qimg--fallback { display: grid; justify-items: center; align-content: start; padding-top: 20%; color: var(--ink); }
 .qimg-tile { display: grid; place-items: center; width: 132px; height: 132px; border: var(--edge); border-radius: 50%; background: var(--snow); box-shadow: 6px 6px 0 var(--ink); }
-.qtint { position: absolute; inset: 0; z-index: 1; background: var(--volt); opacity: 0; pointer-events: none; transition: opacity var(--dur-press) linear; }
+.qtint { position: absolute; inset: 0; z-index: 1; background: var(--pick-r); opacity: 0; pointer-events: none; transition: opacity var(--dur-press) linear; }
 .qcard-top { position: relative; z-index: 3; display: flex; align-items: center; justify-content: space-between; gap: var(--s-8); padding: var(--s-12); }
 /* one chip on every picture: solid snow with an ink edge, so it reads on any ground */
 .qchip { display: inline-flex; align-items: center; gap: var(--s-4); padding: var(--s-4) var(--s-10); border-radius: var(--r-pill); background: var(--snow); color: var(--ink); border: var(--edge-thin); font-size: var(--fs-13); font-weight: var(--fw-heavy); line-height: 1.35; white-space: nowrap; }
@@ -259,7 +259,11 @@ html { scrollbar-color: var(--line-strong) transparent; scrollbar-width: thin; }
 .choice { display: inline-flex; align-items: center; justify-content: center; gap: var(--s-6); min-height: 54px; padding: 0 var(--s-10); border: var(--edge); border-radius: var(--r-pill); background: var(--surface); color: var(--ink); font-size: var(--fs-16); font-weight: var(--fw-heavy); line-height: 1.15; box-shadow: 0 3px 0 var(--ink); margin-bottom: 3px;
   transition: transform var(--dur-release) var(--ease-spring), background-color var(--dur-fast) var(--ease), box-shadow var(--dur-release) var(--ease-out); }
 @media (hover: hover) { .choice[data-dir="l"]:not([disabled]):hover { background: var(--pick-l-hot); } .choice[data-dir="r"]:not([disabled]):hover { background: var(--pick-r-hot); } .tb a:hover { color: var(--ink); } .rowlink:hover b, .rowlink:hover > span:first-child { text-decoration: underline; text-underline-offset: 3px; } .hub-states a:hover { background: var(--line); } .field-max:hover { background: var(--inset); } .period button:not([disabled], [aria-pressed="true"]):hover { background: var(--inset); } }
-/* each answer keeps its own colour everywhere: the button, the drag stamp and the pick line */
+/* each answer keeps its own colour everywhere: the button, the drag stamp, the drag tint and the dot beside a made pick. Never lime. */
+.qtint[data-dir="l"] { background: var(--pick-l); }
+.pk { display: inline-flex; align-items: center; gap: var(--s-6); white-space: nowrap; }
+.pk > i { flex: none; width: 10px; height: 10px; border-radius: 50%; background: var(--pick-r); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.pk--l > i { background: var(--pick-l); }
 .choice[data-dir="l"]:not([disabled]) { background: var(--pick-l); color: var(--on-pick); }
 .choice[data-dir="r"]:not([disabled]) { background: var(--pick-r); color: var(--on-pick); }
 .choice.is-hot { transform: scale(1.04); }
@@ -269,7 +273,7 @@ html { scrollbar-color: var(--line-strong) transparent; scrollbar-width: thin; }
 .choice[disabled] { background: var(--inset); border-color: var(--line-strong); color: var(--ink-2); box-shadow: none; cursor: not-allowed; }
 .qcard .choice:focus-visible { outline-offset: 3px; }
 /* the stamp only hints below the commit threshold (JS caps it at 0.4); armed, it is solid and snaps up a size */
-.qstamp { position: absolute; top: 60px; z-index: 4; padding: var(--s-8) var(--s-12); border: var(--edge); border-radius: var(--r-control); background: var(--volt); color: var(--on-volt); font-family: var(--font-display); font-weight: var(--fw-black); font-stretch: var(--wide); font-size: var(--fs-24); line-height: 1; text-transform: uppercase; opacity: 0; pointer-events: none; box-shadow: 4px 4px 0 var(--ink); max-width: 70%; --tilt: 0deg; transform: rotate(var(--tilt)) scale(0.92); transition: transform var(--dur-fast) var(--ease-spring); }
+.qstamp { position: absolute; top: 60px; z-index: 4; padding: var(--s-8) var(--s-12); border: var(--edge); border-radius: var(--r-control); background: var(--pick-r); color: var(--on-pick); font-family: var(--font-display); font-weight: var(--fw-black); font-stretch: var(--wide); font-size: var(--fs-24); line-height: 1; text-transform: uppercase; opacity: 0; pointer-events: none; box-shadow: 4px 4px 0 var(--ink); max-width: 70%; --tilt: 0deg; transform: rotate(var(--tilt)) scale(0.92); transition: transform var(--dur-fast) var(--ease-spring); }
 .qstamp--l { right: var(--s-16); --tilt: 8deg; background: var(--pick-l); color: var(--on-pick); }
 .qstamp--r { left: var(--s-16); --tilt: -8deg; }
 .qstamp.is-armed { transform: rotate(var(--tilt)) scale(1.06); }

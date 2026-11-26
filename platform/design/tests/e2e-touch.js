@@ -13,7 +13,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const cdp=await ctx.newCDPSession(pg);
   const shot=async n=>{ if(OUT) await pg.screenshot({path:`${OUT}/v4-${n}-${lang}-${W}.png`}); };
   const touch=(type,x,y)=>cdp.send('Input.dispatchTouchEvent',{type,touchPoints:type==='touchEnd'?[]:[{x,y}]});
-  const stamps=()=>pg.evaluate(()=>{const c=document.querySelector('.qcard[data-pos="0"]');if(!c)return null;const s=d=>+getComputedStyle(c.querySelector('.qstamp--'+d)).opacity;return {l:s('l'),r:s('r'),hot:c.querySelectorAll('.choice.is-hot').length};});
+  const stamps=()=>pg.evaluate(()=>{const c=document.querySelector('.qcard[data-pos="0"]');if(!c)return null;const s=d=>+getComputedStyle(c.querySelector('.qstamp--'+d)).opacity;const g=q=>getComputedStyle(c.querySelector(q)).backgroundColor;const h=c.querySelector('.choice.is-hot');return {l:s('l'),r:s('r'),hot:c.querySelectorAll('.choice.is-hot').length,stampL:g('.qstamp--l'),stampR:g('.qstamp--r'),tint:g('.qtint'),tintOn:+getComputedStyle(c.querySelector('.qtint')).opacity,hotBg:h?getComputedStyle(h).backgroundColor:''};});
   async function drag(x0,y0,dx,{steps=12,stepMs=16,hold=0,release=true,shotName}={}){
     await touch('touchStart',x0,y0);
     for(let i=1;i<=steps;i++){ await touch('touchMove',x0+dx*i/steps,y0); await sleep(stepMs); }
@@ -27,6 +27,7 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   const cnt=()=>pg.evaluate(()=>+document.querySelector('#cnt').textContent);
   const cardBox=()=>pg.evaluate(()=>{const r=document.querySelector('.qcard[data-pos="0"]').getBoundingClientRect();return {x:r.x,y:r.y,w:r.width,h:r.height};});
   const css=(sel,prop)=>pg.evaluate(([s,p])=>{const e=document.querySelector(s);return e?getComputedStyle(e)[p]:null;},[sel,prop]);
+  const LIME='rgb(214, 255, 61)', CORAL='rgb(255, 122, 102)', SKY='rgb(77, 176, 255)', CORAL_HOT='rgb(255, 103, 83)', SKY_HOT='rgb(63, 166, 250)';
   const PROVIDERS=['Gmail','Naver','Kakao','Daum','Hanmail','iCloud','Outlook','Hotmail','Yahoo! JAPAN'];
 
   // ---------- 1. login
@@ -83,6 +84,8 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   ok('H1: deck focused on load', await pg.evaluate(()=>document.activeElement&&document.activeElement.id==='deck'));
   const pair=await pg.evaluate(()=>['l','r'].map(d=>{const e=document.querySelector('.qcard[data-pos="0"] .choice[data-dir="'+d+'"]'),s=getComputedStyle(e),r=e.getBoundingClientRect();return [Math.round(r.width),Math.round(r.height),s.borderTopWidth,s.borderTopColor,s.boxShadow,s.fontSize,s.fontWeight,s.color].join('|');}));
   ok('H1: the two answers have the same size, border, shadow and type', pair[0]===pair[1], pair[0]);
+  const cols=await pg.evaluate(()=>{const c=document.querySelector('.qcard[data-pos="0"]');const g=q=>getComputedStyle(c.querySelector(q)).backgroundColor;const lime='rgb(214, 255, 61)';return {l:g('.choice[data-dir="l"]'),r:g('.choice[data-dir="r"]'),limeOnHome:[...document.querySelectorAll('#main *')].filter(e=>{const s=getComputedStyle(e);return s.backgroundColor===lime||s.color===lime||s.borderTopColor===lime;}).length};});
+  ok('H1: left answer coral, right answer sky; nothing on the home screen body is lime', cols.l===CORAL && cols.r===SKY && cols.limeOnHome===0, cols.l+' / '+cols.r+' / lime elements: '+cols.limeOnHome);
   const bar0=await pg.evaluate(()=>{const b=document.querySelector('#pickbar');return {txt:b.innerText.trim(),h:b.getBoundingClientRect().height,bottom:b.getBoundingClientRect().bottom,tab:document.querySelector('.tb').getBoundingClientRect().top};});
   ok('H1: the bar under the deck is used at rest (how to pick)', bar0.txt.length>8 && bar0.bottom<=bar0.tab, bar0.txt);
   const scrim=await pg.evaluate(()=>{const c=document.querySelector('.qcard[data-pos="0"]'),body=c.querySelector('.qcard-body'),h2=c.querySelector('h2');const off=h2.getBoundingClientRect().top-body.getBoundingClientRect().top;return {off,bg:getComputedStyle(body).backgroundImage};});
@@ -106,16 +109,19 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
   await touch('touchStart',cx,cy); for(let i=1;i<=12;i++){ await touch('touchMove',cx-c.w*0.42*i/12,cy); await sleep(16); } await sleep(250);
   await shot('h1-drag-armed-left'); st=await stamps();
   ok('drag 42% left: left stamp solid and one button lit', st.l===1 && st.r===0 && st.hot===1, JSON.stringify(st));
+  ok('armed left: stamp, tint and lit button are coral', st.stampL===CORAL && st.tint===CORAL && st.tintOn>0.1 && st.hotBg===CORAL_HOT, st.stampL+' '+st.tint+' '+st.hotBg);
   for(let i=11;i>=0;i--){ await touch('touchMove',cx-c.w*0.42*i/12,cy); await sleep(16); } await touch('touchEnd'); await sleep(500);
   ok('drag back to the centre: nothing picked', await cnt()===0 && await front()===1);
   // armed to the right: 42%
   st=await drag(cx,cy,c.w*0.42,{hold:250,shotName:'h1-drag-armed-right',release:false});
   ok('drag 42%: stamp solid and button lit', st.r===1 && st.hot===1, JSON.stringify(st));
+  ok('armed right: stamp, tint and lit button are sky, not lime', st.stampR===SKY && st.tint===SKY && st.tintOn>0.1 && st.hotBg===SKY_HOT, st.stampR+' '+st.tint+' '+st.hotBg);
   await touch('touchEnd'); await sleep(450);
   ok('drag 42%: release commits question 1', await cnt()===1 && await front()===2);
   ok('undo: button shown, at least 44px tall', await pg.evaluate(()=>{const u=document.querySelector('#undo');return !!u&&u.getBoundingClientRect().height>=44;}));
   ok('undo: the key hint is hidden on a touch device', await pg.evaluate(()=>getComputedStyle(document.querySelector('#undo kbd')).display==='none'));
   ok('undo: next card is already in front (no waiting)', await front()===2);
+  ok('pick line: the made pick carries the dot of its answer colour (sky for the right answer)', await pg.evaluate(()=>{const d=document.querySelector('#pickbar .pk > i');return d?getComputedStyle(d).backgroundColor:'';})===SKY);
   await shot('h1-after-throw-undo');
   await pg.locator('#undo').tap(); await sleep(200); await shot('h1-undo-flying-back'); await sleep(500);
   ok('undo: card 1 back in front, counter 0, segment empty', await front()===1 && await cnt()===0 && await pg.evaluate(()=>document.querySelector('#day5').children[0].className===''));
@@ -185,12 +191,12 @@ const sleep=ms=>new Promise(r=>setTimeout(r,ms));
     const limeEls=[...document.querySelectorAll('.app *')].filter(e=>{const r=e.getBoundingClientRect();return r.width>1&&r.height>1&&getComputedStyle(e).backgroundColor===lime&&!e.closest('.tb');}).map(e=>e.tagName==='I'?'day5':(e.className||e.tagName).toString().split(' ')[0]);
     const row=document.querySelector('.clock-row').getBoundingClientRect(),lab=document.querySelector('.clock-row .card-h').getBoundingClientRect(),tm=document.querySelector('#clock').getBoundingClientRect();
     return {badge:g('.done-badge').backgroundColor,tick:g('.done-badge').color,chip:g('.reward').backgroundColor,chipTxt:g('.reward').color,lime:[...new Set(limeEls)].join(','),rowH:row.height,sameRow:Math.abs((lab.top+lab.height/2)-(tm.top+tm.height/2))<6&&lab.right<tm.left,listTop:document.querySelector('.list').getBoundingClientRect().top,
-      picks:[...document.querySelectorAll('.pick-c')].map(e=>e.firstChild.textContent),expect:['r','l','r','r','r'].map((d,i)=>App.q(MOCK.set[i])[d])};});
+      picks:[...document.querySelectorAll('.pick-c .pk')].map(e=>e.textContent),dots:[...document.querySelectorAll('.pick-c .pk > i')].map(e=>getComputedStyle(e).backgroundColor),expect:['r','l','r','r','r'].map((d,i)=>App.q(MOCK.set[i])[d])};});
   ok('done: after the animation the badge is white with an ink tick', dn.badge==='rgb(255, 255, 255)'&&dn.tick==='rgb(11, 21, 48)', dn.badge);
   ok('done: the "+100P paid" chip is white on ink', dn.chip==='rgb(11, 21, 48)'&&dn.chipTxt==='rgb(253, 253, 255)', dn.chip+' / '+dn.chipTxt);
   ok('done: at rest only the progress band and the primary button are lime', dn.lime==='day5,btn', dn.lime);
   ok('done: the countdown is one compact row (label left, time right)', dn.rowH<=64&&dn.sameRow, 'height '+dn.rowH+', list starts at '+Math.round(dn.listTop));
-  ok('done: the list shows the picks made in this session', dn.picks.join('|')===dn.expect.join('|'), dn.picks.join(' | '));
+  ok('done: the list shows the picks made in this session, each with the dot of its answer colour', dn.picks.join('|')===dn.expect.join('|') && dn.dots.join('|')===[SKY,CORAL,SKY,SKY,SKY].join('|'), dn.picks.join(' | '));
   await shot('h3-day-done');
   await pg.goto(B+'home-cards.html'); await pg.waitForTimeout(900);
   ok('home after the day is done: the day done screen, settled, 1,350P kept', /done\.html$/.test(pg.url()) && await pg.locator('#pts-val').innerText()==='1,350P' && await css('.done-badge','backgroundColor')==='rgb(255, 255, 255)', pg.url());

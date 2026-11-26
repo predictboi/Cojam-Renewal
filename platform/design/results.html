@@ -57,7 +57,7 @@
     if (r.out === "pend") extra = '<p class="rrow-line">' + t("r.o.pend.help") + "</p>";
     var set = r.out !== "wait" && r.out !== "none" && r.out !== "void";
     return '<li data-out="' + (r.out === "wait" ? "wait" : "set") + '"><button type="button" class="rrow" aria-expanded="false" aria-controls="' + id + '"' + (set ? "" : " data-flat") + '><span class="rrow-q">' + App.esc(App.q(r.q).title) + "</span>" +
-      '<span class="rrow-foot"><span class="row">' + C.tag(t("cat." + App.q(r.q).cat)) + (r.c ? "<span>" + t("r.you", { choice: App.esc(App.q(r.q)[r.c]) }) + "</span>" : "") + "</span>" + outcome(r) + "</span>" + extra +
+      '<span class="rrow-foot"><span class="row">' + C.tag(t("cat." + App.q(r.q).cat)) + (r.c ? "<span>" + t("r.you", { choice: C.pick(r.c, App.esc(App.q(r.q)[r.c])) }) + "</span>" : "") + "</span>" + outcome(r) + "</span>" + extra +
       (set ? '<span class="rrow-more" id="' + id + '" hidden><span><b>' + t("r.x.answer") + ":</b> " + App.esc(App.q(r.q)[r.out === "miss" ? (r.c === "r" ? "l" : "r") : r.c]) + "</span><span><b>" + t("r.x.evidence") + ":</b> " + t("p.evidence") + "</span><span><b>" + t("r.x.setat") + ":</b> " + F.date(date, true) + "</span></span>" : "") +
       "</button></li>";
   }
