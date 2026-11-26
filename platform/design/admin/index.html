@@ -29,7 +29,7 @@
       ["down", "Act now", "Fee payer is below its floor: " + n(f.bal, 1) + " KAIA, floor " + n(f.floor) + " KAIA.", "Covers about " + f.runway + " days of sponsored transactions at " + n(f.perDay, 1) + " KAIA a day.", "system.html", "Open System"],
       ["warn", "Soon", "Staking rewards fund covers " + s.runway + " days of new stakes.", n(s.bal) + " CT free, " + n(s.perDay) + " CT a day reserved by new stakes.", "system.html", "Open System"],
       ["warn", "Soon", "1 answer is late: Q-1124-1, Nikkei 225.", "Cancelled automatically at the 48 hour deadline, in " + X.cd(18 * 3600 + 28 * 60) + ".", "answers.html?state=late", "Open Answers"],
-      ["warn", "Check", "1 answer was set with low confidence (0.71) and has been paid: Q-1125-4, V-League.", "803 players were paid for No.", "answers.html?state=after", "Open Answers"],
+      ["warn", "Check", "1 answer was set with low confidence (0.71) and has been paid: Q-1124-4, V-League.", "803 players were paid for No.", "answers.html?state=after", "Open Answers"],
       ["warn", "Soon", "Saturday 28 Nov has 4 of 5 questions.", "Sunday 29 Nov has 1 question without an image.", "questions.html?state=short", "Open Questions"],
       ["warn", "Review", D.abuse.review + " accounts are waiting for review.", "Invite cluster flagged under luckyday88: 11 friends, 3 blocked in the last hour.", "players.html", "Open Players"],
       ["", "Notice", "Owner change announced: Completion points 100 to 120, Points per hit 50 to 40.", "Can be applied in " + X.cd(D.pending.in) + ".", "rewards.html", "Open Reward settings"]
@@ -45,7 +45,7 @@
         { h: "Slot", w: "44px", cell: function (r) { return '<span class="nb">' + r.slot + "</span>"; } },
         { h: "Question", cell: function (r) { return '<div class="qcell">' + X.thumb(r.img) + '<div><a class="t1" href="questions.html" style="color:inherit;text-decoration:none">' + X.esc(r.en.title) + '</a><span class="t2">' + r.cat + " · " + r.id + "</span></div></div>"; } },
         { h: "State", cell: function (r) { return tag(r.state); } },
-        { h: "Closes in", num: 1, val: function (r) { return r.closesIn; }, cell: function (r) { return X.cd(r.closesIn); } },
+        { h: "Answer due", cell: function (r) { return '<span class="nowrap">' + r.due + "</span>"; } },
         { h: "Picks", num: 1, val: function (r) { return r.picks[0] + r.picks[1]; }, cell: function (r) { return n(r.picks[0] + r.picks[1]); } },
         { h: "Split of picks", w: "210px", cell: function (r) { var a = r.picks[0], b = r.picks[1], p = a / (a + b) * 100; return '<div class="splitcell"><span><span class="pk" data-d="l">' + X.esc(r.en.left) + " " + p.toFixed(0) + '%</span><span class="pk" data-d="r">' + (100 - p).toFixed(0) + "% " + X.esc(r.en.right) + '</span></span><div class="splitbar" role="img" aria-label="' + n(a) + " picked " + r.en.left + ", " + n(b) + " picked " + r.en.right + '"><i style="width:' + p + '%"></i><u></u></div></div>'; } }
       ],
@@ -56,7 +56,7 @@
       '<div class="figs rows">' +
       fig("Players today", n(p.players), "<b>" + n(p.completed) + "</b> finished all 5 (" + X.pct(p.completed / p.players) + ")", "l") +
       '<div class="figs">' + fig("Picks", n(p.picks), "of " + n(p.players * 5) + " possible", "s") + fig("Undo rate", X.pct(p.undone / (p.picks + p.undone)), n(p.undone) + " picks taken back", "s") + fig("Hits paid", n(p.hitsPaid), "2 questions settled today", "s") + "</div></div>";
-    return '<section class="sec"><div class="sec-head"><h2>Today\'s set</h2>' + tag("Live", "ink") + '<span class="sec-note">Thursday 26 Nov. The day ends in ' + X.cd(D.now.dayEndsIn) + ' (09:00 KST).</span><span class="sec-end">' + X.link("Questions", "questions.html") + "</span></div>" +
+    return '<section class="sec"><div class="sec-head"><h2>Today\'s set</h2>' + tag("Live", "ink") + '<span class="sec-note">Thursday 26 Nov. All five close together in ' + X.cd(D.now.dayEndsIn) + ' (Fri 09:00 KST).</span><span class="sec-end">' + X.link("Questions", "questions.html") + "</span></div>" +
       '<div class="cols cols-8-4 split"><div>' + t + "</div><div>" + (X.is("error") ? "" : side) + "</div></div></section>";
   }
 

@@ -137,6 +137,9 @@ h3.sub:first-child { margin-top: 0; }
 .btn-primary { min-height: 44px; padding: 0 var(--s-20); background: var(--volt); font-size: 15px; font-weight: 800; box-shadow: var(--shadow-hard); margin-bottom: 4px; }
 .btn-primary:hover { background: var(--volt-hover); }
 .btn-primary:active { transform: translateY(3px); box-shadow: var(--shadow-hard-down); }
+/* the fourth look, admin only: the confirming action of a destructive confirmation sheet (block, void, cancel, discard). White on #B42318 is 6.6:1 */
+.btn-danger { background: var(--down); color: var(--snow); }
+.btn-danger:hover { background: #98190F; }
 .btn:is([disabled], [aria-disabled="true"]) { cursor: not-allowed; border-color: var(--line-strong); background: transparent; color: var(--ink-2); box-shadow: none; transform: none; }
 .btn-primary:is([disabled], [aria-disabled="true"]) { background: var(--volt-off); }
 .btn.is-busy { cursor: progress; border-color: var(--ink); color: var(--ink); }

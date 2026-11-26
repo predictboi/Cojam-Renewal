@@ -149,7 +149,7 @@
     return X.sheet({ title: o.title, alert: true, wide: o.wide, body: (o.body || "") +
       (o.reason === false ? "" : '<div class="fl"><label for="why">' + (o.reasonLabel || "Reason") + ' <span class="cnt">Required, written to the audit log</span></label><textarea class="inp" id="why" rows="3" data-why autofocus placeholder="' + esc(o.placeholder || "What did you check, and why is this right?") + '">' + esc(o.prefill || "") + '</textarea><p class="err" hidden data-why-err>' + ic("warn") + (o.reasonErr || "Give a reason.") + "</p></div>") +
       (o.signer ? '<p class="hint">' + o.signer + "</p>" : ""),
-      action: '<button type="button" class="btn btn-primary" data-confirm="' + esc(o.done || "Done.") + '"' + (o.next ? ' data-next="' + o.next + '"' : "") + ">" + o.action + "</button>" });
+      action: '<button type="button" class="btn btn-primary' + (o.danger ? " btn-danger" : "") + '" data-confirm="' + esc(o.done || "Done.") + '"' + (o.next ? ' data-next="' + o.next + '"' : "") + ">" + o.action + "</button>" });
   };
   X.toast = function (msg) {
     var box = document.querySelector(".toasts"); var t = document.createElement("div"); t.className = "toast"; t.textContent = msg; box.appendChild(t);
@@ -162,6 +162,9 @@
   /* ---------- shell ---------- */
   var NAV = [["index", "Dashboard", "dash"], ["rewards", "Reward settings", "sliders"], ["questions", "Questions", "cards"], ["answers", "Answers", "check"], ["ranking", "Ranking and airdrop", "podium"], ["system", "System", "pulse"], ["players", "Players", "people"]];
   X.status = function () {
+    /* a failing job is a fact of the system, not of one page: once the System screen is opened in its failing state the dot stays red everywhere until System is opened healthy again */
+    var mem = null; try { if (X.page === "system") sessionStorage.setItem("cj-admin-sys", X.is("failing") ? "failing" : ""); mem = sessionStorage.getItem("cj-admin-sys"); } catch (e) {}
+    if (mem === "failing") return ["down", "1 job failing"];
     if (X.page === "system" && X.is("failing")) return ["down", "1 job failing"];
     if (X.page === "system" && X.is("maintenance")) return ["warn", "Maintenance mode is on"];
     if (X.page === "index" && X.is("calm")) return ["ok", "All systems normal"];
@@ -170,7 +173,7 @@
   X.mount = function (o) {
     X.page = o.page; document.title = o.title + " · Cojam admin";
     var st = X.status(), calm = st[0] === "ok";
-    var counts = { questions: calm ? null : ["2", "warn", "2 days need attention"], answers: calm ? null : ["2", "warn", "1 late, 1 flagged"], players: calm ? null : [String(D.abuse.review), "", D.abuse.review + " waiting for review"], system: calm ? null : ["1", "down", "Fee payer below its floor"], rewards: ["1", "", "1 pending change"] };
+    var counts = { questions: calm ? null : ["2", "warn", "2 days need attention"], answers: calm ? null : ["2", "warn", "1 late, 1 flagged"], players: calm ? null : [String(D.abuse.review), "", D.abuse.review + " waiting for review"], system: calm ? null : st[0] === "down" ? ["2", "down", "1 job failing, fee payer below its floor"] : ["1", "down", "Fee payer below its floor"], rewards: ["1", "", "1 pending change"] };
     var role = X.role.charAt(0).toUpperCase() + X.role.slice(1), mail = X.role === "owner" ? "founder@cojam.app" : X.role === "viewer" ? "cs@cojam.app" : D.me.email;
     document.body.innerHTML =
       '<a class="sr" href="#page">Skip to content</a>' +

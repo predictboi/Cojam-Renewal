@@ -1,18 +1,18 @@
 # CojamPredict: specification as built
 
-Source: `contracts/platform/CojamPredict.sol`, `contracts/platform/PredictLogic.sol` (linked library), `contracts/platform/PredictTypes.sol` (structs). Built from `docs/platform/DEV-PLAN.md` draft 3, sections 3.1 to 3.9, 4, 5 and 8, amended by `docs/platform/DECISIONS.md` (rows up to "Invite code entry"). Solidity 0.8.28, OpenZeppelin 5.4, optimizer 200, evm paris.
+Source: `contracts/platform/CojamPredict.sol`, `contracts/platform/PredictLogic.sol` (linked library), `contracts/platform/PredictTypes.sol` (structs). Built from `docs/platform/DEV-PLAN.md` draft 3, sections 3.1 to 3.9, 4, 5 and 8, amended by `docs/platform/DECISIONS.md` (every row up to "Welcome bonus with a late code"). Solidity 0.8.28, OpenZeppelin 5.4, optimizer 200, evm paris.
 
 ## 1. Shape
 
 * One immutable contract, no proxy. Roles through `AccessControlDefaultAdminRules` (owner transfer delay 3 days), `Pausable`, `ReentrancyGuard`, `SafeERC20`.
-* Deployment links the stateless library `PredictLogic` (parameter bounds, `createDay` checks and writes, airdrop winner checks, the `pendingHits` view, parameter storage copies). It runs by DELEGATECALL in the contract's context, has no state and no owner. It exists only to keep `CojamPredict` under the 24,576 byte limit (runtime size 24,069 bytes; library 6,665 bytes). Deploy order: `PredictLogic`, then `CojamPredict(ct, owner, operator, treasury)` linked to it.
+* Deployment links the stateless library `PredictLogic` (parameter bounds, `createDay` checks and writes, airdrop winner checks, the `pendingHits` view, parameter storage copies). It runs by DELEGATECALL in the contract's context, has no state and no owner. It exists only to keep `CojamPredict` under the 24,576 byte limit (runtime size 24,055 bytes; library about 6,700 bytes). Deploy order: `PredictLogic`, then `CojamPredict(ct, owner, operator, treasury)` linked to it.
 * Constructor: CT must report 18 decimals; owner, operator and treasury must not be zero. The owner gets `DEFAULT_ADMIN_ROLE` and `PAUSER_ROLE`; the operator gets `OPERATOR_ROLE` and `PAUSER_ROLE`. Default parameters are set and emitted as `ParamsApplied`.
 
 ## 2. Points ledger
 
 "Cojam Points", "CJP", 0 decimals. `totalSupply`, `balanceOf`, `allowance` (always 0). `transfer`, `transferFrom`, `approve` always revert `PointsNonTransferable`. `Transfer(0, user, n)` on every mint, `Transfer(user, 0, n)` on every conversion; no other point movement exists.
 
-Points are minted only by: the fifth `predict` of a day (completion, the invite bonus on it, and the one time welcome bonus), `settle` / `settleMany` (hits, invite bonus on the call's total) and `compensate` (compensation, invite bonus on it). They are burned only by `convert`.
+Points are minted only by: the fifth `predict` of a day (completion, the invite bonus on it, and the one time welcome bonus), `settle` / `settleMany` (hits, invite bonus on the call's total) and `compensate` (compensation, invite bonus on it), plus `setReferrer` for one case: the welcome bonus of a late code entered after the player's first full day. They are burned only by `convert`.
 
 ## 3. Time
 
@@ -23,11 +23,11 @@ Points are minted only by: the fifth `predict` of a day (completion, the invite 
 | Function | Caller | Rules (revert) | Effect |
 | --- | --- | --- | --- |
 | `registerPlayer(wallet, referrer)` / `registerPlayers(w[], r[])` | OPERATOR | not zero (`ZeroAddress`), not registered (`AlreadyRegistered`), not a bound play key (`AddressIsPlayKey`); referrer 0 or: not self, registered, not frozen, no two way link (`BadReferrer`); batch: equal lengths (`LengthMismatch`), at most 200 (`BatchTooLarge`), all or nothing | player registered with `registeredAt = now`; referrer linked, `referralStats.count += 1` |
-| `setReferrer(player, referrer)` / `setReferrers` | OPERATOR | registered (`NotRegistered`), no referrer yet (`ReferrerAlreadySet`), `now < registeredAt + 24 h` (`InviteWindowClosed`), referrer rules as above | link set once, never changes |
+| `setReferrer(player, referrer)` / `setReferrers` | OPERATOR | registered (`NotRegistered`), no referrer yet (`ReferrerAlreadySet`), `now < registeredAt + 24 h` (`InviteWindowClosed`), referrer rules as above | link set once, never changes; if the player's first full day is already done, the welcome bonus is paid now (once) |
 | `setFrozen(wallet, frozen, reason)` / `setFrozenMany` | OPERATOR | registered; batch rules | flag set, `PlayerFrozen`; balances untouched |
 | `setPlayKey(key, expiresAt)` | the player's wallet | registered, not frozen; key not 0, not the caller, not a registered player (`BadPlayKey`); key unbound or bound to the caller (`PlayKeyTaken`); `now < expiresAt <= now + 90 days` (`BadExpiry`) | unbinds the previous key (`PlayKeyRevoked`), binds the new one (`PlayKeySet`); same key renews |
 | `revokePlayKey()` | player or its key (expired included) | a key bound (`NoPlayKey`) | both links cleared |
-| `createDay(dayId, MarketInput[5])` | OPERATOR | before the open (`BadTimes`), not created (`DayExists`), `open < closesAt <= open + 1 day`, `closesAt + minResolveGap <= resolvesAt <= open + 2 days` (`BadTimes`), hash not 0 (`EmptyContentHash`) | 5 markets, `DayCreated` |
+| `createDay(dayId, MarketInput[5])` | OPERATOR | before the open (`BadTimes`), not created (`DayExists`), every `closesAt == open + 1 day` (all five close at the day's end), `closesAt + minResolveGap <= resolvesAt <= open + 2 days` (`BadTimes`), hash not 0 (`EmptyContentHash`) | 5 markets, `DayCreated` |
 | `predict(marketId, choice)` | player wallet or its unexpired key | not paused; a key that is bound but expired (`BadPlayKey`); registered, not frozen; choice 1 or 2 (`BadChoice`); market exists and `now >= open` (`DayNotOpen`); `now < closesAt` (`MarketClosed`); slot unanswered (`AlreadyPredicted(id)`) | choice stored for the player; fifth answer: completion credit, invite bonus, welcome once |
 | `setOutcome(id, o)` | OPERATOR | market exists (`UnknownMarket`), o in 1..3 (`BadChoice`), not set (`AlreadyResolved`), `now >= resolvesAt` (`NotResolvable`), `now < dayEnd + 48 h` (`ResolveDeadlinePassed`) | outcome, `resolvedAt = now`, `settlesAt = now + settleDelay` |
 | `correctOutcome(id, o)` | OPERATOR | set (`NotResolvable`), `now < settlesAt` (`CorrectionWindowOver`), different (`SameOutcome`) | outcome replaced; `settlesAt` unchanged |
@@ -36,7 +36,7 @@ Points are minted only by: the fifth `predict` of a day (completion, the invite 
 | `setCorrectedOutcome(id, o)` | OWNER | o is 1 or 2 (`BadChoice`), resolved and `now >= settlesAt` (`TooEarly`), not yet set (`AlreadyResolved`), differs from the outcome (`SameOutcome`) | enables `compensate` |
 | `settle(user, dayId)` | anyone | something ready (`NotReadyToSettle`), not everything settled (`AlreadySettled`) | each answered slot whose market is final and past `settlesAt` is added to `settledMask`; hits x `hitPoints` credited (kind 2) in the week of `dayId` |
 | `settleMany(users[], dayId)` | anyone | at most 200; skips users with nothing ready; reverts `NotReadyToSettle` if nobody settled | returns the count |
-| `compensate(id, users[])` | OPERATOR | at most 500; `correctedOutcome` set (`NothingToCompensate`); skips users not settled on the slot, with another choice, or already compensated; reverts if nobody qualified | `hitPoints` each (kind 3) |
+| `compensate(id, users[])` | OPERATOR | at most 500; `correctedOutcome` set (`NothingToCompensate`); skips users not settled on the slot, with another choice, or already compensated; reverts if nobody qualified | `hitPoints` each (kind 3), ranked in the question's week while that week's airdrop is not done, else in the current week |
 | `convert(points)` | registered, not frozen | not paused; `points >= minConvertPoints` (`BelowMinimum`), multiple of `pointsPerCT` (`NotMultipleOfRate`), `now >= registeredAt + minAccountAge` (`AccountTooNew`), balance (`InsufficientPoints`), per user and global daily CT caps (`DailyCapReached(left)`), reserve (`InsufficientReserve`) | burns, pays `points * 1e18 / pointsPerCT` CT |
 | `airdrop(weekId, winners[], pool)` | OPERATOR | `now >= weekEnd + airdropDelay` (`WeekNotOver`), once (`AirdropDone`), 1 to 10 winners (`BadWinners`), `pool <= maxWeeklyPool` (`PoolTooLarge`); each winner registered (`NotRegistered`), not frozen (`Frozen`), points > 0 and strictly ordered (`BadWinners`); reserve (`InsufficientReserve`) | `pool * splitBps[i] / 10000` to rank i; unpaid ranks stay |
 | `proposeParams(p)` / `applyParams()` / `cancelParams()` | OWNER | bounds (`ParamOutOfBounds(i)`); apply after 48 h (`TooEarly`); pending required (`NoPendingParams`) | a new proposal replaces the pending one and restarts the delay |
@@ -74,7 +74,7 @@ Views: `name`, `symbol`, `decimals`, `allowance`, `params()`, `pendingParams()`,
 | 13 | `treasury` | set at deploy | not zero |
 | 14 | `splitBps[10]` | 3000, 2000, 1500, 1000, 700, 500, 400, 300, 300, 300 | non increasing, sum 10,000 |
 
-Constants: `RESOLVE_DEADLINE` 48 h, `MAX_PLAY_KEY_TTL` 90 days, `PARAM_DELAY` 48 h, `INVITE_WINDOW` 24 h, batch caps 200 (500 for `compensate`), 10 winners.
+Constants: `RESOLVE_DEADLINE` 48 h (counted from the day's end, which is every market's close), `MAX_PLAY_KEY_TTL` 90 days, `PARAM_DELAY` 48 h, `INVITE_WINDOW` 24 h, batch caps 200 (500 for `compensate`), 10 winners.
 
 ## 7. Events
 
@@ -82,7 +82,7 @@ Constants: `RESOLVE_DEADLINE` 48 h, `MAX_PLAY_KEY_TTL` 90 days, `PARAM_DELAY` 48
 
 ## 8. Invariants (tested)
 
-The 13 invariants of DEV-PLAN 3.4 and 3.9 hold, with invariant 10 restated by the later decision: a referrer is set at most once, never to the player, never to a player whose own referrer is this player, and only at registration or within 24 hours of it. Each is an explicit unit test, and the randomized sequence test (`test/platform/CojamPredict.fuzz.test.js`) runs a JavaScript model of the contract against the chain and checks after every step: supply equals the sum of balances and the model; every mint in a transaction is explained by `PointsCredited`, `ReferralPaid` and `WelcomePaid` in that transaction and no `Transfer` moves points between holders; completion at most once per user and day; welcome at most once and only with a referrer; `ReferralPaid` and `ReferralSkipped` only for the player's linked referrer, skipped only while the inviter is frozen; `referralStats` equals the sum of `ReferralPaid`; weekly points equal the sum of `PointsCredited` of that week; the CT reserve equals funded minus conversions and airdrops; play key links are mutual and a key is never a player; user days, markets and players match the model; a final outcome never changes.
+The 13 invariants of DEV-PLAN 3.4 and 3.9 hold, with two restated by later decisions. Invariant 10: a referrer is set at most once, never to the player, never to a player whose own referrer is this player, and only at registration or within 24 hours of it. Invariant 13: each player receives the welcome bonus at most once, only with a referrer, at the first completed day or at a late link made after that day, never while the inviter is frozen, and it earns the referrer nothing. Invariant 11 holds with the compensation week rule: the week of every ranked credit is the `weekId` in its `PointsCredited` event. Each is an explicit unit test, and the randomized sequence test (`test/platform/CojamPredict.fuzz.test.js`) runs a JavaScript model of the contract against the chain and checks after every step: supply equals the sum of balances and the model; every mint in a transaction is explained by `PointsCredited`, `ReferralPaid` and `WelcomePaid` in that transaction and no `Transfer` moves points between holders; completion at most once per user and day; welcome at most once and only with a referrer; `ReferralPaid` and `ReferralSkipped` only for the player's linked referrer, skipped only while the inviter is frozen; `referralStats` equals the sum of `ReferralPaid`; weekly points equal the sum of `PointsCredited` of that week; the CT reserve equals funded minus conversions and airdrops; play key links are mutual and a key is never a player; user days, markets and players match the model; a final outcome never changes.
 
 ## 9. Measured gas (Hardhat EVM, total per transaction including 21,000 intrinsic)
 
@@ -92,18 +92,18 @@ The 13 invariants of DEV-PLAN 3.4 and 3.9 hold, with invariant 10 restated by th
 | `predict` by play key, second to fourth | 41,875 | about 55,000 |
 | `predict` fifth, later day, no inviter | 65,405 | 80,000 to 95,000 |
 | `predict` fifth, later day, invited (bonus) | 80,582 | 95,000 to 110,000 |
-| `predict` fifth, first completed day of the player, no inviter | 100,550 | 80,000 to 95,000 |
-| `predict` fifth, invited, first completed day (bonus and welcome) | 123,272 | 101,000 to 116,000 |
-| `predict` fifth, the very first credit of the contract (once ever) | 120,028 | |
+| `predict` fifth, first completed day of the player, no inviter | 100,380 | 80,000 to 95,000 |
+| `predict` fifth, invited, first completed day (bonus and welcome) | 123,045 | 101,000 to 116,000 |
+| `predict` fifth, the very first credit of the contract (once ever) | 119,858 | |
 | `setPlayKey` first / renew | 74,002 / 37,083 | about 85,000 |
 | `settleMany` per user, no hits (batch of 50) | 12,260 | about 30,000 |
-| `settleMany` per user, 5 hits, half invited (batch of 50) | 34,695 | 30,000 to 45,000 |
+| `settleMany` per user, 5 hits, half invited (batch of 50) | 34,694 | 30,000 to 45,000 |
 | `settle` single user, 5 hits | 72,610 | |
-| `compensate` per user (batch of 50, half invited) | 49,856 | |
+| `compensate` per user (batch of 50, half invited) | 49,901 | |
 | `convert` (first of the day for the user and globally, first CT to the user) | 124,768 | about 95,000 |
-| `airdrop` 10 winners (10 first time CT holders) | 406,120 | |
-| `createDay` | 273,128 | |
-| `registerPlayer` / with inviter | 50,417 / 60,622 | |
+| `airdrop` 10 winners (10 first time CT holders) | 406,096 | |
+| `createDay` | 272,070 | |
+| `registerPlayer` / with inviter | 50,417 / 60,610 | |
 | `setOutcome` | 34,788 | |
 
 The first credit of a player in a week writes two new slots (balance on the first ever credit, `weekPoints` on the first credit of each week), which is why the first completed day and the first completion of each week cost more than the plan's estimate; the heaviest `predict` stays under the fee payer cap of 150,000. Kaia adds about 10,000 for fee delegated types and prices calldata differently.
@@ -123,20 +123,22 @@ The first credit of a player in a week writes two new slots (balance on the firs
 11. **`splitBps` must be non increasing** (extra bound, so rank 1 never gets less than rank 2).
 12. **Daily caps** are stored in whole CT; counters in base units.
 13. **Added errors**: `AlreadyRegistered`, `EmptyContentHash`, `UnknownMarket`, `SameOutcome`, `InsufficientPoints`, `NoPendingParams`, `ZeroAmount`, `NotTreasury`, `LengthMismatch`, `AddressIsPlayKey`, `DecimalsMismatch`. Added event `ParamsCancelled`.
-14. **Invite window (DECISIONS "Invite code entry", replaces the plan's first completed day rule)**: `setReferrer` works within 24 hours of `registeredAt`. A link made after the player's first completed day gives no welcome bonus (the welcome is paid only at the first completed day); the 10% stream starts from the link.
+14. **Invite window (DECISIONS "Invite code entry", replaces the plan's first completed day rule)**: `setReferrer` works within 24 hours of `registeredAt`. The 10% stream starts from the link (no back pay). **Late code welcome (DECISIONS "Welcome bonus with a late code")**: a link made before the first full day pays the welcome at that day; a link made after it pays the welcome inside `setReferrer` at once (`WelcomePaid` with the current day id), so the player is not made to wait a second full day.
 15. **Inviter on hold (DECISIONS "On hold: staking and invites")**: the bonus is not minted while the inviter is frozen and is never owed later; `ReferralSkipped` records it. Bonus already minted stays. A frozen inviter cannot be newly linked. The welcome bonus is not paid when the inviter is frozen at the friend's first completed day (plan 3.9).
 16. **Ranking (DECISIONS "On hold: ranking")**: leaving accounts on hold out of the prize ranks is done by the server when it builds the list; on chain, `airdrop` refuses a frozen winner (`Frozen`), so the operator must submit the list with frozen accounts removed and the next players moved up. The order check compares adjacent submitted winners only, so a list that skips a frozen account still verifies.
 17. **Frozen player and play keys**: `revokePlayKey` works while frozen.
+18. **Question timing (DECISIONS "Question timing")**: `MarketInput` keeps a per market `closesAt` (so the ABI and storage stay as planned), but `createDay` requires every close to equal the day's end (09:00 KST the next day). The 48 hour rule therefore runs from that common close. `resolvesAt` stays per market, between close plus `minResolveGap` and 24 hours after the close.
+19. **Compensation week (DECISIONS "Compensation points")**: weekly points are on chain, so `compensate` implements the rule itself: the question's week when `airdropDone[week]` is false, else the week of the current day. `PointsCredited` carries both `weekId` and `dayId`. Hit credits from `settle` always use the question's week, as the plan says; a settle that runs after the week's airdrop still adds to that past week (the airdrop delay is sized so this does not happen when the keeper runs on time).
 
 ## 11. Self review: risks, ranked
 
 1. **Owner key is one EOA** (high impact, by decision). It can drain the reserve to the treasury and, after 48 h, change every parameter (including the treasury). Mitigations are the delay, events and off chain alerts. The owner cannot move points or touch user balances.
-2. **Operator key leak** (medium). It can register sybils, link inviters inside the 24 h window, freeze everyone, set wrong outcomes (bounded to points, correctable inside the window), void markets, and run each week's airdrop up to `maxWeeklyPool` to registered players with on chain points, ordered correctly but possibly skipping honest top players by freezing them first. Rotation by the owner. A leaked key cannot touch conversions caps or the reserve directly.
+2. **Operator key leak** (medium). It can register sybils, link inviters inside the 24 h window (each late link after a full day mints one welcome bonus at once), freeze everyone, set wrong outcomes (bounded to points, correctable inside the window), void markets, and run each week's airdrop up to `maxWeeklyPool` to registered players with on chain points, ordered correctly but possibly skipping honest top players by freezing them first. Rotation by the owner. A leaked key cannot touch conversions caps or the reserve directly.
 3. **Airdrop completeness is not provable on chain** (medium, accepted by the plan): the contract checks order and eligibility of the submitted list, not that nobody outside it scored more. Needs the published ranking and monitoring.
 4. **Play key squatting** (low to medium): a registered player may bind any address as its key, which blocks that address from ever being registered (`AddressIsPlayKey`) until the squatter revokes. Privy wallets are created at login and registered right after, so the window is short, but a front running squatter could block one wallet. Possible fix before audit: require a signature from the key in `setPlayKey`, or let the operator unbind a key that targets an unregistered wallet.
 5. **Conversion farming** (medium, economic): bounded by registration, 7 day age, per user and global caps, freezes; sybil cost is off chain (section 5).
 6. **Linked library deployment** (low): a wrong library address at link time would brick the contract; deployment scripts must deploy and verify `PredictLogic` first. The library is stateless and immutable.
 7. **Settle timing affects tie breaks** (low): `lastCreditAt` of hit credits is the settle time chosen by the keeper, not the player's action time. Running `settleMany` for all players of a market in one batch keeps it fair; ties at equal points then fall to the address order.
 8. **Late corrections after the airdrop** (low): compensation can add week points after the week's airdrop ran; the airdrop is not redone.
-9. **Code size margin** (low): 507 bytes below the limit; further features must move into the library.
+9. **Code size margin** (low): 521 bytes below the limit; further features must move into the library.
 10. **Not done here**: Slither, an external audit, fork tests against mainnet CT, Kairos gas measurements.

@@ -39,7 +39,7 @@
       ko: { title: "비트코인, 오늘 10만 달러 위에서 마감할까요?", rule: "바이낸스 BTC/USDT 일봉 종가 (오전 9시)", settle: "내일 오전 9시" },
       ja: { title: "ビットコイン、今日の終値は10万ドルを超える？", left: "超えない", right: "超える", rule: "Binance BTC/USDTの日足終値（午前9時）", settle: "明日の午前9時" } }),
     q({ id: "Q-1126-2", day: "1126", slot: 2, cat: "Markets", img: IMG + "q2-dollar-won.svg", imgState: "Generated", state: "Live", closes: "Today 15:00", closesIn: 28 * 60, due: "Today 16:00", conf: 0.98, source: "AI", picks: [693, 1181],
-      src: ["https://www.smbs.biz/ExRate/TodayExRate.jsp"], resolve: "Seoul FX market closing rate for USD/KRW at 15:30 KST on 26 Nov. Above 1,400.0 is Yes.",
+      src: ["https://www.smbs.biz/ExRate/TodayExRate.jsp"], resolve: "Seoul FX market closing rate for USD/KRW at 15:30 KST on 27 Nov. Above 1,400.0 is Yes.",
       en: { title: "Will the dollar end today above 1,400 won?", rule: "Seoul FX market close, 15:30 KST", settle: "16:00 today" },
       ko: { title: "오늘 원/달러 환율, 1,400원 위에서 끝날까요?", rule: "서울 외환시장 종가 (오후 3시 30분)", settle: "오늘 오후 4시" },
       ja: { title: "今日のドル/ウォン、終値は1,400ウォンを上回る？", left: "上回らない", right: "上回る", rule: "ソウル外国為替市場の終値（15時30分）", settle: "今日の16時" } }),
@@ -49,7 +49,7 @@
       ko: { title: "내일 서울 낮 기온, 10도까지 오를까요?", rule: "기상청 서울 관측소 일 최고기온", settle: "내일 오후 6시" },
       ja: { title: "明日のソウル、最高気温は10℃に届く？", left: "届かない", right: "届く", rule: "韓国気象庁ソウル観測所の日最高気温", settle: "明日の18時" } }),
     q({ id: "Q-1126-4", day: "1126", slot: 4, cat: "Sports", img: IMG + "q4-football.svg", imgState: "Replaced", state: "Live", closes: "Fri 04:55", closesIn: 14 * 3600 + 23 * 60, due: "Fri 07:10", conf: 0.94, source: "AI", picks: [772, 1066],
-      src: ["https://www.premierleague.com/matches"], resolve: "Total goals at full time (90 minutes plus stoppage time) of the 20:00 GMT match on 26 Nov. 3 or more is the right choice.",
+      src: ["https://www.premierleague.com/matches"], resolve: "Total goals at full time (90 minutes plus stoppage time) of the 20:00 GMT match on 27 Nov. 3 or more is the right choice.",
       en: { title: "Tonight's Premier League match: 3 goals or more?", left: "2 or fewer", right: "3 or more", rule: "Total goals at full time", settle: "07:00 tomorrow" },
       ko: { title: "오늘 밤 프리미어리그 경기, 3골 이상 나올까요?", left: "2골 이하", right: "3골 이상", rule: "정규 시간 90분 기준 합계 득점", settle: "내일 오전 7시" },
       ja: { title: "今夜のプレミアリーグ、合計3点以上入る？", left: "2点以下", right: "3点以上", rule: "90分終了時の合計得点", settle: "明日の午前7時" } }),
@@ -109,6 +109,40 @@
       en: { title: "Will KAIA be higher at 09:00 tomorrow than now?", left: "Lower", right: "Higher", rule: "Binance KAIA/USDT price at 09:00 KST", settle: "09:00 tomorrow" }, ko: { title: "내일 오전 9시, KAIA는 지금보다 올라 있을까요?", left: "내린다", right: "오른다", rule: "바이낸스 KAIA/USDT 오전 9시 가격", settle: "내일 오전 9시" }, ja: { title: "明日の朝9時、KAIAは今より上がっている？", left: "下がる", right: "上がる", rule: "Binance KAIA/USDTの午前9時の価格", settle: "明日の午前9時" } })
   ];
   D.q = function (id) { return D.questions.filter(function (x) { return x.id === id; })[0]; };
+
+  /* Founder rule (DECISIONS, Question timing): every question of a day closes together at the end of the day, 09:00 KST next day,
+     and its outcome becomes known only after that close. So no question has its own close time; the texts ask about the day after. */
+  var NEXT = { "1126": ["Fri", "Sat"], "1127": ["Sat", "Sun"], "1128": ["Sun", "Mon"], "1129": ["Mon", "Tue"] };
+  var DUE = { Crypto: [0, "21:05", "21:00 tomorrow", "내일 오후 9시", "明日の21時"], Markets: [0, "16:00", "16:00 tomorrow", "내일 오후 4시", "明日の16時"], Weather: [0, "18:10", "18:00 tomorrow", "내일 오후 6시", "明日の18時"],
+    Sports: [1, "07:10", "07:00 in two days", "모레 오전 7시", "あさっての午前7時"], Culture: [0, "10:30", "10:30 tomorrow", "내일 오전 10시 30분", "明日の午前10時30分"] };
+  var CRYPTO = {
+    "Q-1126-1": ["BTC", "Will Bitcoin be above $100,000 at 21:00 tomorrow?", "내일 밤 9시, 비트코인은 10만 달러 위에 있을까요?", "明日の21時、ビットコインは10万ドルを超えている？"],
+    "Q-1126-5": ["KAIA", "Will KAIA be higher at 21:00 tomorrow than now?", "내일 밤 9시, KAIA는 지금보다 올라 있을까요?", "明日の21時、KAIAは今より上がっている？"],
+    "Q-1127-1": ["SOL", "Will Solana be above $250 at 21:00 tomorrow?", "내일 밤 9시, 솔라나는 250달러 위에 있을까요?", "明日の21時、ソラナは250ドルを超えている？"],
+    "Q-1127-2": ["ETH", "Will Ethereum be above $3,500 at 21:00 tomorrow?", "내일 밤 9시, 이더리움은 3,500달러 위에 있을까요?", "明日の21時、イーサリアムは3,500ドルを超えている？"],
+    "Q-1128-1": ["BTC", "Will Bitcoin be higher at 21:00 tomorrow than now?", "내일 밤 9시, 비트코인은 지금보다 올라 있을까요?", "明日の21時、ビットコインは今より上がっている？"],
+    "Q-1128-4": ["KAIA", "Will KAIA be above $0.15 at 21:00 tomorrow?", "내일 밤 9시, KAIA는 0.15달러 위에 있을까요?", "明日の21時、KAIAは0.15ドルを超えている？"],
+    "Q-1129-1": ["BTC", "Will Bitcoin be above $102,000 at 21:00 tomorrow?", "내일 밤 9시, 비트코인은 10만 2천 달러 위에 있을까요?", "明日の21時、ビットコインは10万2千ドルを超えている？"],
+    "Q-1129-5": ["KAIA", "Will KAIA be higher at 21:00 tomorrow than now?", "내일 밤 9시, KAIA는 지금보다 올라 있을까요?", "明日の21時、KAIAは今より上がっている？"]
+  };
+  /* Friday's set resolves on a Saturday, when markets are shut: its two market questions are a crypto and a weather question instead */
+  (function () { var a = D.q("Q-1127-1"); a.cat = "Crypto"; a.img = IMG + "q1-bitcoin.svg"; a.src = ["https://www.binance.com/en/trade/SOL_USDT"];
+    var b = D.q("Q-1127-5"); b.cat = "Weather"; b.img = IMG + "q3-seoul-weather.svg"; b.src = ["https://www.data.jma.go.jp/obd/stats/data/mdrr/tem_rct/alltable/mxtemsadext00.html"]; b.resolve = "JMA Tokyo station daily maximum temperature for 28 Nov. 15.0°C or higher is Yes.";
+    b.en.title = "Will Tokyo reach 15°C or higher tomorrow?"; b.en.rule = "JMA Tokyo station, daily high"; b.ko.title = "내일 도쿄 낮 기온, 15도까지 오를까요?"; b.ko.rule = "일본 기상청 도쿄 관측소 일 최고기온"; b.ja.title = "明日の東京、最高気温は15℃に届く？"; b.ja.left = "届かない"; b.ja.right = "届く"; b.ja.rule = "気象庁・東京の日最高気温"; })();
+  D.questions.forEach(function (x) {
+    var n = NEXT[x.day], d = DUE[x.cat], c = CRYPTO[x.id];
+    x.closes = n[0] + " 09:00"; x.closesIn = x.day === "1126" ? D.now.dayEndsIn : undefined; x.due = n[d[0]] + " " + d[1]; x.outcome = n[d[0]] + " " + d[1].replace(/:(05|10)$/, ":00");
+    x.en.settle = d[2]; x.ko.settle = d[3]; x.ja.settle = d[4];
+    if (c) {
+      x.en.title = c[1]; x.ko.title = c[2]; x.ja.title = c[3]; x.en.rule = "Binance " + c[0] + "/USDT price at 21:00 KST"; x.ko.rule = "바이낸스 " + c[0] + "/USDT 오후 9시 가격"; x.ja.rule = "Binance " + c[0] + "/USDTの21時の価格";
+      x.resolve = "Binance " + c[0] + "/USDT last price at 21:00:00 KST on " + n[0] + ", the day after the set. A price equal to the mark counts as the left choice.";
+      if (/higher/.test(c[1])) { x.en.left = "Lower"; x.en.right = "Higher"; x.ko.left = "내린다"; x.ko.right = "오른다"; x.ja.left = "下がる"; x.ja.right = "上がる"; }
+      else { x.ja.left = "超えない"; x.ja.right = "超える"; }
+    } else {
+      x.en.title = x.en.title.replace("Tonight's", "Tomorrow night's").replace("tonight's", "tomorrow night's").replace("today's", "tomorrow's").replace(" today", " tomorrow");
+      x.ko.title = x.ko.title.replace("오늘", "내일"); x.ja.title = x.ja.title.replace("今夜", "明日の夜").replace("今日", "明日");
+    }
+  });
   D.today = D.questions.filter(function (x) { return x.day === "1126"; });
 
   /* 14 day strip. The drafter writes 7 days ahead every evening; days past that are not expected to be filled yet. */
@@ -122,12 +156,12 @@
 
   /* drafts the AI wrote that are not on a day yet */
   D.queue = [
-    { id: "D-2231", cat: "Markets", img: IMG + "q2-dollar-won.svg", imgState: "Generated", title: "Will the KOSPI close higher than yesterday?", l: "No", r: "Yes", rule: "KRX KOSPI official close against the previous close", src: "data.krx.co.kr", conf: 0.98, drafted: "Wed 18:00", fits: "Any weekday" },
-    { id: "D-2232", cat: "Sports", img: IMG + "q4-football.svg", imgState: "Generated", title: "Saturday's K League final: will it go to extra time?", l: "No", r: "Yes", rule: "Official K League match report", src: "kleague.com", conf: 0.91, drafted: "Wed 18:00", fits: "Sat 28 only" },
-    { id: "D-2233", cat: "Crypto", img: IMG + "q1-bitcoin.svg", imgState: "Generated", title: "Will Solana close above $250 today?", l: "No", r: "Yes", rule: "Binance SOL/USDT daily close, 00:00 UTC", src: "binance.com", conf: 0.97, drafted: "Wed 18:00", fits: "Any day" },
-    { id: "D-2234", cat: "Weather", img: IMG + "q3-seoul-weather.svg", imgState: "Generated", title: "Will Tokyo reach 15°C or higher tomorrow?", l: "No", r: "Yes", rule: "JMA Tokyo station, daily high", src: "data.jma.go.jp", conf: 0.99, drafted: "Tue 18:00", fits: "Any day" },
-    { id: "D-2235", cat: "Culture", img: null, imgState: "Fallback", title: "Will this week's No. 1 song on Melon change?", l: "No", r: "Yes", rule: "Melon weekly chart, published Monday", src: "melon.com", conf: 0.84, drafted: "Tue 18:00", fits: "Sun only" },
-    { id: "D-2236", cat: "Markets", img: IMG + "q2-dollar-won.svg", imgState: "Generated", title: "Will the yen end today below 155 per dollar?", l: "No", r: "Yes", rule: "Tokyo FX market close, 17:00 JST", src: "boj.or.jp", conf: 0.96, drafted: "Tue 18:00", fits: "Any weekday" }
+    { id: "D-2231", cat: "Markets", img: IMG + "q2-dollar-won.svg", imgState: "Generated", title: "Will the KOSPI close higher tomorrow than today?", l: "No", r: "Yes", rule: "KRX KOSPI official close against the previous close", src: "data.krx.co.kr", conf: 0.98, drafted: "Wed 18:00", fits: "Sun to Thu sets" },
+    { id: "D-2232", cat: "Sports", img: IMG + "q4-football.svg", imgState: "Generated", title: "Sunday's K League final: will it go to extra time?", l: "No", r: "Yes", rule: "Official K League match report", src: "kleague.com", conf: 0.91, drafted: "Wed 18:00", fits: "Sat 28 only" },
+    { id: "D-2233", cat: "Crypto", img: IMG + "q1-bitcoin.svg", imgState: "Generated", title: "Will XRP be above $2.50 at 21:00 tomorrow?", l: "No", r: "Yes", rule: "Binance XRP/USDT price at 21:00 KST", src: "binance.com", conf: 0.97, drafted: "Wed 18:00", fits: "Any day" },
+    { id: "D-2234", cat: "Weather", img: IMG + "q3-seoul-weather.svg", imgState: "Generated", title: "Will Osaka reach 15°C or higher tomorrow?", l: "No", r: "Yes", rule: "JMA Osaka station, daily high", src: "data.jma.go.jp", conf: 0.99, drafted: "Tue 18:00", fits: "Any day" },
+    { id: "D-2235", cat: "Culture", img: null, imgState: "Fallback", title: "Will this week's No. 1 song on Melon change?", l: "No", r: "Yes", rule: "Melon weekly chart, published Monday", src: "melon.com", conf: 0.84, drafted: "Tue 18:00", fits: "Sun set only" },
+    { id: "D-2236", cat: "Markets", img: IMG + "q2-dollar-won.svg", imgState: "Generated", title: "Will the yen end tomorrow below 155 per dollar?", l: "No", r: "Yes", rule: "Tokyo FX market close, 17:00 JST", src: "boj.or.jp", conf: 0.96, drafted: "Tue 18:00", fits: "Sun to Thu sets" }
   ];
 
   /* ---------- today in numbers ---------- */
@@ -139,7 +173,7 @@
   /* points issued: [today, this week]. Completion is 100P per finished day, a hit 50P, the invite bonus 10% of what invited friends earn, welcome 100P once. */
   D.points = {
     completion: [D.play.completed * 100, (1902 + 1884 + 1861 + D.play.completed) * 100],
-    hits: [D.play.hitsPaid * 50, 11870 * 50],
+    hits: [D.play.hitsPaid * 50, 7536 * 50],
     invite: [9820, 46880],
     welcome: [41 * 100, 163 * 100]
   };
@@ -201,48 +235,49 @@
   ];
 
   /* ---------- answers ---------- */
+  /* Every set closes at 09:00 KST and its outcomes fall after that: Wednesday's set (closed Thu 09:00) is being answered today, Tuesday's (closed Wed 09:00) is mostly settled. */
   D.answers = [
-    { id: "Q-1125-1", set: "Wed 25", title: "Will Ethereum close above $3,500 today?", l: "No", r: "Yes", picks: [1012, 861], closed: "Thu 03:00", ai: "l", conf: 0.99, setAt: "Thu 09:02", winEnds: "Today 15:02", winIn: 30 * 60, hits: 1012, paid: false, deadline: "Sat 09:00", state: "Answer set", tab: "set",
+    { id: "Q-1125-1", set: "Wed 25", title: "Will Ethereum close above $3,500 tomorrow?", l: "No", r: "Yes", picks: [1012, 861], closed: "Thu 09:00", ai: "l", conf: 0.99, setAt: "Thu 09:02", winEnds: "Today 15:02", winIn: 30 * 60, hits: 1012, paid: false, deadline: "Sat 09:00", state: "Answer set", tab: "set",
       rule: "Binance ETH/USDT daily close, 00:00 UTC", ev: [{ src: "Binance ETH/USDT 1 day candle", url: "https://api.binance.com/api/v3/klines?symbol=ETHUSDT&interval=1d", quote: "close: 3462.18", value: "3,462.18", at: "Thu 09:01:12" }, { src: "CoinGecko ETH daily close (cross check)", url: "https://www.coingecko.com/en/coins/ethereum/historical_data", quote: "Close $3,461.90", value: "3,461.90", at: "Thu 09:01:40" }], tx: TX("ans-1125-1") },
-    { id: "Q-1125-2", set: "Wed 25", title: "Will the KOSPI close higher than yesterday?", l: "No", r: "Yes", picks: [776, 1104], closed: "Wed 15:00", ai: "r", conf: 0.99, setAt: "Wed 15:41", winEnds: "Wed 21:41", hits: 1104, paid: true, deadline: "Sat 09:00", state: "Answer set", tab: "set",
-      rule: "KRX KOSPI official close against the previous close", ev: [{ src: "KRX market data", url: "https://data.krx.co.kr", quote: "KOSPI 2,534.21 (+15.44)", value: "2,534.21 against 2,518.77", at: "Wed 15:40:22" }], tx: TX("ans-1125-2") },
+    { id: "Q-1125-2", set: "Wed 25", title: "Will the KOSPI close higher tomorrow than today?", l: "No", r: "Yes", picks: [776, 1104], closed: "Thu 09:00", ai: null, conf: null, setAt: null, due: "Today 16:00", dueIn: 88 * 60, hits: 0, paid: false, deadline: "Sat 09:00", state: "Waiting", tab: "waiting",
+      rule: "KRX KOSPI official close against the previous close", ev: [] },
     { id: "Q-1125-3", set: "Wed 25", title: "Will it rain in Tokyo tomorrow?", l: "No", r: "Yes", picks: [1188, 678], closed: "Thu 09:00", ai: null, conf: null, setAt: null, due: "Fri 00:10", dueIn: 9 * 3600 + 38 * 60, hits: 0, paid: false, deadline: "Sat 09:00", state: "Waiting", tab: "waiting",
       rule: "JMA Tokyo station, 0.5 mm or more", ev: [] },
-    { id: "Q-1125-4", set: "Wed 25", title: "Will the home team win tonight's V-League match?", l: "No", r: "Yes", picks: [803, 1041], closed: "Wed 18:55", ai: "l", conf: 0.71, setAt: "Thu 04:10", winEnds: "Thu 10:10", hits: 803, paid: true, deadline: "Sat 09:00", state: "Answer set", tab: "set", flag: "Low confidence",
-      rule: "Official KOVO match result", ev: [{ src: "KOVO match centre", url: "https://www.kovo.co.kr/game/v-league", quote: "Set score 1 : 3 (25 Nov, women)", value: "Away win, women's match", at: "Thu 04:09:31" }], tx: TX("ans-1125-4"),
-      fix: { right: "r", players: 1041, invited: 372, wrongPaid: 803, note: "The run read the women's match played the same evening. The men's 19:00 match ended 3 : 1 for the home team." } },
-    { id: "Q-1125-5", set: "Wed 25", title: "Will gold close above $2,700 today?", l: "No", r: "Yes", picks: [636, 1233], closed: "Thu 02:00", ai: "r", conf: 0.98, setAt: "Thu 06:05", winEnds: "Thu 12:05", hits: 1233, paid: true, deadline: "Sat 09:00", state: "Answer set", tab: "set",
-      rule: "LBMA Gold Price PM, USD", ev: [{ src: "LBMA Gold Price PM", url: "https://www.lbma.org.uk/prices-and-data/precious-metal-prices", quote: "PM 2,712.40 USD", value: "2,712.40", at: "Thu 06:04:50" }], tx: TX("ans-1125-5") },
-    { id: "Q-1124-1", set: "Tue 24", title: "Will the Nikkei 225 close above 40,000?", l: "No", r: "Yes", picks: [987, 902], closed: "Tue 14:30", ai: null, conf: null, setAt: null, due: "Tue 15:40", late: "22h 52m late", hits: 0, paid: false, deadline: "Fri 09:00", deadlineIn: 18 * 3600 + 28 * 60, state: "Late", tab: "late",
-      rule: "Nikkei 225 official close", ev: [], err: "The source page timed out on 3 runs, then returned a value for 25 Nov. The run stopped because the date did not match." },
-    { id: "Q-1124-2", set: "Tue 24", title: "Tonight's Premier League match: 3 goals or more?", l: "2 or fewer", r: "3 or more", picks: [812, 1077], closed: "Wed 04:55", ai: "r", conf: 0.9, setAt: "Wed 07:12", winEnds: "Wed 13:12", hits: 1077, paid: true, deadline: "Fri 09:00", state: "Corrected", tab: "corrected",
-      rule: "Total goals at full time", ev: [{ src: "Premier League match centre", url: "https://www.premierleague.com/matches", quote: "FT 2 : 1", value: "3 goals", at: "Wed 08:38:05" }], tx: TX("ans-1124-2"),
-      corrected: { from: "l", by: "ops@cojam.app", at: "Wed 08:40", why: "A goal in stoppage time. The first fetch read the score at 90:00.", inside: true } },
-    { id: "Q-1124-3", set: "Tue 24", title: "Will the Bank of Korea cut its base rate today?", l: "No", r: "Yes", picks: [1203, 371], closed: "Tue 09:40", ai: null, conf: null, setAt: null, hits: 0, paid: false, deadline: "Fri 09:00", state: "Cancelled", tab: "all",
+    { id: "Q-1125-4", set: "Wed 25", title: "Will Bitcoin be above $98,000 at 21:00 tomorrow?", l: "No", r: "Yes", picks: [644, 1241], closed: "Thu 09:00", ai: null, conf: null, setAt: null, due: "Today 21:05", dueIn: 6 * 3600 + 33 * 60, hits: 0, paid: false, deadline: "Sat 09:00", state: "Waiting", tab: "waiting",
+      rule: "Binance BTC/USDT price at 21:00 KST", ev: [] },
+    { id: "Q-1125-5", set: "Wed 25", title: "Will Seoul reach 10°C or higher tomorrow?", l: "No", r: "Yes", picks: [1321, 558], closed: "Thu 09:00", ai: null, conf: null, setAt: null, due: "Today 18:10", dueIn: 3 * 3600 + 38 * 60, hits: 0, paid: false, deadline: "Sat 09:00", state: "Waiting", tab: "waiting",
+      rule: "KMA Seoul station, daily high", ev: [] },
+    { id: "Q-1124-1", set: "Tue 24", title: "Will the Nikkei 225 close above 40,000 tomorrow?", l: "No", r: "Yes", picks: [987, 902], closed: "Wed 09:00", ai: null, conf: null, setAt: null, due: "Wed 15:40", late: "22h 52m late", hits: 0, paid: false, deadline: "Fri 09:00", deadlineIn: 18 * 3600 + 28 * 60, state: "Late", tab: "late",
+      rule: "Nikkei 225 official close", ev: [], err: "The source page timed out on 3 runs, then returned a value for 26 Nov. The run stopped because the date did not match." },
+    { id: "Q-1124-2", set: "Tue 24", title: "Tomorrow night's Premier League match: 3 goals or more?", l: "2 or fewer", r: "3 or more", picks: [812, 1077], closed: "Wed 09:00", ai: "r", conf: 0.9, setAt: "Thu 09:12", winEnds: "Today 15:12", winIn: 40 * 60, hits: 1077, paid: false, deadline: "Fri 09:00", state: "Corrected", tab: "corrected",
+      rule: "Total goals at full time", ev: [{ src: "Premier League match centre", url: "https://www.premierleague.com/matches", quote: "FT 2 : 1", value: "3 goals", at: "Thu 10:38:05" }], tx: TX("ans-1124-2"),
+      corrected: { from: "l", by: "ops@cojam.app", at: "Thu 10:40", why: "A goal in stoppage time. The first fetch read the score at 90:00.", inside: true } },
+    { id: "Q-1124-3", set: "Tue 24", title: "Will the Bank of Korea cut its base rate tomorrow?", l: "No", r: "Yes", picks: [1203, 371], closed: "Wed 09:00", ai: null, conf: null, setAt: null, hits: 0, paid: false, deadline: "Fri 09:00", state: "Cancelled", tab: "all",
       rule: "Bank of Korea press release", ev: [], voided: { by: "ops@cojam.app", at: "Tue 09:52", why: "The meeting was moved to next week after the question went live." } },
-    { id: "Q-1124-4", set: "Tue 24", title: "Will Bitcoin close above $98,000 today?", l: "No", r: "Yes", picks: [644, 1241], closed: "Wed 03:00", ai: "r", conf: 0.99, setAt: "Wed 09:02", winEnds: "Wed 15:02", hits: 1241, paid: true, deadline: "Fri 09:00", state: "Answer set", tab: "set",
-      rule: "Binance BTC/USDT daily close, 00:00 UTC", ev: [{ src: "Binance BTC/USDT 1 day candle", url: "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=1d", quote: "close: 99412.60", value: "99,412.60", at: "Wed 09:01:08" }], tx: TX("ans-1124-4") },
-    { id: "Q-1124-5", set: "Tue 24", title: "Will Seoul reach 10°C or higher tomorrow?", l: "No", r: "Yes", picks: [1321, 558], closed: "Wed 09:00", ai: "l", conf: 0.99, setAt: "Wed 18:08", winEnds: "Thu 00:08", hits: 1321, paid: true, deadline: "Fri 09:00", state: "Answer set", tab: "set",
-      rule: "KMA Seoul station, daily high", ev: [{ src: "KMA station 108 daily summary", url: "https://www.weather.go.kr/w/obs-climate/land/city-obs.do", quote: "Max 8.4", value: "8.4°C", at: "Wed 18:07:40" }], tx: TX("ans-1124-5") }
+    { id: "Q-1124-4", set: "Tue 24", title: "Will the home team win tomorrow night's V-League match?", l: "No", r: "Yes", picks: [803, 1041], closed: "Wed 09:00", ai: "l", conf: 0.71, setAt: "Thu 04:10", winEnds: "Thu 10:10", hits: 803, paid: true, deadline: "Fri 09:00", state: "Answer set", tab: "set", flag: "Low confidence",
+      rule: "Official KOVO match result", ev: [{ src: "KOVO match centre", url: "https://www.kovo.co.kr/game/v-league", quote: "Set score 1 : 3 (25 Nov, women)", value: "Away win, women's match", at: "Thu 04:09:31" }], tx: TX("ans-1124-4"),
+      fix: { right: "r", players: 1041, invited: 372, wrongPaid: 803, week: 48, note: "The run read the women's match played the same evening. The men's 19:00 match ended 3 : 1 for the home team." } },
+    { id: "Q-1124-5", set: "Tue 24", title: "Will gold close above $2,700 tomorrow?", l: "No", r: "Yes", picks: [636, 1233], closed: "Wed 09:00", ai: "r", conf: 0.98, setAt: "Thu 06:05", winEnds: "Thu 12:05", hits: 1233, paid: true, deadline: "Fri 09:00", state: "Answer set", tab: "set",
+      rule: "LBMA Gold Price PM, USD", ev: [{ src: "LBMA Gold Price PM", url: "https://www.lbma.org.uk/prices-and-data/precious-metal-prices", quote: "PM 2,712.40 USD", value: "2,712.40", at: "Thu 06:04:50" }], tx: TX("ans-1124-5") }
   ];
   D.answerAudit = [
-    { t: "Thu 12:05:02", who: "Settle sweep", lv: "info", msg: "Paid 1,233 hits on Q-1125-5 (61,650 P) and 2,160 P invite bonus.", tx: TX("settle-1125-5") },
-    { t: "Thu 10:10:04", who: "Settle sweep", lv: "info", msg: "Paid 803 hits on Q-1125-4 (40,150 P) and 1,400 P invite bonus.", tx: TX("settle-1125-4") },
+    { t: "Thu 12:05:02", who: "Settle sweep", lv: "info", msg: "Paid 1,233 hits on Q-1124-5 (61,650 P) and 2,160 P invite bonus.", tx: TX("settle-1124-5") },
+    { t: "Thu 10:10:04", who: "Settle sweep", lv: "info", msg: "Paid 803 hits on Q-1124-4 (40,150 P) and 1,400 P invite bonus.", tx: TX("settle-1124-4") },
     { t: "Thu 09:02:11", who: "Answer setter", lv: "info", msg: "Set Q-1125-1 to No. Confidence 0.99, 2 sources agree. Window ends 15:02.", tx: TX("ans-1125-1") },
-    { t: "Thu 04:10:19", who: "Answer setter", lv: "warn", msg: "Set Q-1125-4 to No. Confidence 0.71, 1 source. Flagged for review.", tx: TX("ans-1125-4") },
+    { t: "Thu 04:10:19", who: "Answer setter", lv: "warn", msg: "Set Q-1124-4 to No. Confidence 0.71, 1 source. Flagged for review.", tx: TX("ans-1124-4") },
     { t: "Wed 16:14:40", who: "Answer setter", lv: "error", msg: "Q-1124-1: source date mismatch after 3 retries. No answer set.", json: '{ "question": "Q-1124-1", "attempts": 4, "last": { "url": "https://indexes.nikkei.co.jp/en/nkave", "status": 200, "parsed_date": "2026-11-25", "expected_date": "2026-11-24" }, "action": "stopped" }' },
-    { t: "Wed 08:40:27", who: "ops@cojam.app", lv: "info", msg: "Corrected Q-1124-2 from 2 or fewer to 3 or more inside the window. Reason: A goal in stoppage time. The first fetch read the score at 90:00.", tx: TX("fix-1124-2") },
+    { t: "Thu 10:40:27", who: "ops@cojam.app", lv: "info", msg: "Corrected Q-1124-2 from 2 or fewer to 3 or more inside the window. Reason: A goal in stoppage time. The first fetch read the score at 90:00.", tx: TX("fix-1124-2") },
     { t: "Tue 09:52:03", who: "ops@cojam.app", lv: "info", msg: "Voided Q-1124-3. Reason: The meeting was moved to next week after the question went live.", tx: TX("void-1124-3") }
   ];
 
   /* ---------- ranking ---------- */
   D.split10 = function (pool) { return D.split.map(function (p) { return Math.round(pool * p) / 100; }); };
   var names = [["dalgona", A("r1", "c41d", "07ae")], ["0x4f2a…91bc", A("r2", "4f2a", "91bc")], ["yuki.m", A("r3")], ["하늘", A("r4")], ["kaia_whale", A("r5")], ["0x9c1e…77d0", A("r6", "9c1e", "77d0")], ["noodle", A("r7")], ["みさき", A("r8")], ["jay.park", A("r9")], ["0x03bd…e41a", A("r10", "03bd", "e41a")]];
-  var pts = [950, 900, 900, 850, 850, 850, 800, 800, 800, 750], hit = [11, 10, 10, 9, 9, 9, 8, 8, 8, 7];   /* the most anyone can have by now: 4 finished days and 11 settled hits */
-  var first = ["", "", "Reached 900 P at Thu 12:05, after rank 2 (Thu 10:10)", "", "Reached 850 P at Thu 10:10, after rank 4", "Reached 850 P at Thu 12:05, after rank 5", "", "Reached 800 P at Thu 10:10, after rank 7", "Reached 800 P at Thu 12:05, after rank 8", ""];
+  var pts = [750, 700, 700, 650, 650, 650, 600, 600, 600, 550], hit = [7, 6, 6, 5, 5, 5, 4, 4, 4, 3];   /* the most anyone can have by now: 4 finished days and 7 settled hits */
+  var first = ["", "", "Reached 700 P at Thu 12:05, after rank 2 (Thu 10:10)", "", "Reached 650 P at Thu 10:10, after rank 4", "Reached 650 P at Thu 12:05, after rank 5", "", "Reached 600 P at Thu 10:10, after rank 7", "Reached 600 P at Thu 12:05, after rank 8", ""];
   var prize = D.split10(D.users.qualified);
   D.rank = names.map(function (nm, i) { return { rank: i + 1, name: nm[0], addr: nm[1], pts: pts[i], hits: hit[i], days: 4, prize: prize[i], tie: first[i] }; });
-  D.rankNext = [{ rank: 11, name: "sora", addr: A("r11"), pts: 750, hits: 7, days: 4, tie: "Reached 750 P at Thu 12:05, after rank 10" }, { rank: 12, name: "bongbong", addr: A("r12"), pts: 700, hits: 6, days: 4, tie: "" }];
+  D.rankNext = [{ rank: 11, name: "sora", addr: A("r11"), pts: 550, hits: 3, days: 4, tie: "Reached 550 P at Thu 12:05, after rank 10" }, { rank: 12, name: "bongbong", addr: A("r12"), pts: 500, hits: 2, days: 4, tie: "" }];
   D.week = { n: 48, qualified: D.users.qualified, per: 1, cap: 10000, pool: D.users.qualified, playersRanked: 2740, lateAnswers: 2 };
   var lastNames = [["kaia_whale", A("r5")], ["dalgona", A("r1", "c41d", "07ae")], ["みさき", A("r8")], ["yuki.m", A("r3")], ["0x4f2a…91bc", A("r2", "4f2a", "91bc")], ["noodle", A("r7")], ["jay.park", A("r9")], ["하늘", A("r4")], ["sora", A("r11")], ["0x77aa…c2d1", A("l10", "77aa", "c2d1")]];
   var lastPts = [1900, 1850, 1850, 1800, 1750, 1750, 1700, 1700, 1650, 1650];
@@ -282,11 +317,11 @@
     { t: "14:12:36", lv: "warn", who: "Fee payer", msg: "Balance 184.6 KAIA is below the floor of 200 KAIA." },
     { t: "14:00:58", lv: "info", who: "Risk scoring", msg: "Blocked 3 accounts under inviter 0x8d31…c4f0 (scores 84, 86, 91). 5 more sent to review.", tx: TX("freeze-batch") },
     { t: "13:58:12", lv: "error", who: "Relayer", msg: "RPC timeout on a predict send. Retried on the backup endpoint and confirmed in 3.1 s.", json: '{ "action": "predict", "endpoint": "public-en.node.kaia.io", "error": "ETIMEDOUT", "retry": 1, "confirmed_ms": 3100 }' },
-    { t: "12:05:02", lv: "info", who: "Settle sweep", msg: "Paid 1,233 hits on Q-1125-5 (61,650 P).", tx: TX("settle-1125-5") },
-    { t: "10:10:04", lv: "info", who: "Settle sweep", msg: "Paid 803 hits on Q-1125-4 (40,150 P).", tx: TX("settle-1125-4") },
+    { t: "12:05:02", lv: "info", who: "Settle sweep", msg: "Paid 1,233 hits on Q-1124-5 (61,650 P).", tx: TX("settle-1124-5") },
+    { t: "10:10:04", lv: "info", who: "Settle sweep", msg: "Paid 803 hits on Q-1124-4 (40,150 P).", tx: TX("settle-1124-4") },
     { t: "09:02:11", lv: "info", who: "Answer setter", msg: "Set Q-1125-1 to No. Confidence 0.99.", tx: TX("ans-1125-1") },
     { t: "08:30:09", lv: "info", who: "Question publisher", msg: "Published 5 questions for Thu 26 Nov.", tx: TX("publish-1126") },
-    { t: "04:10:19", lv: "warn", who: "Answer setter", msg: "Set Q-1125-4 to No with confidence 0.71. Flagged for review.", tx: TX("ans-1125-4") },
+    { t: "04:10:19", lv: "warn", who: "Answer setter", msg: "Set Q-1124-4 to No with confidence 0.71. Flagged for review.", tx: TX("ans-1124-4") },
     { t: "Wed 21:00:44", lv: "info", who: "Airdrop sender", msg: "Week 47 airdrop sent: 10 payouts, 1,131 CT. 1 blocked winner skipped.", tx: TX("airdrop-47") },
     { t: "Wed 18:10:52", lv: "warn", who: "Image generator", msg: "Image for Q-1129-3 rejected by the check: lettering that reads as a film title." },
     { t: "Wed 16:10:27", lv: "info", who: "Owner wallet", msg: "Proposed: Completion points 100 to 120, Points per hit 50 to 40. Can be applied Fri 27 Nov, 16:10 KST.", tx: TX("propose-1") }

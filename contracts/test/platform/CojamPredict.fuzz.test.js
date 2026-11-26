@@ -106,6 +106,7 @@ async function runOne(seed) {
     okCounts[label] = (okCounts[label] || 0) + 1;
     if (apply) apply();
     for (const log of receipt.logs) {
+      if (log.address !== ctx.addr) continue; // CT's own Transfer events share the signature
       let parsed;
       try { parsed = iface.parseLog(log); } catch { continue; }
       if (!parsed) continue;
@@ -134,6 +135,7 @@ async function runOne(seed) {
     // invariant 2: within one tx, mints are explained by ranked credits, invite and welcome bonuses
     let mints = 0n, explained = 0n;
     for (const log of receipt.logs) {
+      if (log.address !== ctx.addr) continue; // CT's own Transfer events share the signature
       let parsed; try { parsed = iface.parseLog(log); } catch { continue; }
       if (!parsed) continue;
       if (parsed.name === "Transfer" && parsed.args.from === Z) mints += parsed.args.value;
@@ -572,7 +574,7 @@ describe("CojamPredict: randomized sequences against a model (invariants 1 to 13
       const res = await runOne(SEED + i);
       if (process.env.FUZZ_VERBOSE) console.log(res);
       expect(res.supply).to.be.greaterThan(0n);
-      expect(res.credits).to.be.greaterThan(0);
+      expect(res.okCounts.predict).to.be.greaterThan(0);
     });
   }
 });

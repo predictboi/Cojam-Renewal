@@ -94,7 +94,7 @@
   };
   X.acts.cancel = cancelSheet;
   function cancelSheet() {
-    X.confirm({ title: "Cancel the pending change?", body: "<p>Completion points stay at 100 P and Points per hit at 50 P. The announcement is withdrawn on chain. To change them later you propose again and wait another 48 hours.</p>", placeholder: "Why is the change withdrawn?", signer: "Signed and paid by the owner wallet " + X.short(D.owner) + ". The next step connects it.", action: "Cancel the change", cancel: "Keep it", done: "Connect the owner wallet to withdraw the change." });
+    X.confirm({ title: "Cancel the pending change?", body: "<p>Completion points stay at 100 P and Points per hit at 50 P. The announcement is withdrawn on chain. To change them later you propose again and wait another 48 hours.</p>", placeholder: "Why is the change withdrawn?", signer: "Signed and paid by the owner wallet " + X.short(D.owner) + ". The next step connects it.", danger: 1, action: "Cancel the change", cancel: "Keep it", done: "Connect the owner wallet to withdraw the change." });
   }
 
   X.mount({

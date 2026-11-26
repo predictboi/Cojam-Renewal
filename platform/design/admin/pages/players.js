@@ -95,7 +95,7 @@
   function blockSheet(i) {
     var p = D.review[i == null ? 3 : i], pre = p.rules.map(function (r) { return r.k + ": " + r.t; }).join(". ") + ".";
     X.confirm({ title: "Block " + X.short(p.addr) + "?", wide: 1, body: "<p>The account is frozen on chain. It can no longer predict, convert, receive an airdrop or get sponsored gas. Its " + n(p.points) + " P stay as they are, and it can still withdraw staked CT at its own fee. The player sees the Account on hold screen with help@cojam.app.</p>" + X.kv([["Account", X.addr(p.addr, { full: 1, link: false })], ["Score", p.score + " (below the automatic block at 80)"], ["Inviter", p.inviter ? p.inviter + ". No invite bonus is paid on this friend while blocked" : "None"]]),
-      reasonLabel: "Note", prefill: X.is("blockerror") ? "" : pre, placeholder: "Which evidence did you check?", signer: "Sent with the operator key through the worker. No owner signature.", action: "Block account", cancel: "Cancel", done: X.short(p.addr) + " blocked." });
+      reasonLabel: "Note", prefill: X.is("blockerror") ? "" : pre, placeholder: "Which evidence did you check?", signer: "Sent with the operator key through the worker. No owner signature.", danger: 1, action: "Block account", cancel: "Cancel", done: X.short(p.addr) + " blocked." });
     if (X.is("blockerror")) document.querySelector("[data-confirm]").click();
   }
   function clearSheet(i) {

@@ -93,7 +93,7 @@
   X.acts.adddomain = function () { X.confirm({ title: "Add proton.me to the allow list?", body: "<p>New players can sign up with a proton.me address at once. Addresses are stored lower case with +tags removed, and one normalised address is one player.</p>", placeholder: "Why is this provider added?", action: "Add proton.me", done: "proton.me added. Sign ups are open." }); };
   X.acts.addadmin = function () { X.go("addadmin"); };
   X.acts.addadmin2 = function () { X.toast("mina@cojam.app added as Operator."); };
-  X.acts.rmadmin = function (m) { X.confirm({ title: "Remove " + m + " from the admin?", reason: false, body: "<p>Their session ends at once and they can no longer sign in.</p>", action: "Remove", done: m + " removed." }); };
+  X.acts.rmadmin = function (m) { X.confirm({ title: "Remove " + m + " from the admin?", reason: false, body: "<p>Their session ends at once and they can no longer sign in.</p>", danger: 1, action: "Remove", done: m + " removed." }); };
   function maintSheet() {
     X.confirm({ title: maintOn ? "End maintenance mode?" : "Turn on maintenance mode?", reason: maintOn ? false : undefined, body: maintOn ? "<p>The app opens again for everyone. Held picks are sent if their question is still open.</p>" : "<p>Every player sees the maintenance page at once, with the message and expected end below the switch. About 1,926 players have played today and 138 have picks left. The install page and this admin keep working. Answers, settling and the airdrop keep running.</p>", placeholder: "What is being fixed?", action: maintOn ? "End maintenance" : "Turn on maintenance", cancel: maintOn ? "Keep it on" : "Cancel", next: maintOn ? "" : "maintenance", done: "Maintenance mode is off." });
   }
