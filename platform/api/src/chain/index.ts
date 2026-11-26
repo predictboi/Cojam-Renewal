@@ -193,6 +193,8 @@ export interface ChainReader {
   dayOf(wallet: Address, dayId: number): Promise<DayState>;
   pendingHits(wallet: Address, dayId: number): Promise<{ points: bigint; landsAt: number }>;
   params(): Promise<PredictParams>;
+  /** Proposed params waiting for applyParams (applyAfter 0 = none). */
+  pendingParams(): Promise<{ params: PredictParams; applyAfter: number }>;
   market(marketId: number): Promise<MarketState>;
   reserve(): Promise<bigint>;
   convertedCtOnDay(wallet: Address, dayId: number): Promise<bigint>;
@@ -209,6 +211,27 @@ export interface ChainReader {
 function need(addr: Address | undefined, name: string): Address {
   if (!addr) throw new RpcError(`${name} address is not configured`, { isNodeReply: false });
   return addr;
+}
+
+/** viem Params struct -> PredictParams. */
+export function toParams(p: any): PredictParams {
+  return {
+    completionPoints: Number(p.completionPoints),
+    hitPoints: Number(p.hitPoints),
+    referralBps: Number(p.referralBps),
+    welcomePoints: Number(p.welcomePoints),
+    settleDelay: Number(p.settleDelay),
+    pointsPerCT: Number(p.pointsPerCT),
+    minConvertPoints: Number(p.minConvertPoints),
+    maxConvertCtPerUserPerDay: Number(p.maxConvertCtPerUserPerDay),
+    maxConvertCtPerDay: Number(p.maxConvertCtPerDay),
+    minAccountAge: Number(p.minAccountAge),
+    minResolveGap: Number(p.minResolveGap),
+    maxWeeklyPool: Number(p.maxWeeklyPool),
+    airdropDelay: Number(p.airdropDelay),
+    treasury: p.treasury,
+    splitBps: [...p.splitBps].map(Number),
+  };
 }
 
 export function createChainReader(clients: ChainClients): ChainReader {
@@ -262,25 +285,12 @@ export function createChainReader(clients: ChainClients): ChainReader {
       const r = await readP("pendingHits", [wallet, dayId]);
       return { points: BigInt(r[0]), landsAt: Number(r[1]) };
     },
+    async pendingParams() {
+      const r = await readP("pendingParams");
+      return { params: toParams(r[0]), applyAfter: Number(r[1]) };
+    },
     async params() {
-      const p = await readP("params");
-      return {
-        completionPoints: Number(p.completionPoints),
-        hitPoints: Number(p.hitPoints),
-        referralBps: Number(p.referralBps),
-        welcomePoints: Number(p.welcomePoints),
-        settleDelay: Number(p.settleDelay),
-        pointsPerCT: Number(p.pointsPerCT),
-        minConvertPoints: Number(p.minConvertPoints),
-        maxConvertCtPerUserPerDay: Number(p.maxConvertCtPerUserPerDay),
-        maxConvertCtPerDay: Number(p.maxConvertCtPerDay),
-        minAccountAge: Number(p.minAccountAge),
-        minResolveGap: Number(p.minResolveGap),
-        maxWeeklyPool: Number(p.maxWeeklyPool),
-        airdropDelay: Number(p.airdropDelay),
-        treasury: p.treasury,
-        splitBps: [...p.splitBps].map(Number),
-      };
+      return toParams(await readP("params"));
     },
     async market(marketId) {
       const r = await readP("markets", [BigInt(marketId)]);

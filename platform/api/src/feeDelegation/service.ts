@@ -7,7 +7,7 @@
 // The answer comes once the node accepted the transaction (not after mining).
 import { keccak256, type Address, type Hex } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { sql, type Db } from "../db/index.ts";
+import type { Db } from "../db/index.ts";
 import type { ChainReader, PlayKeyBinding, RawRpc } from "../chain/index.ts";
 import { RpcError } from "../chain/index.ts";
 import { ApiError } from "../server/errors.ts";
@@ -312,6 +312,7 @@ export function createFeePayerService(deps: FeePayerDeps): FeePayerService {
           action: st.action,
           target: tx.to!.toLowerCase(),
           market_id: marketId,
+          choice: st.args.action === "predict" ? st.args.choice : null,
           nonce: tx.nonce,
           status: "reserved" as const,
           reserved_wei: st.maxCostWei.toString(),
@@ -432,6 +433,3 @@ export function createFeePayerService(deps: FeePayerDeps): FeePayerService {
     },
   };
 }
-
-/** Exposed for the unit tests. */
-export const _internals = { sql };

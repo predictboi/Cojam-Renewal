@@ -147,9 +147,14 @@ async function runOne(seed) {
 
   // ---------------- days ----------------
   async function ensureDays() {
-    const today = (BigInt(await time.latest()) + 2n) / DAY;
-    for (const d of [today + 1n, today + 2n]) {
+    const t = BigInt(await time.latest()) + 1n;
+    const today = t / DAY;
+    // tomorrow is sometimes left for later, so days are also created after they opened (a missed run)
+    for (const d of [today - 1n, today, today + 1n, today + 2n]) {
       if (M.markets.has(d * 5n)) continue;
+      if (d === today + 1n && r.chance(0.3)) continue;
+      const late = d <= today;
+      if (late && !r.chance(0.5)) continue;
       const open = d * DAY;
       const inputs = [];
       for (let i = 0; i < 5; i++) {
@@ -159,7 +164,8 @@ async function runOne(seed) {
         inputs.push({ closesAt, resolvesAt, contentHash: hash(`${seed}:${d}:${i}`) });
       }
       // createDay reads minResolveGap, which stays 1 h in this test
-      await send(true, "createDay", () => op.createDay(d, inputs), () => {
+      const ok = t + H <= (d + 1n) * DAY; // before its end minus 1 hour (never a past day)
+      await send(ok, late ? "late createDay" : "createDay", () => op.createDay(d, inputs), () => {
         inputs.forEach((x, i) => M.markets.set(d * 5n + BigInt(i), { closesAt: x.closesAt, resolvesAt: x.resolvesAt, resolvedAt: 0n, settlesAt: 0n, outcome: 0, corrected: 0 }));
       });
     }

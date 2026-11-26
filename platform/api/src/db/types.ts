@@ -354,6 +354,7 @@ export interface SponsoredTxsTable {
   action: string;
   target: string | null;
   market_id: number | null;
+  choice: ColumnType<number | null, number | null | undefined, number | null>;
   nonce: number | null;
   tx_hash: string | null;
   status: SponsoredStatus;

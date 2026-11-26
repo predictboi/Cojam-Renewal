@@ -154,8 +154,20 @@ export function largeNumbers(text: string): number[] {
   return out.filter((n) => n >= 100).map((n) => Math.round(n * 1e6) / 1e6);
 }
 
-function numberSet(l: { title: string; rule: string; left: string; right: string }): string {
-  return [...new Set([l.title, l.rule, l.left, l.right].flatMap(largeNumbers))].sort((a, b) => a - b).join(',');
+function numbersOf(l: { title: string; rule: string; left: string; right: string }): Set<number> {
+  return new Set([l.title, l.rule, l.left, l.right].flatMap(largeNumbers));
+}
+
+/**
+ * Number mismatch between English and another language: the other text may not carry a number the
+ * English does not, and every English number of 1,000 or more (prices, levels, rates) must appear in
+ * it. Smaller English numbers can be part of a name ("Nikkei 225" is "日経平均" in Japanese).
+ */
+export function numberMismatch(en: Set<number>, other: Set<number>): string | null {
+  const extra = [...other].filter((n) => !en.has(n));
+  const missing = [...en].filter((n) => n >= 1000 && !other.has(n));
+  if (!extra.length && !missing.length) return null;
+  return [missing.length ? `missing ${missing.join(', ')}` : '', extra.length ? `extra ${extra.join(', ')}` : ''].filter(Boolean).join('; ');
 }
 
 const STOP = new Set(['will', 'the', 'a', 'an', 'be', 'at', 'on', 'in', 'of', 'to', 'than', 'or', 'and', 'by', 'is', 'it', 'its', 'tomorrow', 'today', 'tonight', 'more', 'higher', 'above', 'below', 'end', 'close']);
@@ -219,10 +231,10 @@ export function checkDraft(d: Draft, ctx: CheckContext): CodeCheckResult {
   if (hasDashBreak(d.criteria)) errors.push('criteria uses a dash as a sentence break');
 
   // Same large numbers in all three languages.
-  const en = numberSet(d.en);
+  const en = numbersOf(d.en);
   for (const lang of ['ko', 'ja'] as const) {
-    const other = numberSet(d[lang]);
-    if (other !== en) errors.push(`${lang} numbers (${other || 'none'}) differ from en (${en || 'none'})`);
+    const diff = numberMismatch(en, numbersOf(d[lang]));
+    if (diff) errors.push(`${lang} numbers differ from en: ${diff}`);
   }
 
   // Criteria: one sentence with an exact time and time zone.

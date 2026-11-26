@@ -5,7 +5,7 @@ Source: `contracts/platform/CojamPredict.sol`, `contracts/platform/PredictLogic.
 ## 1. Shape
 
 * One immutable contract, no proxy. Roles through `AccessControlDefaultAdminRules` (owner transfer delay 3 days), `Pausable`, `ReentrancyGuard`, `SafeERC20`.
-* Deployment links the stateless library `PredictLogic` (parameter bounds, `createDay` checks and writes, airdrop winner checks, the `pendingHits` view, parameter storage copies). It runs by DELEGATECALL in the contract's context, has no state and no owner. It exists only to keep `CojamPredict` under the 24,576 byte limit (runtime size 24,184 bytes; library 6,632 bytes). Deploy order: `PredictLogic`, then `CojamPredict(ct, owner, operator, treasury)` linked to it.
+* Deployment links the stateless library `PredictLogic` (parameter bounds, `createDay` checks and writes, airdrop winner checks, the `pendingHits` view, parameter storage copies). It runs by DELEGATECALL in the contract's context, has no state and no owner. It exists only to keep `CojamPredict` under the 24,576 byte limit (runtime size 24,184 bytes; library 6,700 bytes). Deploy order: `PredictLogic`, then `CojamPredict(ct, owner, operator, treasury)` linked to it.
 * Constructor: CT must report 18 decimals; owner, operator and treasury must not be zero. The owner gets `DEFAULT_ADMIN_ROLE` and `PAUSER_ROLE`; the operator gets `OPERATOR_ROLE` and `PAUSER_ROLE`. Default parameters are set and emitted as `ParamsApplied`.
 
 ## 2. Points ledger
@@ -27,7 +27,7 @@ Points are minted only by: the fifth `predict` of a day (completion, the invite 
 | `setFrozen(wallet, frozen, reason)` / `setFrozenMany` | OPERATOR | registered; batch rules | flag set, `PlayerFrozen`; balances untouched |
 | `setPlayKey(key, expiresAt)` | the player's wallet | registered, not frozen; key not 0, not the caller, not a registered player (`BadPlayKey`); key unbound or bound to the caller (`PlayKeyTaken`); `now < expiresAt <= now + 90 days` (`BadExpiry`) | unbinds the previous key (`PlayKeyRevoked`), binds the new one (`PlayKeySet`); same key renews |
 | `revokePlayKey()` | player or its key (expired included) | a key bound (`NoPlayKey`) | both links cleared |
-| `createDay(dayId, MarketInput[5])` | OPERATOR | before the open (`BadTimes`), not created (`DayExists`), every `closesAt == open + 1 day` (all five close at the day's end), `closesAt + minResolveGap <= resolvesAt <= open + 2 days` (`BadTimes`), hash not 0 (`EmptyContentHash`) | 5 markets, `DayCreated` |
+| `createDay(dayId, MarketInput[5])` | OPERATOR | before the open, or after it while `now + 1 h <= dayEnd` (a missed run does not lose the day; a past day is refused) (`BadTimes`), not created (`DayExists`), every `closesAt == open + 1 day` (all five close at the day's end), `closesAt + minResolveGap <= resolvesAt <= open + 2 days` (`BadTimes`), hash not 0 (`EmptyContentHash`) | 5 markets, `DayCreated` |
 | `predict(marketId, choice)` | player wallet or its unexpired key | not paused; a key that is bound but expired (`BadPlayKey`); registered, not frozen; choice 1 or 2 (`BadChoice`); market exists and `now >= open` (`DayNotOpen`); `now < closesAt` (`MarketClosed`); slot unanswered (`AlreadyPredicted(id)`) | choice stored for the player; fifth answer: completion credit, invite bonus, welcome once |
 | `setOutcome(id, o)` | OPERATOR | market exists (`UnknownMarket`), o in 1..3 (`BadChoice`), not set (`AlreadyResolved`), `now >= resolvesAt` (`NotResolvable`), `now < dayEnd + 48 h` (`ResolveDeadlinePassed`) | outcome, `resolvedAt = now`, `settlesAt = now + settleDelay` |
 | `correctOutcome(id, o)` | OPERATOR | set (`NotResolvable`), `now < settlesAt` (`CorrectionWindowOver`), different (`SameOutcome`) | outcome replaced; `settlesAt` unchanged |
@@ -102,7 +102,7 @@ The 13 invariants of DEV-PLAN 3.4 and 3.9 hold, with two restated by later decis
 | `compensate` per user (batch of 50, half invited) | 49,689 | |
 | `convert` (first of the day for the user and globally, first CT to the user) | 124,768 | about 95,000 |
 | `airdrop` 10 winners (10 first time CT holders) | 407,004 | |
-| `createDay` | 272,070 | |
+| `createDay` | 272,145 | |
 | `registerPlayer` / with inviter | 50,417 / 60,610 | |
 | `setOutcome` | 34,788 | |
 
@@ -129,7 +129,8 @@ The first credit of a player in a week writes two new slots (balance on the firs
 17. **Frozen player and play keys**: `revokePlayKey` works while frozen.
 18. **Question timing (DECISIONS "Question timing")**: `MarketInput` keeps a per market `closesAt` (so the ABI and storage stay as planned), but `createDay` requires every close to equal the day's end (09:00 KST the next day). The 48 hour rule therefore runs from that common close. `resolvesAt` stays per market, between close plus `minResolveGap` and 24 hours after the close.
 19. **Tie break field**: the plan's `WeekScore.lastCreditAt` is renamed `lastCompletionAt` and is written only by completion credits (review fix), so the rule reads: equal points, then the earlier last completion in that week, then the lower address; 0 sorts last.
-20. **Compensation week (DECISIONS "Compensation points")**: weekly points are on chain, so `compensate` implements the rule itself: the question's week when `airdropDone[week]` is false, else the week of the current day. `PointsCredited` carries both `weekId` and `dayId`. Hit credits from `settle` always use the question's week, as the plan says; a settle that runs after the week's airdrop still adds to that past week (the airdrop delay is sized so this does not happen when the keeper runs on time).
+20. **Late day creation (Kairos deploy review)**: `createDay` also accepts a day that has already opened while at least 1 hour remains before its end, still once and never for a past day; all other rules stay. `predict` needs no change: it already requires the market to exist and the day to be open, so a late day is playable from the block that creates it, and every close still equals the day's end. Players who arrive before the late creation simply see no markets yet.
+21. **Compensation week (DECISIONS "Compensation points")**: weekly points are on chain, so `compensate` implements the rule itself: the question's week when `airdropDone[week]` is false, else the week of the current day. `PointsCredited` carries both `weekId` and `dayId`. Hit credits from `settle` always use the question's week, as the plan says; a settle that runs after the week's airdrop still adds to that past week (the airdrop delay is sized so this does not happen when the keeper runs on time).
 
 ## 11. Self review: risks, ranked
 
