@@ -10,7 +10,9 @@
 // the main staking contract. Owner = operator = treasury = pauser = the signer.
 //
 // Resumable: a contract already recorded in deployments/platform.kairos.json with code on chain is reused unless
-// REDEPLOY=1. Writes deployments/platform.kairos.json and platform/shared/addresses/kairos.json.
+// REDEPLOY=1. REDEPLOY_PREDICT=1 redeploys PredictLogic and CojamPredict only (after a change to either), keeping CT and
+// both staking instances; the old pair moves to `retired` in the deployment file.
+// Writes deployments/platform.kairos.json and platform/shared/addresses/kairos.json.
 const { ethers, network } = require("hardhat");
 const path = require("path");
 const { DEPLOYMENTS, SHARED_ADDRESSES, readJson, writeJson, gasOf } = require("./lib");
@@ -37,6 +39,18 @@ async function main() {
     owner: me, operator: me, treasury: me, pauser: me,
   });
   out.contracts = out.contracts || {};
+  if (live && process.env.REDEPLOY_PREDICT === "1" && out.contracts.predict) {
+    out.retired = out.retired || [];
+    out.retired.push({
+      retiredAt: new Date().toISOString(),
+      reason: process.env.RETIRE_REASON || "CojamPredict / PredictLogic changed; redeployed",
+      predictLogic: out.contracts.predictLogic, predict: out.contracts.predict,
+      funding: (out.funding || []).filter((f) => f.to === "predict"),
+    });
+    out.funding = (out.funding || []).filter((f) => f.to !== "predict");
+    delete out.contracts.predictLogic;
+    delete out.contracts.predict;
+  }
   const hasCode = async (a) => a && (await ethers.provider.getCode(a)) !== "0x";
 
   async function deploy(key, name, args, opts = {}) {

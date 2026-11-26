@@ -21,6 +21,9 @@ export interface WorkerSettings {
   /** Weekly pool per qualified player and server cap, CT base units. */
   poolPerPlayerWei: bigint;
   poolCapWei: bigint;
+  /** Qualified player rule (REVIEW B7): days played in the week and account age at the week's end. */
+  poolMinDaysPlayed: number;
+  poolMinAccountAgeSec: number;
   riskBlockAt: number;
   riskReviewAt: number;
   /** Hours: alert when a day is not on chain by this UTC hour of the day before; reserve fill at the second. */
@@ -43,6 +46,8 @@ export const DEFAULT_SETTINGS: WorkerSettings = {
   freezeBatch: 100,
   poolPerPlayerWei: 10n ** 18n,
   poolCapWei: 10_000n * 10n ** 18n,
+  poolMinDaysPlayed: 3,
+  poolMinAccountAgeSec: 7 * 86400,
   riskBlockAt: 80,
   riskReviewAt: 50,
   publishAlertHourUtc: 18,

@@ -103,8 +103,8 @@ export async function runAirdrop(ctx: JobContext, weekId: number, opts: { force?
     perPlayerCt: ctx.settings.poolPerPlayerWei,
     serverCapCt: ctx.settings.poolCapWei,
     chainMaxWeeklyPoolWholeCt: BigInt(params.maxWeeklyPool),
-    minDaysPlayed: 3,
-    minAccountAgeSec: 7 * 86400,
+    minDaysPlayed: ctx.settings.poolMinDaysPlayed,
+    minAccountAgeSec: ctx.settings.poolMinAccountAgeSec,
   });
   const scores = await verifiedScores(ctx, weekId);
   const { winners, skipped, total } = buildWinners(scores, q.pool, params.splitBps);

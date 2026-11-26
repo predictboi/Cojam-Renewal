@@ -1,0 +1,102 @@
+// W4 Withdraw CT (platform/design/withdraw.html): user paid (KAIA from the player's own wallet, never sponsored),
+// sent through Privy sendTransaction after a review with a confirmation check.
+import { useEffect, useState } from 'react';
+import { getAddress, isAddress, type Address } from 'viem';
+import { useConfig, useWallet } from '../api';
+import { t } from '../i18n';
+import { esc, F, parseAmount } from '../lib/fmt';
+import { btn, icon, note, rows, skel } from '../ui/h';
+import { AmountField, Html, Shell } from '../ui/kit';
+import { useOffline, usePreset } from '../state/app';
+import { runTx, showTx, useTx, useTxBusy, type TxCfg } from '../ui/tx';
+import { actions } from '../chain/chain';
+import { DESIGN } from '../api/mock';
+
+const GOOD = '0x52908400098527886E0F7030069857D2E4169EE7';
+const KNOWN = (DESIGN.contracts as string[]).map((x) => x.toLowerCase());
+
+export default function Withdraw() {
+  const st = usePreset();
+  const q = useWallet();
+  const cfg = useConfig();
+  const offline = useOffline();
+  const busy = useTxBusy('withdraw');
+  const loading = st === 'loading' || q.isPending;
+  const bal = q.data?.ct ?? 0, kaia = q.data?.kaia ?? 0, fee = cfg.data?.userTxFeeKaia ?? 0.0021;
+  const me = q.data?.address || '';
+  const contracts = [...KNOWN, ...(cfg.data ? [cfg.data.contracts.ct, cfg.data.contracts.predict, cfg.data.contracts.staking].map((x) => x.toLowerCase()) : [])];
+  const addr0 = ({ filled: GOOD, review: GOOD, signing: GOOD, sending: GOOD, success: GOOD, failed: GOOD, nokaia: GOOD, bad: '0x52908400098527886E0F70300', sum: '0x52908400098527886e0F7030069857D2E4169EE7', own: DESIGN.user.address, contract: DESIGN.token } as Record<string, string>)[st] || '';
+  const [to, setTo] = useState(addr0);
+  const [amt, setAmt] = useState(addr0 ? '250' : '');
+  const [touched, setTouched] = useState(!!addr0);
+  const blocked = loading || offline;
+
+  const v = to.trim();
+  let e1 = '';
+  if (!v) e1 = touched ? 'x.e.empty' : '';
+  else if (!/^0x[0-9a-fA-F]{40}$/.test(v)) e1 = 'x.e.bad';
+  else if (!isAddress(v, { strict: true })) e1 = 'x.e.sum';   // mixed case that fails the EIP-55 checksum
+  else if (me && v.toLowerCase() === me.toLowerCase()) e1 = 'x.e.own';
+  else if (contracts.includes(v.toLowerCase())) e1 = 'x.e.contract';
+  const p = parseAmount(amt), a = p.value || 0;
+  let e2 = '', fix = '';
+  if (p.bad || (!p.empty && a <= 0)) e2 = t('s.e.nan');
+  else if (a > bal && !loading) { e2 = t('s.e.bal', { b: F.dec(bal) }); fix = btn(t('s.fix.bal', { b: F.dec(bal) }), { sm: true, attrs: 'data-fix="' + bal + '"' }); }
+  const noKaia = !loading && kaia < fee;
+  const valid = !!v && !e1 && !e2 && !p.empty && !noKaia && !blocked;
+
+  const txCfg = (dest: string, n: number, raw: string): TxCfg => {
+    const A = F.dec(n);
+    return {
+      key: 'withdraw', label: t('x.chip', { a: A }),
+      review: { title: t('x.rv.h', { a: A }), rows: [[t('x.rv.to'), '<span class="addr-v" translate="no">' + F.groups(dest) + '</span>'], [t('x.amount'), F.ct(n)], [t('x.fee'), t('x.fee.v', { f: fee })]], check: t('x.rv.check'), confirm: t('x.rv.h', { a: A }) },
+      success: { title: t('x.ok', { a: A }) },
+      exec: (pr) => actions.transferCt(getAddress(dest) as Address, raw, pr),
+      onSuccess: () => { setAmt(''); },
+    };
+  };
+  useEffect(() => {
+    const show = ({ review: 'review', signing: 'signing', sending: 'sending', success: 'success', failed: 'failed' } as const)[st as 'review'];
+    if (show) showTx(show, txCfg(GOOD, 250, '250'));
+    return () => { if (show) useTx.setState({ pending: false }); };
+  }, [st]);
+
+  const paste = async () => {
+    setTouched(true);
+    let s = '';
+    try { s = await navigator.clipboard.readText(); } catch { /* */ }
+    setTo((s || (/[?&]state=/.test(location.search) ? GOOD : '')).trim());
+  };
+  const onClick = (e: React.MouseEvent) => { const f = (e.target as Element).closest('[data-fix]'); if (f) setAmt(F.dec(+f.getAttribute('data-fix')!)); };
+  const toMsg = e1 ? '<span>' + t(e1) + '</span>' : v ? '<span class="row">' + icon('check', 16) + t('x.addr.ok') + '</span><span class="addr-v" translate="no">' + F.groups(v) + '</span>' : '';
+  const pin = (
+    <div className="pin pin--act">
+      <button type="button" className={'btn btn-primary btn-block' + (busy ? ' is-busy' : '')} id="go" disabled={!valid || !!busy} onClick={() => { if (valid) void runTx(txCfg(v, a, amt)); }}>
+        {busy ? <><span className="spin" /><span>{busy}</span></> : <span>{!p.empty && !e2 && a ? t('x.btn', { a: F.dec(a) }) : t('x.btn.empty')}</span>}
+      </button>
+    </div>
+  );
+  return (
+    <Shell tab="wallet" back="/wallet" title={t('x.title')} pin={pin} pts={loading ? 'loading' : ''}>
+      <div style={{ display: 'contents' }} onClick={onClick}>
+        {offline && <Html as="div" style={{ display: 'contents' }} html={note('warn', t('x.offline'))} />}
+        <p className="lead">{t('x.gas')}</p>
+        <section className="msec">
+          <div className="field">
+            <div className="field-label"><label htmlFor="to"><b>{t('x.to')}</b></label></div>
+            <div className={'field-box field-box--mono' + (blocked ? ' is-off' : '') + (e1 ? ' is-error' : '')}>
+              <input id="to" name="to" type="text" inputMode="text" autoComplete="off" autoCapitalize="off" autoCorrect="off" spellCheck={false} placeholder="0x…" value={to}
+                aria-describedby="to-msg" aria-invalid={e1 ? 'true' : 'false'} disabled={blocked} onChange={(e) => { setTouched(true); setTo(e.target.value); }} onBlur={() => setTouched(true)} />
+              <button type="button" className="field-max" id="paste" disabled={blocked} onClick={paste}>{t('x.paste')}</button>
+            </div>
+            <div className={'field-msg' + (e1 ? ' is-error' : '')} id="to-msg" aria-live="polite" dangerouslySetInnerHTML={{ __html: toMsg }} />
+          </div>
+          <AmountField id="amt" label={t('x.amount')} unit="CT" value={amt} onChange={setAmt} disabled={blocked} error={!!e2}
+            side={loading ? skel('110px', '12px') : t('x.avail', { c: '<b>' + F.dec(bal) + '</b>' })} msgHtml={e2 ? '<span>' + e2 + '</span>' + fix : ''} onMax={() => setAmt(F.dec(bal))} />
+        </section>
+        <Html as="section" className="msec mend" html={rows([[t('x.kaia'), F.kaia(kaia)], [t('x.fee'), t('x.fee.v', { f: fee })], [t('dp.net'), t('dp.net.v')]])} />
+        <div id="kaia-note" dangerouslySetInnerHTML={{ __html: noKaia ? note('error', t('x.e.kaia', { f: fee, k: F.dec(kaia) }), btn(t('x.fix.kaia'), { sm: true, href: '/deposit' })) : '' }} />
+      </div>
+    </Shell>
+  );
+}

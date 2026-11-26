@@ -3,7 +3,7 @@
 // `FakeProvider` (src/ai/fake.ts). Every call goes through `runLogged`, which writes one `ai_runs`
 // row with the job, model, prompt version, token usage, cost and stop reason.
 
-import type { Db } from '../db/index.ts';
+import type { WDb } from '../worker/db.ts';
 
 export type Effort = 'low' | 'medium' | 'high' | 'xhigh' | 'max';
 
@@ -102,7 +102,7 @@ export interface LoggedResult<T> {
  * refusal, an unparsable answer or a schema mismatch is logged with its error and thrown as
  * `AiOutputError`; the caller decides what that means (skip a draft, retry a resolution later).
  */
-export async function runLogged<T>(db: Db, provider: AiProvider, req: AiRequest, parse: (x: unknown) => T): Promise<LoggedResult<T>> {
+export async function runLogged<T>(db: WDb, provider: AiProvider, req: AiRequest, parse: (x: unknown) => T): Promise<LoggedResult<T>> {
   let res: AiResponse | undefined;
   let error: string | null = null;
   try {

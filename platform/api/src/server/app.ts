@@ -27,7 +27,6 @@ export async function buildApp(deps: Deps, opts: { logger?: boolean | object } =
     logger: opts.logger ?? false,
     trustProxy: deps.config.env.TRUST_PROXY,
     bodyLimit: 64 * 1024,
-    disableRequestLogging: true,
   });
 
   await app.register(cors, {

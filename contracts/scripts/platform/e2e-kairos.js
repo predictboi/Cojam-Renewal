@@ -2,24 +2,25 @@
 //   npx hardhat run scripts/platform/e2e-kairos.js --network kairos     live, against deployments/platform.kairos.json
 //   npx hardhat run scripts/platform/e2e-kairos.js                      whole cycle on the in process Hardhat network
 //                                                                        (fresh contracts, time travel between phases)
-// The contract's day is a real UTC day: createDay must be mined before 00:00 UTC of that day, predictions run during
-// it, outcomes from close + minResolveGap (1 h), hits land settleDelay (6 h) after the outcome, the week's airdrop
+// The contract's day is a real UTC day: createDay must be mined before 23:00 UTC of that day (late creation is allowed
+// while at least 1 hour remains), predictions run during it, outcomes from close + minResolveGap (1 h), hits land settleDelay (6 h) after the outcome, the week's airdrop
 // from weekEnd + airdropDelay (60 h), conversion 7 days after registration. None of this can be compressed on Kairos
 // without changing parameters (48 h delay) or the code, so the live run is phased: each run does every phase whose
 // time has come and that is not yet recorded, and prints when the next one opens. Re-run it later to continue.
 //
-//   setup    now: players, invite at registration and late invite code, play keys, two future days, refusals
-//            (predict before the open, createDay for an open day, convert by a new account, second referrer), freeze
-//            and unfreeze, pause and unpause, short lock staking stake / claim / withdraw, main staking stake,
-//            withdrawRewards and withdrawReserve
+//   setup    now: players, invite at registration and late invite code, play keys, today's day (late creation, when
+//            more than 65 minutes remain) and the next two days, refusals (predict before the open, createDay for a past
+//            day, convert by a new account, second referrer), freeze and unfreeze, pause and unpause, withdrawReserve
+//   staking  short lock staking stake / claim / withdraw, main staking stake, withdrawRewards (once per staking deploy)
 //   play     a created day is open: A and B answer all 5 by play key (B invited: bonus to A, welcome to B), C by wallet,
 //            B revokes its play key, predict after revoke refused
 //   resolve  close + 1 h: setOutcome on all five (one void), one correction inside the window
 //   settle   settlesAt passed: settleMany, second settle refused
-//   params   48 h after setup: applyParams (setup proposed pointsPerCT 100, minConvertPoints 100, minAccountAge 1 day,
-//            so a test player's few hundred points can be converted inside the test week; Kairos test deploy only)
-//   convert  after params: A converts 200 points to 2 CT
+//   params   only when a change is pending: applyParams 48 h after proposeParams. Live, setup proposes nothing unless
+//            E2E_TEST_PARAMS=1 (pointsPerCT 100, minConvertPoints 100, minAccountAge 1 day, recorded under `testParams`),
+//            because the API and the PWA read params() from this contract. The Hardhat run always uses the test change.
 //   airdrop  weekEnd + 60 h: airdrop of the week to the ranked players
+//   convert  account age passed and player A holds at least minConvertPoints: A converts the minimum
 //
 // Player wallets and play keys are derived from PRIVATE_KEY (never printed or stored), so every run finds the same
 // accounts. Results (addresses, tx hashes, gas) go to deployments/platform.kairos.e2e.json.
@@ -54,7 +55,22 @@ async function main() {
     logic = await ethers.getContractAt("PredictLogic", c.predictLogic.address);
     staking = await ethers.getContractAt("CojamStaking", c.staking.address);
     shortLock = await ethers.getContractAt("StakingShortLock", c.stakingShortLock.address);
-    rec.contracts = { ct: c.ct.address, predict: c.predict.address, staking: c.staking.address, stakingShortLock: c.stakingShortLock.address };
+    const contracts = { ct: c.ct.address, predict: c.predict.address, staking: c.staking.address, stakingShortLock: c.stakingShortLock.address };
+    if (rec.contracts && rec.contracts.predict && rec.contracts.predict !== contracts.predict) {
+      // CojamPredict was redeployed: archive the old run; staking results carry over when the staking contracts are the same.
+      const old = { contracts: rec.contracts, days: rec.days, playDay: rec.playDay, phases: rec.phases, gas: rec.gas, status: rec.status, archivedAt: new Date().toISOString() };
+      rec.retired = [...(rec.retired || []), old];
+      const sameStaking = rec.contracts.staking === contracts.staking && rec.contracts.stakingShortLock === contracts.stakingShortLock;
+      const oldStaking = rec.phases.staking || (rec.phases.setup && rec.phases.setup.shortLockPosition ? rec.phases.setup : null);
+      rec.phases = {};
+      rec.gas = {};
+      delete rec.days; delete rec.playDay; delete rec.status;
+      if (sameStaking && oldStaking && oldStaking.done) {
+        rec.phases.staking = { done: true, carriedOver: `staking ran live against the same staking contracts: see retired[${rec.retired.length - 1}].phases.${old.phases.staking ? "staking" : "setup"}`,
+          shortLockPosition: oldStaking.shortLockPosition, mainStakingPosition: oldStaking.mainStakingPosition };
+      }
+    }
+    rec.contracts = contracts;
   } else {
     ct = await (await ethers.getContractFactory("CojamToken")).deploy(op.address);
     logic = await (await ethers.getContractFactory("PredictLogic")).deploy();
@@ -130,20 +146,24 @@ async function main() {
     await refuse("setPlayKey with another player's key", () => predict.connect(C).setPlayKey.staticCall(keyA.address, exp), "PlayKeyTaken");
     await refuse("setPlayKey by an unregistered address", () => predict.connect(keyA).setPlayKey.staticCall(keyB.address, exp), "NotRegistered");
 
-    // days: the current day is already open, so the earliest day that can be created is tomorrow
+    // days: createDay works before the open, or late while at least 1 hour of the day remains, never for a past day
     const t = await now();
     const today = Math.floor(t / DAY);
     const mkDay = (d, tag) => Array.from({ length: 5 }, (_, s) => ({
       closesAt: (d + 1) * DAY, resolvesAt: (d + 1) * DAY + 3600, contentHash: hash(`cojam-e2e ${tag} day ${d} slot ${s}`),
     }));
-    await refuse("createDay for today (already open)", () => predict.createDay.staticCall(today, mkDay(today, "today")), "BadTimes");
+    await refuse("createDay for a past day", () => predict.createDay.staticCall(today - 1, mkDay(today - 1, "past")), "BadTimes");
     rec.days = rec.days || [];
-    for (const d of [today + 1, today + 2]) {
-      if ((await predict.markets(d * 5)).closesAt === 0n) await step(`createDay [${d}]`, () => predict.createDay(d, mkDay(d, "e2e")));
+    const lateOk = (today + 1) * DAY - t > 3600 + 300; // keep 5 minutes of margin over the 1 hour rule
+    const toCreate = lateOk ? [today, today + 1, today + 2] : [today + 1, today + 2];
+    if (!lateOk) log("  less than 65 minutes of today remain: today is not created");
+    for (const d of toCreate) {
+      const tag = d === today ? "late, day already open" : "before the open";
+      if ((await predict.markets(d * 5)).closesAt === 0n) await step(`createDay ${tag} [${d}]`, () => predict.createDay(d, mkDay(d, "e2e")));
       if (!rec.days.includes(d)) rec.days.push(d);
     }
     await refuse("createDay twice", () => predict.createDay.staticCall(today + 1, mkDay(today + 1, "e2e")), "DayExists");
-    await refuse("predict on today (no day created)", () => predict.connect(keyA).predict.staticCall(today * 5, 1), "DayNotOpen");
+    await refuse("predict on a day not created", () => predict.connect(keyA).predict.staticCall((today + 3) * 5, 1), "DayNotOpen");
     await refuse("predict before the day opens", () => predict.connect(keyA).predict.staticCall((today + 1) * 5, 1), "DayNotOpen");
     await refuse("convert by a new account", () => predict.connect(A).convert.staticCall(1000), "AccountTooNew");
 
@@ -160,6 +180,26 @@ async function main() {
     await step("predict withdrawReserve 1,000 CT", () => predict.withdrawReserve(1000n * CT1, op.address));
     await refuse("withdrawReserve to a non treasury", () => predict.withdrawReserve.staticCall(1n, A.address), "NotTreasury");
 
+    // parameters (owner, 48 h delay). Off by default: the API and PWA read params() from this contract. With
+    // E2E_TEST_PARAMS=1 the conversion rate drops to 100 points per CT, the minimum to 100 and the account age to 1 day
+    // so test points can be converted inside the week; recorded under `testParams` in the E2E file.
+    if ((process.env.E2E_TEST_PARAMS === "1" || !live) && (await predict.pendingParams())[1] === 0n && (await predict.params()).pointsPerCT !== 100n) {
+      const cur = await predict.params();
+      const next = { ...cur.toObject(true), pointsPerCT: 100, minConvertPoints: 100, minAccountAge: DAY };
+      next.splitBps = [...cur.splitBps];
+      const g = await step("proposeParams", () => predict.proposeParams(next));
+      rec.testParams = { contract: await predict.getAddress(), proposedTx: g.tx, applyAfter: new Date(Number((await predict.pendingParams())[1]) * 1000).toISOString(),
+        change: { pointsPerCT: [Number(cur.pointsPerCT), 100], minConvertPoints: [Number(cur.minConvertPoints), 100], minAccountAge: [Number(cur.minAccountAge), DAY] },
+        note: "TEST ONLY on Kairos. Undo with cancelParams() before it is applied." };
+      await refuse("applyParams before 48 h", () => predict.applyParams.staticCall(), "TooEarly");
+    }
+    done({ days: rec.days });
+  }
+
+  // ================= staking =================
+  if (!rec.phases.staking || !rec.phases.staking.done) {
+    begin("staking");
+    if ((await ct.balanceOf(A.address)) < 12_000n * CT1) await step("CT transfer 20,000 to player A", () => ct.transfer(A.address, 20_000n * CT1));
     // staking on the short lock TEST instance (2 s days: lock 0 is 60 s)
     const sl = shortLock.connect(A);
     const shortAddr = await shortLock.getAddress(), mainAddr = await staking.getAddress();
@@ -196,17 +236,7 @@ async function main() {
     await step("withdrawRewards 1,000 CT [shortLock]", () => shortLock.withdrawRewards(1000n * CT1, op.address));
     await step("withdrawRewards 1,000 CT [main]", () => staking.withdrawRewards(1000n * CT1, op.address));
     await refuse("withdrawRewards to a non treasury", () => staking.withdrawRewards.staticCall(1n, A.address), "NotTreasury");
-
-    // parameters (owner, 48 h delay): lower the conversion rate so a few days of test points can be converted, and the
-    // account age to 1 day, so the live convert step can run inside this test week. Test deploy only.
-    if ((await predict.pendingParams())[1] === 0n && (await predict.params()).pointsPerCT !== 100n) {
-      const cur = await predict.params();
-      const next = { ...cur.toObject(true), pointsPerCT: 100, minConvertPoints: 100, minAccountAge: DAY };
-      next.splitBps = [...cur.splitBps];
-      await step("proposeParams", () => predict.proposeParams(next));
-      await refuse("applyParams before 48 h", () => predict.applyParams.staticCall(), "TooEarly");
-    }
-    done({ days: rec.days });
+    done();
   }
 
   // ================= play =================
@@ -289,18 +319,6 @@ async function main() {
     done();
   }
 
-  // ================= convert =================
-  if (!rec.phases.convert || !rec.phases.convert.done) {
-    const p = await predict.params();
-    const at = Number((await predict.players(A.address)).registeredAt) + Number(p.minAccountAge);
-    if ((await now()) < at && !(await travel(at))) { log(`\nconvert: opens ${new Date(at * 1000).toISOString()}`); return finish(rec, save); }
-    begin("convert");
-    await refuse("convert not a multiple of the rate", () => predict.connect(A).convert.staticCall(150), "NotMultipleOfRate");
-    const ctBefore = await ct.balanceOf(A.address);
-    await step("convert 200 points", () => predict.connect(A).convert(200));
-    phase.ctReceived = ethers.formatUnits((await ct.balanceOf(A.address)) - ctBefore, 18);
-    done();
-  }
   // ================= airdrop =================
   if (!rec.phases.airdrop || !rec.phases.airdrop.done) {
     const w = Number(await predict.weekOf(d));
@@ -322,11 +340,26 @@ async function main() {
     done();
   }
 
+  // ================= convert =================
+  if (!rec.phases.convert || !rec.phases.convert.done) {
+    const p = await predict.params();
+    const at = Number((await predict.players(A.address)).registeredAt) + Number(p.minAccountAge);
+    if ((await now()) < at && !(await travel(at))) { log(`\nconvert: opens ${new Date(at * 1000).toISOString()}`); return finish(rec, save); }
+    const rate = p.pointsPerCT, amount = ((p.minConvertPoints + rate - 1n) / rate) * rate;
+    const bal = await predict.balanceOf(A.address);
+    if (bal < amount) { log(`\nconvert: player A holds ${bal} points, needs ${amount} (pointsPerCT ${rate}); re-run after more days are played`); return finish(rec, save); }
+    begin("convert");
+    await refuse("convert not a multiple of the rate", () => predict.connect(A).convert.staticCall(amount + rate / 2n), "NotMultipleOfRate");
+    const ctBefore = await ct.balanceOf(A.address);
+    await step(`convert ${amount} points`, () => predict.connect(A).convert(amount));
+    phase.ctReceived = ethers.formatUnits((await ct.balanceOf(A.address)) - ctBefore, 18);
+    done();
+  }
   return finish(rec, save);
 }
 
 function finish(rec, save) {
-  const order = ["setup", "play", "resolve", "settle", "params", "convert", "airdrop"];
+  const order = ["setup", "staking", "play", "resolve", "settle", "params", "airdrop", "convert"];
   rec.status = Object.fromEntries(order.map((k) => [k, rec.phases[k] && rec.phases[k].done ? "done" : "pending"]));
   rec.updatedAt = new Date().toISOString();
   save();
