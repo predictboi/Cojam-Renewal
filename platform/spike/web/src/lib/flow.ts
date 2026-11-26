@@ -20,7 +20,7 @@ export interface HashSigner {
 }
 
 // Fixed gas limits per action (DEV-PLAN 4.3: a table, not an estimate per swipe). Measured use on
-// Kairos: setPlayKey about 80k, predict about 75k to 95k (first write of the player). Capped by the API at 250k.
+// Kairos 2026-11-26: setPlayKey 81,614; predict 129,535 for a player's first ever prediction (four new slots), 75,961 to 78,267 after. Capped by the API at 250k.
 export const GAS = { setPlayKey: 160000n, predict: 150000n } as const;
 const MAX_GAS_PRICE = 50_000_000_000n;
 

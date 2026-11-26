@@ -193,7 +193,7 @@ async function runOne(seed) {
 
   // ---------------- actions ----------------
   const actions = [
-    [6, async function jump() {
+    [9, async function jump() {
       const big = r.chance(0.08);
       await time.increase(big ? BigInt(DAY) + BigInt(r.int(Number(DAY))) : BigInt(r.int(8 * 3600) + 1));
     }],
@@ -358,6 +358,35 @@ async function runOne(seed) {
         await send(count > 0, "settleMany", () => predict.settleMany(users, day), () => { for (const u of users) applyFor(u); });
       }
     }],
+    [3, async function keeper() {
+      const t = BigInt(await time.latest()) + 1n;
+      const day = t / DAY - 1n - BigInt(r.int(3));
+      const users = named.map((x) => x.address);
+      let any = false;
+      for (const u of users) {
+        const ud = UD(u, day);
+        for (let i = 0; i < 5; i++) {
+          const m = M.markets.get(day * 5n + BigInt(i));
+          if (ud.choices[i] && !((ud.settled >> i) & 1) && m && m.outcome !== 0 && t >= m.settlesAt) any = true;
+        }
+      }
+      if (!any) return;
+      const applyFor = (u) => {
+        const ud = UD(u, day);
+        let answered = 0, todo = 0, hits = 0;
+        for (let i = 0; i < 5; i++) if (ud.choices[i]) answered |= 1 << i;
+        const open = answered & ~ud.settled;
+        for (let i = 0; i < 5; i++) {
+          const m = M.markets.get(day * 5n + BigInt(i));
+          if ((open >> i) & 1 && m && m.outcome !== 0 && now >= m.settlesAt) { todo |= 1 << i; if (ud.choices[i] === m.outcome) hits++; }
+        }
+        if (!todo) return;
+        ud.settled |= todo; ud.hits += hits; M.days.set(`${u}:${day}`, ud);
+        const pts = BigInt(hits) * M.params.hitPoints;
+        if (pts > 0n) credit(u, pts, now, weekOf(day));
+      };
+      await send(true, "keeper settleMany", () => predict.settleMany(users, day), () => { for (const u of users) applyFor(u); });
+    }],
     [1, async function setCorrected() {
       await tick(); now -= 1n; await time.setNextBlockTimestamp(now + 1n);
       const t = now + 1n;
@@ -396,8 +425,9 @@ async function runOne(seed) {
       const s = r.pick(named);
       const p = P(s.address);
       const bal = M.bal.get(s.address) || 0n;
-      let pts = r.chance(0.8) ? (bal / 1000n) * 1000n : BigInt(r.int(5000));
-      if (pts > 60000n && r.chance(0.7)) pts = 50000n;
+      const rate = M.params.pointsPerCT;
+      let pts = r.chance(0.8) ? (bal / rate) * rate : BigInt(r.int(5000));
+      if (pts > 5000n && r.chance(0.7)) pts = 5000n;
       const ctAmt = (pts * E18) / M.params.pointsPerCT;
       const day = t / DAY;
       const uKey = `${s.address}:${day}`;
@@ -431,8 +461,8 @@ async function runOne(seed) {
         return;
       }
       const preset = r.pick(PRESETS);
-      const full = { ...preset, pointsPerCT: 1000n, minConvertPoints: 1000n, maxConvertCtPerUserPerDay: 50n, maxConvertCtPerDay: 20000n, minAccountAge: DAY, minResolveGap: H, maxWeeklyPool: 10000n, treasury: treasury.address, splitBps: M.params.split };
-      await send(true, "proposeParams", () => own.proposeParams(full), () => { M.pending = { p: { ...preset, minAge: DAY }, after: now + 48n * H }; });
+      const full = { ...preset, pointsPerCT: 100n, minConvertPoints: 100n, maxConvertCtPerUserPerDay: 50n, maxConvertCtPerDay: 20000n, minAccountAge: DAY, minResolveGap: H, maxWeeklyPool: 10000n, treasury: treasury.address, splitBps: M.params.split };
+      await send(true, "proposeParams", () => own.proposeParams(full), () => { M.pending = { p: { ...preset, minAge: DAY, pointsPerCT: 100n, minConvertPoints: 100n }, after: now + 48n * H }; });
     }],
   ];
   const total = actions.reduce((x, [w]) => x + w, 0);
@@ -512,6 +542,10 @@ async function runOne(seed) {
       if (ref !== Z) add(M.refCount, ref, 1n);
     });
   }
+  // start with a conversion friendly preset (100 points per CT, 1 day account age), applied after the delay
+  await actions.find(([, f]) => f.name === "params")[1]();
+  await time.increase(48n * H);
+  while (M.pending) await actions.find(([, f]) => f.name === "params")[1]();
   const counts = {};
   for (let step = 0; step < STEPS; step++) {
     await ensureDays();
