@@ -5,18 +5,26 @@
 
 /* ---------- finished home (card view): all five answered, the panel links to day done ---------- */
 .home-fin .deck-end { position: static; }
+.home-fin .end-ring { color: var(--ink); }
 .home-fin .end-ring .run { animation: none; stroke-dashoffset: 0; }
 .home-fin .deck-end p { max-width: 30ch; text-wrap: balance; }
 .home-fin .deck-end .btn { margin-top: var(--s-12); }
 
+/* ---------- list view: a row with Undo never pushes its picture out of the page; Undo drops to its own line when the answer is long ---------- */
+.term .trow > div { min-width: 0; }
+.term .trow-foot { flex-wrap: wrap; row-gap: var(--s-6); }
+.term .undo { min-width: 0; margin-left: auto; padding: 0 var(--s-12) 0 var(--s-10); }
+
 /* ---------- list view: the block under the list once all five are picked ---------- */
 .term-end { display: grid; gap: var(--s-12); margin-top: var(--s-4); padding-top: var(--s-16); border-top: var(--rule); }
 .term-end[hidden] { display: none; }
+.term-end.is-fin { order: -1; margin-top: 0; padding: 0 0 var(--s-16); border-top: 0; border-bottom: var(--rule); }
+.term-end.is-fin .term-end-txt { display: grid; gap: var(--s-2); }
 .term-end-txt { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-12); flex-wrap: wrap; }
 .term-end h2 { font-size: var(--fs-18); font-weight: var(--fw-heavy); }
-.term-end p { display: inline-flex; align-items: center; gap: var(--s-6); font-size: var(--fs-14); color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.term-end p { font-size: var(--fs-14); color: var(--ink-2); font-variant-numeric: tabular-nums; }
 .term-end p b { color: var(--ink); font-weight: var(--fw-heavy); }
-.term-end .spin { width: 12px; height: 12px; }
+.term-end .spin { display: inline-block; width: 12px; height: 12px; margin-right: var(--s-6); vertical-align: -1px; }
 
 /* ---------- day done: the headline is a small label, "+100P" under it is the hero ---------- */
 .is-done .ph { overflow: clip; }

@@ -59,7 +59,7 @@
     if (p && p.sync !== "fail") {
       var undo = p.sync === "held" ? '<button type="button" class="undo" data-undo="' + n + '" aria-label="' + App.esc(t("h.undo.aria", { n: n, choice: q[p.dir] })) + '"><svg class="undo-ring" viewBox="0 0 22 22" aria-hidden="true"><circle class="trk" cx="11" cy="11" r="8"/><circle class="run" cx="11" cy="11" r="8" style="animation-duration:' + UNDO_MS + "ms;animation-delay:-" + (Date.now() - p.t0) + 'ms"/></svg><span>' + t("h.undo") + "</span></button>" : "";
       return '<li class="trow is-done">' + num + '<div><p class="trow-q">' + App.esc(q.title) + '</p><div class="trow-foot">' + (undo ? "" : tag) + '<span class="trow-state">' +
-        (p.sync === "saving" ? '<span class="spin"></span><span class="sr-only">' + t("common.saving") + "</span>" : C.icon("check", 16)) + t("h.t.chose", { choice: C.pick(p.dir, App.esc(q[p.dir])) }) + "</span>" + undo + "</div></div>" + C.thumb(q) + "</li>";
+        (p.sync === "saving" ? '<span class="spin"></span><span class="sr-only">' + t("common.saving") + "</span>" : undo ? "" : C.icon("check", 16)) + t("h.t.chose", { choice: C.pick(p.dir, App.esc(q[p.dir])) }) + "</span>" + undo + "</div></div>" + C.thumb(q) + "</li>";
     }
     var failed = p && p.sync === "fail";
     if (n === current) {
@@ -100,7 +100,7 @@
       clearInterval(endT);
       var held = heldPicks(), mode = count() < 5 ? "" : held.length ? "wait" : fin && !leaving ? "fin" : "saving";
       if (mode !== endMode) {
-        endMode = mode; endEl.hidden = !mode;
+        endMode = mode; endEl.hidden = !mode; endEl.className = "term-end" + (mode === "fin" ? " is-fin" : "");   /* on a finished day the block leads the list, so the link is on the first screen */
         endEl.innerHTML = !mode ? "" : '<div class="term-end-txt"><h2>' + t("h.end.h") + '</h2><p id="term-end-p">' + (mode === "fin" ? t("h.fin.b") : mode === "saving" ? '<span class="spin"></span>' + t("h.end.b") : "") + "</p></div>" +
           (mode === "wait" ? C.btn(t("h.end.now"), { kind: "primary", block: true, id: "finish" }) : mode === "fin" ? C.btn(t("h.fin.btn"), { kind: "primary", block: true, href: sess.data.paid ? "done.html" : "done.html?state=moment", iconEnd: "right" }) : "");
         if (mode === "wait") endEl.scrollIntoView({ block: "nearest", behavior: App.reduce ? "auto" : "smooth" });

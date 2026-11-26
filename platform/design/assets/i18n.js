@@ -630,7 +630,7 @@
     "d.saving.st": ["Saving your last pick", "마지막 선택을 저장하고 있어요", "最後の予想を保存しています"],
     "d.hit.1": ["Answers are set within 48 hours.", "정답은 48시간 안에 확정돼요.", "結果は48時間以内に確定します。"],
     "d.hit.2": ["Each right pick pays +50P about 6 hours later.", "맞히면 약 6시간 뒤에 +50P가 들어와요.", "的中すると、約6時間後に+50Pが入ります。"],
-    "h.fin.b": ["Your picks are in. Answers are set within 48 hours.", "오늘 예측을 모두 마쳤어요. 정답은 48시간 안에 확정돼요.", "今日の予想はすべて完了です。結果は48時間以内に確定します。"],
+    "h.fin.b": ["Answers are set within 48 hours. The next set opens at 09:00 KST.", "정답은 48시간 안에 확정돼요. 다음 문제는 오전 9시에 열려요.", "結果は48時間以内に確定します。次の問題は午前9時に始まります。"],
     "h.fin.btn": ["See today's picks", "오늘 고른 답 보기", "今日の予想を見る"],
     "k.gap.up": ["{n}P ahead", "{n}P 앞", "{n}P 上"],
     "k.gap.down": ["{n}P behind", "{n}P 뒤", "{n}P 下"],
