@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="assets/screens/invite.css">
 </head>
 <body>
-<!-- P1 Profile and settings. States: (none), nameerror, nameword, notset, otherdevice, saved, logout, session, update, hold (account on hold: a status row that links to the explanation). Add ?lang=en|ko|ja. Mock data only. -->
+<!-- P1 Profile and settings. States: (none), nameerror, nameword, notset, otherdevice, saved, logout, session, update, hold (account on hold: a status row that links to the explanation; no weekly rank), code-open (no inviter and signed up less than 24 hours ago: the "Invite code" row with the time left), code-sheet (its sheet open), code-valid, code-unknown, code-own, code-offline (the sheet after a check), code-linked (the inviter, read only). After 24 hours without a code the row is absent (the default). Add ?lang=en|ko|ja. Mock data only. -->
 <noscript>Cojam needs JavaScript to show this screen.</noscript>
 <script src="assets/i18n.js"></script>
 <script src="assets/mock.js"></script>
@@ -29,10 +29,18 @@
   /* one flat page. Identity leads: the display name, then rank and points as display figures. Under it, sections between ink rules with hairline rows.
      The wallet address is the short chip that copies the full one, as on the wallet screen; the explorer link is the row under it. Log out is the text button at the end of the page. */
   var me = M.around && M.around[2] ? M.around[2] : null;
+  /* invite code: once, within 24 hours of signing up (covers a first run that happened offline). In profile the player's own code is V.code. */
+  var V = M.invite, CODE_PRESET = { "code-valid": "DALGONA4", "code-unknown": "KAIA999", "code-own": V.code, "code-offline": "DALGONA4" }, codeState = /^code-/.test(S) ? (S === "code-linked" ? "linked" : "open") : "", inviter = "dalgona";
+  function codeRow() {
+    if (codeState === "linked") return '<div class="prow" id="code-row">' + C.icon("check", 20) + '<p class="grow"><b>' + t("p.code.by", { name: '<span translate="no">' + App.esc(inviter) + "</span>" }) + '</b><br><span class="tiny muted">' + t("p.code.fixed") + "</span></p></div>";
+    if (codeState !== "open") return "";
+    var h = Math.ceil(24 - (Date.now() - M.user.signedUp) / 3600000);
+    return '<button type="button" class="rowlink" id="code-row"><span><b>' + t("p.code") + "</b><small>" + (h > 1 ? t("p.code.left", { h: h }) : t("p.code.left.last")) + "</small></span>" + C.icon("chev", 18) + "</button>";
+  }
   function ident() {
     var nm = M.user.name || F.short(M.user.address);
     return '<section class="sec pid" aria-label="' + App.esc(t("p.title")) + '"><p class="pid-name" id="pid-name" translate="no">' + App.esc(nm) + '</p><div class="stats">' +
-      '<div class="stat"><b>' + (me && S !== "unranked" ? me.rank : "&ndash;") + "</b><span>" + (me && S !== "unranked" ? t("p.rank") : t("p.norank")) + "</span></div>" +
+      '<div class="stat"><b>' + (me && S !== "unranked" && S !== "hold" ? me.rank : "&ndash;") + "</b><span>" + (me && S !== "unranked" ? t("p.rank") : t("p.norank")) + "</span></div>" +
       '<div class="stat"><b>' + F.pts(me ? me.pts : 0) + "</b><span>" + t("r.week") + "</span></div>" +
       '<div class="stat"><b>' + F.pts(M.user.points) + "</b><span>" + t("p.pts") + "</span></div></div>" +
       /* the way to the invite screen: one row under the figures, with the number of friends who joined as a count chip */
@@ -45,6 +53,7 @@
       /* account on hold: the status leads the account section, as a row to the full explanation */
       (S === "hold" ? '<a class="rowlink" id="hold-row" href="system.html?state=blocked">' + '<span><b>' + t("hold.t") + "</b><small>" + t("hold.profile.sub") + "</small></span>" + C.tag(t("hold.tag"), "", "pause") + C.icon("chev", 18) + "</a>" : "") +
       '<div class="prow">' + C.icon("mail", 20) + '<p class="grow">' + t("p.login", { email: '<b translate="no">' + M.user.email + "</b>" }) + "</p></div>" +
+      '<div id="code-slot">' + codeRow() + "</div>" +
       '<div class="prow-addr"><p class="lbl">' + t("w.addr") + "</p>" + C.addr(a) + "</div>" +
       linkRow(t("w.scan"), "https://kaiascan.io/address/" + a, true) +
       '<div class="stack-8 prow-dev">' + device() + "</div></div></section>" +
@@ -86,6 +95,40 @@
     function logout() { App.sheet.open("<h2>" + t("p.logout.h") + '</h2><p class="sheet-lead">' + t("p.logout.b") + '</p><div class="sheet-acts">' + C.btn(t("p.logout"), { block: true, href: "login.html" }) + C.btn(t("common.cancel"), { kind: "ghost", block: true, attrs: "data-sheet-close" }) + "</div>"); }
     $("#logout").addEventListener("click", logout);
     $("#upd").addEventListener("click", function () { App.toast(t("p.uptodate")); });
+    /* ---- invite code: the first run field in a sheet. Apply checks the code; only a code that passed shows "Link this code", and linking is final */
+    function codeSheet(preset) {
+      App.sheet.open("<h2>" + t("p.code.h") + '</h2><p class="sheet-lead">' + t("p.code.lead") + '</p><div class="onb-code">' +
+        '<div class="field-box field-box--text"><input id="code" name="invite-code" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done" maxlength="8" placeholder="' + App.esc(t("o.code.ph")) + '" value="' + (preset || "") + '" aria-label="' + App.esc(t("p.code.label")) + '" aria-describedby="code-msg">' +
+        '<button type="button" class="field-max" id="code-apply">' + t("o.code.apply") + '</button></div><div class="onb-code-msg" id="code-msg" aria-live="polite"></div></div>' +
+        '<div class="sheet-acts">' + C.btn(t("p.code.link"), { kind: "primary", block: true, id: "code-link", attrs: "hidden" }) + C.btn(t("common.cancel"), { kind: "ghost", block: true, attrs: "data-sheet-close" }) + "</div>");
+      var inp = $("#code"), box = inp.closest(".field-box"), cmsg = $("#code-msg"), apply = $("#code-apply"), link = $("#code-link"), okCode = "", checking = false;
+      function norm(v) { return v.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 8); }
+      function say(kind, html) { cmsg.className = "onb-code-msg" + (kind ? " is-" + kind : ""); cmsg.innerHTML = html; }
+      function idle() { okCode = ""; inp.readOnly = false; box.classList.remove("is-ok", "is-error"); inp.removeAttribute("aria-invalid"); apply.textContent = t("o.code.apply"); apply.disabled = !inp.value; link.hidden = true; say("", ""); }
+      function fail(key) { box.classList.add("is-error"); inp.setAttribute("aria-invalid", "true"); apply.disabled = false; say("error", C.icon("warn", 16) + "<span>" + t(key) + "</span>"); }
+      function settle(v) {
+        checking = false;
+        if (v.length < 6) return fail("o.code.short");
+        if (v === V.code) return fail("o.code.own");
+        if (!V.known[v]) return fail("o.code.unknown");
+        okCode = v; inp.readOnly = true; box.classList.remove("is-error"); box.classList.add("is-ok"); inp.removeAttribute("aria-invalid"); apply.disabled = false; apply.textContent = t("o.code.change"); link.hidden = false;
+        say("ok", C.icon("check", 16) + "<span>" + t("p.code.ok", { name: '<b translate="no">' + App.esc(V.known[v]) + "</b>" }) + "</span>");
+      }
+      function check(now) {
+        var v = norm(inp.value); inp.value = v; if (!v || checking) return;
+        if (S === "code-offline" || App.offline) return fail("o.code.offline");
+        if (now) return settle(v);
+        checking = true; apply.disabled = true; box.classList.remove("is-error"); say("", '<span class="spin"></span><span>' + t("o.code.checking") + "</span>");
+        setTimeout(function () { settle(v); }, 500);
+      }
+      inp.addEventListener("input", function () { var v = norm(inp.value); if (v !== inp.value) inp.value = v; idle(); });
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); check(); } });
+      apply.addEventListener("click", function () { if (okCode) { idle(); inp.focus(); inp.select(); } else check(); });
+      link.addEventListener("click", function () { if (!okCode) return; inviter = V.known[okCode]; codeState = "linked"; App.sheet.close(); $("#code-slot").innerHTML = codeRow(); App.toast(t("p.code.done", { name: inviter })); });
+      idle(); if (preset) check(true);
+    }
+    document.addEventListener("click", function (e) { if (e.target.closest("button#code-row")) codeSheet(); });
+    if (codeState === "open" && S !== "code-open") codeSheet(CODE_PRESET[S]);
     if (S === "logout") logout();
     if (S === "saved") App.toast(t("p.name.saved"));
     if (S === "update") App.toast(t("toast.update"), { btn: t("toast.reload"), fn: function () { location.reload(); } });

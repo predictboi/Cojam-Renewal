@@ -15,8 +15,8 @@
     return '<nav class="cal" aria-label="Schedule, next 14 days">' + D.days.map(function (d) {
       var k = d.far ? "far" : d.n < 5 || d.img < d.n ? "warn" : "", pips = "";
       for (var i = 0; i < 5; i++) pips += '<i data-s="' + (i >= d.n ? "none" : i >= d.img ? "noimg" : "") + '"></i>';
-      var m = d.far ? (d.n ? "Drafting" : "Not drafted") : d.n < 5 ? (5 - d.n) + " missing" : d.img < d.n ? (d.n - d.img) + " no image" : "5 images";
-      return '<a href="' + (D.dayLong[d.id] ? url(d.id) : "#") + '"' + (d.id === day ? ' aria-current="true"' : "") + (k ? ' data-k="' + k + '"' : "") + ' aria-label="' + d.d + ": " + d.n + " of 5 questions, " + m + '"><span class="d">' + (d.tag ? "<b>" + d.tag + "</b>" : d.d) + '</span><span class="n">' + d.n + '<small>/5</small></span><span class="m">' + m + '</span><span class="pips" aria-hidden="true">' + pips + "</span></a>";
+      var m = d.far ? (d.n ? "Drafting" : "Not yet") : d.n < 5 ? (5 - d.n) + " missing" : d.img + " images";
+      return '<a href="' + (D.dayLong[d.id] ? url(d.id) : "#") + '"' + (d.id === day ? ' aria-current="true"' : "") + (k ? ' data-k="' + k + '"' : "") + ' aria-label="' + d.d + ": " + d.n + " of 5 questions, " + d.img + ' with an image"><span class="d">' + (d.tag ? "<b>" + d.tag + "</b>" : d.d) + '</span><span class="n">' + d.n + '<small>/5</small></span><span class="m">' + m + '</span><span class="pips" aria-hidden="true">' + pips + "</span></a>";
     }).join("") + "</nav>" +
       '<p class="hint" style="margin-top:8px">Each bar is one of the day\'s 5 slots: filled, filled without an image (striped), or empty. The drafter runs daily at 18:00 KST and keeps the next 7 days full; later days are not expected to be filled yet. A day is written on chain at 08:30 KST and goes live at 09:00.</p>';
   }

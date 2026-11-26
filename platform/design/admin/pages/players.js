@@ -5,7 +5,7 @@
   var tab = X.is("blocked", "unblock", "unblockfail") ? "blocked" : X.is("invites") ? "invites" : X.is("search", "noresult") ? "search" : "review";
   var focus = D.review[3];   /* the account used by the detail, block and clear states */
   function score(s) { return '<span class="score"' + (s >= 80 ? ' data-k="down"' : "") + ' title="Review from 50, blocked at 80">' + s + '<i style="--p:' + s + '%"></i></span>'; }
-  function who(p) { return (p.name ? '<span class="t1">' + esc(p.name) + "</span>" : "") + X.addr(p.addr, { full: 1 }) + (p.email ? '<span class="t2">' + p.email + "</span>" : ""); }
+  function who(p) { return (p.name ? '<span class="t1">' + esc(p.name) + "</span>" : "") + X.addr(p.addr, { full: 1 }) + (p.email ? '<span class="t2">' + p.email + (p.cluster ? " " + tag("Cluster " + p.cluster, "warn") : "") + "</span>" : ""); }
   function rules(p) { return '<ul class="rules">' + p.rules.map(function (r) { return "<li><b>" + r.k + '</b><span class="dim">' + r.t + "</span></li>"; }).join("") + "</ul>"; }
 
   function tabs() {
@@ -25,8 +25,7 @@
           { h: "Account", val: function (p) { return p.addr; }, cell: function (p) { return who(p); } },
           { h: "Joined", cell: function (p) { return '<span class="nowrap">' + p.joined + "</span>"; } },
           { h: "Score", val: function (p) { return p.score; }, cell: function (p) { return score(p.score); } },
-          { h: "Rules that fired", cell: function (p) { return rules(p); } },
-          { h: "Cluster", val: function (p) { return p.cluster || "z"; }, cell: function (p) { return p.cluster ? tag("Cluster " + p.cluster, "warn") : ""; } },
+          { h: "Rules that fired", w: "36%", cell: function (p) { return rules(p); } },
           { h: "Inviter", cell: function (p) { return p.inviter ? esc(p.inviter) : '<span class="dim">None</span>'; } },
           { h: "Play", num: 1, val: function (p) { return p.points; }, cell: function (p) { return p.days + (p.days === 1 ? " day" : " days") + '<span class="t2">' + n(p.points) + " P" + (p.friends ? ", " + p.friends + " friends" : "") + "</span>"; } },
           { h: "", cell: function (p, i) { return '<div class="row-acts">' + X.btn("Open", { link: 1, act: "detail", arg: i }) + X.btn("Clear", { small: 1, act: "clear", arg: i, write: 1 }) + X.btn("Block", { small: 1, act: "block", arg: i, write: 1 }) + "</div>"; } }
