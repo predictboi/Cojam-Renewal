@@ -7,6 +7,9 @@
 # API and the worker), so platform/shared must stay in the checkout and is listed in each buildFilter.
 #
 # Secrets are `sync: false`: Render asks for them when the Blueprint is created, they never live in git.
+# Optional values are not listed and can be added by hand later: PRIVY_VERIFICATION_KEY, PRIVY_ADMIN_APP_SECRET,
+# PRIVY_ADMIN_VERIFICATION_KEY, ADMIN_SERVICE_TOKEN_SHA256, SENTRY_DSN (API); ALERT_TELEGRAM_BOT_TOKEN,
+# ALERT_TELEGRAM_CHAT_ID, ALERT_EMAIL (worker).
 # EMAIL_HASH_KEY and IP_HASH_SALT are generated once in a shared group, because the API and the worker must
 # hash with the same keys.
 
@@ -83,17 +86,11 @@ services:
         value: cmwxqqrt0017p0gl5hi2gewh7
       - key: PRIVY_APP_SECRET
         sync: false
-      - key: PRIVY_VERIFICATION_KEY
-        sync: false
+      # Same Privy app as the players for now (the admin allow list on the server decides who gets in).
+      # With the same id the API reuses PRIVY_APP_SECRET; a separate admin app needs PRIVY_ADMIN_APP_SECRET.
       - key: PRIVY_ADMIN_APP_ID
-        sync: false
-      - key: PRIVY_ADMIN_APP_SECRET
-        sync: false
-      - key: PRIVY_ADMIN_VERIFICATION_KEY
-        sync: false
+        value: cmwxqqrt0017p0gl5hi2gewh7
       - key: ADMIN_OWNER_EMAIL
-        sync: false
-      - key: ADMIN_SERVICE_TOKEN_SHA256
         sync: false
       # The platform fee payer: a new hot key holding KAIA only, never the swap fee payer.
       - key: APP_FEE_PAYER_PRIVATE_KEY
@@ -102,8 +99,6 @@ services:
         value: "10"
       - key: MIN_FEE_PAYER_BALANCE_KAIA
         value: "10"
-      - key: SENTRY_DSN
-        sync: false
 
   # Background worker: indexer, operator transactions (register, createDay, setOutcome, settle, airdrop,
   # freezes), the AI pipeline, risk checks and monitors. Exactly one instance: it owns the operator key's
@@ -145,13 +140,7 @@ services:
         value: "5"
       # Address only, for the fee payer balance monitor.
       - key: APP_FEE_PAYER_ADDRESS
-        sync: false
-      - key: ALERT_TELEGRAM_BOT_TOKEN
-        sync: false
-      - key: ALERT_TELEGRAM_CHAT_ID
-        sync: false
-      - key: ALERT_EMAIL
-        sync: false
+        value: "0x0b54C476f7e57a042DE826b893348bAf904fBD23"
       - key: IMAGE_BASE_URL
         value: https://img.cojam.app
 
@@ -233,7 +222,7 @@ services:
         value: https://cojam-app-api.onrender.com
       # Public id of the admin Privy app (not a secret); set it when that app exists.
       - key: VITE_PRIVY_ADMIN_APP_ID
-        sync: false
+        value: cmwxqqrt0017p0gl5hi2gewh7
     headers:
       - path: /*
         name: X-Content-Type-Options

@@ -48,7 +48,13 @@ const deps: Deps = {
     rpc,
     userAuth: env.PRIVY_APP_ID ? createPrivyVerifier({ appId: env.PRIVY_APP_ID, appSecret: env.PRIVY_APP_SECRET, verificationKey: env.PRIVY_VERIFICATION_KEY }) : null,
     adminAuth: env.PRIVY_ADMIN_APP_ID
-      ? createPrivyVerifier({ appId: env.PRIVY_ADMIN_APP_ID, appSecret: env.PRIVY_ADMIN_APP_SECRET, verificationKey: env.PRIVY_ADMIN_VERIFICATION_KEY })
+      ? createPrivyVerifier({
+          appId: env.PRIVY_ADMIN_APP_ID,
+          // The admin may share the players' Privy app: then its secret and key are reused.
+          appSecret: env.PRIVY_ADMIN_APP_SECRET ?? (env.PRIVY_ADMIN_APP_ID === env.PRIVY_APP_ID ? env.PRIVY_APP_SECRET : undefined),
+          verificationKey:
+            env.PRIVY_ADMIN_VERIFICATION_KEY ?? (env.PRIVY_ADMIN_APP_ID === env.PRIVY_APP_ID ? env.PRIVY_VERIFICATION_KEY : undefined),
+        })
       : null,
     devAuth: config.devBypass && !config.isProduction ? createDevVerifier() : null,
     feePayer: null,
