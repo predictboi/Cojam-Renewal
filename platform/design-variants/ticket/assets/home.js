@@ -16,7 +16,7 @@
       '<button type="button" class="ans ans--r" data-side="r"' + dis + ' aria-label="' + esc(t("h.pick.aria", { choice: q.right, q: q.title })) + '"><span>' + esc(q.right) + "</span>" + ic("right") + "</button>" +
       '<div class="stub-ink" aria-hidden="true"></div></div></div>';
   }
-  function rule(q) { return '<div class="card-rule"><span>' + t("h.answer", { rule: "<b>" + esc(q.rule) + "</b>" }) + "<br>" + t("h.ai", { time: esc(q.settle) }) + '</span><button type="button" class="info-btn" data-info="' + q.id + '" aria-label="' + t("h.ai.h") + '">' + ic("info") + "</button></div>"; }
+  function rule(q) { return '<dl class="card-f"><div><dt>' + t("h.ai.when") + "</dt><dd>" + t("h.ai.after", { time: esc(q.settle) }) + '</dd></div><div><dt>' + t("r.o.hit") + '</dt><dd><span class="hl">+50P</span></dd></div></dl><div class="card-rule"><span>' + t("h.answer", { rule: "<b>" + esc(q.rule) + "</b>" }) + '</span><button type="button" class="info-btn" data-info="' + q.id + '" aria-label="' + t("h.ai.h") + '">' + ic("info") + "</button></div>"; }
   function aiSheet(q) {
     T.sheet(t("h.ai.h"), '<ol class="steps"><li>' + t("h.ai.1") + "</li><li>" + t("h.ai.2") + "</li><li>" + t("h.ai.3") + '</li></ol><dl class="slip slip--flush rows" style="background:var(--stock-2);box-shadow:none"><div class="row"><dt>' + t("h.ai.src") + "</dt><dd>" + esc(q.rule) + '</dd></div><div class="row"><dt>' + t("h.ai.when") + "</dt><dd>" + t("h.ai.after", { time: esc(q.settle) }) + "</dd></div></dl>" + '<button class="btn btn--line btn--block" data-close>' + t("common.close") + "</button>");
   }

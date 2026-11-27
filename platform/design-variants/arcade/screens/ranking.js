@@ -55,7 +55,7 @@
   /* ranks 1 to 3 stand on a league podium (second, first, third from left to right; the list order for a screen reader stays 1, 2, 3) */
   function pod(r) {
     var ini = /^0x/.test(r.name) ? "0x" : Array.from(r.name)[0].toUpperCase();
-    return '<li class="pod' + (r.me ? " is-me" : "") + '" data-rank="' + r.rank + '"><span class="pod-top"><span class="pod-av" aria-hidden="true">' + App.esc(ini) + '</span><span class="pod-name">' + name(r) + (r.me ? C.tag(t("k.you"), "ink") : "") + '</span><span class="pod-pts">' + F.pts(r.pts) + "</span></span>" +
+    return '<li class="pod' + (r.me ? " is-me" : "") + '" data-rank="' + r.rank + '"><span class="pod-top">' + (r.rank === 1 ? '<svg class="pod-crown" viewBox="0 0 40 26" width="34" height="22" aria-hidden="true" focusable="false"><path d="M4 23L2 7l10 7 8-12 8 12 10-7-2 16z" fill="var(--sun)" stroke="var(--sun-deep)" stroke-width="3" stroke-linejoin="round"/></svg>' : "") + '<span class="pod-av" aria-hidden="true">' + App.esc(ini) + '</span><span class="pod-name">' + name(r) + (r.me ? C.tag(t("k.you"), "ink") : "") + '</span><span class="pod-pts">' + F.pts(r.pts) + "</span></span>" +
       '<span class="pod-clip"><span class="pod-block"><span class="pod-rank">' + rankNo(r.rank) + '</span><span class="pod-prize"><span data-prize="' + r.prize + '">' + prize(r.prize) + "</span><small>CT</small></span></span></span></li>";
   }
   function list(w) {

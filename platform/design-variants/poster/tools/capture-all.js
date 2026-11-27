@@ -2,7 +2,7 @@
 const { chromium } = require('playwright'); const path = require('path');
 const out = path.join(__dirname, '..', 'captures'), filter = process.argv[2];
 const S = [ ['login', 'login.html'], ['login-code', 'login.html?state=code'], ['first-run', 'first-run.html'], ['first-run-2', 'first-run.html?step=2'], ['first-run-3', 'first-run.html?step=3'],
-  ['home', 'home.html', 1], ['home-partial', 'home.html?state=partial', 1], ['home-drag', 'home.html', 0, 'drag'], ['home-undo', 'home.html', 0, 'undo'], ['home-finishing', 'home.html?state=partial', 0, 'fin'],
+  ['home', 'home.html', 1], ['home-partial', 'home.html?state=partial', 1], ['home-drag', 'home.html', 0, 'drag'], ['home-hint', 'home.html', 0, 'hint'], ['home-undo', 'home.html', 0, 'undo'], ['home-finishing', 'home.html?state=partial', 0, 'fin'],
   ['home-empty', 'home.html?state=empty'], ['home-loading', 'home.html?state=loading'], ['home-error', 'home.html?state=error'], ['home-offline', 'home.html?state=offline'], ['home-hold', 'home.html?state=hold'],
   ['home-list', 'home-list.html?state=partial'], ['done', 'done.html', 1], ['done-saving', 'done.html?state=saving'], ['results', 'results.html'], ['results-empty', 'results.html?state=empty'],
   ['ranking', 'ranking.html', 1], ['ranking-lastweek', 'ranking.html?state=lastweek'], ['staking', 'staking.html'], ['staking-review', 'staking.html?state=review'], ['stakes', 'stakes.html'], ['stakes-empty', 'stakes.html?state=empty'],
@@ -16,6 +16,7 @@ const FULL = ['done', 'results', 'ranking', 'stakes', 'wallet', 'profile', 'invi
     const pg = await ctx.newPage(); pg.on('pageerror', e => console.log('ERR', name, lang, e.message));
     await pg.goto('http://localhost:8856/' + url + (url.includes('?') ? '&' : '?') + 'lang=' + lang, { waitUntil: 'networkidle' });
     await pg.evaluate(() => document.fonts.ready); await pg.waitForTimeout(700);
+    if (act === 'hint') { const c = await pg.$('.card[data-pos="0"]'); const r = await c.boundingBox(); await pg.evaluate(([x, y]) => { const el = document.querySelector('.card[data-pos="0"]'); const f = (t, dx) => el.dispatchEvent(new PointerEvent(t, { bubbles: true, pointerId: 1, pointerType: 'touch', clientX: x + dx, clientY: y, isPrimary: true })); f('pointerdown', 0); f('pointermove', -30); f('pointermove', -85); }, [r.x + r.width / 2, r.y + r.height / 2]); await pg.waitForTimeout(250); }
     if (act === 'drag') { const c = await pg.$('.card[data-pos="0"]'); const r = await c.boundingBox(); await pg.evaluate(([x, y]) => { const el = document.querySelector('.card[data-pos="0"]'); const f = (t, dx) => el.dispatchEvent(new PointerEvent(t, { bubbles: true, pointerId: 1, pointerType: 'touch', clientX: x + dx, clientY: y, isPrimary: true })); f('pointerdown', 0); f('pointermove', 30); f('pointermove', 90); f('pointermove', 150); }, [r.x + r.width / 2, r.y + r.height / 2]); await pg.waitForTimeout(200); }
     if (act === 'undo') { await pg.evaluate(() => window.__deck.commit('r')); await pg.waitForTimeout(700); }
     if (act === 'fin') { await pg.evaluate(() => { __deck.commit('r'); }); await pg.waitForTimeout(450); await pg.evaluate(() => { __deck.commit('l'); }); await pg.waitForTimeout(450); await pg.evaluate(() => { __deck.commit('r'); }); await pg.waitForTimeout(600); }

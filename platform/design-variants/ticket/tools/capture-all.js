@@ -14,8 +14,10 @@ const S = [['login','login.html'],['login-code','login.html?state=code'],['first
       if (only && !only.includes(name)) continue; if (f && !name.startsWith(f)) continue;
       const pg = await ctx.newPage(); pg.on('pageerror', e => console.log('PAGEERROR', name, lang, e.message));
       await pg.goto('http://localhost:8858/' + page + (page.includes('?') ? '&' : '?') + 'lang=' + lang);
-      await pg.evaluate(() => document.fonts.ready); await pg.waitForTimeout(1500);
-      await pg.screenshot({ path: path.join(out, `${name}-${lang}-${w}.png`), fullPage: !/^(home|staking-review|wallet-deposit|wallet-withdraw)/.test(name) || /list/.test(name) });
+      await pg.evaluate(() => document.fonts.ready); await pg.waitForTimeout(name === 'home-fresh' ? 2600 : 1100);
+      const fit = /^(home|staking-review|wallet-deposit|wallet-withdraw)/.test(name) && !/list/.test(name);
+      if (!fit) { const H = await pg.evaluate(() => document.documentElement.scrollHeight); if (H > h) { await pg.setViewportSize({ width: w, height: H }); await pg.waitForTimeout(250); } }   // fixed bars stay at the bottom of a tall capture
+      await pg.screenshot({ path: path.join(out, `${name}-${lang}-${w}.png`) });
       await pg.close();
     }
     await ctx.close();

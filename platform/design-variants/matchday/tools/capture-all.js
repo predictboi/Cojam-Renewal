@@ -9,7 +9,8 @@ const out = path.join(__dirname, '..', 'captures'); const filter = process.argv[
     await pg.goto('http://localhost:8857/' + page + (page.includes('?') ? '&' : '?') + 'lang=' + lang, { waitUntil: 'networkidle' });
     await pg.evaluate(() => document.fonts.ready); await pg.waitForTimeout(1700);
     const sheet = await pg.locator('.sheet').count();
-    await pg.screenshot({ path: path.join(out, `${name}-${lang}-${w}.png`), fullPage: !sheet && !/^home($|-)/.test(name) });
+    if (!sheet && !/^home($|-)/.test(name)) { const H = await pg.evaluate(() => document.documentElement.scrollHeight); if (H > h) { await pg.setViewportSize({ width: w, height: H }); await pg.waitForTimeout(250); } } // long screens: the whole page, tab bar at the end
+    await pg.screenshot({ path: path.join(out, `${name}-${lang}-${w}.png`) });
     await ctx.close();
   }
   for (const [name, page] of pages) {

@@ -9,21 +9,22 @@
   --stock: #FBFCF8;           /* ticket stock */
   --stock-2: #EFF3EC;         /* printed tint panel on stock */
   /* inks */
-  --ink: #14181C;             /* 16.6:1 on stock, 13.9:1 on ground */
-  --ink-2: #49525A;           /* secondary text: 7.6:1 on stock, 6.3:1 on ground */
+  --ink: #14181C;             /* 17.3:1 on stock, 14.2:1 on ground */
+  --ink-2: #49525A;           /* secondary text: 7.7:1 on stock, 6.4:1 on ground */
   --ink-3: #6A737B;           /* 4.7:1 on stock only: dates, serial captions */
   --line: #C3CBC3;            /* hairlines on stock and ground */
-  --line-strong: #8D978F;
-  --blue: #124CC4;            /* right answer, primary action, links: 7.2:1 on stock, 6.0:1 on ground */
+  --line-strong: #78827A;   /* control edges and perforations: 3.2:1 on ground, 4.0:1 on stock */
+  --blue: #124CC4;            /* right answer, primary action, links: 7.1:1 on stock, 5.9:1 on ground */
   --blue-press: #0D3A99;
   --blue-tint: #E1E9F9;
-  --red: #B82A14;             /* left answer, errors: 6.1:1 on stock, 5.1:1 on ground */
+  --red: #B82A14;             /* left answer, errors: 6.0:1 on stock, 5.0:1 on ground */
   --red-press: #8F1F0E;
   --red-tint: #F7E4DF;
-  --mark: #FFCB2E;            /* highlighter: points earned, hits. Ink text on it 11.4:1 */
+  --mark: #FFCB2E;            /* highlighter: points earned, hits. Ink text on it 11.8:1 */
   --mark-tint: #FFF0BF;
   --on-ink: #FBFCF8;
   --focus: #124CC4;
+  --scrim: rgba(20, 24, 28, 0.45);
 
   /* type */
   --font-ui: "Archivo", "Pretendard Variable", "Pretendard", system-ui, -apple-system, "Segoe UI", sans-serif;

@@ -138,17 +138,16 @@
     });
     /* the very first card a player ever sees leans right, then left, once: it teaches the throw. Never under reduced motion, never again. */
     var nudge = [], nudgeT = [], STEP = "steps(1, end)", PR = "rotate(-10deg) scale(0.9)", PL = "rotate(10deg) scale(0.9)";
-    function stopNudge() { nudge.forEach(function (a) { try { a.cancel(); } catch (e) {} }); nudge = []; nudgeT.forEach(clearTimeout); nudgeT = []; App.$$(".choice.is-hot", deckEl).forEach(function (b) { b.classList.remove("is-hot"); }); deckEl.removeAttribute("data-nudge"); App.$$(".qstamp", deckEl).forEach(function (q) { if (!q.style.opacity || q.style.opacity === "0") q.style.visibility = ""; }); }
+    function stopNudge() { nudge.forEach(function (a) { try { a.cancel(); } catch (e) {} }); nudge = []; nudgeT.forEach(clearTimeout); nudgeT = []; App.$$(".choice.is-hot", deckEl).forEach(function (b) { b.classList.remove("is-hot"); }); deckEl.removeAttribute("data-nudge"); }
     if (live && count === 0 && !App.reduce && !App.offline && App.store.get("nudged", "") !== "1") {
       setTimeout(function () {
         var card = $('.qcard[data-pos="0"]', deckEl); if (!card || count || card.classList.contains("is-drag") || !card.animate) return;
-        App.store.set("nudged", "1"); deckEl.setAttribute("data-nudge", "1"); App.$$(".qstamp", card).forEach(function (q) { q.style.visibility = "visible"; });
-        var o = { duration: 1500, easing: "cubic-bezier(0.45, 0, 0.25, 1)" };
+        App.store.set("nudged", "1"); deckEl.setAttribute("data-nudge", "1");        var o = { duration: 1500, easing: "cubic-bezier(0.45, 0, 0.25, 1)" };
         nudge = [card.animate([{ transform: "none" }, { transform: "translateX(38px) rotate(4deg)", offset: 0.24 }, { transform: "translateX(38px) rotate(4deg)", offset: 0.4 }, { transform: "translateX(-38px) rotate(-4deg)", offset: 0.68 }, { transform: "translateX(-38px) rotate(-4deg)", offset: 0.82 }, { transform: "none" }], o),
           /* each lean shows the answer of that side as a proof stamp at full strength (ink on the sheet, no faint text). It steps in and out, never half visible,
              and the answer button on that side lights for the same moment. */
-          $(".qstamp--r", card).animate([{ opacity: 0, transform: PR, easing: STEP }, { opacity: 1, transform: PR, offset: 0.12, easing: STEP }, { opacity: 0, transform: PR, offset: 0.46, easing: STEP }, { opacity: 0, transform: PR }], { duration: 1500 }),
-          $(".qstamp--l", card).animate([{ opacity: 0, transform: PL, easing: STEP }, { opacity: 1, transform: PL, offset: 0.58, easing: STEP }, { opacity: 0, transform: PL, offset: 0.9, easing: STEP }, { opacity: 0, transform: PL }], { duration: 1500 })];
+          $(".qstamp--r", card).animate([{ opacity: 0, visibility: "hidden", transform: PR, easing: STEP }, { opacity: 1, visibility: "visible", transform: PR, offset: 0.12, easing: STEP }, { opacity: 0, visibility: "hidden", transform: PR, offset: 0.46, easing: STEP }, { opacity: 0, visibility: "hidden", transform: PR }], { duration: 1500 }),
+          $(".qstamp--l", card).animate([{ opacity: 0, visibility: "hidden", transform: PL, easing: STEP }, { opacity: 1, visibility: "visible", transform: PL, offset: 0.58, easing: STEP }, { opacity: 0, visibility: "hidden", transform: PL, offset: 0.9, easing: STEP }, { opacity: 0, visibility: "hidden", transform: PL }], { duration: 1500 })];
         var cr = $('.choice[data-dir="r"]', card), cl = $('.choice[data-dir="l"]', card);
         nudgeT = [setTimeout(function () { cr.classList.add("is-hot"); }, 180), setTimeout(function () { cr.classList.remove("is-hot"); }, 690), setTimeout(function () { cl.classList.add("is-hot"); }, 870), setTimeout(function () { cl.classList.remove("is-hot"); }, 1350)];
         nudge[0].onfinish = stopNudge;

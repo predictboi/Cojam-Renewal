@@ -101,7 +101,7 @@
     document.body.appendChild(bgEl); document.body.appendChild(sheetEl);
     sheetEl.getBoundingClientRect(); bgEl.classList.add("on"); sheetEl.classList.add("on");
     bgEl.onclick = function () { closeSheet(); }; $(".sheet-x", sheetEl).onclick = function () { closeSheet(); };
-    $(".sheet-x", sheetEl).focus({ preventScroll: true });
+    sheetEl.tabIndex = -1; sheetEl.focus({ preventScroll: true });
     return sheetEl;
   }
   function closeSheet(now) {

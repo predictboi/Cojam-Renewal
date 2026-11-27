@@ -71,7 +71,7 @@
       else el.classList.remove("is-set");
     });
     var p = document.getElementById("prog"); if (p) p.setAttribute("aria-label", t("h.prog.sr", { n: ptr }));
-    var l = document.getElementById("left"); if (l) l.textContent = st === "empty" ? "" : t("h.left", { n: 5 - ptr });
+    var l = document.getElementById("left"); if (l) l.textContent = st === "empty" || st === "hold" || st === "error" ? "" : t("h.left", { n: 5 - ptr });
   }
   function hint() { return matchMedia("(pointer: coarse)").matches ? t("h.hint.touch") : t("h.hint.keys"); }
   function renderBar() {
@@ -143,10 +143,12 @@
     var n = document.getElementById("fin-n"); n.textContent = finN; document.getElementById("fin-t").textContent = t("h.end.in", { n: finN });
     if (tick) { n.classList.remove("tick"); void n.offsetWidth; n.classList.add("tick"); }
   }
-  function sheet(card, c, op) {
+  /* cover: 0 hides both sheets, 0..1 slides the sheet of side c that far across the card */
+  function sheet(card, c, cover) {
     var l = card.querySelector(".card-ans-l"), r = card.querySelector(".card-ans-r");
-    l.style.opacity = c === "l" ? op : 0; r.style.opacity = c === "r" ? op : 0;
-    l.style.visibility = c === "l" && op > 0 ? "visible" : "hidden"; r.style.visibility = c === "r" && op > 0 ? "visible" : "hidden";
+    l.style.visibility = c === "l" && cover > 0 ? "visible" : "hidden"; r.style.visibility = c === "r" && cover > 0 ? "visible" : "hidden";
+    l.style.transform = "translate3d(" + (c === "l" ? (1 - cover) * 101 : 101) + "%,0,0)";
+    r.style.transform = "translate3d(" + (c === "r" ? -(1 - cover) * 101 : -101) + "%,0,0)";
   }
   function hot(c) { ans.querySelectorAll(".choice").forEach(function (b) { b.classList.toggle("is-hot", b.getAttribute("data-c") === c); }); }
 
@@ -201,7 +203,7 @@
     var p = g.dx / g.w, c = g.dx < 0 ? "l" : "r", armed = Math.abs(p) >= ARM ? c : null;
     g.tf = "translate3d(" + g.dx + "px," + g.dy * 0.18 + "px,0) rotate(" + Math.max(-8, Math.min(8, p * 14)) + "deg)";
     g.el.style.transform = g.tf;
-    sheet(g.el, c, armed ? 1 : Math.min(0.4, Math.abs(p) / ARM * 0.4));
+    sheet(g.el, c, armed ? 1 : Math.min(0.4, Math.abs(p) / ARM * 0.4) + 0.02);
     if (armed !== g.armed) { g.armed = armed; hot(armed); if (armed && navigator.vibrate) try { navigator.vibrate(5); } catch (er) {} }
   });
   function release(e) {
@@ -210,7 +212,7 @@
     var a = s.pts[0], b = s.pts[s.pts.length - 1], v = b.t > a.t ? (b.x - a.x) / (b.t - a.t) : 0, ad = Math.abs(s.dx), same = v * s.dx > 0;
     var fling = same && ((ad >= 96 && Math.abs(v) >= 0.5) || (ad >= 56 && Math.abs(v) >= 1.1));
     if (e.type !== "pointercancel" && (s.armed || fling)) commit(s.dx < 0 ? "l" : "r", s.tf);
-    else { s.el.classList.remove("is-drag"); s.el.style.transform = ""; sheet(s.el, "l", 0); }
+    else { s.el.classList.remove("is-drag"); s.el.style.transform = ""; sheet(s.el, s.dx < 0 ? "l" : "r", 0.001); setTimeout(function () { if (!g) sheet(s.el, "l", 0); }, 170); }
   }
   deck.addEventListener("pointerup", release); deck.addEventListener("pointercancel", release);
 

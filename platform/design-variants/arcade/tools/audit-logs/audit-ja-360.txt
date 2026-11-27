@@ -1,0 +1,343 @@
+== login.html?lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 3
+  fill button.btn.btn-primary.btn-block "コードを送る" 292x52
+  text a "利用規約"
+  text a "プライバシーポリシー"
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== login.html?state=code&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 3
+  fill button.btn.btn-primary.btn-block "ログイン" 292x52
+  text button.linkish "コードを再送する"
+  text button.linkish "別のメールアドレスを使う"
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== first-run.html?lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 3
+  text a.linkish "スキップ"
+  text button.onb-code-open "招待コードをお持ちですか？"
+  fill button.btn.btn-primary.btn-block "次へ" 328x52
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== home.html?state=fresh&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill span.tb-key "今日の予想が残っていますホーム" 50x50
+  border span.tb-dot
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== home.html?state=partial&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 3
+  fill div.qart "4/5スポーツ" 304x177
+  fill span.tb-key "今日の予想が残っていますホーム" 50x50
+  border span.tb-dot
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== home.html?state=hold&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 1
+  fill span.tb-key "ホーム" 50x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== home.html?state=empty&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill span.tb-key "今日の予想が残っていますホーム" 50x50
+  border span.tb-dot
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== home.html?state=loading&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill span.tb-key "今日の予想が残っていますホーム" 50x50
+  border span.tb-dot
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== home.html?state=error&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill span.tb-key "今日の予想が残っていますホーム" 50x50
+  border span.tb-dot
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== home-list.html?state=fresh&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 3
+  fill span.thumb "" 52x52
+  fill span.tb-key "今日の予想が残っていますホーム" 50x50
+  border span.tb-dot
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== home-list.html?lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 3
+  fill span.thumb "" 52x52
+  fill span.tb-key "今日の予想が残っていますホーム" 50x50
+  border span.tb-dot
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== done.html?lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 4
+  fill span.cap-top "" 114x89
+  fill a.btn.btn-primary.btn-block "週間ランキングを見る" 328x52
+  text a.linkish "結果を見る"
+  fill span.tb-key "ホーム" 50x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== results.html?lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 14
+  text button.linkish "結果の決まり方"
+  text button.linkish "結果の決まり方"
+  text button.linkish "結果の決まり方"
+  text button.linkish "結果の決まり方"
+  text button.linkish "結果の決まり方"
+  text button.linkish "結果の決まり方"
+  text button.linkish "結果の決まり方"
+  text button.linkish "結果の決まり方"
+  fill span.rstamp.rstamp--corr.is-land "訂正済み" 76x32
+  text button.linkish "結果の決まり方"
+  text button.linkish "結果の決まり方"
+  text button.linkish "結果の決まり方"
+  text button.linkish "結果の決まり方"
+  fill span.tb-key "結果" 40x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== results.html?state=empty&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill a.btn.btn-primary "今日の予想へ" 149x52
+  fill span.tb-key "結果" 40x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== ranking.html?lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 4
+  text button.linkish "賞金のしくみ"
+  fill span.pod-block "2位2256.80CT" 97x106
+  text span "27"
+  fill span.tb-key "ランキング" 72x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== ranking.html?state=lastweek&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 4
+  text button.linkish "賞金のしくみ"
+  fill span.pod-block "2位2239.20CT" 97x106
+  text span "31"
+  fill span.tb-key "ランキング" 72x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== staking.html?lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 3
+  fill button "90日12%" 67x72
+  fill button.btn.btn-primary.btn-block "500 CTをステーク" 316x52
+  fill span.tb-key "ステーク" 61x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== staking.html?state=review&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 5
+  fill button "90日14%" 67x72
+  fill button.btn.btn-primary.btn-block "12,000 CTをステーク" 316x52
+  fill span.tb-key "ステーク" 61x50
+  fill button.btn.btn-primary.btn-block "12,000 CTをステーク" 328x52
+  text span "キャンセル"
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== staking.html?state=hold&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 3
+  text a.hold-more "くわしく見る"
+  fill button "90日12%" 67x72
+  fill span.tb-key "ステーク" 61x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== stakes.html?lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 4
+  fill i "" 68x14
+  fill i "" 292x14
+  fill button.btn.btn-primary.btn-block "503.2877 CTを引き出す" 292x52
+  fill span.tb-key "ステーク" 61x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== stakes.html?state=empty&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill a.btn.btn-primary "ステークをはじめる" 203x52
+  fill span.tb-key "ステーク" 61x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== wallet.html?lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 2
+  i "6C80" 14px
+  i "bedD" 14px words
+ACCENT used (must be only the primary action and the current selection): 3
+  fill a.btn.btn-primary.btn-block "ポイントを交換" 292x52
+  text a.linkish "Kaiascan"
+  fill span.tb-key "ウォレット" 72x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== wallet.html?state=deposit&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 9
+  i "6C80" 14px
+  i "bedD" 14px words
+  i "C2b9" 14px
+  i "1E5d" 14px
+  i "c93D" 14px
+  i "5E0f" 14px
+  i "6A29" 14px
+  i "48bD" 14px
+  i "1C7e" 14px
+ACCENT used (must be only the primary action and the current selection): 5
+  fill a.btn.btn-primary.btn-block "ポイントを交換" 292x52
+  text a.linkish "Kaiascan"
+  fill span.tb-key "ウォレット" 72x50
+  fill button.btn.btn-primary.btn-block "アドレスをコピー" 328x52
+  text span "閉じる"
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== wallet.html?state=withdraw&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 2
+  i "6C80" 14px
+  i "bedD" 14px words
+ACCENT used (must be only the primary action and the current selection): 5
+  fill a.btn.btn-primary.btn-block "ポイントを交換" 292x52
+  text a.linkish "Kaiascan"
+  fill span.tb-key "ウォレット" 72x50
+  fill button.btn.btn-primary.btn-block "250 CTを出金" 328x52
+  text span "キャンセル"
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== wallet.html?state=hold&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 2
+  i "6C80" 14px
+  i "bedD" 14px words
+ACCENT used (must be only the primary action and the current selection): 3
+  text a.hold-more "くわしく見る"
+  text a.linkish "Kaiascan"
+  fill span.tb-key "ウォレット" 72x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== convert.html?lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill button.btn.btn-primary.btn-block "1,000Pを1 CTに交換" 316x52
+  fill span.tb-key "ウォレット" 72x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== convert.html?state=short&lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill a.btn.btn-primary "今日の予想をする" 185x52
+  fill span.tb-key "ウォレット" 72x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== profile.html?lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill span.me-in "M" 36x36
+  text button.linkish "アップデートを確認"
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== invite.html?lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 2
+  b.code-v "MINJI7Q" 24px words display
+  p.inv-link "app.cojam.app/i/MINJI7Q" 13px words
+ACCENT used (must be only the primary action and the current selection): 4
+  text span.inv-pct "10"
+  text small "%"
+  text span "コピー"
+  fill button.btn.btn-primary.btn-block "招待リンクをシェア" 328x52
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== hold.html?lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 1
+  text a.sys-link "ウォレットを見る"
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== index.html?lang=ja
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 116
+  fill a.is-main "Open" 67x44
+  text a "typo"
+  text a "unsupported"
+  text a "bademail"
+  text a "sending"
+  text a "code"
+  text a "wrong"
+  text a "expired"
+  text a "setup"
+  text a "refused"
+  text a "offline"
+  fill a.is-main "Open" 67x44
+  text a "2"
+  text a "3"
+  text a "code-valid"
+  text a "code-unknown"
+  fill a.is-main "Open" 67x44
+  text a "partial"
+  text a "syncing"
+  text a "slow"
+  text a "failed"
+  text a "offline"
+  text a "noimage"
+  text a "loading"
+  text a "empty"
+  text a "closed"
+  text a "error"
+  text a "hold"
+  fill a.is-main "Open" 67x44
+  text a "(sample)"
+  text a "syncing"
+  text a "failed"
+  text a "offline"
+  text a "loading"
+  text a "empty"
+  text a "error"
+  text a "hold"
+  fill a.is-main "Open" 67x44
+  text a "moment"
+  text a "saving"
+  ... 76 more
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0

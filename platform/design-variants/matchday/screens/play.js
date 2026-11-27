@@ -56,11 +56,11 @@
     function paint(c, dx) {
       c.style.transform = "translateX(" + dx + "px) rotate(" + (dx * 0.04).toFixed(2) + "deg)";
       var p = Math.min(1, Math.abs(dx) / 100), r = $(".fx-wipe.r", c), l = $(".fx-wipe.l", c);
-      r.style.opacity = dx > 4 ? 1 : 0; l.style.opacity = dx < -4 ? 1 : 0;
-      r.style.transform = "translateX(" + (100 - 53 * (dx > 0 ? p : 0)) + "%) skewX(-12deg)";
-      l.style.transform = "translateX(" + (-100 + 53 * (dx < 0 ? p : 0)) + "%) skewX(-12deg)";
+      r.style.opacity = dx > 4 ? 1 : 0; l.style.opacity = dx < -4 ? 1 : 0; r.classList.toggle("show", dx > 4); l.classList.toggle("show", dx < -4);
+      r.style.transform = "translateX(" + (100 - 62 * (dx > 0 ? p : 0)) + "%) skewX(-12deg)";
+      l.style.transform = "translateX(" + (-100 + 62 * (dx < 0 ? p : 0)) + "%) skewX(-12deg)";
     }
-    function release(c) { c.classList.add("settle"); c.style.transform = ""; $$(".fx-wipe", c).forEach(function (w) { w.style.transform = ""; w.style.opacity = ""; }); }
+    function release(c) { c.classList.add("settle"); c.style.transform = ""; $$(".fx-wipe", c).forEach(function (w) { w.style.transform = ""; w.style.opacity = ""; setTimeout(function () { if (!w.style.opacity) w.classList.remove("show"); }, 280); }); }
     function bind(c) {
       var sx = 0, sy = 0, dx = 0, drag = false, pid = null, t0 = 0;
       c.addEventListener("pointerdown", function (e) { if (offline || c.getAttribute("data-pos") !== "0" || e.target.closest(".ib")) return; sx = e.clientX; sy = e.clientY; dx = 0; drag = false; pid = e.pointerId; t0 = e.timeStamp; });
@@ -92,13 +92,14 @@
       var c = $('.fx[data-pos="0"]', deck); if (!c || busy || offline) return;
       seal(); busy = true;
       var id = c.getAttribute("data-q"), Q = A.q(id), sign = dir === "r" ? 1 : -1, W = deck.offsetWidth, w = $(".fx-wipe." + dir, c);
-      c.classList.remove("settle"); w.style.opacity = 1;
-      var from = c.style.transform || "none", to = "translateX(" + sign * (W + 90) + "px) rotate(" + sign * 12 + "deg)";
+      c.classList.remove("settle"); w.classList.add("show"); w.style.opacity = 1;
+      var from = c.style.transform || "none", to = "translateX(" + sign * (W * 1.5 + 90) + "px) rotate(" + sign * 12 + "deg)";
       var wf = w.style.transform || "translateX(" + sign * 100 + "%) skewX(-12deg)";
       var dur = A.rm ? 1 : dx ? 240 : 380;
       if (w.animate) w.animate([{ transform: wf }, { transform: "translateX(0%) skewX(-12deg)" }], { duration: dur * 0.6, easing: "cubic-bezier(.2,.8,.2,1)", fill: "forwards" });
       var fly = c.animate ? c.animate([{ transform: from }, { transform: from, offset: dx ? 0 : 0.35 }, { transform: to }], { duration: dur, easing: "cubic-bezier(.5,0,.9,.3)", fill: "forwards" }) : null;
       ans[id] = dir; last = { id: id, dir: dir, el: c, fly: fly };
+      if (fly) fly.onfinish = function () { if (ans[id]) c.style.visibility = "hidden"; };
       c.setAttribute("data-pos", "-1"); c.style.zIndex = 9; c.style.pointerEvents = "none";
       $$(".fx", deck).forEach(function (x) { if (x !== c) x.classList.add("settle"); });
       layoutKeep(c); refreshStrip();
@@ -119,8 +120,8 @@
       var c = last.el, id = last.id, Q = A.q(id); delete ans[id]; last = null;
       var e = $(".endp", deck); if (e) e.remove();
       var cur = getComputedStyle(c).transform; if (c.getAnimations) c.getAnimations().forEach(function (a) { a.cancel(); });
-      $$(".fx-wipe", c).forEach(function (w) { if (w.getAnimations) w.getAnimations().forEach(function (a) { a.cancel(); }); w.style.transform = ""; w.style.opacity = ""; });
-      c.style.pointerEvents = ""; c.style.transform = ""; c.classList.remove("settle");
+      $$(".fx-wipe", c).forEach(function (w) { if (w.getAnimations) w.getAnimations().forEach(function (a) { a.cancel(); }); w.style.transform = ""; w.style.opacity = ""; w.classList.remove("show"); });
+      c.style.pointerEvents = ""; c.style.visibility = ""; c.style.transform = ""; c.classList.remove("settle");
       $$(".fx", deck).forEach(function (x) { if (x !== c) x.classList.add("settle"); });
       layout();
       if (c.animate && !A.rm) c.animate([{ transform: cur === "none" ? "translateX(120%) rotate(12deg)" : cur }, { transform: "none" }], { duration: 320, easing: "cubic-bezier(.2,.8,.2,1)" });
@@ -290,7 +291,7 @@
       '<div><p class="board-l">' + T("r.hits") + '</p><p class="board-n">' + W.hits + "<small>/" + W.answered + '</small></p></div>' +
       '<div><p class="board-l">' + T("r.days") + '</p><p class="board-n">' + W.days + "</p></div></div><hr>" +
       '<div class="row sb"><span class="board-l">' + T("r.all") + '</span><span style="font-weight:600">' + fmt(M.all.pts) + "P, " + T("r.sum.rate", { n: M.all.rate }) + '</span></div><hr>' +
-      '<div class="row sb"><span class="board-l">' + T("md.form") + '</span><span class="form flips">' + all.filter(function (o) { return o !== "none"; }).slice(0, 10).map(function (o) { return mark(o, true); }).join("") + '</span><span class="sr">' + T("r.marks.sr", cnt) + "</span></div></section>" +
+      '<div class="row sb"><span class="board-l">' + T("md.form") + '</span><span class="form flips">' + all.filter(function (o) { return o !== "none"; }).slice(0, 8).map(function (o) { return mark(o, true); }).join("") + '</span><span class="sr">' + T("r.marks.sr", cnt) + "</span></div></section>" +
       '<div class="fil" role="group" aria-label="' + T("r.filter") + '">' + [["all", "r.f.all"], ["wait", "r.f.wait"], ["set", "r.f.set"]].map(function (f) { return '<button data-f="' + f[0] + '" aria-pressed="' + (f[0] === "all") + '">' + T(f[1]) + "</button>"; }).join("") + "</div>" +
       '<div id="days" class="stack" style="gap:12px">' + days() + "</div>" +
       '<button class="btn alt wide" id="more">' + T("r.more") + "</button>" +

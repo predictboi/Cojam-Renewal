@@ -1,86 +1,54 @@
 == login.html?lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
-ACCENT used (must be only the primary action and the current selection): 2
+ACCENT used (must be only the primary action and the current selection): 3
+  fill button.btn.btn-primary.btn-block "Send code" 322x52
   text a "Terms"
   text a "Privacy Policy"
-CONTRAST under 4.5:1: 1
-  span "Send code" 1.02
-TARGETS under 44px tall: 1
-  select "English한국어日本語" 51x40
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
 == login.html?state=code&lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
-ACCENT used (must be only the primary action and the current selection): 2
+ACCENT used (must be only the primary action and the current selection): 3
+  fill button.btn.btn-primary.btn-block "Log in" 322x52
   text button.linkish "Send a new code"
   text button.linkish "Use another email"
-CONTRAST under 4.5:1: 1
-  span "Log in" 1.02
-TARGETS under 44px tall: 1
-  select "English한국어日本語" 51x40
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
 == first-run.html?lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
-ACCENT used (must be only the primary action and the current selection): 2
+ACCENT used (must be only the primary action and the current selection): 3
   text a.linkish "Skip"
   text button.onb-code-open "Have an invite code?"
-CONTRAST under 4.5:1: 1
-  span "Next" 1.10
+  fill button.btn.btn-primary.btn-block "Next" 358x52
+CONTRAST under 4.5:1: 0
 TARGETS under 44px tall: 0
 == home.html?state=fresh&lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
-ACCENT used (must be only the primary action and the current selection): 3
-  fill div.qart "4/5Sports" 314x219
+ACCENT used (must be only the primary action and the current selection): 2
   fill span.tb-key "predictions left todayHome" 49x50
   border span.tb-dot
-CONTRAST under 4.5:1: 14
-  b "No" 1.00 (opacity 0.00)
-  span.qno "/5" 2.48 (opacity 0.55)
-  b "2" 3.78 (opacity 0.55)
-  span.qkick "Markets" 3.78 (opacity 0.55)
-  h2 "Will the dollar end today abov" 3.78 (opacity 0.55)
-  span "Answer: Seoul FX market close," 3.69 (opacity 0.55)
-  span "AI settles it after 16:00 toda" 2.41 (opacity 0.55)
-  span "No" 3.78 (opacity 0.55)
-  p.qcard-final "+50P if right. Undo for 3 seco" 2.48 (opacity 0.55)
-  span.qno "/5" 1.00 (opacity 0.00)
-  span.qkick "Sports" 1.00 (opacity 0.00)
-  h2.is-long "Tonight's Premier League match" 1.00 (opacity 0.00)
-  span "Answer: Total goals at full ti" 1.00 (opacity 0.00)
-  p.qcard-final "+50P if right. Undo for 3 seco" 1.00 (opacity 0.00)
-TARGETS under 44px tall: 2
-  a "Cards" 59x38
-  a "List" 52x38
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
 == home.html?state=partial&lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
 ACCENT used (must be only the primary action and the current selection): 3
-  fill div.qart "4/5Sports" 336x242
+  fill div.qart "4/5Sports" 336x240
   fill span.tb-key "predictions left todayHome" 49x50
   border span.tb-dot
-CONTRAST under 4.5:1: 9
-  b "No" 1.00 (opacity 0.00)
-  span.qno "/5" 2.48 (opacity 0.55)
-  b "4" 3.78 (opacity 0.55)
-  span.qkick "Sports" 3.78 (opacity 0.55)
-  h2.is-long "Tonight's Premier League match" 3.78 (opacity 0.55)
-  span "Answer: Total goals at full ti" 3.69 (opacity 0.55)
-  span "AI settles it after 07:00 tomo" 2.41 (opacity 0.55)
-  span "2 or fewer" 3.78 (opacity 0.55)
-  p.qcard-final "+50P if right. Undo for 3 seco" 2.48 (opacity 0.55)
-TARGETS under 44px tall: 2
-  a "Cards" 59x38
-  a "List" 52x38
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
 == home.html?state=hold&lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
 ACCENT used (must be only the primary action and the current selection): 1
   fill span.tb-key "Home" 49x50
 CONTRAST under 4.5:1: 0
-TARGETS under 44px tall: 2
-  a "Cards" 59x38
-  a "List" 52x38
+TARGETS under 44px tall: 0
 == home.html?state=empty&lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
@@ -88,9 +56,7 @@ ACCENT used (must be only the primary action and the current selection): 2
   fill span.tb-key "predictions left todayHome" 49x50
   border span.tb-dot
 CONTRAST under 4.5:1: 0
-TARGETS under 44px tall: 2
-  a "Cards" 59x38
-  a "List" 52x38
+TARGETS under 44px tall: 0
 == home.html?state=loading&lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
@@ -98,9 +64,7 @@ ACCENT used (must be only the primary action and the current selection): 2
   fill span.tb-key "predictions left todayHome" 49x50
   border span.tb-dot
 CONTRAST under 4.5:1: 0
-TARGETS under 44px tall: 2
-  a "Cards" 59x38
-  a "List" 52x38
+TARGETS under 44px tall: 0
 == home.html?state=error&lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
@@ -108,9 +72,7 @@ ACCENT used (must be only the primary action and the current selection): 2
   fill span.tb-key "predictions left todayHome" 49x50
   border span.tb-dot
 CONTRAST under 4.5:1: 0
-TARGETS under 44px tall: 2
-  a "Cards" 59x38
-  a "List" 52x38
+TARGETS under 44px tall: 0
 == home-list.html?state=fresh&lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
@@ -119,9 +81,7 @@ ACCENT used (must be only the primary action and the current selection): 3
   fill span.tb-key "predictions left todayHome" 49x50
   border span.tb-dot
 CONTRAST under 4.5:1: 0
-TARGETS under 44px tall: 2
-  a "Cards" 59x38
-  a "List" 52x38
+TARGETS under 44px tall: 0
 == home-list.html?lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
@@ -130,18 +90,16 @@ ACCENT used (must be only the primary action and the current selection): 3
   fill span.tb-key "predictions left todayHome" 49x50
   border span.tb-dot
 CONTRAST under 4.5:1: 0
-TARGETS under 44px tall: 2
-  a "Cards" 59x38
-  a "List" 52x38
+TARGETS under 44px tall: 0
 == done.html?lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
-ACCENT used (must be only the primary action and the current selection): 3
+ACCENT used (must be only the primary action and the current selection): 4
   fill span.cap-top "" 114x89
+  fill a.btn.btn-primary.btn-block "See weekly ranking" 358x52
   text a.linkish "See results"
   fill span.tb-key "Home" 49x50
-CONTRAST under 4.5:1: 1
-  span "See weekly ranking" 1.10
+CONTRAST under 4.5:1: 0
 TARGETS under 44px tall: 0
 == results.html?lang=en
 overflow px: 0
@@ -166,10 +124,10 @@ TARGETS under 44px tall: 0
 == results.html?state=empty&lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
-ACCENT used (must be only the primary action and the current selection): 1
+ACCENT used (must be only the primary action and the current selection): 2
+  fill a.btn.btn-primary "Go to today's predictions" 235x52
   fill span.tb-key "Results" 58x50
-CONTRAST under 4.5:1: 1
-  span "Go to today's predictions" 1.10
+CONTRAST under 4.5:1: 0
 TARGETS under 44px tall: 0
 == ranking.html?lang=en
 overflow px: 0
@@ -194,62 +152,60 @@ TARGETS under 44px tall: 0
 == staking.html?lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
-ACCENT used (must be only the primary action and the current selection): 1
+ACCENT used (must be only the primary action and the current selection): 3
+  fill button "90 days12%" 75x72
+  fill button.btn.btn-primary.btn-block "Stake 500 CT" 346x52
   fill span.tb-key "Staking" 59x50
-CONTRAST under 4.5:1: 3
-  span.per-d "90 days" 1.02
-  b "12%" 1.02
-  span "Stake 500 CT" 1.02
+CONTRAST under 4.5:1: 0
 TARGETS under 44px tall: 0
 == staking.html?state=review&lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
-ACCENT used (must be only the primary action and the current selection): 2
+ACCENT used (must be only the primary action and the current selection): 5
+  fill button "90 days14%" 75x72
+  fill button.btn.btn-primary.btn-block "Stake 12,000 CT" 346x52
   fill span.tb-key "Staking" 59x50
+  fill button.btn.btn-primary.btn-block "Stake 12,000 CT" 358x52
   text span "Cancel"
-CONTRAST under 4.5:1: 3
-  span.per-d "90 days" 1.02
-  b "14%" 1.02
-  span "Stake 12,000 CT" 1.02
+CONTRAST under 4.5:1: 0
 TARGETS under 44px tall: 0
 == staking.html?state=hold&lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
-ACCENT used (must be only the primary action and the current selection): 2
+ACCENT used (must be only the primary action and the current selection): 3
   text a.hold-more "What this means"
+  fill button "90 days12%" 75x72
   fill span.tb-key "Staking" 59x50
-CONTRAST under 4.5:1: 2
-  span.per-d "90 days" 1.02
-  b "12%" 1.02
+CONTRAST under 4.5:1: 0
 TARGETS under 44px tall: 0
 == stakes.html?lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
-ACCENT used (must be only the primary action and the current selection): 3
+ACCENT used (must be only the primary action and the current selection): 4
   fill i "" 75x14
   fill i "" 322x14
+  fill button.btn.btn-primary.btn-block "Withdraw 503.2877 CT" 322x52
   fill span.tb-key "Staking" 59x50
-CONTRAST under 4.5:1: 1
-  span "Withdraw 503.2877 CT" 1.02
+CONTRAST under 4.5:1: 0
 TARGETS under 44px tall: 0
 == stakes.html?state=empty&lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
-ACCENT used (must be only the primary action and the current selection): 1
+ACCENT used (must be only the primary action and the current selection): 2
+  fill a.btn.btn-primary "Start a stake" 138x52
   fill span.tb-key "Staking" 59x50
-CONTRAST under 4.5:1: 1
-  span "Start a stake" 1.10
+CONTRAST under 4.5:1: 0
 TARGETS under 44px tall: 0
 == wallet.html?lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 2
   i "6C80" 14px
   i "bedD" 14px words
-ACCENT used (must be only the primary action and the current selection): 2
+ACCENT used (must be only the primary action and the current selection): 3
+  fill a.btn.btn-primary.btn-block "Convert points" 322x52
   text a.linkish "Kaiascan"
   fill span.tb-key "Wallet" 52x50
-CONTRAST under 4.5:1: 1
-  span "Convert points" 1.02
+CONTRAST under 4.5:1: 0
 TARGETS under 44px tall: 0
 == wallet.html?state=deposit&lang=en
 overflow px: 0
@@ -263,24 +219,26 @@ MONO misuse (words, display size, or labels outside tables): 9
   i "6A29" 14px
   i "48bD" 14px
   i "1C7e" 14px
-ACCENT used (must be only the primary action and the current selection): 3
+ACCENT used (must be only the primary action and the current selection): 5
+  fill a.btn.btn-primary.btn-block "Convert points" 322x52
   text a.linkish "Kaiascan"
   fill span.tb-key "Wallet" 52x50
+  fill button.btn.btn-primary.btn-block "Copy address" 358x52
   text span "Close"
-CONTRAST under 4.5:1: 1
-  span "Convert points" 1.02
+CONTRAST under 4.5:1: 0
 TARGETS under 44px tall: 0
 == wallet.html?state=withdraw&lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 2
   i "6C80" 14px
   i "bedD" 14px words
-ACCENT used (must be only the primary action and the current selection): 3
+ACCENT used (must be only the primary action and the current selection): 5
+  fill a.btn.btn-primary.btn-block "Convert points" 322x52
   text a.linkish "Kaiascan"
   fill span.tb-key "Wallet" 52x50
+  fill button.btn.btn-primary.btn-block "Withdraw 250 CT" 358x52
   text span "Cancel"
-CONTRAST under 4.5:1: 1
-  span "Convert points" 1.02
+CONTRAST under 4.5:1: 0
 TARGETS under 44px tall: 0
 == wallet.html?state=hold&lang=en
 overflow px: 0
@@ -296,18 +254,18 @@ TARGETS under 44px tall: 0
 == convert.html?lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
-ACCENT used (must be only the primary action and the current selection): 1
+ACCENT used (must be only the primary action and the current selection): 2
+  fill button.btn.btn-primary.btn-block "Convert 1,000P to 1 CT" 346x52
   fill span.tb-key "Wallet" 52x50
-CONTRAST under 4.5:1: 1
-  span "Convert 1,000P to 1 CT" 1.02
+CONTRAST under 4.5:1: 0
 TARGETS under 44px tall: 0
 == convert.html?state=short&lang=en
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
-ACCENT used (must be only the primary action and the current selection): 1
+ACCENT used (must be only the primary action and the current selection): 2
+  fill a.btn.btn-primary "Play today's set" 164x52
   fill span.tb-key "Wallet" 52x50
-CONTRAST under 4.5:1: 1
-  span "Play today's set" 1.10
+CONTRAST under 4.5:1: 0
 TARGETS under 44px tall: 0
 == profile.html?lang=en
 overflow px: 0
@@ -322,12 +280,12 @@ overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 2
   b.code-v "MINJI7Q" 24px words display
   p.inv-link "app.cojam.app/i/MINJI7Q" 13px words
-ACCENT used (must be only the primary action and the current selection): 3
+ACCENT used (must be only the primary action and the current selection): 4
   text span.inv-pct "10"
   text small "%"
   text span "Copy"
-CONTRAST under 4.5:1: 1
-  span "Share invite link" 1.10
+  fill button.btn.btn-primary.btn-block "Share invite link" 358x52
+CONTRAST under 4.5:1: 0
 TARGETS under 44px tall: 0
 == hold.html?lang=en
 overflow px: 0
@@ -340,7 +298,7 @@ TARGETS under 44px tall: 0
 overflow px: 0
 MONO misuse (words, display size, or labels outside tables): 0
 ACCENT used (must be only the primary action and the current selection): 116
-  fill a.is-main "Open" 59x36
+  fill a.is-main "Open" 67x44
   text a "typo"
   text a "unsupported"
   text a "bademail"
@@ -351,12 +309,12 @@ ACCENT used (must be only the primary action and the current selection): 116
   text a "setup"
   text a "refused"
   text a "offline"
-  fill a.is-main "Open" 59x36
+  fill a.is-main "Open" 67x44
   text a "2"
   text a "3"
   text a "code-valid"
   text a "code-unknown"
-  fill a.is-main "Open" 59x36
+  fill a.is-main "Open" 67x44
   text a "partial"
   text a "syncing"
   text a "slow"
@@ -368,7 +326,7 @@ ACCENT used (must be only the primary action and the current selection): 116
   text a "closed"
   text a "error"
   text a "hold"
-  fill a.is-main "Open" 59x36
+  fill a.is-main "Open" 67x44
   text a "(sample)"
   text a "syncing"
   text a "failed"
@@ -377,23 +335,9 @@ ACCENT used (must be only the primary action and the current selection): 116
   text a "empty"
   text a "error"
   text a "hold"
-  fill a.is-main "Open" 59x36
+  fill a.is-main "Open" 67x44
   text a "moment"
   text a "saving"
   ... 76 more
 CONTRAST under 4.5:1: 0
-TARGETS under 44px tall: 14
-  a.is-main "Open" 59x36
-  a.is-main "Open" 59x36
-  a.is-main "Open" 59x36
-  a.is-main "Open" 59x36
-  a.is-main "Open" 59x36
-  a.is-main "Open" 59x36
-  a.is-main "Open" 59x36
-  a.is-main "Open" 59x36
-  a.is-main "Open" 59x36
-  a.is-main "Open" 59x36
-  a.is-main "Open" 59x36
-  a.is-main "Open" 59x36
-  a.is-main "Open" 59x36
-  a.is-main "Open" 59x36
+TARGETS under 44px tall: 0

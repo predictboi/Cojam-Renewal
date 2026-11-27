@@ -348,7 +348,8 @@ main { flex: 1; min-width: 0; outline: 0; }
 .qcard-final { color: var(--ink-2); font-size: var(--fs-12); text-align: center; }
 /* the two answer stickers: die cut, thick, waiting just above the picture */
 .qstamp { position: absolute; left: 0; right: 0; top: 54px; z-index: 3; width: fit-content; max-width: 86%; margin: 0 auto; opacity: 0; visibility: hidden; pointer-events: none; transform: rotate(-9deg); will-change: transform, opacity; }
-.qstamp--r { transform: rotate(9deg); }
+.qstamp--r { transform: rotate(9deg); margin-left: 14px; }
+.qstamp--l { margin-right: 14px; }
 .qstamp-in { display: flex; align-items: center; gap: var(--s-6); padding: 12px 20px 10px; border: 5px solid var(--white); border-radius: 22px; background: var(--pick-l); box-shadow: 0 5px 0 var(--pick-l-deep); color: var(--on-pick); font-size: var(--fs-28); line-height: 1.05; text-align: center; }
 .qstamp--r .qstamp-in { flex-direction: row-reverse; background: var(--pick-r); box-shadow: 0 5px 0 var(--pick-r-deep); }
 .qstamp b { font-weight: inherit; }
@@ -826,3 +827,14 @@ html.is-hidden *, html.is-hidden *::before, html.is-hidden *::after { animation-
   .qcard { transition: opacity 200ms linear !important; }
   .is-saving .cap-coin, .is-saving .seal { opacity: 0; }
 }
+
+/* ---------- Korean and Japanese: the fat display faces need size. Under 18 px, labels on keys, tabs and stickers use the text face at its heaviest. ---------- */
+:lang(ko) .seg-btn, :lang(ko) .viewsw a, :lang(ko) .mtabs a, :lang(ko) .btn-sm, :lang(ko) .rstamp, :lang(ko) .hold-t, :lang(ko) .sys-box h2,
+:lang(ja) .seg-btn, :lang(ja) .viewsw a, :lang(ja) .mtabs a, :lang(ja) .btn-sm, :lang(ja) .rstamp, :lang(ja) .hold-t, :lang(ja) .sys-box h2 {
+  font-family: var(--font-text); font-weight: 800; letter-spacing: 0; font-synthesis: weight;
+}
+:lang(ko) .rstamp, :lang(ja) .rstamp { font-size: var(--fs-13); padding-top: 4px; }
+/* home states without a deck (error, empty, hold): the content keeps its own height */
+.is-home .pg:not(:has(.deck)) { grid-template-rows: none; align-content: start; }
+.is-home .pg:not(:has(.deck)):has(.empty) { align-content: center; }
+.pod-crown { margin-bottom: -4px; transform: rotate(-6deg); }

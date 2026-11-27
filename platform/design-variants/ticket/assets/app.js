@@ -118,7 +118,7 @@
   }
   function sheet(title, body) {
     var back = document.createElement("div"); back.className = "sheet-back";
-    var el = document.createElement("div"); el.className = "sheet"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", title);
+    var el = document.createElement("div"); el.className = "sheet"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", title); el.tabIndex = -1;
     el.innerHTML = '<div class="sheet-h"><h2 class="hd-2">' + esc(title) + '</h2><button class="icon-btn" data-close aria-label="' + t("common.close") + '">' + ic("x") + "</button></div>" + body;
     document.body.appendChild(back); document.body.appendChild(el);
     var last = document.activeElement;
@@ -126,7 +126,7 @@
     function key(e) { if (e.key === "Escape") close(); }
     back.addEventListener("click", close); document.addEventListener("keydown", key);
     el.addEventListener("click", function (e) { if (e.target.closest("[data-close]")) close(); });
-    requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.add("on"); back.classList.add("on"); el.querySelector("[data-close]").focus(); }); });
+    requestAnimationFrame(function () { requestAnimationFrame(function () { el.classList.add("on"); back.classList.add("on"); el.focus({ preventScroll: true }); }); });
     el.close = close; return el;
   }
   function copy(text, msg) { try { navigator.clipboard.writeText(text).catch(function () {}); } catch (e) {} toast(msg || t("common.copied")); live(msg || t("common.copied")); }
