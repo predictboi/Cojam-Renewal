@@ -9,7 +9,7 @@
   if (S === "fresh") { sess.resetDay(); S = ""; dropFresh(); }
   var leftSaved = live ? sess.takeLeft() : 0;
   var fin = live && sess.picked() === 5;
-  var answered = { partial: [1, 2], syncing: [1, 2, 3], slow: [1, 2], failed: [1, 3], offline: [1, 2] }[S] || [];
+  var answered = { partial: [1, 2], syncing: [1, 2, 3], slow: [1, 2], failed: [1, 3], offline: [1, 2], reconnect: [1], reconnectfail: [1] }[S] || [];
   if (live) answered = M.set.map(function (id, i) { return sess.data.picks[id] ? i + 1 : 0; }).filter(Boolean);
   var sending = S === "syncing" ? [2, 3] : S === "slow" ? [2] : [];
   var Q = M.set.map(App.q);
@@ -22,7 +22,7 @@
     return '<div class="ph-top"><h1>' + t("h.title") + "</h1>" + C.viewSwitch("card", S) + "</div>" +
       '<div class="ph-line"><span class="ph-count"><span id="cnt">' + (S === "loading" ? "0" : count) + "</span><small>/5</small></span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs, { id: "day5" }) + "</div>";
   }
-  function liveCell() { return S === "empty" || S === "closed" || S === "hold" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet()); }
+  function liveCell() { return S === "empty" || S === "closed" || S === "hold" || S === "otherdevice" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet()); }
   /* the wait before the day is sent is a printer's rule that is used up from the right: the same fuse as under the pick bar */
   function endRing(id) { return '<div class="end-mark" aria-hidden="true">' + C.icon("check", 30) + '</div><span class="fuse fuse--end" aria-hidden="true"' + (id ? ' id="' + id + '"' : "") + "></span>"; }
   function body() {
@@ -31,8 +31,9 @@
     if (S === "empty") return C.empty({ icon: "clock", title: t("h.empty.h"), body: t("h.empty.b", { time: t("time.kst9") }), extra: '<p class="fig" data-dg data-cd="' + M.untilNextSet() + '"></p>' });
     if (S === "closed") return C.empty({ icon: "refresh", title: t("h.closed"), action: C.btn(t("h.closed.btn"), { kind: "primary", href: "home.html" }) });
     if (S === "error") return C.error();
+    if (S === "otherdevice") return C.otherDevice();
     /* account on hold: no deck and no answer buttons, so nothing on the screen is dead */
-    if (S === "hold") return C.empty({ icon: "pause", title: t("hold.home.h"), body: t("hold.home.b"), action: C.btn(t("hold.home.btn"), { href: "hold.html", iconEnd: "right", id: "hold-more" }) });
+    if (S === "hold") return C.empty({ icon: "pause", title: t("hold.home.h"), body: t("hold.home.b"), action: C.btn(t("hold.home.btn"), { href: "system.html?state=blocked", iconEnd: "right", id: "hold-more" }) });
     if (fin) return '<div class="deck is-empty home-fin"><div class="deck-end">' + endRing() + "<h2>" + t("h.end.h") + "</h2><p>" + t("h.fin.b") + "</p>" + C.btn(t("h.fin.btn"), { kind: "primary", href: sess.data.paid ? "done.html" : "done.html?state=moment", iconEnd: "right" }) + '</div></div><div class="pickbar"></div>';
     var cards = Q.filter(function (q) { return answered.indexOf(q.n) < 0; });
     if (S === "failed") cards.sort(function (a, b) { return (a.n === 2 ? -1 : 0) - (b.n === 2 ? -1 : 0); });

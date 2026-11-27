@@ -10,7 +10,7 @@
   var fin = live && sess.picked() === 5;
   /* picks made in this tab (in either view) carry over; with none, the plain screen shows its two sample picks */
   if (live && sess.picked()) M.set.forEach(function (id, i) { if (sess.data.picks[id]) picks[i + 1] = { dir: sess.data.picks[id], sync: "ok" }; });
-  else if (S !== "fresh" && S !== "partial0" && S !== "hold") { picks[1] = { dir: "r", sync: "ok" }; picks[2] = { dir: "l", sync: S === "syncing" ? "saving" : "ok" }; }
+  else if (S !== "fresh" && S !== "partial0" && S !== "hold") { picks[1] = { dir: "r", sync: "ok" }; picks[2] = { dir: "l", sync: S === "syncing" || S === "slow" ? "saving" : "ok" }; }
   if (S === "failed") picks[2] = { dir: "l", sync: "fail" };
   var current = null;
   var Q = M.set.map(App.q), UNDO_MS = 3000;
@@ -24,7 +24,7 @@
     return '<div class="ph-top"><h1>' + t("h.title") + "</h1>" + C.viewSwitch("term", S === "fresh" ? "" : S) + "</div>" +
       '<div class="ph-line"><span class="ph-count"><span id="cnt">' + c + "</span><small>/5</small></span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs(), { id: "day5" }) + "</div>";
   }
-  function liveCell() { return S === "empty" || S === "hold" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet()); }
+  function liveCell() { return S === "empty" || S === "closed" || S === "hold" || S === "otherdevice" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet()); }
   function row(q) {
     var n = q.n, p = picks[n], num = '<span class="trow-n" aria-hidden="true">' + n + "</span>", cat = "<span>" + t("cat." + q.cat) + "</span>";
     if (p && p.sync !== "fail") {
@@ -36,7 +36,7 @@
     if (n === current) {
       return '<li class="trow is-open' + (failed ? " is-fail" : "") + '">' + num + '<div><h2 class="trow-q" tabindex="-1" id="open-q">' + App.esc(q.title) + '</h2><div class="trow-foot">' + cat +
         (failed ? '<span class="trow-state">' + C.icon("warn", 16) + t("h.t.notsaved") + "</span>" : "") + "</div></div>" + C.thumb(q) +
-        '<div class="trow-body"><button type="button" class="qmeta" data-ai-info="' + q.id + '" aria-haspopup="dialog"><span class="qmeta-t"><span>' + t("h.answer", { rule: App.esc(q.rule) }) + "</span><span>" + t("h.ai", { time: q.settle }) + "</span></span>" + C.icon("info", 16) + "</button>" +
+        '<div class="trow-body"><button type="button" class="qmeta" data-ai-info="' + q.id + '" aria-haspopup="dialog"><span class="qmeta-t"><span>' + t("h.answer", { rule: App.esc(q.rule) }) + "</span><span>" + t("h.ai", { time: q.settle }) + '</span></span><span class="qmeta-go">' + t("pp.rule") + C.icon("chev", 14) + "</span></button>" +
         '<div class="choices">' + ["l", "r"].map(function (d) {
           return '<button type="button" class="choice" data-pick="' + n + '" data-dir="' + d + '"' + (App.offline ? ' aria-disabled="true"' : "") + ' aria-label="' + App.esc(t("h.pick.aria", { choice: q[d], q: q.title })) + '">' + (d === "l" ? C.icon("left", 18) : "") + "<span>" + App.esc(q[d]) + "</span>" + (d === "r" ? C.icon("right", 18) : "") + "</button>";
         }).join("") + "</div>" + (App.offline ? '<p class="qcard-final">' + t("h.offline") + "</p>" : '<p class="qcard-final">' + t("h.final") + "</p>") + "</div></li>";
@@ -50,9 +50,11 @@
   function body() {
     if (S === "loading") return '<ol class="term" aria-busy="true">' + [1, 2, 3, 4, 5].map(function (n) { return '<li class="trow"><span class="trow-n" aria-hidden="true">' + n + "</span><div>" + C.skel("94%", "16px") + '<div class="trow-foot">' + C.skel("64px", "12px") + "</div></div>" + C.skel("56px", "68px") + "</li>"; }).join("") + '</ol><p class="sr-only" role="status">' + t("common.loading") + "</p>";
     if (S === "empty") return C.empty({ icon: "clock", title: t("h.empty.h"), body: t("h.empty.b", { time: t("time.kst9") }), extra: '<p class="fig" data-dg data-cd="' + M.untilNextSet() + '"></p>' });
+    if (S === "closed") return C.empty({ icon: "refresh", title: t("h.closed"), action: C.btn(t("h.closed.btn"), { kind: "primary", href: "home-list.html" }) });
     if (S === "error") return C.error();
-    if (S === "hold") return C.empty({ icon: "pause", title: t("hold.home.h"), body: t("hold.home.b"), action: C.btn(t("hold.home.btn"), { href: "hold.html", iconEnd: "right", id: "hold-more" }) });
-    return (App.offline ? C.note("warn", t("h.offline")) : "") + '<div class="term-wrap" style="display:grid"><ol class="term" id="term">' + list() + '</ol><div class="term-end" id="term-end" hidden></div></div>';
+    if (S === "otherdevice") return C.otherDevice();
+    if (S === "hold") return C.empty({ icon: "pause", title: t("hold.home.h"), body: t("hold.home.b"), action: C.btn(t("hold.home.btn"), { href: "system.html?state=blocked", iconEnd: "right", id: "hold-more" }) });
+    return (App.offline ? C.note("warn", t("h.offline")) : "") + C.playBanner(S) + '<div class="term-wrap" style="display:grid"><ol class="term" id="term">' + list() + '</ol><div class="term-end" id="term-end" hidden></div></div>';
   }
   current = firstOpen();
   App.store.set("view", "term");
@@ -92,6 +94,7 @@
     }
     function confirm(n) { setTimeout(function () { if (picks[n]) { picks[n].sync = "ok"; paint(false); } }, 1300 + Math.random() * 800); }
     if (S === "syncing") confirm(2);
+    document.addEventListener("click", function (e) { if (e.target.closest("[data-retry-now]")) { var bn = $(".banner"); confirm(2); setTimeout(function () { if (bn) bn.parentNode.removeChild(bn); }, 1500); } });
     term.addEventListener("click", function (e) {
       var o = e.target.closest("[data-open]"); if (o) { current = +o.getAttribute("data-open"); paint(true); return; }
       var u = e.target.closest("[data-undo]");

@@ -8,7 +8,7 @@
 <link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Besley:wght@500..900&family=Hahmlet:wght@500..900&family=Noto+Serif+JP:wght@700..900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Besley:wght@500..900&family=Hahmlet:wght@500..900&family=Shippori+Antique+B1&display=swap">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="components.css">
@@ -25,6 +25,8 @@
 .hub-lede { max-width: 62ch; margin-top: var(--s-12); color: var(--ink-2); }
 .hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0 var(--s-24); margin-top: var(--s-24); }
 .hub-sec { padding: var(--s-12) 0 var(--s-16); border-top: var(--rule); }
+
+.hub-id { display: inline-block; min-width: 34px; margin-right: var(--s-6); color: var(--ink-2); font-family: var(--font-text); font-size: var(--fs-12); font-weight: var(--fw-bold); }
 .hub-sec h2 { font-family: var(--font-display); font-weight: var(--fw-head); font-size: var(--fs-18); }
 .hub-sec p { color: var(--ink-2); font-size: var(--fs-13); }
 .hub-sec ul { display: flex; flex-wrap: wrap; gap: 0 var(--s-12); margin-top: var(--s-4); }
@@ -37,37 +39,25 @@
   <div class="hub-top"><span class="plate plate--big" translate="no"><img src="assets/cojam-mark.svg" alt="" width="40" height="40"><span>Cojam Daily</span></span>
     <div class="seg" role="group" aria-label="Language" id="langs"></div></div>
   <div class="oxford" aria-hidden="true"></div>
-  <div class="dateline"><span>Design variant A</span><span>Daily Paper</span><span class="dateline-live">Mock data, no network calls</span></div>
+  <div class="dateline"><span>Design variant A</span><span>Daily Paper</span><span class="dateline-live" id="count"></span></div>
   <h1>Every screen and state of the Daily Paper concept</h1>
-  <p class="hub-lede">The Cojam Daily Prediction app drawn as the front page of a small daily newspaper. Each link opens one screen in one state at phone width; the language follows the switch above. Concept and rules are in CONCEPT.md, the last review in REVIEW.md.</p>
+  <p class="hub-lede">The Cojam Daily Prediction app drawn as the front page of a small daily newspaper. Each link opens one screen in one state at phone width; the language follows the switch above. State names follow the functional reference (STATES.md). Concept: CONCEPT.md. Motion: MOTION.md. Where each explanation went: COPY.md. Review: REVIEW.md.</p>
   <div class="hub-grid" id="grid"></div>
 </div>
+<script src="assets/states.js"></script>
 <script>
 (function () {
   var qs = new URLSearchParams(location.search), lang = qs.get("lang") || "en";
   if (["en", "ko", "ja"].indexOf(lang) < 0) lang = "en";
-  var S = [
-    ["Log in", "The cover: email, code, setting up", "login.html", ["typo", "unsupported", "bademail", "sending", "code", "wrong", "expired", "setup", "refused", "offline"]],
-    ["First run", "Three pages, invite code, language", "first-run.html", ["2", "3", "code-valid", "code-unknown"]],
-    ["Home, card view", "The front page: swipe, Undo, fifth pick leads to done", "home.html?state=fresh", ["partial", "syncing", "slow", "failed", "offline", "noimage", "loading", "empty", "closed", "error", "hold"], "home.html"],
-    ["Home, list view", "The five questions as an index", "home-list.html?state=fresh", ["(sample)", "syncing", "failed", "offline", "loading", "empty", "error", "hold"], "home-list.html"],
-    ["Day done", "The reward is the headline", "done.html", ["moment", "saving", "results", "welcome", "zero"]],
-    ["Results", "Box scores with HIT and MISS stamps", "results.html", ["open", "nowaiting", "noset", "loading", "empty", "error"]],
-    ["Weekly ranking", "The league table and the prize pool", "ranking.html", ["how", "lastweek", "sent", "top10", "unranked", "short", "loading", "error", "hold"]],
-    ["Staking, new stake", "The rates page", "staking.html", ["empty", "below", "above", "big", "rates", "review", "success", "failed", "zero", "paused", "loading", "error", "offline", "hold"]],
-    ["Staking, my stakes", "One entry per stake", "stakes.html", ["claimable", "unlocking", "empty", "loading", "error", "hold"]],
-    ["Wallet", "The accounts, with deposit and withdraw sheets", "wallet.html", ["deposit", "withdraw", "zero", "new", "loading", "error", "offline", "hold"]],
-    ["Convert points", "Points to CT", "convert.html", ["empty", "step", "above", "short", "wait", "cap", "paused", "loading", "success", "failed", "hold"]],
-    ["Profile", "Name, account, preferences, help", "profile.html", ["nameerror", "unranked", "logout", "hold"]],
-    ["Invite friends", "The offer, the code, the results", "invite.html", ["copied", "empty", "loading", "error", "offline", "hold"]],
-    ["Account on hold", "The full explanation behind every hold notice", "hold.html", []]
-  ];
+  var S = window.PAPER_STATES;
   function url(file, st) { var u = file.split("?"), p = new URLSearchParams(u[1] || ""); if (st && st !== "(sample)") p.set("state", st); if (lang !== "en") p.set("lang", lang); else p.set("lang", "en"); return u[0] + "?" + p.toString(); }
   document.getElementById("langs").innerHTML = [["en", "English", "EN"], ["ko", "한국어", "한"], ["ja", "日本語", "日"]].map(function (l) { return '<a class="seg-btn" lang="' + l[0] + '" aria-label="' + l[1] + '" title="' + l[1] + '" href="index.html?lang=' + l[0] + '"' + (l[0] === lang ? ' aria-current="page"' : "") + ">" + l[2] + "</a>"; }).join("");
+  var total = 0;
   document.getElementById("grid").innerHTML = S.map(function (s) {
-    var base = s[4] || s[2].split("?")[0];
-    return '<section class="hub-sec"><h2>' + s[0] + "</h2><p>" + s[1] + '</p><ul><li><a class="is-main" href="' + url(s[2]) + '">Open</a></li>' + s[3].map(function (st) { return '<li><a href="' + url(base, st) + '">' + st + "</a></li>"; }).join("") + "</ul></section>";
+    total += s[4].length;
+    return '<section class="hub-sec"><h2><span class="hub-id">' + s[0] + "</span>" + s[1] + "</h2><p>" + s[2] + "</p><ul>" + s[4].map(function (st, i) { return '<li><a' + (i === 0 ? ' class="is-main"' : "") + ' href="' + url(s[3], st) + '">' + (st || "Open") + "</a></li>"; }).join("") + "</ul></section>";
   }).join("");
+  document.getElementById("count").textContent = S.length + " screens, " + total + " states";
 })();
 </script>
 </body>

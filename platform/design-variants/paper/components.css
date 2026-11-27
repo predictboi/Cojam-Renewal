@@ -889,3 +889,84 @@ button.pin:active { background: var(--ink-2); }
   .btn:active:not(:disabled), .choice:active, .addr-chip:active, .code-block:active, .undo:active { transform: none; }
   .toast, .toast.is-out { transform: none; }
 }
+
+/* =====================================================================================================================
+   COPY REDUCTION AND STATE COMPLETION: the "?" control, tags instead of sentences, the Gate, steps, the block thumbnail.
+   ===================================================================================================================== */
+
+/* "?": the explanation is one tap away. A 22 px box in a 44 px target. */
+.qbtn { display: inline-grid; place-items: center; width: var(--target); height: var(--target); margin: -11px -9px -11px -5px; padding: 0; border: 0; background: none; color: var(--ink); vertical-align: middle; }
+.qbtn span { display: grid; place-items: center; width: 22px; height: 22px; border: var(--edge); background: var(--sheet); font-family: var(--font-display); font-size: var(--fs-13); font-weight: var(--fw-head); line-height: 1; letter-spacing: 0; transition: background-color var(--dur-press) var(--ease), transform var(--dur-press) var(--ease); }
+.qbtn:active span { background: var(--paper-2); transform: translateY(1px); }
+.lbl--q, .h-q, .wrow-l { display: flex; align-items: center; gap: var(--s-8); }
+.field-label .qbtn { margin-top: -14px; margin-bottom: -14px; }
+.rows dt .qbtn { margin-left: 0; }
+.inv-line .qbtn { margin-left: var(--s-4); }
+.done-wait-n { display: flex; align-items: center; gap: var(--s-8); }
+/* tags instead of sentences: a date, a rate, "No fee", "No early exit" */
+.tags { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-6); }
+.tags--center { justify-content: center; }
+.tag svg { flex: none; }
+.wrow > .tag { justify-self: end; }
+.wrow > span:empty { display: none; }
+.rs-pts small.tnum, .rchip .tnum { font-variant-numeric: tabular-nums; }
+.rs-side { min-width: 64px; }
+.rs-dayh { align-items: center; }
+
+/* the card's source line: a worded control */
+.qmeta-go { display: inline-flex; align-items: center; gap: 2px; flex: none; color: var(--accent); font-size: var(--fs-13); font-weight: var(--fw-mid); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+button.qmeta:active .qmeta-go { color: var(--accent-press); }
+div.qmeta .qmeta-go { display: none; }
+
+/* the list thumbnail: a square block cut for print. The picture is cropped on its focal point, pushed to two tones and reversed, so the subject stands
+   in paper on a block of ink. It is a different treatment from the card's halftone on purpose: at 60 px a dot screen turns to texture. */
+.thumb { position: relative; display: grid; place-items: center; width: 60px; height: 60px; overflow: hidden; border: var(--rule); background: var(--sheet); isolation: isolate; }
+.cut { position: absolute; inset: 0; overflow: hidden; background: var(--ht-white); filter: grayscale(1) contrast(var(--ht-contrast)) invert(1); mix-blend-mode: multiply; }
+.cut img { width: 100%; height: 100%; object-fit: cover; object-position: var(--f, 50% 15%); transform: scale(1.5); transform-origin: var(--f, 50% 15%); filter: brightness(var(--ht-lift)); }
+.thumb--none { background: var(--ink); color: var(--on-ink); }
+.trow { grid-template-columns: 30px minmax(0, 1fr) 60px; }
+
+/* numbered steps with the icon to look for */
+.steps { border-top: var(--hair); }
+.steps li { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: center; gap: var(--s-10); min-height: 48px; padding: var(--s-8) 0; border-bottom: var(--hair); font-size: var(--fs-15); }
+.steps-n { font-family: var(--font-display); font-weight: var(--fw-fig); font-size: var(--fs-21); line-height: 1; }
+.help-body .steps { color: var(--ink); }
+
+/* ---------- the Gate: the newsstand copy ---------- */
+.gate-top { display: flex; align-items: center; justify-content: center; gap: var(--s-6); margin: 0 calc(var(--gutter) * -1); padding: var(--s-6) var(--gutter); background: var(--ink); color: var(--on-ink); font-size: var(--fs-12); font-weight: var(--fw-mid); text-align: center; }
+.gate-cols { display: grid; gap: var(--s-20); padding-top: var(--s-20); }
+.gate-col { display: grid; gap: var(--s-20); align-content: start; min-width: 0; }
+.gate-h1-2 { display: block; }
+.gate-demo { position: relative; height: 344px; pointer-events: none; }
+.gate-demo .qcard { position: absolute; inset: 0; transform: none; }
+.gate-demo .qimg { min-height: 0; }
+.gate-demo-tag { position: absolute; top: -10px; left: var(--s-12); z-index: 5; padding: 3px var(--s-8); background: var(--ink); color: var(--on-ink); font-size: var(--fs-12); font-weight: var(--fw-bold); }
+.gate .panel h2, .gate .panel h3 { font-family: var(--font-display); font-weight: var(--fw-head); font-size: var(--fs-21); line-height: 1.2; }
+.gate-inv { display: grid; gap: var(--s-10); padding-bottom: var(--s-16); border-bottom: var(--rule); }
+.gate-inv p { font-size: var(--fs-14); }
+.gate-inv-get { font-weight: var(--fw-bold); }
+.gate-qr { display: grid; justify-items: center; gap: var(--s-8); }
+.gate-swap { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--s-8) var(--s-12); padding-top: var(--s-12); border-top: var(--rule); }
+.gate-swap h2 { font-family: var(--font-display); font-weight: var(--fw-head); font-size: var(--fs-18); }
+.gate-swap p { display: none; }
+.gate-foot { display: flex; align-items: center; justify-content: space-between; margin-top: var(--s-24); padding-top: var(--s-4); border-top: var(--rule); color: var(--ink-2); font-size: var(--fs-13); }
+.gate-foot a { display: inline-flex; align-items: center; min-height: var(--target); }
+.ios-point { position: fixed; left: 0; right: 0; bottom: calc(var(--s-8) + env(safe-area-inset-bottom)); z-index: 5; display: grid; justify-items: center; gap: 2px; margin: 0 auto; width: max-content; max-width: calc(100% - 32px); padding: var(--s-6) var(--s-12) var(--s-4); border: var(--edge); background: var(--sheet); font-size: var(--fs-13); font-weight: var(--fw-bold); }
+.is-gate .facts li { font-size: var(--fs-14); }
+@media (min-width: 900px) { .is-gate { max-width: 960px; } .gate-cols { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-40); } }
+
+/* ---------- deposit, withdraw, system ---------- */
+.dp-qr { justify-items: center; }
+.addr-v--lg { font-size: var(--fs-16); font-weight: var(--fw-bold); }
+.watch--live { margin-top: 0; }
+.field-box--mono input { font-family: var(--font-data); font-size: var(--fs-14); }
+.field-msg--stack { display: grid; justify-content: start; gap: var(--s-4); }
+.field-msg--stack .addr-v { color: var(--ink); }
+.sys--center { justify-items: start; }
+.sys--center .btn { margin-top: var(--s-4); }
+.note-list { display: grid; gap: var(--s-4); }
+.prow-dev .row { justify-content: space-between; }
+/* Japanese breaks by phrase, so a line never starts with a particle */
+:lang(ja) h1, :lang(ja) h2, :lang(ja) .trow-q, :lang(ja) .rrow-q, :lang(ja) .pick-q, :lang(ja) .auth-lede { word-break: auto-phrase; }
+.muted-link { color: var(--ink-2); font-weight: var(--fw-text); }
+.mstake .tags { margin-top: var(--s-2); }

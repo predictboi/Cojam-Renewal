@@ -4,8 +4,7 @@
   var from = new URLSearchParams(location.search).get("from"), back = from === "wallet" ? "wallet.html" : "profile.html";
   var day = 350, cut = Math.round(day * V.rate / 100);
   function hero() {
-    return '<section class="sec inv-hero"><h1><span class="inv-pct" aria-hidden="true">' + V.rate + '<small>%</small></span><span class="inv-line">' + t("inv.hero.line", { r: V.rate }) + "</span></h1>" +
-      '<p class="inv-sub">' + t("inv.hero.sub") + "</p>" +
+    return '<section class="sec inv-hero"><h1><span class="inv-pct" aria-hidden="true">' + V.rate + '<small>%</small></span><span class="inv-line">' + t("inv.hero.line", { r: V.rate }) + C.q("invite", t("inv.title")) + "</span></h1>" +
       '<div class="inv-ex" role="img" aria-label="' + esc(t("inv.ex.sr", { a: day, b: cut })) + '"><div><span>' + t("inv.ex.friend") + "</span><b>+" + F.pts(day) + "</b></div>" + C.icon("right", 20) + "<div><span>" + t("inv.ex.you") + "</span><b>+" + F.pts(cut) + "</b></div></div></section>";
   }
   function codeSec() {
@@ -38,7 +37,8 @@
   function rules() {
     return '<section class="sec" aria-labelledby="rules-h"><h2 id="rules-h">' + t("inv.rules.h") + '</h2><ul class="inv-rules">' + [1, 2, 3, 4].map(function (i) { return "<li>" + t("inv.rule." + i) + "</li>"; }).join("") + "</ul></section>";
   }
-  App.mount({ tab: "", back: back, title: t("inv.title"), body: hero() + codeSec() + (S === "hold" ? "" : how()) + results() + rules(), pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
+  if (S === "shared") setTimeout(function () { App.toast(t("inv.shared")); }, 400);
+  App.mount({ tab: "", back: back, title: t("inv.title"), body: hero() + codeSec() + results(), pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
     var share = $("#share"); if (!share) return;
     var lab = $("span", share), busy = false;
     function flash(text) { if (busy) return; busy = true; var old = lab.textContent; lab.textContent = text; share.classList.add("is-done"); App.live(text); setTimeout(function () { lab.textContent = old; share.classList.remove("is-done"); busy = false; }, 2000); }

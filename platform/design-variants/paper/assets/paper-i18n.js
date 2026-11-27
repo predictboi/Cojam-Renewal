@@ -9,7 +9,35 @@
     "pp.player.col": ["Player", "참가자", "プレイヤー"],
     "pp.extra": ["Extra", "호외", "号外"],
     "pp.paid": ["Paid", "지급 완료", "支払済"],
-    "pp.press": ["Going to press", "인쇄 대기", "印刷待ち"]
+    "pp.press": ["Going to press", "인쇄 대기", "印刷待ち"],
+    /* short labels: a screen is read at a glance, the explanation is one tap away behind "?" */
+    "pp.addr": ["Address", "지갑 주소", "アドレス"],
+    "pp.nofee": ["No fee", "수수료 없음", "手数料なし"],
+    "pp.youpay": ["Fee: you pay", "수수료 본인 부담", "手数料は自己負担"],
+    "pp.noexit": ["No early exit", "중도 해지 불가", "途中解約不可"],
+    "pp.earned": ["Earned", "쌓인 이자", "たまった利息"],
+    "pp.claimable": ["Claimable", "지금 받을 수 있음", "いま受け取れる"],
+    "pp.claimfrom": ["Claim from {n} CT", "{n} CT부터 받을 수 있어요", "{n} CTから受け取れます"],
+    "pp.points": ["Points", "포인트", "ポイント"],
+    "pp.rule": ["Rules", "기준 보기", "基準を見る"],
+    "pp.more": ["More about {topic}", "{topic} 자세히 보기", "{topic}についてくわしく"],
+    "pp.i.kaia": ["Why KAIA", "KAIA가 필요한 이유", "KAIAが必要な理由"],
+    "pp.i.convert": ["Conversion rules", "전환 규칙", "交換のルール"],
+    "pp.i.deposit": ["Before you send", "보내기 전에", "送る前に"],
+    "pp.i.withdraw": ["About the fee", "수수료 안내", "手数料について"],
+    "pp.i.email": ["Which emails work", "가입할 수 있는 이메일", "使えるメール"],
+    "pp.i.points": ["How points become CT", "포인트를 CT로 바꾸는 법", "ポイントをCTにする方法"],
+    "pp.i.device": ["This device", "이 기기", "この端末"],
+    "pp.o1": ["5 new questions every day at 09:00 KST.", "매일 오전 9시, 새 문제 5개가 열려요.", "毎朝9時、新しい5問が届きます。"],
+    "pp.o2": ["+100P for all five. +50P for each hit.", "다 풀면 +100P, 맞히면 하나에 +50P.", "5問すべてで+100P、的中1問ごとに+50P。"],
+    "pp.o3": ["1,000P becomes 1 CT.", "1,000P는 1 CT가 돼요.", "1,000Pは1 CTになります。"],
+    "pp.capleft": ["{n} CT left today", "오늘 {n} CT 남음", "今日あと{n} CT"],
+    "pp.lock": ["Lock", "기간", "期間"],
+    "pp.interest": ["Interest", "이자", "利息"],
+    "pp.tier1": ["+1% from 1,000 CT", "1,000 CT부터 +1%", "1,000 CTから+1%"],
+    "pp.tier2": ["+2% from 10,000 CT", "10,000 CT부터 +2%", "10,000 CTから+2%"],
+    "pp.help": ["Help", "도움말", "ヘルプ"],
+    "pp.lede": ["We email you a code.", "이메일로 코드를 보내 드려요.", "メールでコードをお送りします。"]
   };
   var d = window.CJ_I18N.dict;
   Object.keys(S).forEach(function (k) { ["en", "ko", "ja"].forEach(function (l, i) { d[l][k] = S[k][i]; }); });

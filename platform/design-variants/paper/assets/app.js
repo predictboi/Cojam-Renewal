@@ -67,7 +67,7 @@
   /* a question in the chosen language. The server sends title, choices and answer rule authored per language (see mock.js). */
   App.q = function (id) {
     var q = M.questions[id], L = q[App.lang] || q.en;
-    return { id: id, n: q.n, img: q.img, cat: q.cat, title: L.title, l: L.left, r: L.right, rule: L.rule, settle: L.settle };
+    return { id: id, n: q.n, img: q.img, focus: q.focus, cat: q.cat, title: L.title, l: L.left, r: L.right, rule: L.rule, settle: L.settle };
   };
 
   /* ---------- icons: one stroke family, 24 grid ---------- */
@@ -216,7 +216,7 @@
   C.hold = function (html, o) {
     o = o || {};
     return '<div class="hold" role="status">' + ic("pause", 20) + '<div class="hold-body"><b class="hold-t">' + t("hold.t") + "</b><p>" + html + "</p>" + (o.action || "") +
-      (o.more === false ? "" : '<a class="hold-more" href="hold.html">' + t("hold.more") + ic("chev", 16) + "</a>") + "</div></div>";
+      (o.more === false ? "" : '<a class="hold-more" href="system.html?state=blocked">' + t("hold.more") + ic("chev", 16) + "</a>") + "</div></div>";
   };
   C.banner = function (text, o) {
     o = o || {};
@@ -224,8 +224,48 @@
   };
   C.playBanner = function (state) {
     if (state === "slow") return C.banner(t("h.slow", { n: 1 }), { spin: true, btn: t("h.retrynow"), attrs: "data-retry-now" });
+    if (state === "reconnect") return C.banner(t("h.reconnect"), { spin: true });
+    if (state === "reconnectfail") return C.banner(t("h.reconnect.fail"), { kind: "warn", icon: "warn", btn: t("common.retry"), attrs: "data-reload" });
     return "";
   };
+  C.otherDevice = function () {
+    return C.empty({ icon: "phone", title: t("h.other.h"), body: t("h.other.b"), action: C.btn(t("h.other.btn"), { kind: "primary", attrs: "data-reload" }) });
+  };
+  /* numbered steps with the icon of the control to look for */
+  C.steps = function (items) { return '<ol class="steps">' + items.map(function (s, i) { return '<li><b class="steps-n">' + (i + 1) + "</b><span>" + s[0] + "</span>" + (s[1] ? ic(s[1], 22) : "") + "</li>"; }).join("") + "</ol>"; };
+  /* "?": an explanation is never on the surface of a screen; it is one tap away, in a short sheet. id names a sheet of App.info. */
+  C.q = function (id, topic) { return '<button type="button" class="qbtn" data-info="' + id + '" aria-haspopup="dialog" aria-label="' + esc(t("pp.more", { topic: topic || "" })) + '"><span aria-hidden="true">?</span></button>'; };
+  function lines(keys, vars) { return '<div class="stack-8">' + keys.map(function (k) { return '<p class="sheet-lead">' + (k.charAt(0) === "<" ? k : t(k, vars)) + "</p>"; }).join("") + "</div>"; }
+  function closeBtn() { return '<div class="sheet-acts">' + C.btn(t("common.close"), { block: true, attrs: "data-sheet-close" }) + "</div>"; }
+  /* the sheets behind "?": where each explanation that left the surface now lives (see COPY.md) */
+  App.info = {
+    kaia: function () { return "<h2>" + t("pp.i.kaia") + "</h2>" + lines(["w.kaia.note", "x.gas"]) + closeBtn(); },
+    hits: function () { return "<h2>" + t("h.ai.h") + "</h2>" + lines(["d.hit.1", "d.hit.2"]) + '<ol class="txsteps txsteps--plain">' + ["h.ai.1", "h.ai.2", "h.ai.3"].map(function (k, i) { return '<li><span class="n">' + (i + 1) + "</span><span>" + t(k) + "</span></li>"; }).join("") + "</ol>" + closeBtn(); },
+    points: function () { return "<h2>" + t("pp.i.points") + "</h2>" + C.rows([[t("c.rate"), "1,000P = 1 CT"], [t("c.minimum"), "1,000P"], [t("c.fee"), t("c.fee.v")]]) + lines(["c.rank"]) + closeBtn(); },
+    convert: function () { return "<h2>" + t("pp.i.convert") + "</h2>" + C.rows([[t("c.rate"), "1,000P = 1 CT"], [t("c.minimum"), "1,000P"], [t("c.capleft"), t("c.capof", { n: 50 })], [t("c.fee"), t("c.fee.v")]]) + lines(["c.step", "c.rank"]) + closeBtn(); },
+    staking: function () {
+      return "<h2>" + t("s.help.q") + "</h2>" + lines(["s.help.a", "s.fee"]) + '<div class="scrollx"><table class="ratetable"><tr><th>' + t("s.th.lock") + "</th><th>" + t("s.th.1") + "</th><th>" + t("s.th.2") + "</th><th>" + t("s.th.3") + "</th></tr>" +
+        [30, 90, 180, 365].map(function (d) { return "<tr><td>" + t("s.days", { d: d }) + "</td>" + M.rates[d].map(function (r) { return "<td>" + r + "%</td>"; }).join("") + "</tr>"; }).join("") + "</table></div>" + lines(["pp.claimfrom"], { n: M.minClaim }) + closeBtn();
+    },
+    deposit: function () {
+      return "<h2>" + t("pp.i.deposit") + "</h2>" + lines(["dp.lead", "dp.w1", "dp.w2", "dp.w3"]) + '<div class="stack-8"><p class="hold-why">' + ic("warn", 16) + "<span>" + t("w.token") + '</span></p><p class="addr-v" translate="no">' + F.groups(M.token) + "</p></div>" + closeBtn();
+    },
+    withdraw: function () { return "<h2>" + t("pp.i.withdraw") + "</h2>" + lines(["x.gas", "w.kaia.note"]) + closeBtn(); },
+    invite: function () {
+      var V = M.invite;
+      return "<h2>" + t("inv.how.h") + "</h2>" + '<ol class="txsteps txsteps--plain">' + [t("inv.how.1"), t("inv.how.2", { w: V.welcome }), t("inv.how.3", { r: V.rate })].map(function (x, i) { return '<li><span class="n">' + (i + 1) + "</span><span>" + x + "</span></li>"; }).join("") + "</ol>" +
+        lines(["inv.hero.sub", "inv.rule.1", "inv.rule.2", "inv.rule.3", "inv.rule.4"]) + closeBtn();
+    },
+    email: function () { return "<h2>" + t("pp.i.email") + "</h2>" + lines(["a.email.cap", "a.lede"], { list: '<span translate="no">' + M.providerNames + "</span>" }) + closeBtn(); },
+    name: function () { return "<h2>" + t("p.name") + "</h2>" + lines(["p.name.help"]) + closeBtn(); },
+    device: function () { return "<h2>" + t("pp.i.device") + "</h2>" + lines(["p.device.ready", "p.device.until"], { date: F.dateLong(M.ahead(30)) }) + closeBtn(); },
+    prizes: function () {
+      var ct = M.pool.ct, pr = function (n) { return Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); };
+      return "<h2>" + t("k.split.q") + "</h2>" + lines(["k.pool.line", "<span>" + t("k.tie") + " " + t("k.tie.note") + "</span>", "k.split.note"], { n: F.int(ct) }) +
+        '<div class="split">' + M.pool.split.map(function (p, i) { return "<div><span>" + t("k.rankth", { n: i + 1 }) + "</span><span>" + p + "%</span><b>" + pr(ct * p / 100) + " CT</b></div>"; }).join("") + "</div>" + closeBtn();
+    }
+  };
+  document.addEventListener("click", function (e) { var b = e.target.closest("[data-info]"); if (b && App.info[b.getAttribute("data-info")]) { e.preventDefault(); App.sheet.open(App.info[b.getAttribute("data-info")]()); } });
   var CAT_ICON = { crypto: "coin", markets: "chart", weather: "sun", sports: "ball", culture: "film" };
   /* the picture of a question, printed: one ink through a halftone screen on the paper. With no picture, the category icon on the same ground. */
   C.halftone = function (q, w, h, lazy) {
@@ -247,7 +287,7 @@
       '<span class="qstamp qstamp--l" aria-hidden="true">' + esc(q.l) + '</span><span class="qstamp qstamp--r" aria-hidden="true">' + esc(q.r) + "</span>" +
       '<div class="qcard-body"><h2' + (long ? ' class="is-long"' : "") + ">" + esc(q.title) + "</h2>" +
       (o.failed ? '<p class="qcard-note">' + ic("warn", 16) + t("h.notsaved") + "</p>" : "") +
-      (o.static ? '<div class="qmeta">' : '<button type="button" class="qmeta" data-ai-info="' + id + '" aria-haspopup="dialog">') + '<span class="qmeta-t"><span>' + t("h.answer", { rule: esc(q.rule) }) + "</span><span>" + t("h.ai", { time: q.settle }) + "</span></span>" + (o.static ? "</div>" : ic("info", 16) + "</button>") +
+      (o.static ? '<div class="qmeta">' : '<button type="button" class="qmeta" data-ai-info="' + id + '" aria-haspopup="dialog">') + '<span class="qmeta-t"><span>' + t("h.answer", { rule: esc(q.rule) }) + "</span><span>" + t("h.ai", { time: q.settle }) + "</span></span>" + (o.static ? "</div>" : '<span class="qmeta-go">' + t("pp.rule") + ic("chev", 14) + "</span></button>") +
       '<div class="choices">' + choice("l") + choice("r") + "</div>" +
       (o.final ? '<p class="qcard-final">' + t("h.final") + "</p>" : "") +
       "</div></article>";
@@ -258,7 +298,10 @@
     return '<div class="viewsw" role="group" aria-label="' + esc(t("h.view.label")) + '">' + a("card", "home.html") + a("term", "home-list.html") + "</div>";
   };
   C.closes = function (secs) { return "<span>" + t("h.closes") + '</span> <b data-cd="' + secs + '"></b>'; };
-  C.thumb = function (q) { if (typeof q === "string") q = App.q(q); return '<span class="thumb' + (q.img ? "" : " thumb--none") + '" aria-hidden="true">' + C.halftone(q, 56, 70, true) + "</span>"; };
+  C.thumb = function (q) {
+    if (typeof q === "string") q = App.q(q);
+    return '<span class="thumb' + (q.img ? "" : " thumb--none") + '" aria-hidden="true">' + (q.img ? '<span class="cut"><img src="' + q.img + '" alt="" width="60" height="60" loading="lazy" decoding="async" draggable="false" style="--f:' + (q.focus || "50% 15%") + '"></span>' : ic(CAT_ICON[q.cat] || "spark", 28)) + "</span>";
+  };
   /* the dateline: the date, the issue (day of the week and week number) and one live fact of the screen, divided by column rules */
   C.dateline = function (liveHtml) {
     var is = App.issue;

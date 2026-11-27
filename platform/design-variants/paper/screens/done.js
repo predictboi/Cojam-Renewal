@@ -13,12 +13,13 @@
   if (phase === "paid") M.user.points = basePts;
   var sample = { q1: "r", q2: "r", q3: "l", q4: "r", q5: "r" };
   var picks = M.set.map(function (id) { return [id, sess.data.picks[id] || sample[id]]; });
-  var outcome = S === "results" ? ["wait", "pend", "miss", "wait", "wait"] : ["wait", "wait", "wait", "wait", "wait"];
+  var outcome = ["wait", "wait", "wait", "wait", "wait"];   /* today's answers are set only after the day ends: every pick waits. "results" shows the hit points of an earlier day on their way (the masthead) */
   var waiting = outcome.filter(function (o) { return o === "wait"; }).length;
 
   function status(p) {
     if (p === "saving") return '<p class="done-st" id="reward"><span class="spin"></span>' + t("d.saving.st") + "</p>";
-    return '<p class="done-st" id="reward">' + C.icon("check", 16) + (wel ? t("d.wel.st", { n: 100 + W }) : t("d.paid.st")) + "</p>";
+    /* once paid, the figure and the stamp say it; the sentence stays for screen readers only (a welcome bonus keeps its line: it changes the amount) */
+    return wel ? '<p class="done-st" id="reward">' + C.icon("check", 16) + t("d.wel.st", { n: 100 + W }) + "</p>" : '<p class="sr-only" id="reward">' + t("d.paid.st") + "</p>";
   }
   /* the headline as letters, so it can be set one by one; words stay whole for line breaks, and a screen reader gets the plain sentence */
   function letters(text) {
@@ -53,7 +54,7 @@
     return C.btn(t("d.rank"), { kind: "primary", block: true, href: "ranking.html", iconEnd: "right" }) +
       (wel ? '<p class="done-welnote">' + t("d.wel.note", { name: '<b translate="no">' + App.esc(M.invite.by) + "</b>", w: W }) + "</p>" : "") +
       '<section class="sec sec-rule"><div class="sh"><h2>' + t("d.picks") + '</h2><a class="linkish" href="results.html">' + t("d.results") + "</a></div>" +
-      '<div class="done-wait">' + (waiting ? '<p class="done-wait-n">' + t("d.waitn", { n: waiting }) + "</p>" : "") + '<div class="plain-note"><p>' + t("d.hit.1") + "</p><p>" + t("d.hit.2") + "</p></div></div>" +
+      (waiting ? '<p class="done-wait-n">' + t("d.waitn", { n: waiting }) + C.q("hits", t("h.ai.h")) + "</p>" : "") +
       '<ul class="list">' + picks.map(pickRow).join("") + "</ul></section>";
   }
   /* the dateline: while the last pick is saved it still reads "Closes in" (this edition is on the press); once paid it turns to the next set */

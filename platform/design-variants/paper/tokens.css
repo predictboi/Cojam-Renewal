@@ -1,4 +1,4 @@
-/* Hallmark · custom · deal: manual · concept A "Daily Paper" · idea: "the day's five predictions are the front page of a small daily newspaper" · vibe: "newsprint, slab headlines, one blue spot ink" · paper #F4EFE4 · ink #16130E · accent #124CC4 (Cojam blue) · display Besley + Hahmlet + Noto Serif JP · text Pretendard · posture light/slab-serif/chromatic-blue */
+/* Hallmark · custom · deal: manual · concept A "Daily Paper" · idea: "the day's five predictions are the front page of a small daily newspaper" · vibe: "newsprint, slab headlines, one blue spot ink" · paper #F4EFE4 · ink #16130E · accent #124CC4 (Cojam blue) · display Besley + Hahmlet + Shippori Antique B1 · text Pretendard · posture light/slab-serif/chromatic-blue */
 /* critique: the paper carries structure with rules, not boxes; the blue spot ink has four jobs; the two answers are persimmon (left) and teal (right) and are never the accent. */
 /* waive 9 (stamps only): result stamps HIT / MISS are set in capitals because the brief asks for a rubber stamp; every label, caption, tab and table head stays sentence case and untracked. */
 /* waive 65 (paper ground with a serif): the concept is prescribed by the brief; the answer to the cliche is a slab (not a high contrast roman), the brand blue as the only spot ink (no clay), and rules that carry real information. */
@@ -46,7 +46,7 @@
 
   /* ---------- type ----------
      Display: Besley, a Clarendon slab, for headlines and every figure that matters. Hangul falls through to Hahmlet (a Korean slab serif),
-     kana and kanji to Noto Serif JP at its heaviest: the same sturdy, bracketed voice in each script, and the numerals stay Besley in all three.
+     kana and kanji to Shippori Antique B1: the same sturdy, bracketed voice in each script, and the numerals stay Besley in all three.
      Text: Pretendard (the brand face) for every label, row and sentence; Pretendard JP under :lang(ja). */
   --font-display: "Besley", "Hahmlet", "Noto Serif KR", Georgia, serif;
   --font-text: "Pretendard Variable", Pretendard, "Pretendard Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
@@ -97,7 +97,10 @@
   --z-head: 20; --z-pin: 25; --z-tab: 30; --z-sheet: 50; --z-toast: 60;
 }
 :root:lang(ja) {
-  --font-display: "Besley", "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  /* Japanese display: Shippori Antique B1, an antique face (the Japanese counterpart of a Clarendon: sturdy bracketed kana with heavy, low contrast kanji).
+     It ships in one weight, so at the display weights the browser emboldens it; that is accepted for the prototype because it brings the colour level with
+     Besley 800 and Hahmlet 800. Production should license a true heavy antique (see CONCEPT.md). Numerals and Latin stay Besley. */
+  --font-display: "Besley", "Shippori Antique B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
   --font-text: "Pretendard JP Variable", "Pretendard JP", "Pretendard Variable", "Pretendard Fallback", -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
   --fw-head: 900; --track-head: 0;
 }

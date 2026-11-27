@@ -2,7 +2,7 @@
    then three facts between hairlines. Steps: email, code, setting up. */
 (function () {
   var t = App.t, S = App.state, M = MOCK, $ = App.$;
-  var CODE = ["code", "verifying", "wrong", "short", "expired"], SETUP = ["setup", "returning", "walletfail", "refused"];
+  var CODE = ["code", "verifying", "wrong", "short", "expired", "tries"], SETUP = ["setup", "returning", "busy", "walletfail", "devicefail", "refused-used", "refused-provider", "refused-many", "refused"];
   var email = { bademail: "minji@naver", unsupported: "minji@proton.me", typo: "minji@gmial.com", empty: "", "": "", offline: "" }[S];
   if (email === undefined) email = M.user.email;
   var step = CODE.indexOf(S) >= 0 ? "code" : SETUP.indexOf(S) >= 0 ? "setup" : "email";
@@ -27,47 +27,51 @@
   function terms() { return '<p class="fine">' + t("a.fine", { terms: '<a href="#terms">' + t("a.terms") + "</a>", privacy: '<a href="#privacy">' + t("a.privacy") + "</a>" }) + "</p>"; }
   function emailView() {
     var sending = S === "sending", err = S === "empty" || S === "bademail" || S === "unsupported" || S === "typo" ? emailErr(email) : null;
-    var msg = err && err.text ? err.text : off ? t("a.offline") : "";
-    var bad = !!err && !err.typo;
-    return '<form class="stack" id="f-email" novalidate><div class="field"><div class="field-label"><label for="email"><b>' + t("a.email.label") + '</b></label></div>' +
-      '<div class="field-box field-box--text' + (bad ? " is-error" : "") + (off ? " is-off" : "") + '">' + C.icon("mail", 20) + '<input id="email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" enterkeyhint="send" placeholder="you@gmail.com" value="' + App.esc(email) + '" aria-describedby="email-msg email-cap"' + (bad ? ' aria-invalid="true"' : "") + (off || sending ? " disabled" : "") + "></div>" +
+    var msg = err && err.text ? err.text : S === "toomany" ? t("a.email.toomany") : S === "sendfail" ? t("a.email.sendfail") : off ? t("a.offline") : "";
+    var bad = (!!err && !err.typo) || S === "toomany" || S === "sendfail";
+    return '<form class="stack" id="f-email" novalidate><div class="field"><div class="field-label"><label for="email"><b>' + t("a.email.label") + "</b></label>" + C.q("email", t("pp.i.email")) + "</div>" +
+      '<div class="field-box field-box--text' + (bad ? " is-error" : "") + (off ? " is-off" : "") + '">' + C.icon("mail", 20) + '<input id="email" name="email" type="email" inputmode="email" autocomplete="email" autocapitalize="off" spellcheck="false" enterkeyhint="send" placeholder="you@gmail.com" value="' + App.esc(email) + '" aria-describedby="email-msg"' + (bad ? ' aria-invalid="true"' : "") + (off || sending ? " disabled" : "") + "></div>" +
       '<div id="email-fb" aria-live="polite">' +
       (msg ? '<div class="field-msg' + (bad ? " is-error" : "") + '" id="email-msg"><span>' + msg + "</span></div>" : "") +
       (err && err.typo ? '<div class="typo" id="typo"><span>' + t("a.email.typo", { domain: '<b translate="no">' + err.typo + "</b>" }) + "</span>" + C.btn(t("a.email.typo.fix", { email: '<span translate="no">' + App.esc(err.fixed) + "</span>" }), { sm: true, wrap: true, attrs: 'data-fix-email="' + App.esc(err.fixed) + '"' }) + "</div>" : "") +
       (err && err.note ? '<div class="note note-warn" role="alert" id="prov-note">' + C.icon("warn", 18) + '<div class="note-body"><b>' + t("a.email.unsupported") + "</b><span>" + t("a.email.supported", { list: providers }) + "</span></div></div>" : "") + "</div>" +
-      (err && err.note ? "" : '<p class="field-cap" id="email-cap">' + t("a.email.cap", { list: providers }) + "</p>") + "</div>" +
+      "</div>" +
       '<button type="submit" id="send" class="btn btn-primary btn-block' + (sending ? " is-loading" : "") + '"' + (off || (err && err.note) ? " disabled" : "") + ">" + (sending ? '<span class="spin"></span>' : "") + "<span>" + t(sending ? "a.email.sending" : "a.email.btn") + "</span></button></form>" +
       C.help(t("a.help.q"), "<p>" + t("a.help.a") + "</p>") + terms();
   }
   var code0 = S === "short" ? "418" : "";
   function codeView() {
-    var err = S === "wrong" ? t("a.code.wrong") : S === "short" ? t("a.code.short") : S === "expired" ? t("a.code.expired") : "", busy = S === "verifying";
+    var err = S === "wrong" ? t("a.code.wrong") : S === "short" ? t("a.code.short") : S === "expired" ? t("a.code.expired") : S === "tries" ? t("a.code.tries") : "", busy = S === "verifying", locked = S === "tries";
     return '<form class="stack" id="f-code" novalidate><div class="stack-8"><h2>' + t("a.code.h") + '</h2><p class="muted small">' + t("a.code.body", { email: '<b translate="no">' + App.esc(email) + "</b>" }) + "</p></div>" +
-      '<div class="field"><div class="field-box field-box--code' + (err && S !== "short" ? " is-error" : "") + '"><input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" placeholder="______" value="' + (S === "wrong" ? "418205" : S === "short" ? code0 : busy ? "418250" : "") + '" aria-label="' + App.esc(t("a.code.label")) + '" aria-describedby="code-msg"' + (err && S !== "short" ? ' aria-invalid="true"' : "") + (busy ? " disabled" : "") + "></div>" +
+      '<div class="field"><div class="field-box field-box--code' + (err && S !== "short" ? " is-error" : "") + '"><input id="code" name="code" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]*" placeholder="______" value="' + (S === "wrong" || S === "tries" ? "418205" : S === "short" ? code0 : busy ? "418250" : "") + '" aria-label="' + App.esc(t("a.code.label")) + '" aria-describedby="code-msg"' + (err && S !== "short" ? ' aria-invalid="true"' : "") + (busy || locked ? " disabled" : "") + "></div>" +
       '<div class="field-msg' + (err && S !== "short" ? " is-error" : "") + '" id="code-msg" aria-live="polite">' + (err ? "<span>" + err + "</span>" : "") + "</div></div>" +
-      '<button type="submit" class="btn btn-primary btn-block' + (busy ? " is-loading" : "") + '"' + (S === "expired" ? " disabled" : "") + ">" + (busy ? '<span class="spin"></span>' : "") + "<span>" + t(busy ? "a.code.verifying" : "a.code.btn") + "</span></button></form>" +
+      '<button type="submit" class="btn btn-primary btn-block' + (busy ? " is-loading" : "") + '"' + (S === "expired" || locked ? " disabled" : "") + ">" + (busy ? '<span class="spin"></span>' : "") + "<span>" + t(busy ? "a.code.verifying" : "a.code.btn") + "</span></button></form>" +
       '<div class="stack-8"><p class="small muted" id="resend-in"' + (S === "expired" || resendLeft() <= 0 ? " hidden" : "") + ">" + t("a.code.resendin", { s: '<b id="resend-s">' + resendLeft() + "</b>" }) + '</p><div class="row-between"><button type="button" class="linkish" id="resend"' + (S === "expired" || resendLeft() <= 0 ? "" : " disabled") + ">" + t("a.code.resend") + '</button><button type="button" class="linkish" id="change">' + t("a.code.change") + "</button></div>" +
-      '<p class="small muted">' + t("a.code.tip") + "</p></div>";
+      "</div>";
   }
   function setupView() {
     var out = C.btn(t("p.logout"), { block: true, id: "change" }), retry = C.btn(t("common.retry"), { kind: "primary", block: true, id: "retry" });
-    if (S === "refused") return '<div class="setup"><div class="sheet-ic is-bad">' + C.icon("warn", 28) + "</div><h2>" + t("a.refused.h") + '</h2><p class="muted" role="alert">' + t("a.setup.refused", { list: providers }) + "</p></div>" + out;
-    if (S === "walletfail") return '<div class="setup"><div class="sheet-ic is-bad">' + C.icon("x", 28) + '</div><h2 role="alert">' + t("a.setup.fail") + "</h2></div>" + retry;
-    var back = S === "returning", done = back ? 2 : 0;
+    function refused(key, btns) { return '<div class="setup"><div class="sheet-ic is-bad">' + C.icon("warn", 28) + "</div><h2>" + t("a.refused.h") + '</h2><p class="muted" role="alert">' + t(key, { list: providers }) + "</p></div>" + btns; }
+    if (S === "refused-used") return refused("a.refused.used", out);
+    if (S === "refused-provider") return refused("a.refused.provider", out);
+    if (S === "refused-many") return refused("a.refused.many", retry + out);
+    if (S === "refused") return refused("a.setup.refused", out);
+    if (S === "walletfail" || S === "devicefail") return '<div class="setup"><div class="sheet-ic is-bad">' + C.icon("x", 28) + '</div><h2 role="alert">' + t(S === "walletfail" ? "a.setup.fail" : "a.setup.devicefail") + "</h2></div>" + retry;
+    var back = S === "returning", done = back ? 2 : S === "busy" ? 1 : 0;
     return '<div class="stack-8" role="status"><h2>' + t("a.setup.h") + '</h2><p class="muted small">' + t(back ? "a.setup.body2" : "a.setup.body") + "</p></div>" +
       '<ol class="txsteps" id="setup-steps" data-done="' + done + '">' + ["a.setup.s1", "a.setup.s2", "a.setup.s3"].map(function (k, i) {
         var st = i < done ? "done" : i === done ? "now" : "wait";
-        return '<li class="is-' + st + '"><span class="n">' + (st === "done" ? C.icon("check", 16) : i + 1) + "</span><span>" + t(k) + '</span><span class="st">' + (st === "now" ? '<span class="spin"></span>' : "") + "</span></li>";
+        return '<li class="is-' + st + '"><span class="n">' + (st === "done" ? C.icon("check", 16) : i + 1) + "</span><span>" + t(k) + (S === "busy" && i === 1 ? '<br><span class="tiny muted">' + t("a.setup.busy") + "</span>" : "") + '</span><span class="st">' + (st === "now" ? '<span class="spin"></span>' : "") + "</span></li>";
       }).join("") + "</ol>";
   }
   function view() { return step === "email" ? emailView() : step === "code" ? codeView() : setupView(); }
   function headline() { return step === "email" ? t("a.h1") : step === "code" ? t("a.code.h1") : t("a.setup.h1"); }
-  var facts = '<ul class="facts" id="facts"><li>' + C.icon("bolt", 18) + t("a.fact.1") + "</li><li>" + C.icon("shield", 18) + t("a.fact.2") + "</li><li>" + C.icon("swap", 18) + t("a.fact.3") + "</li></ul>";
+  var facts = '<div id="facts" hidden></div>';   /* the three facts are on the Gate; the cover of the paper is the headline and the form */
   var raw = '<div class="auth"><div class="gate-bar">' + C.logo(true) + C.lang() + '</div><div class="oxford" aria-hidden="true"></div>' + C.dateline("<span>" + t("d.next.at") + "</span>").replace('class="dateline"', 'class="dateline dateline--cover"') +
-    '<div class="auth-main"><div class="stack-12"><h1 id="h1">' + headline() + '</h1><p class="auth-lede" id="lede"' + (step === "email" ? "" : " hidden") + ">" + t("a.lede") + '</p></div><section class="panel" id="panel">' + view() + "</section>" + facts + "</div></div>";
+    '<div class="auth-main"><div class="stack-12"><h1 id="h1">' + headline() + '</h1><p class="auth-lede" id="lede"' + (step === "email" ? "" : " hidden") + ">" + t("pp.lede") + '</p></div><section class="panel" id="panel">' + view() + "</section>" + facts + "</div></div>";
 
   function runSetup() {
-    var ol = $("#setup-steps"); if (!ol) return;
+    var ol = $("#setup-steps"); if (!ol || S === "busy") return;
     var lis = App.$$("li", ol), i = +ol.getAttribute("data-done");
     (function next() {
       if (i > 0) { lis[i - 1].className = "is-done"; lis[i - 1].querySelector(".n").innerHTML = C.icon("check", 16); lis[i - 1].querySelector(".st").innerHTML = ""; }
@@ -76,7 +80,7 @@
     })();
   }
   function paint(keepFocus) {
-    $("#panel").innerHTML = view(); $("#h1").textContent = headline(); $("#lede").hidden = step !== "email"; $("#facts").hidden = step === "setup";
+    $("#panel").innerHTML = view(); $("#h1").textContent = headline(); $("#lede").hidden = step !== "email";
     document.title = headline() + " | Cojam Daily";
     bind(); var f = $("#panel input:not([disabled])"); if (f && keepFocus !== false) { f.focus(); try { f.setSelectionRange(f.value.length, f.value.length); } catch (e) {} }
   }
@@ -122,7 +126,6 @@
     }, 250);
   }
   App.mount({ bare: true, docTitle: headline(), raw: raw, after: function () {
-    $("#facts").hidden = step === "setup";
     bind(); if (step === "code" && S !== "expired") countdown(); if (S === "setup" || S === "returning") runSetup();
   } });
 })();

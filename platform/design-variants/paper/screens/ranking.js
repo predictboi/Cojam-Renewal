@@ -49,7 +49,7 @@
   function around(w) {
     if (!hasAround(w)) return "";
     var rows = aroundRows(w);
-    return '<section class="sec sec-rule" id="around" tabindex="-1"><div class="sh"><h2>' + t("k.around") + '</h2><span class="muted tiny">' + t("k.around.sub", { a: rows[0].rank, b: rows[rows.length - 1].rank }) + "</span></div>" +
+    return '<section class="sec sec-rule" id="around" tabindex="-1"><div class="sh"><h2>' + t("k.around") + "</h2></div>" +
       '<ol class="klist klist--gap" aria-label="' + App.esc(t("k.col.gap")) + '">' + rows.map(row).join("") + "</ol></section>";
   }
   function list(w) {
@@ -84,7 +84,7 @@
     else if (w === "last") note = S === "sent" ? C.note("ok", t("k.sent") + ' <a href="https://kaiascan.io/" target="_blank" rel="noopener">' + t("w.scan") + "</a>") : C.note("", t("k.closed", { time: t("k.final.time") }));
     else if (S === "winner") note = C.note("ok", t("k.last", { rank: 4, amount: "119.60" }));
     return note + pool(w) + '<section class="sec sec-rule"><div class="sh"><h2>' + t("k.top") + "</h2>" + (S === "loading" || w === "last" ? "" : C.stamp(12)) + "</div>" +
-      '<div class="ktable">' + list(w) + '</div><p class="tie-line">' + C.icon("info", 16) + "<span>" + t("k.tie") + "</span></p></section>" + around(w);
+      '<div class="ktable">' + list(w) + "</div></section>" + around(w);
   }
   function body() {
     if (S === "error") return C.error();

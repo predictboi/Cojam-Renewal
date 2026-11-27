@@ -1,9 +1,9 @@
-// node tools/lang-switch-check.js : the language control on every screen that has one (hub, login, first run, profile), at 360, 390 and 440 px, in EN, KO and JA.
+// node tools/lang-switch-check.js : the language control on every screen that has one (hub, gate, login, first run, profile), at 360, 390 and 440 px, in EN, KO and JA.
 // Fails a control when a label wraps to more than one line, is clipped by its cell, or the page overflows sideways.
 const { chromium } = require('playwright');
 (async () => {
   const b = await chromium.launch(); let bad = 0; const rows = [];
-  for (const [name, url, sel] of [['hub', 'index.html', '#langs .seg-btn'], ['login', 'login.html', '.select'], ['first-run', 'first-run.html', '#langrow .seg-btn'], ['profile', 'profile.html', '[data-seg="lang"] .seg-btn']])
+  for (const [name, url, sel] of [['hub', 'index.html', '#langs .seg-btn'], ['login', 'login.html', '.select'], ['gate', 'gate.html?state=android', '.select'], ['first-run', 'first-run.html', '#langrow .seg-btn'], ['profile', 'profile.html', '[data-seg="lang"] .seg-btn']])
     for (const w of [360, 390, 440]) for (const lang of ['en', 'ko', 'ja']) {
       const pg = await b.newPage({ viewport: { width: w, height: 844 }, isMobile: true, hasTouch: true });
       await pg.goto('http://localhost:8851/' + url + '?lang=' + lang, { waitUntil: 'load' }); await pg.evaluate(() => document.fonts.ready); await pg.waitForTimeout(300);
