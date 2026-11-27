@@ -35,8 +35,8 @@
     }
     var failed = p && p.sync === "fail";
     if (n === current) {
-      return '<li class="trow is-open' + (failed ? " is-fail" : "") + '">' + num + '<div><h2 class="trow-q" tabindex="-1" id="open-q">' + App.esc(q.title) + '</h2><div class="trow-foot">' + cat +
-        (failed ? '<span class="trow-state">' + C.icon("warn", 16) + t("h.t.notsaved") + "</span>" : "") + "</div></div>" + C.thumb(q) +
+      return '<li class="trow is-open' + (failed ? " is-fail" : "") + '">' + num + '<div><div class="trow-qw"><span class="trow-kick">' + t("cat." + q.cat) + '</span><h2 class="trow-q" tabindex="-1" id="open-q">' + App.esc(q.title) + "</h2></div>" +   /* the kicker above the headline, as on the card */
+        (failed ? '<div class="trow-foot"><span class="trow-state">' + C.icon("warn", 16) + t("h.t.notsaved") + "</span></div>" : "") + "</div>" + C.thumb(q) +
         '<div class="trow-body"><button type="button" class="qmeta" data-ai-info="' + q.id + '" aria-haspopup="dialog"><span class="qmeta-t"><span>' + t("h.answer", { rule: App.esc(q.rule) }) + "</span><span>" + t("h.ai", { time: q.settle }) + '</span></span><span class="qmeta-go">' + t("pp.rule") + C.icon("chev", 14) + "</span></button>" +
         '<div class="choices">' + ["l", "r"].map(function (d) {
           return '<button type="button" class="choice" data-pick="' + n + '" data-dir="' + d + '"' + (App.offline ? ' aria-disabled="true"' : "") + ' aria-label="' + App.esc(t("h.pick.aria", { choice: q[d], q: q.title })) + '">' + (d === "l" ? C.icon("left", 18) : "") + "<span>" + App.esc(q[d]) + "</span>" + (d === "r" ? C.icon("right", 18) : "") + "</button>";

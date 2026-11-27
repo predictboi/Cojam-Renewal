@@ -29,23 +29,24 @@
   function endRing(id) { return '<div class="end-mark" aria-hidden="true">' + C.icon("check", 30) + '</div><span class="fuse fuse--end" aria-hidden="true"' + (id ? ' id="' + id + '"' : "") + "></span>"; }
   function body() {
     if (S === "loading") return '<div class="deck" aria-busy="true"><div class="qcard" data-pos="0"><div class="qcard-top">' + C.skel("64px", "12px") + C.skel("72px", "12px") + '</div><div class="qimg"></div><div class="qcard-body">' + C.skel("92%", "24px") + C.skel("60%", "24px") +
-      C.skel("100%", "40px") + '<div class="choices">' + C.skel("100%", "54px") + C.skel("100%", "54px") + '</div></div></div></div><div class="pickbar"></div><p class="sr-only" role="status">' + t("common.loading") + "</p>";
+      C.skel("100%", "40px") + '<div class="choices">' + C.skel("100%", "54px") + C.skel("100%", "54px") + '</div></div></div></div><p class="sr-only" role="status">' + t("common.loading") + "</p>";
     if (S === "empty") return C.empty({ icon: "clock", title: t("h.empty.h"), body: t("h.empty.b", { time: t("time.kst9") }), extra: '<p class="fig" data-dg data-cd="' + M.untilNextSet() + '"></p>' });
     if (S === "closed") return C.empty({ icon: "refresh", title: t("h.closed"), action: C.btn(t("h.closed.btn"), { kind: "primary", href: "home.html" }) });
     if (S === "error") return C.error();
     if (S === "otherdevice") return C.otherDevice();
     /* account on hold: no deck and no answer buttons, so nothing on the screen is dead */
     if (S === "hold") return C.empty({ icon: "pause", title: t("hold.home.h"), body: t("hold.home.b"), action: C.btn(t("hold.home.btn"), { href: "system.html?state=blocked", iconEnd: "right", id: "hold-more" }) });
-    if (fin) return '<div class="deck is-empty home-fin"><div class="deck-end">' + endRing() + "<h2>" + t("h.end.h") + "</h2><p>" + t("h.fin.b") + "</p>" + C.btn(t("h.fin.btn"), { kind: "primary", href: sess.data.paid ? "done.html" : "done.html?state=moment", iconEnd: "right" }) + '</div></div><div class="pickbar"></div>';
+    if (fin) return '<div class="deck is-empty home-fin"><div class="deck-end">' + endRing() + "<h2>" + t("h.end.h") + "</h2><p>" + t("h.fin.b") + "</p>" + C.btn(t("h.fin.btn"), { kind: "primary", href: sess.data.paid ? "done.html" : "done.html?state=moment", iconEnd: "right" }) + "</div></div>";
     var cards = Q.filter(function (q) { return answered.indexOf(q.n) < 0; });
     if (S === "failed") cards.sort(function (a, b) { return (a.n === 2 ? -1 : 0) - (b.n === 2 ? -1 : 0); });
     return C.playBanner(S) +
       '<div class="deck" id="deck"><div class="deck-end" id="deck-end" aria-hidden="true">' + endRing("end-run") + "<h2>" + t("h.end.h") + '</h2><p id="end-p"></p><div id="end-act"></div></div>' +
-      cards.map(function (q) { return C.qcard(q.id, { failed: S === "failed" && q.n === 2, disabled: App.offline, noimg: S === "noimage" && q.n === 1, final: true }); }).join("") + "</div>" +
-      '<div class="pickbar" id="pickbar"></div>';
+      cards.map(function (q) { return C.qcard(q.id, { failed: S === "failed" && q.n === 2, disabled: App.offline, noimg: S === "noimage" && q.n === 1, final: true }); }).join("") + "</div>";
   }
+  /* the pick bar (the hint, then the pick with Undo and its fuse) is pinned directly above the tab bar, outside the scrolling area: Undo is on screen at every size */
+  var hasDeck = !fin && ["loading", "empty", "closed", "error", "otherdevice", "hold"].indexOf(S) < 0;
 
-  App.mount({ tab: "home", cls: "is-home" + (App.offline ? " is-offline" : ""), docTitle: t("h.title"), live: liveCell(), head: head(), body: body(), badges: { home: 5 - count && S !== "hold" ? "dot" : 0, results: 2 }, after: function () {
+  App.mount({ tab: "home", cls: "is-home" + (App.offline ? " is-offline" : ""), docTitle: t("h.title"), live: liveCell(), head: head(), body: body(), pin: hasDeck ? '<div class="pin pickbar" id="pickbar"></div>' : "", badges: { home: 5 - count && S !== "hold" ? "dot" : 0, results: 2 }, after: function () {
     var deckEl = $("#deck"); if (!deckEl) return;
     var day5 = $("#day5"), cnt = $("#cnt"), bar = $("#pickbar");
     if (S === "failed") { App.toast(t("h.toast.fail", { n: 2 }), { btn: t("common.retry") }); }
@@ -58,7 +59,7 @@
     function rest() {
       if (App.offline) return "";
       var left = 5 - count;
-      if (count === 0) return '<span class="pickbar-hint">' + C.icon("left", 14) + "<span>" + t(canHover ? "h.hint.keys" : "h.hint.touch") + "</span>" + C.icon("right", 14) + "</span>";
+      if (count === 0) return '<span class="pickbar-hint is-swipe">' + C.icon("left", 14) + "<span>" + t(canHover ? "h.hint.keys" : "h.hint.touch") + "</span>" + C.icon("right", 14) + "</span>";
       return left ? '<span class="pickbar-hint"><span>' + t("h.left", { n: left }) + "</span></span>" : "";
     }
     var endEl = $("#deck-end"), endP = $("#end-p"), endRun = $("#end-run"), endAct = $("#end-act"), endT, endFor = null;

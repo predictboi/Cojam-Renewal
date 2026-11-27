@@ -51,7 +51,7 @@ The blue has four jobs: the primary action, text links, the reward (the "+100P" 
 | --- | --- | --- |
 | Display | **Besley** (a Clarendon slab, variable 500 to 900, Google Fonts) | Headlines at 800, figures at 900: questions, page titles, balances, points, ranks, prizes, rates, the answers on the two buttons, stamps |
 | Display, Korean | **Hahmlet** (a Korean slab serif, variable, Google Fonts) | Hangul in every display role; Latin letters and numerals in Korean text stay Besley because Besley comes first in the stack |
-| Display, Japanese | **Shippori Antique B1** (Google Fonts) | Kana and kanji in every display role, switched by `:lang(ja)`; numerals stay Besley. An antique face is the Japanese counterpart of a Clarendon: sturdy bracketed kana, heavy low contrast kanji. It replaced Noto Serif JP, which read lighter and more formal than the Latin and Korean slabs. The free font has one weight. Up to 26 px (questions, card headlines, section heads) the browser emboldens it, which brings it level with Besley 800. At 32 px and above (page titles) that fills in dense kanji, so there the real weight is used, one size step larger, with `font-synthesis: none`, proportional kana (`palt`) and tight tracking. A question ends in a Latin question mark (Besley, like the numerals), so there is no full width gap before it. Production should license a true heavy antique |
+| Display, Japanese | **Shippori Antique B1** (Google Fonts) | Kana and kanji in every display role, switched by `:lang(ja)`; numerals stay Besley. An antique face is the Japanese counterpart of a Clarendon: sturdy bracketed kana, heavy low contrast kanji. It replaced Noto Serif JP, which read lighter and more formal than the Latin and Korean slabs. The free font has one weight, so one rule holds everywhere: every Japanese title uses the emboldened face (the browser's synthetic weight), which brings it level with the Besley 800 letters and numerals inside the same line, and no Japanese display title is set larger than 28 px, the size up to which the emboldened kanji stay open. Page titles, the log in and first run headlines and the system screens are therefore smaller in Japanese than in English and Korean (22 to 28 px, fluid), with proportional kana (`palt`) and tight tracking; the layout closes up around them. There is no light title beside a heavy figure any more. A question ends in a Latin question mark (Besley, like the numerals), so there is no full width gap before it. Production should license a true heavy antique |
 | Text | **Pretendard Variable**, Pretendard JP under `:lang(ja)` (the brand face, jsDelivr) | Every label, row, sentence, button label, table cell, the dateline |
 | Data | system monospace | Addresses, the invite code and the invite link only |
 
@@ -79,7 +79,13 @@ Labels are sentence case and untracked everywhere. The only capitals are the res
 
 ## A frame means a control
 
-Only things that can be pressed carry the ink frame: buttons, fields, the "?" box, the address chip, Undo, Pick, the lock period options, the question card. Everything static has another skin: a tag is a word on the second paper tone, a count is a bold number on the same tone, the five day boxes, step numbers and icon tiles have no edge, and a fact is a short label with its value in the text face ("Lock 90 days", "13% a year", "Min. claim 10 CT").
+Only things that can be pressed carry the ink frame: buttons, fields, the "?" box, the address chip, Undo, Pick, the lock period options, the question card. Everything static has another skin: a tag is a word on the second paper tone, a count is a bold number on the same tone, the five day boxes, step numbers and icon tiles have no edge, and a fact is a short label with its value in the text face ("Lock 90 days", "13% a year", "Min. claim 10 CT"). List thumbnails and the "no image" tile stand on their halftone ground alone, a toast is an ink slip (tone, no frame), the example card on the gate has a hairline, and the progress of a stake is ink on a hairline track.
+
+## One notice
+
+Every empty, closed and blocked state (no questions yet, set closed, in use on another device, account on hold, no results, no stakes, not enough points) and every system screen (maintenance, update, offline, not found) is the same notice: left aligned under a section rule, a stamp that names the state in one or two words ("Soon", "Closed", "On hold", "In use", "None yet", "Maintenance", "Offline") in place of an icon tile, the headline in the slab, one line of body, one action. The stamp is ink, never blue: blue stamps are rewards.
+
+A zero is never a hero on any screen: an empty balance on the wallet, a conversion that yields nothing and a stake with no interest yet all show the same plain grey zero, and a day that paid nothing has a grey total while a day that paid has a blue one.
 
 ## Small screens, large text, long content
 
@@ -90,7 +96,7 @@ Only things that can be pressed carry the ink frame: buttons, fields, the "?" bo
 
 ## Controls that change a view
 
-Two patterns only. A segmented control (ink frame, the current segment inverted) filters or switches in place: This week and Last week, All, Waiting and Set, the language, the home view preference. Underlined words (the current one bold with a 3 px ink bar) lead to another page or view: Cards and List, New stake and My stakes. The language control on the cover screens is a globe and a two letter code that opens the native list; the nameplate there always keeps its words.
+Two patterns only. A segmented control (ink frame, the current segment inverted) filters or switches in place: This week and Last week, All, Waiting and Set, the language, the home view preference. Underlined words (the current one bold with a 3 px ink bar) lead to another page or view: Cards and List, New stake and My stakes. Below 360 px, things that sit side by side at 390 px stack as rows: the three facts on convert, the three figures on the profile, and the link to the prize rules under the pool figure. The language control on the cover screens is a globe and a two letter code that opens the native list; the nameplate there always keeps its words.
 
 ## Copy on the surface
 

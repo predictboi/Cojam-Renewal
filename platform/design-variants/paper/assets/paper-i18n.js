@@ -64,6 +64,16 @@
     "pp.stake": ["Stake", "원금", "元本"],
     "pp.total": ["Total", "합계", "合計"],
     "pp.x.dec": ["Enter an amount in CT, like 250.", "250처럼 CT 수량을 입력하세요.", "250のようにCTの数量を入力してください。"],
+    /* review E: the stamp that names an empty, closed or blocked state */
+    "pp.st.soon": ["Soon", "준비 중", "準備中"],
+    "pp.st.closed": ["Closed", "마감", "締切"],
+    "pp.st.hold": ["On hold", "보류", "保留中"],
+    "pp.st.inuse": ["In use", "사용 중", "使用中"],
+    "pp.st.none": ["None yet", "아직 없음", "まだなし"],
+    "pp.st.maint": ["Maintenance", "점검 중", "メンテナンス"],
+    "pp.st.update": ["Update", "업데이트", "アップデート"],
+    "pp.st.offline": ["Offline", "오프라인", "オフライン"],
+    "pp.st.404": ["404", "404", "404"],
     "pp.lede": ["We email you a code.", "이메일로 코드를 보내 드려요.", "メールでコードをお送りします。"]
   };
   var d = window.CJ_I18N.dict;

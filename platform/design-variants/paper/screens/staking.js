@@ -87,7 +87,7 @@
       /* the one condition that cannot be undone gets its own line in ink: the day the lock ends and that there is no way out before it */
       $("#rules").innerHTML = C.icon("lock", 18) + "<span>" + t("s.rules", { date: F.dateLong(M.ahead(period)) }) + "</span>";
       go.disabled = !valid || !!pending; go.classList.toggle("is-busy", !!pending);
-      go.innerHTML = (pending ? '<span class="spin"></span>' : "") + "<span>" + (pending ? pending : valid ? t("s.btn", { a: F.dec(a) }) : S === "hold" ? t("hold.stake.btn") : err ? err : t("s.btn.idle")) + "</span>";
+      go.innerHTML = (pending ? '<span class="spin"></span>' : "") + "<span>" + (pending ? pending : valid ? t("s.btn", { a: F.dec(a) }) : S === "hold" ? t("hold.stake.btn") : t("s.btn.idle")) + "</span>";
       return valid && !pending ? a : 0;
     }
     refresh = update;

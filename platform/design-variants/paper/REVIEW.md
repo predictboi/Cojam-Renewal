@@ -247,3 +247,38 @@ Review C scored 83 / 100 and 35 / 40, review D 81 / 100 and 33 / 40. Both are in
 | `sh tools/audit-all.sh` (the repository audit): EN every state at 390 x 844; KO and JA base screens at 390 x 844; EN at 360 x 640; KO at 320 x 568 | 287 URLs. 282 came back with 0 overflow, 0 contrast failures, 0 small targets. Five had one cause each of two and were fixed and audited again at 0: small buttons inside a note were 43 px tall (a rule meant for text links also caught them), and the hidden iOS hint was still read at opacity 0 (it is now `visibility: hidden` when away). `login.html?state=returning` moves on to home during the audit, as before |
 | `node tools/motion-run.js all` and `node tools/motion-trace.js` | Five flows recorded again, 19 stills, no page errors. Drag: 121 frames, average 16.67 ms, maximum 16.8 ms at CPU 1x and 4x. Raster during a 2 s drag: 17.6 ms with layers, 58.9 ms without |
 | Captures | 168 stills in `captures/` retaken (three languages, 390 and 360 px, and 320 x 568, 360 x 640, 375 x 667 for home), 6 videos and 19 frames in `captures/video/` |
+
+## Round 4 (review E)
+
+Review E scored 81 / 100 and 35 / 40 (`reviews/review-E.md`, written without reading the earlier reviews). Every defect and the lower notes are mapped below.
+
+### Review E: finding by finding
+
+| # | Finding | What was done |
+| --- | --- | --- |
+| 1 | After a pick at 320 x 568 the Undo bar sits behind the tab bar | The pick bar is no longer part of the scrolling area: it is pinned directly above the tab bar at every size, as on day done. `tools/small-check.js` now picks a card at 320 x 568, 360 x 640, 375 x 667 and 390 x 844 in EN, KO and JA and requires Undo to be fully visible and to win the hit test at its centre |
+| 2 | Japanese titles at 32 px and above are light and collide with heavy Besley letters and numerals | One rule: every Japanese title uses the emboldened face and none is set above 28 px (fluid 22 to 28 px), so the kana, the kanji and the Besley letters and figures in one line have one weight. Applies to page titles, log in, first run, the gate, system screens and sheets. CONCEPT.md is updated |
+| 3 | A blank band of about 80 px inside the card at 375 x 667 | The picture stays as a strip down to 64 px. Under that it is dropped and the question block is centred between the kicker rule and the answers, with the headline one size up when it fits |
+| 4 | The swipe hint is cut by the tab bar at 320 x 568 | The hint leaves when the view is under 600 px tall; it also lives in the pinned bar now, so the tab bar cannot cut it at any size |
+| 5 | Collisions at 320 px (ranking prize line, convert rate row and title, profile JA stats) | Below 360 px these stack as rows: the link to the prize rules goes under the pool figure, the three convert facts and the three profile figures become label and value rows, a two line sub page title fits inside the masthead, and the own bar on ranking drops its second label instead of cutting the sentence |
+| 6 | Korean headline breaks between "10%" and its particle | A word joiner is set between a figure (with its unit) and the Korean or Japanese character that follows it, in all text, also in text rendered later. The invite headline, "5問", "3秒間" and the like can no longer part |
+| 7 | Empty and blocked states use the stock empty state; system screens differ | One notice pattern for home empty, closed, other device and hold, results empty, stakes empty, convert short and the four plain system screens: left aligned under a section rule, an ink stamp that names the state in place of the icon tile, the slab headline, one line, the action |
+| 8 | Static things carry the ink frame | List thumbnails and the no image tile have no frame, the toast is an ink slip, the gate example card has a hairline, the stake progress is ink on a hairline track |
+| 9 | Black hero zeros on wallet and convert | The grey plain zero of staking is used for the wallet balance, the wallet points, the convert result and the points figure of the short state |
+| 10 | The error sentence is repeated inside the disabled primary button | The sentence stays under the field; the disabled action keeps its own words on convert and staking |
+| 11 | The fuse merges with the tab bar rule | The fuse runs along the top edge of the pick bar, on home and on day done |
+| 12 | "+50P if hit" on every waiting row | Said once, in the legend beside "Waiting" |
+| 13 | List view, open row: kicker under the headline | The kicker sits above the headline, as on the card; the empty foot row is gone |
+| 14 | Success sheet amounts in blue | Ink; the stamp alone is blue |
+| 15 | "Prizes sent." twice on ranking | The tag is dropped; the notice with the link stays |
+| Notes | Day totals black although they are rewards; "Fee: you pay" hangs under its row on wallet hold; results JA at 320 px too tight; legal links narrower than 44 px; the pick bar on day done showed only a tick; icon benefit rows on log in and gate; the proof stamp lands on the headline at 320 px | Day totals that paid are blue, a zero total is grey. The fee line sits right aligned under the KAIA value in the text face. The legend no longer pulls up into the segments below 360 px. The two legal links have targets of 50 to 134 px by 44 px with no gap in the sentence. The day done bar names the question when the pick is not in the session. The three benefit lines are plain lines between hairlines, without icons. With no picture the proof stamp lands above the headline |
+
+### Not changed, and why
+
+| Item | Why |
+| --- | --- |
+| The five day boxes have no visible label | The home screen is kept as the founder approved it; the boxes are named for screen readers and the card carries "No. 3 of 5" |
+| No entry to the rules from closed list rows | The open row has it; a link on every closed row adds five repeats against the low text rule |
+| Tab order starts in the deck on home | Deliberate for a game: the first key press answers. |
+| Wallet sets two equal figures | CT and points are the two balances of the screen; review E lists it as an observation, not a defect |
+| Gate example card answers stay coloured | They show the product; the card has a hairline and "Example" in the kicker row, and is inert |

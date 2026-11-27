@@ -22,7 +22,7 @@
       col("+" + F.pts(M.user.pendingHit), t("r.pending"), pend ? t("r.at", { time: pend.at }) : "") + "</div></section>";
   }
   function legend() {
-    return '<ul class="rs-legend" aria-label="' + esc(t("r.legend")) + '"><li>' + mark("hit") + t("r.o.hit") + "</li><li>" + mark("miss") + t("r.o.miss") + "</li><li>" + mark("wait") + t("r.f.wait") + "</li></ul>";
+    return '<ul class="rs-legend" aria-label="' + esc(t("r.legend")) + '"><li>' + mark("hit") + t("r.o.hit") + "</li><li>" + mark("miss") + t("r.o.miss") + "</li><li>" + mark("wait") + t("r.f.wait") + '<small class="rs-if">' + t("r.o.ifhit") + "</small></li></ul>";
   }
   /* the right column of every row: the stamp or the state, then the points, always in the same place */
   /* every stamp sits at its own small angle, fixed by its place in the list (stable between visits), and lands in the order of the list */
@@ -31,7 +31,7 @@
   function side(r) {
     var chip, pts;
     switch (r.out) {
-      case "wait": chip = '<span class="rchip rchip--wait">' + mark("wait") + t("pp.answerat", { time: r.exp }) + "</span>"; pts = '<span class="rs-pts is-if">' + t("r.o.ifhit") + "</span>"; break;
+      case "wait": chip = '<span class="rchip rchip--wait">' + mark("wait") + t("pp.answerat", { time: r.exp }) + "</span>"; pts = ""; break;   /* what a waiting pick can pay is said once, in the legend, not on every row */
       case "hit": chip = stamp("hit", t("r.o.hit")); pts = '<span class="rs-pts">+50P</span>'; break;
       case "pend": chip = stamp("hit", t("r.o.hit")); pts = '<span class="rs-pts">+50P<small>' + t("r.at", { time: r.at }) + "</small></span>"; break;
       case "corr": chip = stamp("corr", t("r.o.corr")); pts = '<span class="rs-pts">+50P</span>'; break;
@@ -61,7 +61,7 @@
     var inv = S === "noset" ? null : M.invite.days[g.day];
     var n = { hit: 0, miss: 0, wait: 0, off: 0 }; g.rows.forEach(function (r) { n[MARK[r.out]]++; });
     return '<section class="sec rs-day" data-group><div class="rs-dayh"><div class="rs-dayh-t"><h2>' + label + '</h2><span class="rmarks" role="img" aria-label="' + esc(t("r.marks.sr", { h: n.hit, m: n.miss, w: n.wait })) + '">' + g.rows.map(function (r) { return mark(MARK[r.out]); }).join("") + "</span></div>" +
-      (g.done ? "" : '<p class="rs-dayh-sub">' + t("r.g.part", { k: g.answered }) + "</p>") + '<p class="rs-count" data-roll="' + g.total + '">+' + F.pts(g.total) + "</p></div>" +
+      (g.done ? "" : '<p class="rs-dayh-sub">' + t("r.g.part", { k: g.answered }) + "</p>") + '<p class="rs-count' + (g.total ? "" : " is-zero") + '" data-roll="' + g.total + '">+' + F.pts(g.total) + "</p></div>" +
       (inv ? '<a class="rs-inv" href="invite.html"><b>' + t("r.inv") + '</b><span class="rs-inv-p">+' + F.pts(inv.pts) + "</span>" + C.icon("chev", 16) + "</a>" : "") +
       '<ul class="list">' + g.rows.map(function (r, ri) { return row(r, gi, ri, d); }).join("") + "</ul></section>";
   }

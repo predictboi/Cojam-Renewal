@@ -6,7 +6,7 @@
   if (initial === undefined) initial = "1,000";
   var blocked = S === "cap" || S === "capglobal" || S === "paused" || S === "wait" || S === "loading" || App.state === "offline" || S === "hold";
   function body() {
-    if (S === "short") return '<section class="msec"><div class="mhero"><h2 class="lbl">' + t("c.avail") + '</h2><p class="fig fig--xl">' + F.int(bal) + "<small>P</small></p></div></section>" +
+    if (S === "short") return '<section class="msec"><div class="mhero"><h2 class="lbl">' + t("c.avail") + '</h2><p class="fig fig--xl">' + (bal ? F.int(bal) + "<small>P</small>" : '<span class="is-zero">0P</span>') + "</p></div></section>" +
       C.empty({ icon: "bolt", title: t("c.short.h"), body: t("c.short.b", { p: F.int(bal), g: F.int(1000 - bal) }), action: C.btn(t("k.play"), { kind: "primary", href: "home.html" }) });
     var waitNote = "";
     if (S === "wait") { var d = M.user.firstConvert, secs = (d - Date.now()) / 1000;
@@ -16,7 +16,7 @@
       C.amount({ id: "amt", label: t("pp.points"), unit: "P", mode: "numeric", value: initial, disabled: blocked, side: S === "loading" ? C.skel("96px", "12px") : t("c.avail") + " <b>" + F.pts(bal) + "</b>", msg: t("c.step") }) +
       "</section>" +
       /* the result is the figure of this screen; the rate and the fee are two tags, every other rule is behind "?" */
-      '<section class="msec mgrow"><div class="getbox"><h2 class="lbl lbl--q">' + t("c.get") + C.q("convert", t("c.title")) + '</h2><p class="fig" id="get" aria-live="polite">0<small>CT</small></p>' +
+      '<section class="msec mgrow"><div class="getbox"><h2 class="lbl lbl--q">' + t("c.get") + C.q("convert", t("c.title")) + '</h2><p class="fig" id="get" aria-live="polite"><span class="is-zero">0 CT</span></p>' +
       '<p class="fact" id="left"></p></div>' +
       '<dl class="facts3"><div><dt>' + t("c.rate") + "</dt><dd>1,000P = 1 CT</dd></div><div><dt>" + t("c.fee") + "</dt><dd>" + (S === "hold" ? t("pp.youpay") : t("pp.none")) + "</dd></div><div><dt>" + t("pp.lefttoday") + "</dt><dd>" + capLeft + " CT</dd></div></dl></section>";
   }
@@ -35,9 +35,9 @@
       box.classList.toggle("is-error", !!err); inp.setAttribute("aria-invalid", err ? "true" : "false");
       msg.className = "field-msg" + (err ? " is-error" : ""); msg.innerHTML = err ? "<span>" + err + "</span>" + fix : "<span>" + t("c.step") + "</span>";
       var valid = !err && !p.empty && !blocked, n = valid ? v / 1000 : 0;
-      App.countTo(get, get._val === undefined ? n : get._val, n, function (v) { return F.dec(Math.round(v)) + "<small>CT</small>"; }, null, 260);
+      App.countTo(get, get._val === undefined ? n : get._val, n, function (v) { return Math.round(v) ? F.dec(Math.round(v)) + "<small>CT</small>" : '<span class="is-zero">0 CT</span>'; }, null, 260);
       var lf = $("#left"); if (lf) lf.innerHTML = valid ? t("c.ok.left") + " <b>" + F.pts(bal - v) + "</b>" : "";
-      var why = S === "hold" || S === "paused" ? t("hold.convert.btn") : S === "wait" ? t("pp.c.wait", { date: F.date(M.user.firstConvert, true) }) : S === "cap" || S === "capglobal" ? t("pp.c.cap") : App.offline ? t("off.bar").split(".")[0] : err ? err : t("c.btn.empty");
+      var why = S === "hold" || S === "paused" ? t("hold.convert.btn") : S === "wait" ? t("pp.c.wait", { date: F.date(M.user.firstConvert, true) }) : S === "cap" || S === "capglobal" ? t("pp.c.cap") : App.offline ? t("off.bar").split(".")[0] : t("c.btn.empty");   /* an amount in error: the sentence is under the field, once; the button keeps its own words */
       go.disabled = !valid; go.querySelector("span").textContent = valid ? t("c.btn", { p: F.int(v), n: n }) : why;
       return valid ? v : 0;
     }

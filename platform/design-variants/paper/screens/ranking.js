@@ -18,7 +18,7 @@
     var ct = poolCt(w);
     /* the time left is on the dateline; beside the pool sits the way to the rules (or, for a closed week, its state) */
     var how = '<button type="button" class="linkish" id="how">' + t("k.split.q") + C.icon("chev", 16) + "</button>";
-    var right = '<div class="end">' + (w === "last" ? (S === "sent" ? C.tag(t("k.sent"), "ink", "check") : C.tag(t("k.final.h"), "ink")) : "") + how + "</div>";
+    var right = '<div class="end">' + (w === "last" ? (S === "sent" ? "" : C.tag(t("k.final.h"), "ink")) : "") + how + "</div>";
     return '<section class="sec pool"><div class="pool-top"><div class="mhero"><p class="lbl">' + t(w === "last" ? "k.lastweek" : "k.pool") + '</p><p class="fig fig--xl">' + F.int(ct) + "<small>CT</small></p></div>" + right + "</div></section>";
   }
   function howSheet() {

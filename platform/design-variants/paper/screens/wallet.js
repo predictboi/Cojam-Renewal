@@ -12,13 +12,13 @@
     var canCt = Math.floor(pts / 1000), a = u.address;
     return (off ? C.note("warn", t("w.offline")) : "") + (hold ? C.hold(t("hold.wallet")) : "") +
       '<section class="msec" aria-labelledby="ct-h">' + (S === "error" ? C.note("warn", t("e.rpc"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" })) : "") +
-      '<div class="mhero"><h2 class="lbl" id="ct-h">' + t("w.avail") + '</h2><p class="fig fig--xl" id="ct-fig">' + F.dec(ct) + "<small>CT</small></p>" + (App.isKo ? '<p class="sub">' + F.krw(ct) + "</p>" : "") + "</div>" +
+      '<div class="mhero"><h2 class="lbl" id="ct-h">' + t("w.avail") + '</h2><p class="fig fig--xl" id="ct-fig">' + (ct ? F.dec(ct) + "<small>CT</small>" : '<span class="is-zero">0 CT</span>') + "</p>" + (App.isKo ? '<p class="sub">' + F.krw(ct) + "</p>" : "") + "</div>" +
       '<div class="acts">' + C.btn(t("w.deposit"), { icon: "download", href: "deposit.html", disabled: off, id: "dep" }) + C.btn(t("w.withdraw"), { icon: "share", href: "withdraw.html", disabled: off, id: "wd" }) + "</div>" +
       '<div class="list"><div class="wrow wrow--addr"><span>' + t("pp.addr") + "</span>" + C.addr(a, { id: "copy-addr" }) + "</div>" +
       '<a class="wrow" href="stakes.html"><span>' + t("w.staked") + '</span><b id="staked">' + F.dec(staked) + ' <small>CT</small></b><span class="wrow-go"><span class="sr-only">' + t("s.mine", { n: M.stakes.length }) + '</span><span aria-hidden="true">' + M.stakes.length + "</span>" + C.icon("chev", 16) + "</span></a>" +
       /* why KAIA matters is one tap away; on hold the player pays fees, which is a state, so it is a tag */
       '<div class="wrow"><span class="wrow-l">KAIA' + C.q("kaia", "KAIA") + "</span><b>" + F.dec(kaia, 4) + " <small>KAIA</small></b>" + (hold ? '<small class="fact"><b>' + t("pp.youpay") + "</b></small>" : "") + "</div></div></section>" +
-      '<section class="msec" aria-labelledby="pt-h"><div class="mhero"><h2 class="lbl lbl--q" id="pt-h">' + t("w.points") + C.q("points", t("w.points")) + '</h2><p class="fig" id="pt-fig">' + F.int(pts) + "<small>P</small></p></div>" +
+      '<section class="msec" aria-labelledby="pt-h"><div class="mhero"><h2 class="lbl lbl--q" id="pt-h">' + t("w.points") + C.q("points", t("w.points")) + '</h2><p class="fig" id="pt-fig">' + (pts ? F.int(pts) + "<small>P</small>" : '<span class="is-zero">0P</span>') + "</p></div>" +
       '<p class="fact"><b>1,000P = 1 CT</b>' + (S === "" || off || hold ? '<span class="fact-sep" aria-hidden="true"></span>' + t("pp.at", { p: u.pendingHit, time: "22:10" }) : "") + "</p>" +
       '<div class="wconvert">' + C.btn(t("w.convert"), { kind: "primary", block: true, href: "convert.html" + (S === "new" || S === "zero" ? "?state=short" : ""), disabled: off || hold, id: "convert" }) + "</div>" +
       '<a class="inv-row" id="to-invite" href="invite.html?from=wallet"><span class="inv-row-t"><b>' + t("w.invite") + '</b></span><span class="inv-row-go">+' + F.pts(S === "zero" || S === "new" ? 0 : M.invite.week) + C.icon("chev", 16) + "</span></a></section>" +

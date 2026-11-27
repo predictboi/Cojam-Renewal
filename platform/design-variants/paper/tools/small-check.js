@@ -3,6 +3,8 @@
 //    that has a card, in EN, KO and JA (scrolling inside main is allowed: the buttons must be reachable and whole, not clipped).
 // 2. At 320 px, and at 360 and 390 px with the root font at 130% and 200%, nothing in the masthead, the language control or the tab bar leaves the screen,
 //    the page does not overflow sideways, and tab labels stay on one line.
+// 3. (Review E) After a pick the Undo button is fully on screen above the tab bar and a hit test at its centre returns Undo, at 320x568, 360x640, 375x667 and 390x844
+//    in EN, KO and JA; the swipe hint is never cut by the tab bar.
 const { chromium } = require('playwright');
 (async () => {
   const b = await chromium.launch(); const bad = []; let n = 0;
@@ -72,6 +74,18 @@ const { chromium } = require('playwright');
         return out.concat([...small].map(x => 'under 12 px: ' + x)); });
       n++; if (r.length) bad.push('type ' + url + ' ' + w + ' ' + lang + ': ' + [...new Set(r)].slice(0, 4).join('; ')); await pg.close(); }
   }
+  // Round 4 (review E): after a pick, Undo is fully on screen, above the tab bar, and a hit test at its centre returns Undo. Also: the swipe hint is never cut by the tab bar.
+  for (const [w, h] of [[320, 568], [360, 640], [375, 667], [390, 844]]) for (const lang of ['en', 'ko', 'ja']) {
+    const pg = await b.newPage({ viewport: { width: w, height: h }, isMobile: true, hasTouch: true });
+    await pg.addInitScript(() => { try { localStorage.setItem('cjp.nudged', '1'); } catch (e) {} });
+    await pg.goto('http://localhost:8851/home.html?state=fresh&lang=' + lang); await pg.waitForTimeout(700);
+    const hint = await pg.evaluate(() => { const el = document.querySelector('.pickbar-hint'), tb = document.querySelector('.tb'); if (!el || !el.getClientRects().length) return ''; const r = el.getBoundingClientRect(); return r.bottom > tb.getBoundingClientRect().top + 0.5 || r.top < 0 ? 'hint cut ' + Math.round(r.top) + '-' + Math.round(r.bottom) : ''; });
+    n++; if (hint) bad.push('hint ' + w + 'x' + h + ' ' + lang + ': ' + hint);
+    await pg.locator('.qcard[data-pos="0"] .choice[data-dir="r"]').scrollIntoViewIfNeeded(); await pg.locator('.qcard[data-pos="0"] .choice[data-dir="r"]').click(); await pg.waitForTimeout(450);
+    const r = await pg.evaluate(() => { const u = document.querySelector('#undo'), tb = document.querySelector('.tb'); if (!u) return 'no Undo'; const q = u.getBoundingClientRect(), t = tb.getBoundingClientRect().top;
+      if (q.top < 0 || q.left < 0 || q.right > innerWidth + 0.5 || q.bottom > t + 0.5) return 'Undo not fully visible: ' + Math.round(q.top) + '-' + Math.round(q.bottom) + ', tab bar at ' + Math.round(t);
+      const hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return hit && (hit === u || u.contains(hit)) ? '' : 'hit test returns ' + (hit ? hit.className || hit.tagName : 'nothing'); });
+    n++; if (r) bad.push('undo ' + w + 'x' + h + ' ' + lang + ': ' + r); await pg.close(); }
   console.log(n + ' checks, ' + bad.length + ' failed'); bad.slice(0, 60).forEach(x => console.log('  ' + x));
   await b.close(); process.exit(bad.length ? 1 : 0);
 })();

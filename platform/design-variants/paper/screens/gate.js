@@ -46,7 +46,7 @@
     '<div class="gate-cols"><div class="gate-col"><div class="stack-12"><h1>' + h1 + '</h1><p class="auth-lede">' + t("g.lede") + "</p></div>" +
     "</div>" +
     '<div class="gate-col"><section class="panel" aria-live="polite" id="panel">' + panel() + "</section>" + demo +
-    '<ul class="facts"><li>' + C.icon("bolt", 18) + t("g.fact.1") + "</li><li>" + C.icon("mail", 18) + t("g.fact.2") + "</li><li>" + C.icon("shield", 18) + t("g.fact.3") + "</li></ul>" +
+    '<ul class="facts"><li>' + t("g.fact.1") + "</li><li>" + t("g.fact.2") + "</li><li>" + t("g.fact.3") + "</li></ul>" +
     '<section class="gate-swap"><h2>' + t("g.swap.h") + "</h2><p>" + t("g.swap.body") + "</p>" + C.btn(t("g.swap.btn"), { href: "https://cojam.app/migrate/", ext: true, iconEnd: "ext" }) + "</section></div></div>" +
     '<footer class="gate-foot"><a href="https://cojam.app">' + t("hd.home") + "</a><span>© 2026 Cojam</span></footer></div>" +
     (v === "ios" ? '<p class="ios-point" aria-hidden="true"><span>' + t("g.ios.point") + "</span>" + C.icon("down", 20) + "</p>" : "");

@@ -22,7 +22,7 @@
     '<section class="sys-box"><p class="small">' + t("sys.blocked.note") + '</p><div class="sys-contact">' + C.btn(t("sys.blocked.contact"), { href: "mailto:" + MAIL, icon: "mail", block: true, id: "contact" }) +
     '<button type="button" class="addr-chip addr-chip--text" id="mail-copy" data-copy="' + MAIL + '" data-done="' + App.esc(t("w.copy.done")) + '" aria-label="' + App.esc(t("sys.blocked.mail") + ": " + MAIL) + '"><span class="addr-chip-v" translate="no">' + MAIL + "</span>" + C.icon("copy", 16) + "</button></div>" +
     '<a class="sys-link" href="wallet.html?state=hold">' + t("sys.blocked.btn") + "</a></section></div>";
-  var plain = '<div class="sys sys--center"><div class="sys-ic">' + C.icon(v.icon, 28) + "</div><h1>" + t(v.h) + "</h1><p>" + (v.b ? t(v.b) : "") + "</p>" + (v.extra || "") +
+  var plain = '<div class="sys sys--center">' + C.notice(v.icon) + "<h1>" + t(v.h) + "</h1><p>" + (v.b ? t(v.b) : "") + "</p>" + (v.extra || "") +
     C.btn(t(v.btn || "common.retry"), { kind: "primary", href: v.href, id: "act" }) + (v.foot ? '<p class="sys-fee">' + v.foot + "</p>" : "") + "</div>";
   App.mount({ bare: true, docTitle: t(v.h), raw: '<div class="auth">' + top + (S === "blocked" ? hold : plain) + "</div>", after: function () {
     var b = $("#act"); if (b && b.tagName === "BUTTON") b.addEventListener("click", function () { b.classList.add("is-loading"); b.innerHTML = '<span class="spin"></span><span>' + t("common.loading") + "</span>"; setTimeout(function () { location.reload(); }, 900); });

@@ -193,8 +193,12 @@
       '<span class="field-unit">' + o.unit + "</span>" + (o.max === false ? "" : '<button type="button" class="field-max" data-max="' + o.id + '"' + (o.disabled ? " disabled" : "") + ">" + t("s.max") + "</button>") + "</div>" +
       '<div class="field-msg' + (o.error ? " is-error" : "") + '" id="' + o.id + '-msg" aria-live="polite">' + (o.msg || "") + "</div></div>";
   };
+  /* the notice: one pattern for every empty, closed and blocked state and for the system screens. Left aligned under a section rule: a stamp that names the state
+     (in place of an icon tile), the headline in the slab, one line of body, the action. */
+  var STAMP = { clock: "soon", refresh: "closed", pause: "hold", phone: "inuse", tool: "maint", download: "update", offline: "offline", search: "404" };
+  C.notice = function (icon) { return '<span class="notice-st" aria-hidden="true">' + C.rstamp("ink", t("pp.st." + (STAMP[icon] || "none"))) + "</span>"; };
   C.empty = function (o) {
-    return '<div class="empty"><div class="empty-ic">' + ic(o.icon || "inbox", 28) + "</div><h2>" + o.title + "</h2>" + (o.body ? "<p>" + o.body + "</p>" : "") + (o.extra || "") + (o.action || "") + "</div>";
+    return '<div class="empty">' + C.notice(o.icon) + "<h2>" + o.title + "</h2>" + (o.body ? "<p>" + o.body + "</p>" : "") + (o.extra || "") + (o.action || "") + "</div>";
   };
   C.error = function (key) {
     return C.note("error", t(key || "e.load"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" }));
@@ -381,6 +385,29 @@
     if (cfg.after) cfg.after();
     App.pinFit();
   };
+  /* Korean and Japanese: a figure never parts from the particle or the unit that follows it ("10%를", "5問", "3秒間"). A word joiner (U+2060) is set between them
+     in every text node, also in text that arrives later (sheets, toasts, re-rendered rows). English is left alone. */
+  (function () {
+    if (App.lang !== "ko" && App.lang !== "ja") return;
+    var WJ = String.fromCharCode(0x2060), CJK = "\u3040-\u30ff\u3400-\u9fff\uac00-\ud7a3";
+    var re = new RegExp("([0-9][0-9,.:]*(?:%|\u2103|\u00b0C|[A-Za-z]{1,4})?)(?=[" + CJK + "])", "g"), head = new RegExp("^[" + CJK + "]"), tail = /[0-9%](?:[A-Za-z]{1,4})?$/;
+    function glue(root) {
+      if (!root || (root.nodeType === 1 && root.closest && root.closest("script, style, textarea, .mono, [data-dg], .dg"))) return;
+      var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null), n, list = [];
+      if (root.nodeType === 3) list.push(root); else while ((n = w.nextNode())) list.push(n);
+      list.forEach(function (n) {
+        var p = n.parentNode; if (!p || /^(SCRIPT|STYLE|TEXTAREA|OPTION)$/.test(p.nodeName) || (p.closest && p.closest(".mono, .dg"))) return;
+        var v = n.nodeValue, o = v.replace(re, "$1" + WJ);
+        /* the figure in its own element and the particle after it: "<b>3</b>秒" */
+        var prev = n.previousSibling; if (prev && prev.nodeType === 1 && head.test(o) && tail.test(prev.textContent) && !/^(BR|DIV|P|LI)$/.test(prev.nodeName)) o = WJ + o;
+        if (o !== v) n.nodeValue = o;
+      });
+    }
+    App.glue = glue;
+    document.addEventListener("DOMContentLoaded", function () { glue(document.body); });
+    if (window.MutationObserver) new MutationObserver(function (ms) { ms.forEach(function (m) { if (m.type === "characterData") glue(m.target); else for (var i = 0; i < m.addedNodes.length; i++) glue(m.addedNodes[i]); }); })
+      .observe(document.documentElement, { childList: true, subtree: true, characterData: true });
+  })();
   App.pinFit = function () {
     var app = $(".app--pin"); if (!app) return;
     function fit() { var p = $(".app--pin > .pin"); if (!p) return; p.classList.remove("is-flow"); var big = p.offsetHeight > innerHeight * 0.25; p.classList.toggle("is-flow", big); app.style.setProperty("--pin-h", (big ? 0 : p.offsetHeight) + "px"); }
@@ -717,10 +744,11 @@
     function fit() {
       root.style.minHeight = "";
       var c = live()[0]; if (!c) return;
-      c.classList.remove("is-tight");
+      c.classList.remove("is-tight", "is-up");
       var body = $(".qcard-body", c), top = $(".qcard-top", c), need = (top ? top.offsetHeight : 0) + (body ? body.offsetHeight : 0) + 4, room = root.clientHeight - need - 12;
-      /* the picture needs 96 px to read; with less it is dropped (never a sliver). The card keeps the deck's height: the headline stays under the kicker and the two answers go to the bottom. */
-      if (room < 96) c.classList.add("is-tight");
+      /* the picture needs 64 px to read (a strip); with less it is dropped (never a sliver). The card keeps the deck's height: the question block is centred between
+         the kicker rule and the answers, and the headline is set one size up when that still fits. */
+      if (room < 64) { c.classList.add("is-tight"); if (room > 20) { c.classList.add("is-up"); if (c.scrollHeight > c.clientHeight + 1) c.classList.remove("is-up"); } }
       if (root.clientHeight < need) root.style.minHeight = need + "px";   /* still too short without the picture: the deck grows and the page scrolls */
     }
     window.addEventListener("resize", fit);

@@ -28,7 +28,7 @@
   function undoBar() {
     var dir = undoQ && sess.data.picks[undoQ], q = undoQ ? App.q(undoQ) : null;
     return '<div class="pin pin--undo" id="undo-bar"><span class="fuse" aria-hidden="true"><i style="--gone:-' + (3000 - undoMs) + 'ms"></i></span>' +
-      '<span class="pickbar-msg">' + C.icon("check", 16) + "<span>" + (q && dir ? t("h.sync", { n: q.n, choice: C.pick(dir, App.esc(q[dir])) }) : "") + "</span></span>" +
+      '<span class="pickbar-msg">' + C.icon("check", 16) + "<span>" + (q && dir ? t("h.sync", { n: q.n, choice: C.pick(dir, App.esc(q[dir])) }) : t("h.qn.sr", { n: q ? q.n : 5 })) + "</span></span>" +
       '<button type="button" class="undo" id="undo-last" aria-label="' + App.esc(t("h.undo.aria", { n: q ? q.n : 5, choice: q && dir ? q[dir] : "" })) + '">' + C.icon("undo", 18) + "<span>" + t("h.undo") + '</span><kbd aria-hidden="true">Z</kbd></button></div>';
   }
   function letters(text) {

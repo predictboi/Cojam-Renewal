@@ -49,7 +49,11 @@ The motion language is the print shop: sheets of paper, ink, stamps, type being 
 
 ### The picture on short phones
 
-The card always takes the deck's height. The picture shows only when it gets at least 96 px; with less it is dropped (never a sliver), the headline stays directly under the kicker rule and the two answers sit at the bottom of the card. If the card needs more than the deck has even without the picture, the deck grows and the page scrolls. The sheets under the front card show their edge only: their content is hidden until they rise. The line "+50P if right. Undo for 3 seconds." shows at every size, and the Rules sheet says that a pick is final after 3 seconds.
+The card always takes the deck's height. The picture shows when it gets at least 64 px (from 64 to about 100 px it is a strip); with less it is dropped (never a sliver) and nothing is left blank: the question block is centred between the kicker rule and the two answers, and the headline is set one size up when that still fits. If the card needs more than the deck has even without the picture, the deck grows and the page scrolls. The sheets under the front card show their edge only: their content is hidden until they rise. The line "+50P if right. Undo for 3 seconds." shows at every size, and the Rules sheet says that a pick is final after 3 seconds.
+
+### The pick bar
+
+The pick bar (the hint, then the pick with Undo) is pinned directly above the tab bar at every screen size, outside the scrolling area, exactly as on day done. So Undo is always whole and reachable inside its 3 seconds, also at 320 x 568 where the card itself scrolls. The fuse runs along the top edge of the bar, clear of the tab bar's rule and its current tab marker. The swipe hint leaves when the view is under 600 px tall, so the tab bar never cuts it. `tools/small-check.js` picks a card at 320 x 568, 360 x 640, 375 x 667 and 390 x 844 in three languages and requires Undo to be fully visible and to win the hit test at its centre.
 
 ### Undo and time (the rule stays: 3 seconds, then the pick is sent and is final)
 
