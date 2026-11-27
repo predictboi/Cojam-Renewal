@@ -1233,7 +1233,8 @@ html { scroll-padding-top: calc(var(--mast-h) + 12px); scroll-padding-bottom: ca
 .gate-demo { height: 300px; }
 .is-gate { padding-bottom: 76px; }
 .ios-point { transition: transform var(--dur-mid) var(--ease-drawer), opacity var(--dur-fast) var(--ease); }
-.ios-point.is-away { opacity: 0; transform: translateY(140%); pointer-events: none; }
+.ios-point { transition: transform var(--dur-mid) var(--ease-drawer), opacity var(--dur-fast) var(--ease), visibility 0s; }
+.ios-point.is-away { opacity: 0; transform: translateY(140%); pointer-events: none; visibility: hidden; transition-delay: 0s, 0s, var(--dur-mid); }
 .gate-cols { padding-top: var(--s-16); gap: var(--s-16); }
 .gate .auth h1, .is-gate h1 { font-size: clamp(1.75rem, 9.6vw, 2.5rem); }
 
@@ -1324,7 +1325,7 @@ button.pin .tag, aside.pin .tag { background: var(--ink-2); color: var(--on-ink)
 .me-in { font-size: clamp(12px, 4vw, var(--fs-14)); }
 
 /* 11. the links in the terms sentence sit in the sentence (44 px tall by padding, no extra width) */
-.fine a, .note a { display: inline-block; min-width: 0; min-height: 0; padding: var(--s-12) 0; margin: calc(var(--s-12) * -1) 0; text-align: left; }
+.fine a:not(.btn), .note a:not(.btn) { display: inline-block; min-width: 0; min-height: 0; padding: var(--s-12) 0; margin: calc(var(--s-12) * -1) 0; text-align: left; }
 
 /* =====================================================================================================================
    REVIEW D

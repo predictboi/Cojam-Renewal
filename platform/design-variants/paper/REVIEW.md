@@ -194,7 +194,7 @@ Review C scored 83 / 100 and 35 / 40, review D 81 / 100 and 33 / 40. Both are in
 | --- | --- | --- |
 | 1 | Nameplate cut by the language select on log in and gate at 360 and 320 px | The language control on cover screens is now a globe and a two letter code (44 px, native list behind it), so "Cojam Daily" is whole at 320 px in all three languages. `system.html` and `hold.html` drop the words and keep the mark when the hold tag leaves no room |
 | 2 | A unit wraps alone ("+100" then "P", "9,850" then "P") | Figure and unit are one unbreakable piece everywhere; the figure size is fluid (`clamp` with a 12 px floor) so the pair steps down instead of breaking |
-| 3 | "Example" tag over the card kicker; the iOS slip covers the content it explains | "Example" sits in the kicker row of the demo card. The gate shows the install panel first and the demo below it at a fixed 400 px; the iOS Share hint is a step in the panel, not a floating slip |
+| 3 | "Example" tag over the card kicker; the iOS slip covers the content it explains | "Example" sits in the kicker row of the demo card. The gate shows the install panel first and the demo below it at a fixed 400 px; the iOS steps are in the panel, and the floating Share hint shows only while those steps are out of view, so it never lies over the content it explains |
 | 4 | Japanese display face thickened by the browser | At 32 px and above the real weight is used with `font-synthesis: none`, one size step larger, proportional kana and tight tracking; synthetic bold remains only up to 26 px, where it stays open. Question titles end in a Latin question mark. A licensed heavy antique is still the production answer (see "Not fixed") |
 | 5 | Next card's answers show as slivers at 320 x 568; the title row breaks | Cards under the front card hide their content and show an edge only. The title row is fluid and the view switch drops under the title when it does not fit |
 | 6 | First run picture band changes height and place; action below the screen | The band has one height and one place on all three steps, the art scales inside it, and the action is pinned to the foot at every size |
@@ -234,3 +234,16 @@ Review C scored 83 / 100 and 35 / 40, review D 81 / 100 and 33 / 40. Both are in
 | Shortcut list and last used address | Review D lists them as absent, not as defects; both add surface text against the founder's rule. The last used address also needs real account data |
 | "Extra", "FILED", "Set" need one visit to learn | They carry the concept and each has a labelled neighbour or a "?" sheet |
 | `login.html?state=returning` gives the audit no result | The state finishes its setup and moves on to home by design; `setup` and `busy` cover the same screen |
+
+### Verification of round 3
+
+| Check | Result |
+| --- | --- |
+| `node tools/state-check.js` with the new covered target test: EN at 390 x 844, KO at 320 x 568, JA at 360 x 640 | 215 states each, 645 pages, 0 problems (page errors, missing copy keys, overflow, empty pages, covered or partly covered controls) |
+| `node tools/small-check.js` (320 x 568, 360 x 640, 375 x 667, text at 130% and 200%, the round 3 rules) | 621 checks, 0 failed |
+| `node tools/focus-check.js` | 201 focus stops, 0 hidden |
+| `node tools/lang-switch-check.js` | 45 checks, 0 failed |
+| `node tools/flow-test.js` | All steps as expected: flick rules, keyboard Undo, five picks, Undo on day done 16 px from the right and 65 px above the bottom with the focus on it, a tap on the list does not finish, the figure only counts up to 100, 0 px layout shift, convert review says "Points cannot be converted back.", wallet 1,840.5 to 1,841.5 to 1,591.5 CT across convert and withdraw, "0.0000001" keeps the action disabled, the form is cleared after sending, the unlocked stake withdrawal is reviewed (Stake, Interest, Total) |
+| `sh tools/audit-all.sh` (the repository audit): EN every state at 390 x 844; KO and JA base screens at 390 x 844; EN at 360 x 640; KO at 320 x 568 | 287 URLs. 282 came back with 0 overflow, 0 contrast failures, 0 small targets. Five had one cause each of two and were fixed and audited again at 0: small buttons inside a note were 43 px tall (a rule meant for text links also caught them), and the hidden iOS hint was still read at opacity 0 (it is now `visibility: hidden` when away). `login.html?state=returning` moves on to home during the audit, as before |
+| `node tools/motion-run.js all` and `node tools/motion-trace.js` | Five flows recorded again, 19 stills, no page errors. Drag: 121 frames, average 16.67 ms, maximum 16.8 ms at CPU 1x and 4x. Raster during a 2 s drag: 17.6 ms with layers, 58.9 ms without |
+| Captures | 168 stills in `captures/` retaken (three languages, 390 and 360 px, and 320 x 568, 360 x 640, 375 x 667 for home), 6 videos and 19 frames in `captures/video/` |
