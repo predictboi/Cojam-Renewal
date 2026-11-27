@@ -97,3 +97,5 @@ Wording added for the concept, in three languages (`assets/paper-i18n.js`): the 
 | `tools/` | `capture-all.js`, `shot.js`, `sheet.py`, `flow-test.js`, `audit-all.sh` |
 | `captures/` | `<screen>-<lang>-<width>.png` |
 | `REVIEW.md` | The quality loop: scores of the last round and what was fixed |
+| `MOTION.md` | The motion spec: every moment with its purpose, trigger, duration, curve and reduced motion answer |
+| `captures/video/` | Recordings of five flows (mp4 and webm) and still frames taken mid animation |
