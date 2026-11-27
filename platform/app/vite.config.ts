@@ -37,8 +37,8 @@ export default defineConfig({
         display: 'standalone',
         orientation: 'portrait',
         lang: 'en',
-        background_color: '#ffffff',
-        theme_color: '#124CC4',
+        background_color: '#F4EFE4',
+        theme_color: '#F4EFE4',
         icons: [
           { src: '/icons/icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
           { src: '/icons/icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
@@ -59,11 +59,10 @@ export default defineConfig({
         runtimeCaching: [
           // API and chain answers are never cached (fresh balances, picks and receipts): network only
           { urlPattern: ({ url }) => /\/(v1|admin\/v1|dev\/rpc)(\/|$)/.test(url.pathname) || /(^|\.)kaia\.io$|kaiascan\.io$/.test(url.hostname), handler: 'NetworkOnly' },
-          // lazy chunks (Privy and its optional screens): fetched on first use, then served from the cache
-          { urlPattern: ({ url, sameOrigin }) => sameOrigin && /^\/assets\/.+\.js$/.test(url.pathname), handler: 'CacheFirst', options: { cacheName: 'cojam-lazy-chunks', expiration: { maxEntries: 400, maxAgeSeconds: 60 * 24 * 3600 } } },
-          // fonts (cross origin: Google Fonts and the Pretendard CDN): CSS revalidates, font files are immutable
-          { urlPattern: ({ url }) => url.hostname === 'fonts.googleapis.com' || (url.hostname === 'cdn.jsdelivr.net' && /\.css$/.test(url.pathname)), handler: 'StaleWhileRevalidate', options: { cacheName: 'cojam-font-css' } },
-          { urlPattern: ({ url }) => url.hostname === 'fonts.gstatic.com' || (url.hostname === 'cdn.jsdelivr.net' && /\.woff2?$/.test(url.pathname)), handler: 'CacheFirst', options: { cacheName: 'cojam-fonts', expiration: { maxEntries: 300, maxAgeSeconds: 365 * 24 * 3600 }, cacheableResponse: { statuses: [0, 200] } } },
+          // lazy chunks (Privy, its optional screens, the Korean and Japanese font sheets): fetched on first use, then served from the cache
+          { urlPattern: ({ url, sameOrigin }) => sameOrigin && /^\/assets\/.+\.(js|css)$/.test(url.pathname), handler: 'CacheFirst', options: { cacheName: 'cojam-lazy-chunks', expiration: { maxEntries: 400, maxAgeSeconds: 60 * 24 * 3600 } } },
+          // self hosted font subsets (hashed, immutable): fetched the first time a page needs them, then served from the cache
+          { urlPattern: ({ url, sameOrigin }) => sameOrigin && /^\/assets\/.+\.woff2$/.test(url.pathname), handler: 'CacheFirst', options: { cacheName: 'cojam-fonts', expiration: { maxEntries: 500, maxAgeSeconds: 365 * 24 * 3600 } } },
         ],
       },
     }),
@@ -75,6 +74,8 @@ export default defineConfig({
     sourcemap: false,
     manifest: true,
     chunkSizeWarningLimit: 6000,
+    // font subsets stay files (never inlined into the CSS as data URIs), so the precached CSS stays small
+    assetsInlineLimit: (file: string) => (/\.woff2$/.test(file) ? false : undefined),
     // @privy-io/react-auth imports optional Solana peers; this app is EVM only (same as the spike).
     rollupOptions: { shimMissingExports: true },
   },

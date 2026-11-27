@@ -94,18 +94,23 @@ const ok = (name, cond, extra) => { results.push([cond ? 'PASS' : 'FAIL', name, 
       await drag(c.x + c.w / 2, c.y + c.h * 0.35, (i % 2 ? -1 : 1) * c.w * 0.6);
       await sleep(420);
     }
-    ok(lang + ' flow: five picks counted', (await cnt()) === 5, await cnt());
-    ok(lang + ' flow: "Finish now" shows after the fifth pick', await pg.locator('#finish').isVisible());
-    await pg.screenshot({ path: path.join(OUT, lang, 'flow-finish.png') });
-    const states = await pg.evaluate(() => new Promise((r) => { const q = indexedDB.open('cojam-app'); q.onsuccess = () => { const tx = q.result.transaction('outbox'); const g = tx.objectStore('outbox').getAll(); g.onsuccess = () => r(g.result.map((x) => x.state)); }; }));
-    ok(lang + ' flow: the earlier picks left their window and are being sent, the newest is held', states.length === 5 && states.filter((s) => s === 'held').length >= 1 && states.some((s) => s !== 'held'), states.join(','));
-    await pg.locator('#finish').tap();
+    // the fifth pick opens day done at once; the Undo of that pick lives there (Daily Paper flow, MOTION.md section 2)
     await pg.waitForURL(/\/done/, { timeout: 4000 }).catch(() => {});
-    ok(lang + ' flow: Finish now opens day done', /\/done/.test(pg.url()), pg.url());
-    await sleep(800);
+    const outbox = () => pg.evaluate(() => new Promise((r) => { const q = indexedDB.open('cojam-app'); q.onsuccess = () => { const tx = q.result.transaction('outbox'); const g = tx.objectStore('outbox').getAll(); g.onsuccess = () => r(g.result.map((x) => x.state)); }; }));
+    const picked = await outbox();
+    ok(lang + ' flow: five picks counted', picked.length === 5 && (await pg.evaluate(() => document.querySelectorAll('#day5 i.is-done, #day5 i.is-pend').length)) === 5, picked.length);
+    ok(lang + ' flow: the fifth pick opens day done with its Undo', /\/done/.test(pg.url()) && await pg.locator('#undo-last').isVisible(), pg.url());
+    await pg.screenshot({ path: path.join(OUT, lang, 'flow-finish.png') });
+    const states = await outbox();
+    ok(lang + ' flow: the earlier picks left their window and are being sent, the newest is held', states.length === 5 && states.filter((s) => s === 'held').length >= 1 && states.some((s) => s !== 'held'), states.join(','));
+    // "finish now": a tap on the headline area ends the Undo window at once
+    await pg.locator('#hero h1').tap();
+    await sleep(300);
+    ok(lang + ' flow: Finish now opens day done', /\/done/.test(pg.url()) && !(await pg.locator('#undo-last').count()), pg.url());
+    await sleep(500);
     ok(lang + ' flow: day done waits for the fifth pick before the reward', (await pg.locator('#reward').innerText()).length > 0);
-    await pg.waitForFunction(() => document.querySelector('#done-fig.is-pop'), null, { timeout: 8000 }).catch(() => {});
-    ok(lang + ' flow: +100P pops once the picks are mined', await pg.evaluate(() => !!document.querySelector('#done-fig.is-pop')));
+    await pg.waitForFunction(() => document.querySelector('#hero.is-paid'), null, { timeout: 8000 }).catch(() => {});
+    ok(lang + ' flow: +100P pops once the picks are mined', await pg.evaluate(() => !!document.querySelector('#hero.is-paid')));
     await sleep(600);
     await pg.screenshot({ path: path.join(OUT, lang, 'flow-done.png') });
     const mined = await pg.evaluate(() => new Promise((r) => { const q = indexedDB.open('cojam-app'); q.onsuccess = () => { const tx = q.result.transaction('outbox'); const g = tx.objectStore('outbox').getAll(); g.onsuccess = () => r(g.result.map((x) => x.state + ':' + x.nonce)); }; }));

@@ -1,29 +1,19 @@
-// K1 Weekly ranking (platform/design/ranking.html): the pool, a podium for ranks 1 to 3, ranks 4 to 10, "Around you",
-// and the pinned bar with the player's own rank.
-import { useEffect, useLayoutEffect, useState } from 'react';
+// K1 Weekly ranking: the league table (platform/design-variants/paper/ranking.html). The pool and the time left lead
+// (the time on the dateline); ranks 1 to 3 are set larger, the leader largest, in one table with ranks 4 to 10. The
+// player's own rank is pinned above the tab bar in ink and steps aside while the own row of "Around you" is on screen.
+import { useEffect, useRef, useState } from 'react';
 import { useConfig, useRanking } from '../api';
 import { t } from '../i18n';
 import { esc, F, reduceMotion } from '../lib/fmt';
-import { btn, errorNote, hold, icon, note, skel, tag } from '../ui/h';
+import { btn, errorNote, hold, icon, nameHtml, note, skel, stamp, tag } from '../ui/h';
 import { Html, Shell, Seg } from '../ui/kit';
 import { usePreset, useHold } from '../state/app';
 import { sheet } from '../state/ui';
 import type { RankRow, Ranking as R } from '../api/types';
 import { CONFIG } from '../config';
 
-const name = (r: RankRow) => '<span translate="no">' + esc(r.name) + '</span>';
 const rankNo = (n: number) => '<span class="sr-only">' + t('k.rank.sr', { n }) + '</span><span aria-hidden="true">' + n + '</span>';
 const gap = (g: number) => t(g > 0 ? 'k.gap.up' : g < 0 ? 'k.gap.down' : 'k.gap.same', { n: F.int(Math.abs(g)) });
-function pod(r: RankRow) {
-  return '<li class="pod' + (r.me ? ' is-me' : '') + '" data-rank="' + r.rank + '"><p class="pod-name">' + name(r) + (r.me ? ' ' + tag(t('k.you'), 'ink') : '') + '</p><p class="pod-pts">' + F.pts(r.points) + '</p>' +
-    '<p class="pod-prize">' + F.prize(r.prize || 0) + '<small>CT</small></p><p class="pod-step">' + rankNo(r.rank) + '</p></li>';
-}
-function row(r: RankRow & { gap?: number }) {
-  return '<li class="krow' + (r.me ? ' is-me' : '') + '" data-rank="' + r.rank + '"><span class="krow-rank">' + rankNo(r.rank) + '</span>' +
-    '<div class="grow"><p class="krow-name">' + name(r) + (r.me ? tag(t('k.you'), 'ink') : '') + '</p><p class="krow-pts">' + F.pts(r.points) + '</p></div>' +
-    (r.prize === undefined ? '' : '<p class="krow-prize">' + F.prize(r.prize) + '<small>CT</small></p>') +
-    (r.gap === undefined || r.me ? '' : '<p class="krow-gap">' + gap(r.gap) + '</p>') + '</li>';
-}
 
 export default function Ranking() {
   const st = usePreset();
@@ -35,40 +25,50 @@ export default function Ranking() {
   const d = q.data;
   const w = week === 'last' ? 'last' : 'this';
 
+  /* one row pattern for the whole table: rank, player, points, prize. Ranks 1 to 3 take the larger setting. */
+  let rowN = 0;
+  function row(r: RankRow & { gap?: number }) {
+    const lead = r.prize !== undefined && r.rank <= 3;
+    return '<li style="--i:' + rowN++ + '" class="krow' + (lead ? ' krow--lead' : '') + (lead && r.rank === 1 ? ' krow--first' : '') + (r.me ? ' is-me' : '') + '" data-rank="' + r.rank + '"><span class="krow-rank">' + rankNo(r.rank) + '</span>' +
+      '<p class="krow-name">' + nameHtml(r.name) + (r.me ? tag(t('k.you'), 'ink') : '') + '</p><p class="krow-pts">' + F.pts(r.points) + '</p>' +
+      (r.prize === undefined ? '' : '<p class="krow-prize"><span data-prize="' + r.prize + '">' + F.prize(r.prize) + '</span><small>CT</small></p>') +
+      (r.gap === undefined ? '' : '<p class="krow-gap krow-gap--one">' + (r.me ? '' : gap(r.gap)) + '</p>') + '</li>';
+  }
   function pool(): string {
-    if (loading || !d) return '<section class="sec pool" aria-busy="true">' + skel('120px') + skel('160px', '32px') + '</section>';
-    const right = w === 'last' ? '<div class="end">' + (d.state === 'sent' ? tag(t('k.sent'), 'sky', 'check') : tag(t('k.final.h'), 'ink')) + '</div>' :
-      '<div class="end"><p class="lbl">' + t('k.ends') + '</p><p class="fig fig--md" data-cd="' + Math.round((d.endsAt - Date.now()) / 1000) + '" data-cd-end="' + d.endsAt + '" data-cd-fmt="dh"></p></div>';
-    return '<section class="sec pool"><div class="pool-top"><div><p class="lbl">' + t(w === 'last' ? 'k.lastweek' : 'k.pool') + '</p><p class="fig">' + F.int(d.pool.ct) + '<small>CT</small></p></div>' + right + '</div>' +
-      '<button type="button" class="linkish" id="how">' + t('k.split.q') + icon('chev', 16) + '</button></section>';
+    if (loading || !d) return '<section class="sec pool" aria-busy="true">' + skel('120px') + skel('180px', '44px') + '</section>';
+    // the time left is on the dateline; beside the pool sits the way to the rules (or, for a closed week, its state)
+    const how = '<button type="button" class="linkish" id="how">' + t('k.split.q') + icon('chev', 16) + '</button>';
+    const right = '<div class="end">' + (w === 'last' && d.state !== 'sent' ? tag(t('k.final.h'), 'ink') : '') + how + '</div>';
+    return '<section class="sec pool"><div class="pool-top"><div class="mhero"><p class="lbl">' + t(w === 'last' ? 'k.lastweek' : 'k.pool') + '</p><p class="fig fig--xl">' + F.int(d.pool.ct) + '<small>CT</small></p></div>' + right + '</div></section>';
   }
   function list(): string {
-    if (loading || !d) return '<ul class="list" id="top10" aria-busy="true">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(() => '<li class="krow">' + skel('24px', '24px') + '<div>' + skel('120px', '14px') + skel('60px', '10px', 'margin-top:8px') + '</div>' + skel('64px', '16px') + '</li>').join('') + '</ul>';
-    const rows = d.top;
+    const colsHead = '<p class="cols" aria-hidden="true"><span>' + t('pp.rank.col') + '</span><span>' + t('pp.player.col') + '</span><span>' + t('pp.pts.col') + '</span><span>' + t('k.col.prize') + '</span></p>';
+    if (loading || !d) return colsHead + '<ul class="klist" id="top10" aria-busy="true">' + [1, 2, 3, 4, 5, 6, 7, 8].map(() => '<li class="krow">' + skel('20px', '20px') + skel('120px', '14px') + skel('48px', '12px') + skel('64px', '14px') + '</li>').join('') + '</ul>';
     let voids = '';
-    for (let i = rows.length + 1; i <= 10; i++) voids += '<li class="krow is-void"><span class="krow-rank" aria-hidden="true">' + i + '</span><p class="krow-name">' + t('k.void') + '</p><p class="krow-prize"></p></li>';
-    return '<div id="top10"><ol class="podium">' + rows.slice(0, 3).map(pod).join('') + '</ol>' +
-      '<p class="cols" aria-hidden="true"><span>' + t('k.col.player') + '</span><span>' + t('k.col.prize') + '</span></p><ol class="list" start="4">' + rows.slice(3).map(row).join('') + voids + '</ol></div>';
+    for (let i = d.top.length + 1; i <= 10; i++) voids += '<li class="krow is-void"><span class="krow-rank" aria-hidden="true">' + i + '</span><p class="krow-name">' + t('k.void') + '</p></li>';
+    return colsHead + '<ol class="klist" id="top10">' + d.top.map(row).join('') + voids + '</ol>';
   }
   function around(): string {
-    if (loading || !d || !d.around.length || held) return '';
-    const mine = d.around.find((r) => r.me) || d.around[1];
-    const rows = d.around.map((r) => ({ ...r, gap: r.points - mine.points }));
-    return '<section class="sec sec-rule" id="around" tabindex="-1"><div class="sect-h"><h2 class="sect-h">' + t('k.around') + '</h2><span class="muted">' + t('k.around.sub', { a: rows[0].rank, b: rows[rows.length - 1].rank }) + '</span></div>' +
-      '<ol class="list" aria-label="' + esc(t('k.col.gap')) + '">' + rows.map(row).join('') + '</ol></section>';
+    if (loading || !d || !d.around.length || held || (w === 'this' && d.me.rank !== null && d.me.rank <= 10)) return '';
+    const i = Math.max(0, d.around.findIndex((r) => r.me));
+    const rows = d.around.slice(Math.max(0, i - 1), i + 2);
+    const mine = rows.find((r) => r.me) || rows[0];
+    return '<section class="sec sec-rule" id="around" tabindex="-1"><div class="sh"><h2>' + t('k.around') + '</h2></div>' +
+      '<ol class="klist klist--gap" aria-label="' + esc(t('k.col.gap')) + '">' + rows.map((r) => row({ ...r, gap: r.points - mine.points })).join('') + '</ol></section>';
   }
   function view(): string {
     let n = '';
+    rowN = 0;
     if (held) n = hold(t('hold.rank'));
-    else if (w === 'last' && d) n = d.state === 'sent' ? note('ok', t('k.sent') + ' <a href="' + (cfgQ.data?.explorer || CONFIG.chain.explorer) + '/tx/' + (d.airdropTx || '') + '" target="_blank" rel="noopener">' + t('w.scan') + '</a>') : note('sky', t('k.closed', { time: t('k.final.time') }));
-    else if (d?.lastWeek) n = note('sky', t('k.last', { rank: d.lastWeek.rank, amount: F.prize(d.lastWeek.amount) }));
-    return n + pool() + '<section class="sec sec-rule"><div class="sect-h"><h2 class="sect-h">' + t('k.top') + '</h2>' + (loading || w === 'last' ? '' : '<span class="live"><span class="live-dot"></span><span data-stamp="12">' + t('common.updated', { n: 12 }) + '</span></span>') + '</div>' +
-      list() + '<p class="tie-line">' + icon('info', 16) + '<span>' + t('k.tie') + '</span></p></section>' + around();
+    else if (w === 'last' && d) n = d.state === 'sent' ? note('ok', t('k.sent') + ' <a href="' + (cfgQ.data?.explorer || CONFIG.chain.explorer) + '/tx/' + (d.airdropTx || '') + '" target="_blank" rel="noopener">' + t('w.scan') + '</a>') : note('', t('k.closed', { time: t('k.final.time') }));
+    else if (d?.lastWeek) n = note('ok', t('k.last', { rank: d.lastWeek.rank, amount: F.prize(d.lastWeek.amount) }));
+    return n + pool() + '<section class="sec sec-rule"><div class="sh"><h2>' + t('k.top') + '</h2>' + (loading || w === 'last' ? '' : stamp(12)) + '</div>' +
+      '<div class="ktable">' + list() + '</div></section>' + around();
   }
   function howSheet(r: R) {
     const ct = r.pool.ct;
     const split = r.pool.splitPct.map((p, i) => '<div><span>' + t('k.rankth', { n: i + 1 }) + '</span><span>' + p + '%</span><b>' + F.prize((ct * p) / 100) + ' CT</b></div>').join('');
-    sheet.open('<h2>' + t('k.split.q') + '</h2><div class="stack-12"><p class="sheet-lead">' + t('k.pool.line', { n: F.int(ct) }) + '</p><p class="sheet-lead">' + t('k.tie') + ' ' + t('k.tie.note') + '</p><p class="sheet-lead">' + t('k.split.note') + '</p></div>' +
+    sheet.open('<h2>' + t('k.split.q') + '</h2><div class="stack-8"><p class="sheet-lead">' + t('k.pool.line', { n: F.int(ct) }) + '</p><p class="sheet-lead">' + t('k.tie') + ' ' + t('k.tie.note') + '</p><p class="sheet-lead">' + t('k.split.note') + '</p></div>' +
       '<div class="split">' + split + '</div><div class="sheet-acts">' + btn(t('common.close'), { block: true, attrs: 'data-sheet-close' }) + '</div>');
   }
   const toAround = () => {
@@ -76,19 +76,28 @@ export default function Ranking() {
     a.scrollIntoView({ behavior: reduceMotion() ? 'auto' : 'smooth', block: 'center' }); a.focus({ preventScroll: true });
     a.classList.remove('is-flash'); void a.offsetWidth; a.classList.add('is-flash');
   };
-  // first view: the pinned bar's top edge lands on a line between two rows, never through one
-  const snap = () => {
-    const app = document.querySelector('.app') as HTMLElement | null, first = document.querySelector('#top10 .list .krow'), p = document.getElementById('pin');
-    if (!app || !first || !p) return;
-    app.style.removeProperty('--krow-h'); app.style.removeProperty('--pod-h');
-    const avail = p.getBoundingClientRect().top - (first.getBoundingClientRect().top + window.scrollY), n = Math.floor(avail / 53);
-    if (avail <= 0) return;
-    const h = n ? Math.min(avail / n, 64) : 0, left = Math.ceil(avail - n * h);
-    if (left > 32) return;
-    if (n) app.style.setProperty('--krow-h', h + 'px'); if (left > 0) app.style.setProperty('--pod-h', 88 + left + 'px');
-  };
-  useLayoutEffect(() => { snap(); });
-  useEffect(() => { void document.fonts?.ready.then(snap); window.addEventListener('resize', snap); return () => window.removeEventListener('resize', snap); }, []);
+  const html = view();
+  const viewRef = useRef<HTMLElement>(null);
+  /* the prizes of the first three roll up as their rows set; a week change turns like a page (the new table is in place at once) */
+  const lastWeek = useRef(week);
+  useEffect(() => {
+    const v = viewRef.current; if (!v || loading || !d) return;
+    if (!reduceMotion()) {
+      v.querySelectorAll<HTMLElement>('#top10 .krow--lead [data-prize]').forEach((el, i) => {
+        const to = +el.getAttribute('data-prize')!; el.textContent = F.prize(0);
+        setTimeout(() => { const t0 = performance.now(); const step = (now: number) => { const k = Math.min(1, (now - t0) / 560), e = 1 - Math.pow(1 - k, 4); el.textContent = F.prize(to * e); if (k < 1) requestAnimationFrame(step); }; requestAnimationFrame(step); }, 120 + i * 90);
+      });
+      if (lastWeek.current !== week && v.animate) { const dir = week === 'last' ? -1 : 1; v.animate([{ opacity: 0, transform: 'translateX(' + dir * -18 + 'px)' }, { opacity: 1, transform: 'none' }], { duration: 200, easing: 'cubic-bezier(0.23, 1, 0.32, 1)' }); }
+    }
+    lastWeek.current = week;
+    // while the player's own row is on screen the pinned own bar steps aside: the same line is never shown twice
+    const own = v.querySelector('#around .is-me');
+    if (!own || !window.IntersectionObserver) return;
+    const io = new IntersectionObserver((en) => { document.getElementById('pin')?.classList.toggle('is-away', en[0].isIntersecting); }, { rootMargin: '0px 0px -130px 0px', threshold: 0.6 });
+    io.observe(own);
+    return () => io.disconnect();
+  }, [week, loading, q.dataUpdatedAt]); // eslint-disable-line
+  useEffect(() => { if (st === 'how' && d) howSheet(d); }, [!!d]); // eslint-disable-line
 
   let pin: React.ReactNode = null;
   if (!loading && d && !q.isError && st !== 'error') {
@@ -101,12 +110,13 @@ export default function Ranking() {
     else pin = bar(d.me.rank, t('k.you'), t('k.gap', { gap: F.int(d.me.gap || 0) }), d.me.points, t('r.week'));
   }
   const onClick = (e: React.MouseEvent) => { if ((e.target as Element).closest('#how') && d) howSheet(d); };
+  const live = d && w === 'this' ? '<span>' + t('k.ends') + '</span> <b data-cd="' + Math.round((d.endsAt - Date.now()) / 1000) + '" data-cd-end="' + d.endsAt + '" data-cd-fmt="dh"></b>' : '';
   return (
-    <Shell tab="rank" cls="sc-rank" docTitle={t('k.title')} head={<Html className="ph-top" html={'<h1>' + t('k.title') + '</h1>'} />} pin={pin}>
+    <Shell tab="rank" cls="sc-rank" docTitle={t('k.title')} live={live} head={<Html className="ph-top" html={'<h1>' + t('k.title') + '</h1>'} />} pin={pin}>
       {st === 'error' || q.isError ? <Html as="div" style={{ display: 'contents' }} html={errorNote()} /> : (
         <>
           <Seg<'current' | 'last'> label={t('k.week')} value={week} onChange={setWeek} items={[{ label: t('r.week'), value: 'current' }, { label: t('k.lastweek'), value: 'last' }]} />
-          <Html className="stack pg-fade" id="view" key={week} html={view()} onClick={onClick} />
+          <Html className="pg-view" id="view" html={html} onClick={onClick} ref={viewRef} />
         </>
       )}
     </Shell>

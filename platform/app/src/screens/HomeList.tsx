@@ -1,4 +1,5 @@
-// H2 Home, terminal view (platform/design/home-terminal.html): the five questions as a list, one open at a time.
+// H2 Home, list view (platform/design-variants/paper/home-list.html): the five questions as an index of numbered stories,
+// the open one set on a fresh sheet between a heavy and a thin rule.
 // Same outbox as the card view: a pick is held 3 seconds with Undo, then sent.
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -13,7 +14,7 @@ import { outbox, hasOutbox, kick, slowCount, useOutbox, viewOf } from '../chain/
 import { UNDO_MS } from '../chain/outbox/policy';
 import { usePlay, playHere, retryReconnect } from '../state/play';
 import { useWalletStore } from '../wallet/wallet';
-import { HomeHead, useSlots, usePresetConfirm, useFreshReset, playBannerHtml, holdPanel, otherDevicePanel, emptySet, closedSet, takeLeft, noteLeft, type Slot } from './HomeCards';
+import { HomeHead, homeLive, useSlots, usePresetConfirm, useFreshReset, playBannerHtml, holdPanel, otherDevicePanel, emptySet, closedSet, takeLeft, noteLeft, type Slot } from './HomeCards';
 import { errorNote } from '../ui/h';
 
 export default function HomeList() {
@@ -74,28 +75,33 @@ export default function HomeList() {
   }, [count, held.length]);
   // focus the opened question
   const focusNext = useRef(false);
-  useEffect(() => { if (focusNext.current) { focusNext.current = false; (document.getElementById('open-q') as HTMLElement | null)?.focus({ preventScroll: true }); } });
+  const focusUndoN = useRef(0);
+  useEffect(() => {
+    if (focusUndoN.current) { const u = document.querySelector('[data-undo="' + focusUndoN.current + '"]') as HTMLElement | null; if (u) { focusUndoN.current = 0; u.focus({ preventScroll: true }); return; } }
+    if (focusNext.current) { focusNext.current = false; (document.getElementById('open-q') as HTMLElement | null)?.focus({ preventScroll: true }); }
+  });
 
   function row(s: Slot): string {
-    const q = s.q, n = q.n, num = '<span class="trow-n" aria-hidden="true">0' + n + '</span>', tg = tag(t('cat.' + q.cat));
+    const q = s.q, n = q.n, num = '<span class="trow-n" aria-hidden="true">' + n + '</span>', cat = '<span>' + t('cat.' + q.cat) + '</span>';
     const it = s.item, v = viewOf(it);
     const failed = s.seg === 'fail';
     if (s.answered) {
       const dir: 'l' | 'r' = s.m.choice.chain ? (s.m.choice.chain === 1 ? 'l' : 'r') : it ? (it.choice === 1 ? 'l' : 'r') : n === 2 && st ? 'l' : 'r';
       const isHeld = v === 'held';
-      const undo = isHeld ? '<button type="button" class="undo" data-undo="' + n + '" aria-label="' + esc(t('h.undo.aria', { n, choice: q[dir] })) + '"><svg class="undo-ring" viewBox="0 0 22 22" aria-hidden="true"><circle class="trk" cx="11" cy="11" r="8"/><circle class="run" cx="11" cy="11" r="8" style="animation-duration:' + UNDO_MS + 'ms;animation-delay:-' + (Date.now() - it!.createdAt) + 'ms"/></svg><span>' + t('h.undo') + '</span></button>' : '';
+      const undo = isHeld ? '<button type="button" class="undo" data-undo="' + n + '" aria-label="' + esc(t('h.undo.aria', { n, choice: q[dir] })) + '"><span class="fuse fuse--btn" aria-hidden="true"><i style="--gone:-' + (Date.now() - it!.createdAt) + 'ms"></i></span>' + icon('undo', 18) + '<span>' + t('h.undo') + '</span></button>' : '';
       const saving = s.seg === 'pend' && !isHeld;
-      return '<li class="trow is-done">' + num + '<div><p class="trow-q">' + esc(q.title) + '</p><div class="trow-foot">' + (undo ? '' : tg) + '<span class="trow-state">' +
-        (saving ? '<span class="spin"></span><span class="sr-only">' + t('common.saving') + '</span>' : undo ? '' : icon('check', 16)) + t('h.t.chose', { choice: pick(dir, esc(q[dir])) }) + '</span>' + undo + '</div></div>' + thumb(q.img, q.cat) + '</li>';
+      // a sent answer says plainly that it is final
+      return '<li class="trow is-done">' + num + '<div><p class="trow-q">' + esc(q.title) + '</p><div class="trow-foot"><span class="trow-state">' +
+        (saving ? '<span class="spin"></span><span class="sr-only">' + t('common.saving') + '</span>' : undo ? '' : icon('check', 16)) + t('h.t.chose', { choice: pick(dir, esc(q[dir])) }) + '</span>' + (undo || (!saving ? tag(t('pp.final'), '', 'lock') : '')) + '</div></div>' + thumb(q.img, q.cat) + '</li>';
     }
     if (n === cur) {
-      return '<li class="trow is-open' + (failed ? ' is-fail' : '') + '">' + num + '<div><h2 class="trow-q" tabindex="-1" id="open-q">' + esc(q.title) + '</h2><div class="trow-foot">' + tg +
-        (failed ? '<span class="trow-state">' + icon('warn', 16) + t('h.t.notsaved') + '</span>' : '') + '</div></div>' + thumb(q.img, q.cat) +
-        '<div class="trow-body"><div class="qcard-meta"><span>' + icon('search', 14) + '<span>' + t('h.answer', { rule: esc(q.rule) }) + '</span></span><button type="button" class="qmeta-btn" data-ai-info="' + esc(q.id) + '" aria-haspopup="dialog">' + icon('clock', 14) + '<span>' + t('h.ai', { time: esc(q.settle) }) + '</span>' + icon('info', 14) + '</button></div>' +
+      return '<li class="trow is-open' + (failed ? ' is-fail' : '') + '">' + num + '<div><div class="trow-qw"><span class="trow-kick">' + t('cat.' + q.cat) + '</span><h2 class="trow-q" tabindex="-1" id="open-q">' + esc(q.title) + '</h2></div>' +
+        (failed ? '<div class="trow-foot"><span class="trow-state">' + icon('warn', 16) + t('h.t.notsaved') + '</span></div>' : '') + '</div>' + thumb(q.img, q.cat) +
+        '<div class="trow-body"><button type="button" class="qmeta" data-ai-info="' + esc(q.id) + '" aria-haspopup="dialog"><span class="qmeta-t"><span>' + t('h.answer', { rule: esc(q.rule) }) + '</span><span>' + t('h.ai', { time: esc(q.settle) }) + '</span></span><span class="qmeta-go">' + t('pp.rule') + icon('chev', 14) + '</span></button>' +
         '<div class="choices">' + (['l', 'r'] as const).map((d) => '<button type="button" class="choice" data-pick="' + n + '" data-dir="' + d + '"' + (offline ? ' aria-disabled="true"' : '') + ' aria-label="' + esc(t('h.pick.aria', { choice: q[d], q: q.title })) + '">' + (d === 'l' ? icon('left', 18) : '') + '<span>' + esc(q[d]) + '</span>' + (d === 'r' ? icon('right', 18) : '') + '</button>').join('') + '</div>' +
-        (offline ? '<p class="small muted">' + t('h.offline') + '</p>' : '<p class="qcard-final">' + t('h.final') + '</p>') + '</div></li>';
+        '<p class="qcard-final">' + (offline ? t('h.offline') : t('h.final')) + '</p></div></li>';
     }
-    return '<li class="trow' + (failed ? ' is-fail' : '') + '">' + num + '<div><p class="trow-q">' + esc(q.title) + '</p><div class="trow-foot">' + tg +
+    return '<li class="trow' + (failed ? ' is-fail' : '') + '">' + num + '<div><p class="trow-q">' + esc(q.title) + '</p><div class="trow-foot">' + cat +
       (failed ? '<span class="trow-state">' + icon('warn', 16) + t('h.t.notsaved') + '</span>' : '') +
       btn(failed ? t('h.t.again') : t('h.t.pick'), { sm: true, attrs: 'data-open="' + n + '"' }) + '</div></div>' + thumb(q.img, q.cat) + '</li>';
   }
@@ -103,7 +109,7 @@ export default function HomeList() {
   // under the list once all five are picked: "Finishing in 3" with "Finish now", then "Saving", on a finished day the link
   const p = held[held.length - 1];
   const mode = count < 5 ? '' : held.length ? 'wait' : fin && !leaving ? 'fin' : 'saving';
-  const endHtml = !mode ? '' : '<div class="term-end-txt"><h2>' + t('h.end.h') + '</h2><p id="term-end-p">' + (mode === 'fin' ? t('h.fin.b') : mode === 'saving' ? '<span class="spin"></span>' + t('h.end.b') : t('h.end.in', { n: '<b>' + Math.max(1, Math.ceil((UNDO_MS - (Date.now() - p!.createdAt)) / 1000)) + '</b>' })) + '</p></div>' +
+  const endHtml = !mode ? '' : '<div class="stack-8"><h2>' + t('h.end.h') + '</h2><p id="term-end-p">' + (mode === 'fin' ? t('h.fin.b') : mode === 'saving' ? '<span class="spin"></span>' + t('h.end.b') : t('h.end.in', { n: '<b>' + Math.max(1, Math.ceil((UNDO_MS - (Date.now() - p!.createdAt)) / 1000)) + '</b>' })) + '</p></div>' +
     (mode === 'wait' ? btn(t('h.end.now'), { kind: 'primary', block: true, id: 'finish' }) : mode === 'fin' ? btn(t('h.fin.btn'), { kind: 'primary', block: true, href: today.data?.completed ? '/done' : '/done?moment=1', iconEnd: 'right' }) : '');
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => { if (mode === 'wait') endRef.current?.scrollIntoView({ block: 'nearest', behavior: reduceMotion() ? 'auto' : 'smooth' }); }, [mode]);
@@ -126,8 +132,10 @@ export default function HomeList() {
     await outbox().commit({ marketId: s.m.marketId, dayId: today.data.dayId, slot: s.m.slot, choice: dir === 'l' ? 1 : 2, closesAt: s.m.closesAt, player: player || '0x0' });
     kick();
     try { (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive && navigator.vibrate?.(10); } catch { /* */ }
-    live(t('h.live.picked', { choice: s.q[dir], k: 5 - count - 1 }));
-    focusNext.current = true; setCurrent(null);
+    live(t('pp.live.picked', { choice: s.q[dir] }));
+    // keyboard: Undo is the next stop; otherwise the next open question takes the focus
+    if (b.matches(':focus-visible')) focusUndoN.current = n; else focusNext.current = true;
+    setCurrent(null);
   };
   useEffect(() => {
     const k = (e: KeyboardEvent) => {
@@ -138,21 +146,29 @@ export default function HomeList() {
   }, []);
 
   let body: string;
-  if (loading) body = '<ol class="term" aria-busy="true">' + [1, 2, 3, 4, 5].map((n) => '<li class="trow"><span class="trow-n" aria-hidden="true">0' + n + '</span><div>' + skel('94%', '16px') + '<div class="trow-foot">' + skel('64px', '22px') + skel('72px') + '</div></div></li>').join('') + '</ol><p class="sr-only" role="status">' + t('common.loading') + '</p>';
+  if (loading) body = '<ol class="term" aria-busy="true">' + [1, 2, 3, 4, 5].map((n) => '<li class="trow"><span class="trow-n" aria-hidden="true">' + n + '</span><div>' + skel('94%', '16px') + '<div class="trow-foot">' + skel('64px', '12px') + '</div></div>' + skel('56px', '68px') + '</li>').join('') + '</ol><p class="sr-only" role="status">' + t('common.loading') + '</p>';
   else if (today.isError || st === 'error') body = errorNote();
   else if (today.data!.state === 'empty') body = emptySet(endsAt);
   else if (today.data!.state === 'closed') body = closedSet('/list');
   else if (st === 'otherdevice' || play === 'otherdevice') body = otherDevicePanel();
   else if (hold) body = holdPanel();
-  else body = (offline ? note('warn', t('h.offline')) : '') + playBannerHtml(bannerState, slow) + '<ol class="term" id="term">' + rows.map(row).join('') + '</ol>';
-  const noClock = st === 'empty' || hold || today.data?.state === 'empty' || today.data?.state === 'closed';
+  else body = '';
+  const none = st === 'empty' || st === 'closed' || st === 'otherdevice' || play === 'otherdevice' || hold || today.data?.state === 'empty' || today.data?.state === 'closed';
   const showList = !loading && !today.isError && today.data?.state === 'open' && !hold && st !== 'otherdevice' && st !== 'error';
   return (
-    <Shell tab="home" docTitle={t('h.title')} badges={{ home: fin || hold ? 0 : 'dot' }}
-      head={<HomeHead view="term" count={count} segs={rows.map((r) => r.seg)} loading={loading} noClock={noClock} endsAt={endsAt} />}>
+    <Shell tab="home" cls="is-list" docTitle={t('h.title')} badges={{ home: fin || hold ? 0 : 'dot' }}
+      live={homeLive({ loading, none, fin: fin && mode === 'fin', endsAt })}
+      head={<HomeHead view="term" count={count} segs={rows.map((r) => r.seg)} loading={loading} />}>
       <div style={{ display: 'contents' }} onClick={onClick}>
-        <Html as="div" style={{ display: 'contents' }} html={body} />
-        {showList && <div ref={endRef} className={'term-end' + (mode === 'fin' ? ' is-fin' : '')} id="term-end" hidden={!mode} dangerouslySetInnerHTML={{ __html: endHtml }} />}
+        {showList ? (
+          <>
+            {!!(offline || playBannerHtml(bannerState, slow)) && <Html as="div" style={{ display: 'contents' }} html={(offline ? note('warn', t('h.offline')) : '') + playBannerHtml(bannerState, slow)} />}
+            <div className="term-wrap" style={{ display: 'grid' }}>
+              <Html as="ol" className="term" id="term" html={rows.map(row).join('')} />
+              <div ref={endRef} className={'term-end' + (mode === 'fin' ? ' is-fin' : '')} id="term-end" hidden={!mode} dangerouslySetInnerHTML={{ __html: endHtml }} />
+            </div>
+          </>
+        ) : <Html as="div" style={{ display: 'contents' }} html={body} />}
       </div>
     </Shell>
   );

@@ -1,10 +1,11 @@
-// I1 Invite friends (platform/design/invite.html): the offer on the band, my code and link, how it works, results, rules.
+// I1 Invite friends (platform/design-variants/paper/invite.html): the offer is the headline ("10%" in the slab), worked once
+// as two figures divided by a rule; then the code, the link, the action, and the results. How it works and the rules are behind "?".
 import { useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useInvite } from '../api';
 import { t } from '../i18n';
 import { esc, F } from '../lib/fmt';
-import { btn, code, hold, icon, note, skel, tag } from '../ui/h';
+import { btn, code, hold, icon, note, qbtn, skel, tag } from '../ui/h';
 import { Html, Shell } from '../ui/kit';
 import { useHold, useOffline, usePreset } from '../state/app';
 import { live, toast } from '../state/ui';
@@ -24,9 +25,8 @@ export default function Invite() {
   const day = 350, cut = Math.round((day * rate) / 100);
   useEffect(() => { if (st === 'shared') toast(t('inv.shared')); }, [st]);
 
-  const head = '<div class="inv-hero"><h1><span class="inv-pct" aria-hidden="true">' + rate + '<small>%</small></span><span class="inv-line">' + t('inv.hero.line', { r: rate }) + '</span></h1>' +
-    '<p class="inv-sub">' + t('inv.hero.sub') + '</p>' +
-    '<div class="inv-ex" role="img" aria-label="' + esc(t('inv.ex.sr', { a: day, b: cut })) + '"><div><span>' + t('inv.ex.friend') + '</span><b>+' + F.pts(day) + '</b></div>' + icon('right', 20) + '<div><span>' + t('inv.ex.you') + '</span><b>+' + F.pts(cut) + '</b></div></div></div>';
+  const hero = '<section class="sec inv-hero"><h1><span class="inv-pct" aria-hidden="true">' + rate + '<small>%</small></span><span class="inv-line">' + t('inv.hero.line', { r: rate }) + qbtn('invite', t('inv.title')) + '</span></h1>' +
+    '<div class="inv-ex" role="img" aria-label="' + esc(t('inv.ex.sr', { a: day, b: cut })) + '"><div><span>' + t('inv.ex.friend') + '</span><b>+' + F.pts(day) + '</b></div>' + icon('right', 20) + '<div><span>' + t('inv.ex.you') + '</span><b>+' + F.pts(cut) + '</b></div></div></section>';
   const M = CONFIG.mockApi; // the design's sample code shows only in mock mode while the read is loading
   const c = V?.code || (M ? DESIGN.invite.code : ''), link = V?.link || (M ? DESIGN.invite.link : ''), linkShort = V?.linkShort || (M ? DESIGN.invite.linkShort : '');
   const codeSec = held
@@ -36,20 +36,16 @@ export default function Invite() {
       (offline ? '<p class="hold-why" id="inv-off">' + icon('offline', 16) + '<span>' + t('inv.offline') + '</span></p>' : '') +
       '<div class="inv-acts">' + btn(t('inv.share'), { kind: 'primary', block: true, icon: 'share', id: 'share' }) +
       btn(t('inv.copylink'), { block: true, icon: 'copy', id: 'copylink', attrs: 'data-copy="' + esc(link) + '" data-done="' + esc(t('inv.linkcopied')) + '"' }) + '</div></section>';
-  const w = '<b>+' + welcome + 'P</b>', r = '<b>' + rate + '%</b>';
-  const how = '<section class="sec" aria-labelledby="how-h"><h2 class="sect-h" id="how-h">' + t('inv.how.h') + '</h2><ol class="inv-steps"><li><span>' + t('inv.how.1') + '</span></li><li><span>' +
-    t('inv.how.2', { w: '\u0001' }).replace('+\u0001P', w) + '</span></li><li><span>' + t('inv.how.3', { r: '\u0001' }).replace('\u0001%', r) + '</span></li></ol></section>';
   let results: string;
-  if (loading) results = '<section class="sec" aria-busy="true">' + skel('120px', '20px') + '<div class="inv-tri">' + [1, 2, 3].map(() => '<div>' + skel('64px', '26px') + skel('72px', '12px') + '</div>').join('') + '</div>' +
+  if (loading) results = '<section class="sec" aria-busy="true">' + skel('120px', '20px') + '<div class="tri">' + [1, 2, 3].map(() => '<div class="tri-c">' + skel('64px', '24px') + skel('72px', '12px') + '</div>').join('') + '</div>' +
     [1, 2, 3].map(() => '<div class="inv-friend">' + skel('110px', '16px') + skel('70px', '22px') + skel('56px', '16px') + '</div>').join('') + '<p class="sr-only" role="status">' + t('common.loading') + '</p></section>';
-  else if (st === 'error' || q.isError) results = '<section class="sec" aria-labelledby="res-h"><h2 class="sect-h" id="res-h">' + t('inv.res.h') + '</h2>' + note('error', t('inv.error'), btn(t('common.retry'), { sm: true, icon: 'refresh', attrs: 'data-reload' })) + '</section>';
-  else if (!V!.stats.joined) results = '<section class="sec" aria-labelledby="res-h"><h2 class="sect-h" id="res-h">' + t('inv.res.h') + '</h2><p class="inv-none">' + t('inv.empty') + '</p></section>';
-  else results = '<section class="sec" aria-labelledby="res-h"><h2 class="sect-h" id="res-h">' + t('inv.res.h') + '</h2>' + (offline ? '<p class="hold-why" id="inv-stale">' + icon('info', 16) + '<span>' + t('inv.stale') + '</span></p>' : '') +
-    (held ? '<p class="hold-why" id="inv-hold">' + icon('info', 16) + '<span>' + t('hold.invite.bonus') + '</span></p>' : '') + '<div class="inv-tri">' +
-    '<div><b>' + V!.stats.joined + '</b><span>' + t('inv.res.joined') + '</span></div><div><b>' + F.pts(V!.stats.bonusWeek) + '</b><span>' + t('inv.res.week') + '</span></div><div><b>' + F.pts(V!.stats.bonusTotal) + '</b><span>' + t('inv.res.total') + '</span></div></div>' +
-    '<h3 class="inv-sub-h">' + t('inv.friends.h') + '</h3><ul class="list inv-friends">' + V!.friends.map((f) => '<li class="inv-friend"><span class="inv-friend-n" translate="no">' + esc(f.name) + '</span>' + tag(t('inv.st.' + f.state), f.state === 'first' ? 'ink' : '') +
+  else if (st === 'error' || q.isError) results = '<section class="sec" aria-labelledby="res-h"><h2 id="res-h">' + t('inv.res.h') + '</h2>' + note('error', t('inv.error'), btn(t('common.retry'), { sm: true, icon: 'refresh', attrs: 'data-reload' })) + '</section>';
+  else if (!V!.stats.joined) results = '<section class="sec" aria-labelledby="res-h"><h2 id="res-h">' + t('inv.res.h') + '</h2><p class="inv-none">' + t('inv.empty') + '</p></section>';
+  else results = '<section class="sec" aria-labelledby="res-h"><h2 id="res-h">' + t('inv.res.h') + '</h2>' + (offline ? '<p class="hold-why" id="inv-stale">' + icon('info', 16) + '<span>' + t('inv.stale') + '</span></p>' : '') +
+    (held ? '<p class="hold-why" id="inv-hold">' + icon('info', 16) + '<span>' + t('hold.invite.bonus') + '</span></p>' : '') + '<div class="tri">' +
+    '<div class="tri-c"><p class="tri-fig">' + V!.stats.joined + '</p><p class="tri-sub">' + t('inv.res.joined') + '</p></div><div class="tri-c"><p class="tri-fig">' + F.pts(V!.stats.bonusWeek) + '</p><p class="tri-sub">' + t('inv.res.week') + '</p></div><div class="tri-c"><p class="tri-fig">' + F.pts(V!.stats.bonusTotal) + '</p><p class="tri-sub">' + t('inv.res.total') + '</p></div></div>' +
+    '<h3 class="inv-sub-h">' + t('inv.friends.h') + '</h3><ul class="list">' + V!.friends.map((f) => '<li class="inv-friend"><span translate="no">' + esc(f.name) + '</span>' + tag(t('inv.st.' + f.state), f.state === 'first' ? 'ink' : '') +
       '<b' + (f.points ? '' : ' class="is-zero"') + '>' + (f.points ? '+' + F.pts(f.points) : '0P') + '</b></li>').join('') + '</ul></section>';
-  const rules = '<section class="sec" aria-labelledby="rules-h"><h2 class="sect-h" id="rules-h">' + t('inv.rules.h') + '</h2><ul class="inv-rules">' + [1, 2, 3, 4].map((i) => '<li>' + t('inv.rule.' + i) + '</li>').join('') + '</ul></section>';
 
   const busy = useRef(false);
   const onClick = (e: React.MouseEvent) => {
@@ -62,8 +58,8 @@ export default function Invite() {
     setTimeout(() => { lab.textContent = old; share.classList.remove('is-done'); busy.current = false; }, 2000);
   };
   return (
-    <Shell back={back} title={t('inv.title')} head={<Html as="div" style={{ display: 'contents' }} html={head} />} pts={loading ? 'loading' : ''}>
-      <Html as="div" style={{ display: 'contents' }} html={codeSec + (held ? '' : how) + results + rules} onClick={onClick} />
+    <Shell back={back} title={t('inv.title')} pts={loading ? 'loading' : ''}>
+      <Html as="div" style={{ display: 'contents' }} html={hero + codeSec + results} onClick={onClick} />
     </Shell>
   );
 }

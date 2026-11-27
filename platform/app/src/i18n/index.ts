@@ -21,8 +21,16 @@ function initialLang(): Lang {
   return l;
 }
 
+/* the display faces of Korean and Japanese are self hosted sheets that load only when that language is shown */
+const FONT_SHEETS: Partial<Record<Lang, () => Promise<unknown>>> = {
+  ko: () => import('../styles/fonts/ko.css'),
+  ja: () => import('../styles/fonts/ja.css'),
+};
+function loadFonts(l: Lang) { FONT_SHEETS[l]?.().catch(() => { /* offline before first use: the fallback faces stand in */ }); }
+
 const lang = initialLang();
 document.documentElement.lang = lang;
+loadFonts(lang);
 
 void i18next.use(initReactI18next).init({
   resources: { en: { t: en }, ko: { t: ko }, ja: { t: ja } },
@@ -42,6 +50,7 @@ export function setLang(l: Lang) {
   if (!LANGS.includes(l)) return;
   try { localStorage.setItem(KEY, l); } catch { /* */ }
   document.documentElement.lang = l;
+  loadFonts(l);
   void i18next.changeLanguage(l);
 }
 export function currentLang(): Lang { return (i18next.language as Lang) || 'en'; }

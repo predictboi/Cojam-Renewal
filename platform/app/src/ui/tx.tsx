@@ -5,7 +5,8 @@
 import { create } from 'zustand';
 import { t } from '../i18n';
 import { F } from '../lib/fmt';
-import { btn, icon, rows, type Row } from './h';
+import { btn, icon, rows, rstamp, type Row } from './h';
+import { reduceMotion } from '../lib/fmt';
 import { live, sheet, toast } from '../state/ui';
 import { useNavigate } from 'react-router-dom';
 import type { TxProgress } from '../chain/chain';
@@ -39,7 +40,7 @@ export function useTxNav() { nav = useNavigate(); }
 /** The explorer from GET /v1/config, else the build time default of the network. */
 const explorer = () => queryClient.getQueryData<{ explorer?: string }>(['config'])?.explorer || CONFIG.chain.explorer;
 
-/** the success moment: a display figure on ink beside a lime done block (App.tx.doneFig) */
+/** the success moment: what happened as a display figure beside a "Filed" stamp in the reward ink */
 function doneFig(ok: TxCfg['success']): string {
   let fig = ok.fig, m: RegExpExecArray | null;
   if (!fig) {
@@ -49,7 +50,7 @@ function doneFig(ok: TxCfg['success']): string {
     if (hit) fig = hit[1] + ' ' + hit[2];
   }
   const parts = fig ? /^(.*?)(?:\s(CT|P))?$/.exec(fig) : null;
-  return '<div class="sheet-done" aria-hidden="true"><span class="sheet-done-ck">' + icon('check', 22) + '</span>' + (parts ? '<span class="sheet-done-fig">' + parts[1] + (parts[2] ? '<small>' + parts[2] + '</small>' : '') + '</span>' : '') + '</div>';
+  return '<div class="sheet-done" aria-hidden="true">' + rstamp('hit', t('pp.filed')) + (parts ? '<span class="sheet-done-fig">' + parts[1] + (parts[2] ? '<small>' + parts[2] + '</small>' : '') + '</span>' : '') + '</div>';
 }
 
 function view(state: TxState, cfg: TxCfg, hash: string | null): string {
@@ -92,7 +93,17 @@ function show(state: TxState) {
   const s = useTx.getState(); const cfg = s.cfg!;
   useTx.setState({ state });
   sheet.open(view(state, cfg, s.hash), { closable: state === 'review' || state === 'success' || state === 'failed', label: cfg.label, onClose: () => { if (state === 'success') cfg.onDone?.(); } });
-  setTimeout(() => { const h = document.querySelector('#sheet h2'); live(h ? h.textContent || '' : ''); }, 60);
+  setTimeout(() => {
+    const sh = document.getElementById('sheet'), h = document.querySelector('#sheet h2') as HTMLElement | null;
+    live(h ? h.textContent || '' : '');
+    // the focus never falls out of the sheet between steps: after each swap it is on the heading, and on Done when it succeeded
+    const fx = state === 'success' ? document.querySelector('#sheet [data-tx="done"]') as HTMLElement | null : state === 'review' ? null : h;
+    if (fx) { if (fx.tagName === 'H2') fx.setAttribute('tabindex', '-1'); fx.focus({ preventScroll: true }); }
+    else if (sh && !sh.contains(document.activeElement)) sh.focus({ preventScroll: true });
+    // the filed stamp lands once the sheet is up; nothing plays on a failure
+    const st = state === 'success' ? document.querySelector('#sheet .sheet-done .rstamp') as HTMLElement | null : null;
+    if (st && !reduceMotion()) { st.style.setProperty('--d', '210ms'); st.classList.remove('is-land'); void st.offsetWidth; st.classList.add('is-land'); }
+  }, 60);
 }
 
 function go(state: TxState) {

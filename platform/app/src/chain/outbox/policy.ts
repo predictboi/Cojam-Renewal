@@ -3,6 +3,7 @@
 export const UNDO_MS = 3000;            // the Undo window (DECISIONS "Undo")
 export const CLOSE_GUARD_MS = 15_000;   // a pick on a market closing within 15 s is queued at once, no Undo
 export const UNDO_HIDE_EARLY_MS = 100;  // the Undo button goes away 100 ms before sendAfter
+export const KEY_HOLD_MAX_MS = 10_000;  // while Undo has keyboard focus the window waits, but a pick is final 10 s after it was made at the latest
 export const RESEND_AFTER_MS = 30_000;  // sent but not mined: resend the identical raw once
 export const RESIGN_AFTER_MS = 90_000;  // still missing: re-sign the same payload with the same nonce
 export const UNCERTAIN_WAIT_MS = 60_000;

@@ -1,18 +1,19 @@
-// H1 Home, card view (platform/design/home-cards.html). Each pick is held 3 seconds with Undo under the deck, then
-// signed by the play key and sent in the background (the outbox). The next card shows at once.
+// H1 Home, card view: the front page (platform/design-variants/paper/home.html). Each pick is held 3 seconds with Undo in
+// the pick bar pinned above the tab bar, then signed by the play key and sent in the background (the outbox). The next card
+// shows at once. The fifth pick opens day done at once; the Undo of that pick lives there for what is left of its window.
 import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useToday } from '../api';
 import { t, useLang } from '../i18n';
-import { esc, F, reduceMotion } from '../lib/fmt';
-import { btn, day5, empty, errorNote, icon, pick, skel, banner } from '../ui/h';
+import { esc, reduceMotion } from '../lib/fmt';
+import { btn, closes, count as countCell, day5, empty, errorNote, icon, pick, skel, banner } from '../ui/h';
 import { Html, Shell, Icon } from '../ui/kit';
-import { qcard, qOf, viewSwitch, closes, type Q } from '../ui/qcard';
+import { qcard, qOf, viewSwitch, type Q } from '../ui/qcard';
 import { createDeck, type DeckApi, type Dir } from '../deck/engine';
 import { useHold, useOffline, usePreset } from '../state/app';
 import { live, toast } from '../state/ui';
 import { outbox, hasOutbox, kick, slowCount, useOutbox, viewOf } from '../chain/outbox/runner';
-import { UNDO_MS, UNDO_HIDE_EARLY_MS } from '../chain/outbox/policy';
+import { UNDO_MS, UNDO_HIDE_EARLY_MS, KEY_HOLD_MAX_MS } from '../chain/outbox/policy';
 import { usePlay, playHere, retryReconnect } from '../state/play';
 import { useWalletStore } from '../wallet/wallet';
 import { CONFIG } from '../config';
@@ -57,23 +58,29 @@ export function useSlots(today: Today | undefined, st: string, confirmed: number
       let seg = '', answered = false;
       if (m.choice.chain) { seg = 'done'; answered = true; }
       if (v === 'held' || v === 'saving') { seg = 'pend'; answered = true; }
-      if (v === 'saved') { seg = 'done fill'; answered = true; }
+      if (v === 'saved') { seg = 'done'; answered = true; }
       if (v === 'failed' && !m.choice.chain) seg = 'fail';
-      if (P.sending?.includes(m.n)) { seg = confirmed.includes(m.n) ? 'done fill' : 'pend'; answered = true; }
+      if (P.sending?.includes(m.n)) { seg = confirmed.includes(m.n) ? 'done' : 'pend'; answered = true; }
       if (P.fail === m.n) seg = 'fail';
       return { m, q: qOf(m), item, seg, answered };
     });
   }, [today, items, st, lang, confirmed.length]);
 }
 
-export function HomeHead({ view, count, segs, loading, noClock, endsAt }: { view: 'card' | 'term'; count: number; segs: string[]; loading?: boolean; noClock?: boolean; endsAt?: number }) {
-  const cd = noClock ? '' : loading || !endsAt ? skel('96px', '12px') : closes(endsAt);
+/** the head: the page title with the view switch, then the five boxes (the count is kept for screen readers) */
+export function HomeHead({ view, count, segs, loading }: { view: 'card' | 'term'; count: number; segs: string[]; loading?: boolean }) {
   return (
     <>
       <Html className="ph-top" html={'<h1>' + t('h.title') + '</h1>' + viewSwitch(view)} />
-      <Html className="ph-line" html={'<span class="ph-count"><span id="cnt">' + (loading ? 0 : count) + '</span><small>/5</small></span>' + day5(loading ? ['', '', '', '', ''] : segs, { band: true, id: 'day5' }) + cd} />
+      <Html className="ph-line" html={'<span class="sr-only"><span id="cnt">' + (loading ? 0 : count) + '</span>/5</span>' + day5(loading ? ['', '', '', '', ''] : segs, { id: 'day5' })} />
     </>
   );
+}
+/** the dateline's live fact on home: the time until the set closes, or, once the day is done, until the next set */
+export function homeLive(o: { loading?: boolean; none?: boolean; fin?: boolean; endsAt: number }): string {
+  if (o.none) return '';
+  if (o.loading) return skel('96px', '12px');
+  return o.fin ? countCell('d.next', o.endsAt) : closes(o.endsAt);
 }
 
 export function playBannerHtml(state: string, slow: number): string {
@@ -84,15 +91,21 @@ export function playBannerHtml(state: string, slow: number): string {
 }
 export const holdPanel = () => empty({ icon: 'pause', title: t('hold.home.h'), body: t('hold.home.b'), action: btn(t('hold.home.btn'), { href: '/system/blocked', iconEnd: 'right', id: 'hold-more' }) });
 export const otherDevicePanel = () => empty({ icon: 'phone', title: t('h.other.h'), body: t('h.other.b'), action: btn(t('h.other.btn'), { kind: 'primary', attrs: 'data-play-here' }) });
-export const loadingDeck = () => '<div class="deck" aria-busy="true"><div class="qcard" data-pos="0"><div class="qimg"></div><div class="qcard-top">' + skel('72px', '28px') + skel('52px', '28px') +
-  '</div><div class="qcard-body">' + skel('92%', '22px') + skel('60%', '22px') + '<div class="qcard-meta">' + skel('80%') + skel('66%') + '</div><div class="choices">' + skel('100%', '54px') + skel('100%', '54px') + '</div></div></div></div><p class="sr-only" role="status">' + t('common.loading') + '</p>';
-export const emptySet = (endsAt: number) => empty({ icon: 'clock', title: t('h.empty.h'), body: t('h.empty.b', { time: t('time.kst9') }), extra: '<p class="fig fig--md" data-cd="' + Math.round((endsAt - Date.now()) / 1000) + '" data-cd-end="' + endsAt + '"></p>' });
+export const loadingDeck = () => '<div class="deck" aria-busy="true"><div class="qcard" data-pos="0"><div class="qcard-top">' + skel('64px', '12px') + skel('72px', '12px') + '</div><div class="qimg"></div><div class="qcard-body">' + skel('92%', '24px') + skel('60%', '24px') +
+  skel('100%', '40px') + '<div class="choices">' + skel('100%', '54px') + skel('100%', '54px') + '</div></div></div></div><p class="sr-only" role="status">' + t('common.loading') + '</p>';
+export const emptySet = (endsAt: number) => empty({ icon: 'clock', title: t('h.empty.h'), body: t('h.empty.b', { time: t('time.kst9') }), extra: '<p class="fig" data-dg data-cd="' + Math.round((endsAt - Date.now()) / 1000) + '" data-cd-end="' + endsAt + '"></p>' });
 export const closedSet = (href: string) => empty({ icon: 'refresh', title: t('h.closed'), action: btn(t('h.closed.btn'), { kind: 'primary', href }) });
+/* the wait before the day is sent is a printer's rule used up from the right, the same fuse as on the pick bar */
+const endRing = (id?: string) => '<div class="end-mark" aria-hidden="true">' + icon('check', 30) + '</div><span class="fuse fuse--end" aria-hidden="true"' + (id ? ' id="' + id + '"' : '') + '></span>';
 
 /* ---------- the deck: React renders the cards once, the engine moves them ---------- */
-const Cards = memo(function Cards({ cards, failedN, offline, noimgN, top }: { cards: Q[]; failedN?: number; offline: boolean; noimgN?: number; top: boolean }) {
-  return <Html as="div" style={{ display: 'contents' }} html={cards.map((q) => qcard(q, { failed: failedN === q.n, disabled: offline, noimg: noimgN === q.n, top, final: true })).join('')} />;
+const Cards = memo(function Cards({ cards, failedN, offline, noimgN }: { cards: Q[]; failedN?: number; offline: boolean; noimgN?: number }) {
+  return <Html as="div" style={{ display: 'contents' }} html={cards.map((q) => qcard(q, { failed: failedN === q.n, disabled: offline, noimg: noimgN === q.n, final: true })).join('')} />;
 });
+
+/** the fifth pick: day done opens with the Undo of that pick for what is left of its window */
+export const doneMomentHref = (it: { createdAt: number; sendAfter: number; marketId: string } | undefined) =>
+  it ? '/done?moment=1&undo=' + Math.max(0, Math.min(UNDO_MS, it.sendAfter - Date.now())) + '&q=' + encodeURIComponent(it.marketId) : '/done?moment=1';
 
 export default function HomeCards() {
   const st = usePreset();
@@ -133,7 +146,8 @@ export default function HomeCards() {
   const deck = useRef<DeckApi | null>(null);
   const live$ = useRef({ offline, count, player, today: today.data });
   live$.current = { offline, count, player, today: today.data };
-  const [leaving, setLeaving] = useState(false);
+  const finishing = useRef(false);
+  const focusUndo = useRef(false);
 
   // toasts on arrival: picks sent at once because the player left inside their undo window
   useEffect(() => {
@@ -148,45 +162,58 @@ export default function HomeCards() {
     deck.current = createDeck(el, {
       disabled: () => live$.current.offline,
       onBlocked: () => toast(t('h.offline'), { key: 'offline' }),
-      onCommit: (n, dir, remaining, card) => {
+      onCommit: (n, dir, remaining, card, src) => {
         const s = slots.find((x) => x.q.n === n), td = live$.current.today;
         if (!s || !td || !hasOutbox()) return;
-        void outbox().commit({ marketId: s.m.marketId, dayId: td.dayId, slot: s.m.slot, choice: dir === 'l' ? 1 : 2, closesAt: s.m.closesAt, player: live$.current.player || '0x0' }).then(() => kick());
+        const ae = document.activeElement;
+        // after a pick made with the keyboard or a screen reader, Undo is where the focus goes next
+        const byKey = src === 'key' || (!!ae && (ae.id === 'undo' || card.contains(ae)));
+        focusUndo.current = byKey;
         stopNudge();
-        live(t('h.live.picked', { choice: s.q[dir], k: remaining }));
+        live(t(byKey ? 'pp.live.key' : 'pp.live.picked', { choice: s.q[dir] }));
         (card as HTMLElement & { _dir?: Dir })._dir = dir;
+        const fifth = live$.current.count + 1 >= 5 && remaining === 0;
+        if (fifth) finishing.current = true;   // the fifth pick stays held: day done owns its Undo
+        void outbox().commit({ marketId: s.m.marketId, dayId: td.dayId, slot: s.m.slot, choice: dir === 'l' ? 1 : 2, closesAt: s.m.closesAt, player: live$.current.player || '0x0' }).then((it) => {
+          kick();
+          // the fifth pick: the day done page opens at once (the throw is still on screen for a moment)
+          if (fifth) setTimeout(() => nav(doneMomentHref(it || undefined)), reduceMotion() ? 0 : 320);
+        });
       },
     });
     el.focus({ preventScroll: true });
-    // the very first card a player ever sees leans right, then left, once: it teaches the throw
-    let nudge: Animation[] = [];
-    const stopNudge = () => { nudge.forEach((a) => { try { a.cancel(); } catch { /* */ } }); nudge = []; el.removeAttribute('data-nudge'); };
+    // the very first card a player ever sees leans right, then left, once: each lean shows that answer as a proof stamp
+    let nudge: Animation[] = [], nudgeT: ReturnType<typeof setTimeout>[] = [];
+    const stopNudge = () => { nudge.forEach((a) => { try { a.cancel(); } catch { /* */ } }); nudge = []; nudgeT.forEach(clearTimeout); nudgeT = []; el.querySelectorAll('.choice.is-hot').forEach((b) => b.classList.remove('is-hot')); el.removeAttribute('data-nudge'); };
     let seen = '1'; try { seen = localStorage.getItem(NUDGED) || ''; } catch { /* */ }
     const nt = !st && live$.current.count === 0 && !reduceMotion() && !live$.current.offline && seen !== '1' ? setTimeout(() => {
       const card = el.querySelector('.qcard[data-pos="0"]') as HTMLElement | null;
       if (!card || live$.current.count || card.classList.contains('is-drag') || !card.animate) return;
       try { localStorage.setItem(NUDGED, '1'); } catch { /* */ }
       el.setAttribute('data-nudge', '1');
+      const STEP = 'steps(1, end)', PR = 'rotate(-7deg) scale(0.86)', PL = 'rotate(7deg) scale(0.86)';
       const o = { duration: 1500, easing: 'cubic-bezier(0.45, 0, 0.25, 1)' };
       nudge = [
         card.animate([{ transform: 'none' }, { transform: 'translateX(34px) rotate(2.6deg)', offset: 0.24 }, { transform: 'translateX(34px) rotate(2.6deg)', offset: 0.4 }, { transform: 'translateX(-34px) rotate(-2.6deg)', offset: 0.68 }, { transform: 'translateX(-34px) rotate(-2.6deg)', offset: 0.82 }, { transform: 'none' }], o),
-        card.querySelector('.qstamp--r')!.animate([{ opacity: 0 }, { opacity: 0.4, offset: 0.24 }, { opacity: 0.4, offset: 0.4 }, { opacity: 0, offset: 0.52 }, { opacity: 0 }], o),
-        card.querySelector('.qstamp--l')!.animate([{ opacity: 0 }, { opacity: 0, offset: 0.54 }, { opacity: 0.4, offset: 0.68 }, { opacity: 0.4, offset: 0.82 }, { opacity: 0 }], o),
+        card.querySelector('.qstamp--r')!.animate([{ opacity: 0, transform: PR, easing: STEP }, { opacity: 1, transform: PR, offset: 0.12, easing: STEP }, { opacity: 0, transform: PR, offset: 0.46, easing: STEP }, { opacity: 0, transform: PR }], { duration: 1500 }),
+        card.querySelector('.qstamp--l')!.animate([{ opacity: 0, transform: PL, easing: STEP }, { opacity: 1, transform: PL, offset: 0.58, easing: STEP }, { opacity: 0, transform: PL, offset: 0.9, easing: STEP }, { opacity: 0, transform: PL }], { duration: 1500 }),
       ];
+      const cr = card.querySelector('.choice[data-dir="r"]'), cl = card.querySelector('.choice[data-dir="l"]');
+      nudgeT = [setTimeout(() => cr?.classList.add('is-hot'), 180), setTimeout(() => cr?.classList.remove('is-hot'), 690), setTimeout(() => cl?.classList.add('is-hot'), 870), setTimeout(() => cl?.classList.remove('is-hot'), 1350)];
       nudge[0].onfinish = stopNudge;
     }, 700) : undefined;
     el.addEventListener('pointerdown', stopNudge, true);
     document.addEventListener('keydown', stopNudge, true);
-    return () => { clearTimeout(nt); el.removeEventListener('pointerdown', stopNudge, true); document.removeEventListener('keydown', stopNudge, true); deck.current?.destroy(); deck.current = null; };
+    return () => { clearTimeout(nt); stopNudge(); el.removeEventListener('pointerdown', stopNudge, true); document.removeEventListener('keydown', stopNudge, true); deck.current?.destroy(); deck.current = null; };
   }, [deckKey, !!today.data]); // eslint-disable-line
 
   // leaving Home inside an undo window sends the held picks at once (4.3.1); coming back says "Pick saved"
   useEffect(() => {
-    const flush = () => { if (!hasOutbox()) return; void outbox().flush().then((n) => { noteLeft(n); kick(); }); };
+    const flush = () => { if (!hasOutbox() || finishing.current) return; void outbox().flush().then((n) => { noteLeft(n); kick(); }); };
     const vis = () => { if (document.visibilityState === 'hidden') flush(); };
     window.addEventListener('pagehide', flush);
     document.addEventListener('visibilitychange', vis);
-    return () => { window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', vis); if (!finishing.current) flush(); };
+    return () => { window.removeEventListener('pagehide', flush); document.removeEventListener('visibilitychange', vis); flush(); };
   }, []);
 
   const undo = async () => {
@@ -208,16 +235,14 @@ export default function HomeCards() {
     return () => document.removeEventListener('keydown', k);
   }, []);
 
-  // all five picked and nothing left to undo: day done opens
-  const finishing = useRef(false);
+  // opened with all five held or sent (a reload inside the window): day done takes over as soon as nothing can be undone
   useEffect(() => {
-    if (finRef.current || st || count < 5 || held.length || leaving || !today.data) return;
-    if (deckCards.length === 0) return; // opened finished: the finished panel links to day done instead
-    finishing.current = true; setLeaving(true);
+    if (finRef.current || st || count < 5 || held.length || finishing.current || !today.data || deckCards.length === 0) return;
+    finishing.current = true;
     const tm = setTimeout(() => nav('/done?moment=1'), reduceMotion() ? 0 : 500);
     return () => clearTimeout(tm);
   }, [count, held.length]);
-  const finishNow = async () => { finishing.current = true; if (hasOutbox()) { await outbox().flush(); kick(); } setLeaving(true); nav('/done?moment=1'); };
+  const finishNow = async () => { finishing.current = true; if (hasOutbox()) { await outbox().flush(); kick(); } nav('/done?moment=1'); };
 
   // delegated buttons inside HTML strings
   const onClick = (e: React.MouseEvent) => {
@@ -227,7 +252,7 @@ export default function HomeCards() {
     if (el.closest('[data-play-here]')) { void playHere(); return; }
   };
 
-  let body: React.ReactNode;
+  let body: React.ReactNode, hasDeck = false;
   if (loading) body = <Html as="div" style={{ display: 'contents' }} html={loadingDeck()} />;
   else if (today.isError || st === 'error') body = <Html as="div" style={{ display: 'contents' }} html={errorNote()} />;
   else if (today.data!.state === 'empty') body = <Html as="div" style={{ display: 'contents' }} html={emptySet(endsAt)} />;
@@ -235,45 +260,42 @@ export default function HomeCards() {
   else if (otherDevice) body = <Html as="div" style={{ display: 'contents' }} html={otherDevicePanel()} />;
   else if (hold) body = <Html as="div" style={{ display: 'contents' }} html={holdPanel()} />;
   else if (finRef.current && deckCards.length === 0) {
-    body = <Html as="div" className="deck is-empty home-fin" html={'<div class="deck-end"><div class="end-ring" aria-hidden="true"><svg class="ring" viewBox="0 0 92 92"><circle class="trk" cx="46" cy="46" r="40"/><circle class="run" cx="46" cy="46" r="40"/></svg>' + icon('check', 32) + '</div>' +
-      '<h2>' + t('h.end.h') + '</h2><p>' + t('h.fin.b') + '</p>' + btn(t('h.fin.btn'), { kind: 'primary', href: today.data!.completed ? '/done' : '/done?moment=1', iconEnd: 'right' }) + '</div>'} />;
+    body = <Html as="div" className="deck is-empty home-fin" html={'<div class="deck-end">' + endRing() + '<h2>' + t('h.end.h') + '</h2><p>' + t('h.fin.b') + '</p>' + btn(t('h.fin.btn'), { kind: 'primary', href: today.data!.completed ? '/done' : '/done?moment=1', iconEnd: 'right' }) + '</div>'} />;
   } else {
+    hasDeck = true;
     body = (
       <>
         {playBannerHtml(bannerState, slow) && <Html as="div" style={{ display: 'contents' }} html={playBannerHtml(bannerState, slow)} />}
         <div className="deck" id="deck" ref={deckRef} key={deckKey}>
-          <DeckEnd count={count} held={held} deckLeft={deckRef} onFinish={finishNow} />
-          <Cards cards={deckCards} failedN={st === 'failed' ? 2 : undefined} offline={offline} noimgN={undefined} top={st === 'imagetop'} />
+          <DeckEnd count={count} held={held} onFinish={finishNow} />
+          <Cards cards={deckCards} failedN={st === 'failed' ? 2 : undefined} offline={offline} noimgN={st === 'noimage' ? 1 : undefined} />
         </div>
-        <PickBar held={held} items={dayItems} slots={slots} count={count} offline={offline} onUndo={undo} sendingPreset={st === 'syncing' ? (confirmed.includes(3) ? 0 : 3) : st === 'slow' ? 2 : 0} />
       </>
     );
   }
-  const noClock = st === 'empty' || st === 'hold' || hold || today.data?.state === 'empty' || today.data?.state === 'closed';
+  const none = st === 'empty' || st === 'closed' || st === 'hold' || otherDevice || hold || today.data?.state === 'empty' || today.data?.state === 'closed';
   return (
     <Shell tab="home" cls={'is-home' + (offline ? ' is-offline' : '')} docTitle={t('h.title')} badges={{ home: 5 - count && !hold ? 'dot' : 0 }}
-      head={<HomeHead view="card" count={count} segs={segs} loading={loading} noClock={noClock} endsAt={endsAt} />}>
+      live={homeLive({ loading, none, fin: finRef.current && deckCards.length === 0, endsAt })}
+      head={<HomeHead view="card" count={count} segs={segs} loading={loading} />}
+      pin={hasDeck ? <PickBar held={held} items={dayItems} slots={slots} count={count} offline={offline} onUndo={undo} focusUndo={focusUndo} sendingPreset={st === 'syncing' ? (confirmed.includes(3) ? 0 : 3) : st === 'slow' ? 2 : 0} /> : undefined}>
       <div style={{ display: 'contents' }} onClick={onClick}>{body}</div>
     </Shell>
   );
 }
 
-/* behind the last card: the countdown of the fifth pick (a ring and "Finishing in 3") and a button that ends the wait */
-function DeckEnd({ count, held, onFinish }: { count: number; held: OutboxItem[]; deckLeft: React.RefObject<HTMLDivElement | null>; onFinish: () => void }) {
+/* behind the last card: the wait before the day is sent ("Finishing in 3") and a button that ends it. With the fifth pick
+   opening day done at once this shows only when the deck runs out some other way (for example after a reload). */
+function DeckEnd({ count, held, onFinish }: { count: number; held: OutboxItem[]; onFinish: () => void }) {
   const p = held[held.length - 1];
   const on = count === 5;
   const [, force] = useState(0);
   useEffect(() => { if (!on || !p) return; const i = setInterval(() => force((x) => x + 1), 100); return () => clearInterval(i); }, [on, p?.id]);
-  const left = p ? Math.max(1, Math.ceil((UNDO_MS - (Date.now() - p.createdAt)) / 1000)) : 0;
+  const left = p ? Math.max(1, Math.ceil((p.sendAfter - Date.now()) / 1000)) : 0;
   return (
     <div className="deck-end" id="deck-end" aria-hidden={on ? 'false' : 'true'}>
-      <div className="end-ring" aria-hidden="true">
-        <svg className="ring" viewBox="0 0 92 92"><circle className="trk" cx="46" cy="46" r="40" />
-          <circle className="run" id="end-run" cx="46" cy="46" r="40" key={p?.id || 'none'}
-            style={!on ? undefined : p ? { animationDuration: UNDO_MS + 'ms', animationDelay: '-' + (Date.now() - p.createdAt) + 'ms' } : { animation: 'none', strokeDashoffset: 251.4 }} />
-        </svg>
-        <Icon name="check" size={32} />
-      </div>
+      <div className="end-mark" aria-hidden="true"><Icon name="check" size={30} /></div>
+      <span className="fuse fuse--end" aria-hidden="true" id="end-run">{on && p && <i key={p.id} style={{ ['--gone' as string]: '-' + (Date.now() - p.createdAt) + 'ms' }} />}</span>
       <h2>{t('h.end.h')}</h2>
       <p id="end-p" dangerouslySetInnerHTML={{ __html: !on ? '' : p ? t('h.end.in', { n: '<b>' + left + '</b>' }) : t('h.end.b') }} />
       <div id="end-act">{on && p && <button type="button" className="btn btn-primary" id="finish" onClick={onFinish}><span>{t('h.end.now')}</span></button>}</div>
@@ -281,8 +303,9 @@ function DeckEnd({ count, held, onFinish }: { count: number; held: OutboxItem[];
   );
 }
 
-/* the pick bar under the deck: the newest held pick with Undo, then "Saving" and "Saved", at rest how to pick */
-function PickBar({ held, items, slots, count, offline, onUndo, sendingPreset }: { held: OutboxItem[]; items: OutboxItem[]; slots: Slot[]; count: number; offline: boolean; onUndo: () => void; sendingPreset: number }) {
+/* the pick bar, pinned directly above the tab bar: the newest held pick with Undo and its fuse, then "Saving" and "Saved",
+   at rest how to pick. While Undo has keyboard focus the fuse waits (10 seconds at most from the pick). */
+function PickBar({ held, items, slots, count, offline, onUndo, focusUndo, sendingPreset }: { held: OutboxItem[]; items: OutboxItem[]; slots: Slot[]; count: number; offline: boolean; onUndo: () => void; focusUndo: React.MutableRefObject<boolean>; sendingPreset: number }) {
   const p = held[held.length - 1];
   const label = (it: { slot: number; choice: 1 | 2 }) => {
     const s = slots[it.slot]; const dir: Dir = it.choice === 1 ? 'l' : 'r';
@@ -304,35 +327,55 @@ function PickBar({ held, items, slots, count, offline, onUndo, sendingPreset }: 
     if (!p) return;
     const tm = setTimeout(() => setHideUndo(p.id), Math.max(0, p.sendAfter - UNDO_HIDE_EARLY_MS - Date.now()));
     return () => clearTimeout(tm);
-  }, [p?.id]);
+  }, [p?.id, p?.sendAfter]);
+  // the window closed with no pick left to undo: the announcement no longer offers Undo
+  const hadHeld = useRef(false);
+  useEffect(() => { if (held.length) hadHeld.current = true; else if (hadHeld.current) { hadHeld.current = false; live(t('pp.final')); } }, [held.length]);
+  // keyboard focus on Undo: the fuse waits, capped at 10 s from the pick; it runs on with what was left when the focus leaves
+  const paused = useRef<{ id: string; left: number } | null>(null);
+  const [isPaused, setPaused] = useState(false);
+  const undoRef = useRef<HTMLButtonElement>(null);
+  const onFocus = (e: React.FocusEvent<HTMLButtonElement>) => {
+    if (!p || !hasOutbox() || !e.currentTarget.matches(':focus-visible') || paused.current) return;
+    paused.current = { id: p.id, left: Math.max(300, p.sendAfter - Date.now()) };
+    setPaused(true);
+    void outbox().setHold(p.id, p.createdAt + KEY_HOLD_MAX_MS).then(() => kick());
+  };
+  const onBlur = () => {
+    setTimeout(() => {
+      if (document.activeElement?.id === 'undo' || !paused.current || !hasOutbox()) return;
+      const pz = paused.current; paused.current = null; setPaused(false);
+      void outbox().setHold(pz.id, Date.now() + pz.left).then(() => kick());
+    }, 0);
+  };
+  useEffect(() => { if (!p) { paused.current = null; setPaused(false); } else if (paused.current && paused.current.id !== p.id) { const pz = paused.current; paused.current = null; setPaused(false); if (hasOutbox()) void outbox().setHold(pz.id, Date.now() + pz.left).then(() => kick()); } }, [p?.id]);
+  useEffect(() => { if (p && focusUndo.current) { focusUndo.current = false; undoRef.current?.focus({ preventScroll: true }); } }, [p?.id]);
   const canHover = useMemo(() => matchMedia('(hover: hover) and (pointer: fine)').matches, []);
 
   let content: React.ReactNode = null;
-  if (p) {
-    const gone = Date.now() - p.createdAt;
+  if (p && hideUndo !== p.id) {
+    const gone = UNDO_MS - Math.max(0, Math.min(UNDO_MS, (paused.current?.left ?? (p.sendAfter - Date.now()))));
     const s = slots[p.slot]; const dir: Dir = p.choice === 1 ? 'l' : 'r';
     content = (
       <>
+        <span className="fuse" aria-hidden="true"><i key={p.id + ':' + p.sendAfter} style={{ ['--gone' as string]: '-' + gone + 'ms', animationPlayState: isPaused ? 'paused' : undefined }} /></span>
         <span className="pickbar-msg" id="pick-msg"><Icon name="check" size={16} /><span dangerouslySetInnerHTML={{ __html: label(p) }} /></span>
-        {hideUndo !== p.id && (
-          <button type="button" className="undo" id="undo" key={p.id} aria-label={t('h.undo.aria', { n: p.slot + 1, choice: s ? s.q[dir] : '' })} onClick={onUndo}>
-            <svg className="undo-ring" viewBox="0 0 22 22" aria-hidden="true"><circle className="trk" cx="11" cy="11" r="8" /><circle className="run" cx="11" cy="11" r="8" style={{ animationDuration: UNDO_MS + 'ms', animationDelay: '-' + gone + 'ms' }} /></svg>
-            <span>{t('h.undo')}</span><kbd aria-hidden="true">Z</kbd>
-          </button>
-        )}
+        <button type="button" className="undo" id="undo" ref={undoRef} aria-label={t('h.undo.aria', { n: p.slot + 1, choice: s ? s.q[dir] : '' })} onClick={onUndo} onFocus={onFocus} onBlur={onBlur}>
+          <Icon name="undo" size={18} /><span>{t('h.undo')}</span><kbd aria-hidden="true">Z</kbd>
+        </button>
       </>
     );
   } else if (sendingPreset && !recent) {
     const s = slots[sendingPreset - 1];
-    content = <span className="pickbar-msg is-quiet" role="status"><span className="spin" /><span dangerouslySetInnerHTML={{ __html: t('common.saving') + ': ' + t('h.sync', { n: sendingPreset, choice: pick('r', esc(s?.q.r || '')) }) }} /></span>;
+    content = <span className="pickbar-msg is-quiet" role="status"><span className="spin" /><span dangerouslySetInnerHTML={{ __html: t('common.saving') + ' ' + t('h.sync', { n: sendingPreset, choice: pick('r', esc(s?.q.r || '')) }) }} /></span>;
   } else if (recent && v === 'saving') {
-    content = <span className="pickbar-msg is-quiet" role="status"><span className="spin" /><span dangerouslySetInnerHTML={{ __html: t('common.saving') + ': ' + label(recent) }} /></span>;
+    content = <span className="pickbar-msg is-quiet" role="status"><span className="spin" /><span dangerouslySetInnerHTML={{ __html: t('common.saving') + ' ' + label(recent) }} /></span>;
   } else if (recent && v === 'saved' && faded !== recent.id + ':saved') {
-    content = <span className={'pickbar-msg is-quiet' + (out ? ' is-out' : '')} role="status"><Icon name="check" size={16} /><span dangerouslySetInnerHTML={{ __html: t('h.saved') + ': ' + label(recent) }} /></span>;
+    content = <span className={'pickbar-msg is-quiet' + (out ? ' is-out' : '')} role="status"><Icon name="check" size={16} /><span dangerouslySetInnerHTML={{ __html: t('h.saved') + ' ' + label(recent) }} /></span>;
   } else if (!offline) {
     const left = 5 - count;
-    if (count === 0) content = <span className="pickbar-hint"><Icon name="left" size={14} /><span>{t(canHover ? 'h.hint.keys' : 'h.hint.touch')}</span><Icon name="right" size={14} /></span>;
+    if (count === 0) content = <span className="pickbar-hint is-swipe"><Icon name="left" size={14} /><span>{t(canHover ? 'h.hint.keys' : 'h.hint.touch')}</span><Icon name="right" size={14} /></span>;
     else if (left) content = <span className="pickbar-hint"><span>{t('h.left', { n: left })}</span></span>;
   }
-  return <div className="pickbar" id="pickbar">{content}</div>;
+  return <div className="pin pickbar" id="pickbar">{content}</div>;
 }

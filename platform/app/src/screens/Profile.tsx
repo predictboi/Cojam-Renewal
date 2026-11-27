@@ -1,5 +1,5 @@
-// P1 Profile and settings (platform/design/profile.html): identity, account, display name, language and view, help,
-// log out. The invite code can be added once, within 24 hours of sign up (DECISIONS "Invite code entry").
+// P1 Profile (platform/design-variants/paper/profile.html): a sub page. The name is the headline, then rank, this week and
+// points as three figures, then sections between rules: account, display name, language and view, one Help row, log out. The invite code can be added once, within 24 hours of sign up (DECISIONS "Invite code entry").
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
@@ -7,8 +7,8 @@ import { api, useConfig, useInvite, useMe, useWallet } from '../api';
 import { ApiError } from '../api/errors';
 import { LANGS, LANG_NAMES, setLang, t, useLang, type Lang } from '../i18n';
 import { esc, F } from '../lib/fmt';
-import { addr, btn, icon, tag } from '../ui/h';
-import { Html, Seg, Shell } from '../ui/kit';
+import { addr, btn, icon, qbtn, tag } from '../ui/h';
+import { Html, Icon, Seg, Shell } from '../ui/kit';
 import { useHold, useOffline, usePreset } from '../state/app';
 import { sheet, toast } from '../state/ui';
 import { loadPlayKey } from '../chain/playKey';
@@ -106,12 +106,14 @@ export default function Profile() {
   }, [st]);
 
   const current = savedName ?? d?.name ?? '';
-  const err = validate(name);
+  const [taken, setTaken] = useState(false);
+  const err = taken ? 'pp.name.taken' : validate(name);
   const canSave = !err && name !== current;
   const save = async () => {
     if (!canSave) return;
-    await api.patchMe({ name });
-    setSavedName(name); toast(t('p.name.saved'));
+    try { await api.patchMe({ name }); }
+    catch (e) { if (/TAKEN|EXISTS|DUPLICATE/i.test((e as ApiError).code || '')) { setTaken(true); return; } throw e; }
+    setSavedName(name); toast(t(name ? 'p.name.saved' : 'pp.name.removed'));
     void qc.invalidateQueries({ queryKey: ['me'] });
   };
   const ownCode = inv.data?.code || (CONFIG.mockApi ? DESIGN.invite.code : '');
@@ -127,7 +129,7 @@ export default function Profile() {
     if (st === 'logout') logout();
     if (st === 'saved') toast(t('p.name.saved'));
     if (st === 'update') toast(t('toast.update'), { btn: t('toast.reload'), fn: () => location.reload() });
-    if (st === 'session') sheet.open('<div class="sheet-state"><div class="sheet-ic">' + icon('lock', 30) + '</div><h2>' + t('p.session.h') + '</h2><p class="sheet-lead">' + t('p.session.b') + '</p></div><div class="sheet-acts">' + btn(t('p.session.btn'), { kind: 'primary', block: true, href: '/login' }) + '</div>', { closable: false });
+    if (st === 'session') sheet.open('<div class="sheet-state"><div class="sheet-ic">' + icon('lock', 28) + '</div><h2>' + t('p.session.h') + '</h2><p class="sheet-lead">' + t('p.session.b') + '</p></div><div class="sheet-acts">' + btn(t('p.session.btn'), { kind: 'primary', block: true, href: '/login' }) + '</div>', { closable: false });
   }, [!!d, st]);
 
   async function doLogout() {
@@ -145,29 +147,33 @@ export default function Profile() {
   const a = d?.wallet || w.data?.address || '';
   const nm = current || (a ? F.short(a) : '');
   const rank = d?.stats.weekRank ?? null;
-  const ident = '<p class="pid-name" id="pid-name" translate="no">' + esc(nm) + '</p><div class="stats">' +
+  // the name is the headline, then rank, this week and points as three figures divided by column rules
+  const ident = '<p class="pid-name" id="pid-name" translate="no">' + esc(nm) + '</p><div class="stats stats--3">' +
     '<div class="stat"><b>' + (rank && !held ? rank : '&ndash;') + '</b><span>' + (rank ? t('p.rank') : t('p.norank')) + '</span></div>' +
     '<div class="stat"><b>' + F.pts(d?.stats.weekPoints || 0) + '</b><span>' + t('r.week') + '</span></div>' +
     '<div class="stat"><b>' + F.pts(w.data?.points ?? d?.stats.points ?? 0) + '</b><span>' + t('p.pts') + '</span></div></div>' +
-    '<a class="inv-row" id="to-invite" href="/invite"><span class="inv-row-t"><b>' + t('inv.entry') + '</b><small>' + t('inv.entry.sub', { r: inv.data ? inv.data.referralBps / 100 : 10 }) + '</small></span><span class="inv-row-go"><span class="sr-only">' + t('inv.entry.n', { n: inv.data?.stats.joined ?? 0 }) + '</span><span aria-hidden="true">' + (inv.data?.stats.joined ?? 0) + '</span>' + icon('chev', 16) + '</span></a>';
-  const hLeft = Math.ceil(24 - (Date.now() - signedUp) / 3600000);
+    '<a class="inv-row" id="to-invite" href="/invite"><span class="inv-row-t"><b>' + t('inv.entry') + '</b></span><span class="inv-row-go inv-row-go--text">' + t('inv.entry.n', { n: inv.data?.stats.joined ?? 0 }) + icon('chev', 16) + '</span></a>';
+  const hLeft = Math.max(1, Math.ceil(24 - (Date.now() - signedUp) / 3600000));
   const codeRow = codeState === 'linked'
-    ? '<div class="prow" id="code-row">' + icon('check', 20) + '<p class="grow"><b>' + t('p.code.by', { name: '<span translate="no">' + esc(inviter || '') + '</span>' }) + '</b><br><span class="tiny muted">' + t('p.code.fixed') + '</span></p></div>'
-    : codeState === 'open' ? '<button type="button" class="rowlink" id="code-row"><span><b>' + t('p.code') + '</b><small>' + (hLeft > 1 ? t('p.code.left', { h: hLeft }) : t('p.code.left.last')) + '</small></span>' + icon('chev', 18) + '</button>' : '';
+    ? '<div class="prow" id="code-row">' + icon('check', 20) + '<p class="grow"><b>' + t('p.code.by', { name: '<span translate="no">' + esc(inviter || '') + '</span>' }) + '</b></p></div>'
+    : codeState === 'open' ? '<button type="button" class="rowlink" id="code-row"><span><b>' + t('p.code') + '</b></span>' + tag(hLeft + 'h', '', 'clock') + icon('chev', 18) + '</button>' : '';
   const dev = device?.state === 'notset' ? '<div class="row">' + icon('phone', 20) + '<p class="grow">' + t('p.device.notset') + '</p></div>' + btn(t('p.device.setup'), { block: true, href: '/login?setup=1' })
     : device?.state === 'other' ? '<div class="row">' + icon('phone', 20) + '<p class="grow">' + t('p.device.other') + '</p></div>' + btn(t('h.other.btn'), { block: true, href: '/login?setup=1' })
-      : '<div class="row">' + icon('check', 20) + '<p class="grow"><b>' + t('p.device.ready') + '</b><br><span class="tiny muted">' + t('p.device.until', { date: F.dateLong(device?.until || Date.now() + 30 * 86400000) }) + '</span></p></div>';
+      // ready to play on this device: the sentence and the date are behind "?"
+      : '<div class="row">' + icon('check', 20) + '<p class="grow"><b>' + t('pp.i.device') + '</b></p>' + qbtn('device', t('pp.i.device')) + '</div>';
   const explorer = cfg.data?.explorer || CONFIG.chain.explorer;
-  const account = '<h2 class="sect-h">' + t('p.account') + '</h2><div class="list">' +
-    (held ? '<a class="rowlink" id="hold-row" href="/system/blocked"><span><b>' + t('hold.t') + '</b><small>' + t('hold.profile.sub') + '</small></span>' + tag(t('hold.tag'), '', 'pause') + icon('chev', 18) + '</a>' : '') +
-    '<div class="prow">' + icon('mail', 20) + '<p class="grow">' + t('p.login', { email: '<b translate="no">' + esc(d?.email || '') + '</b>' }) + '</p></div>' +
+  const account = '<h2>' + t('p.account') + '</h2><div class="list">' +
+    (held ? '<a class="rowlink" id="hold-row" href="/system/blocked"><span><b>' + t('hold.t') + '</b></span>' + tag(t('hold.tag'), '', 'pause') + icon('chev', 18) + '</a>' : '') +
+    '<div class="prow">' + icon('mail', 20) + '<p class="grow"><b translate="no">' + esc(d?.email || '') + '</b></p></div>' +
     '<div id="code-slot">' + codeRow + '</div>' +
-    '<div class="prow-addr"><p class="lbl">' + t('w.addr') + '</p>' + (a ? addr(a) : '') + '</div>' +
-    linkRow(t('w.scan'), explorer + '/address/' + a, true) +
-    '<div class="stack-8 prow-dev">' + dev + '</div></div>';
-  const helpSec = '<h2 class="sect-h">' + t('p.help') + '</h2><div class="list">' + linkRow(t('p.how'), '/welcome?from=profile') +
+    '<div class="prow-addr"><p class="lbl">' + t('pp.addr') + '</p>' + (a ? addr(a) : '') + '</div>' +
+    linkRow('Kaiascan', explorer + '/address/' + a, true) +
+    '<div class="prow-dev stack-8">' + dev + '</div></div>';
+  // the four help links sit behind one row
+  const helpSheet = () => sheet.open('<h2>' + t('p.help') + '</h2><div class="list">' + linkRow(t('p.how'), '/welcome?from=profile') +
     '<details class="help help--row"><summary>' + t('p.answers.q') + icon('down', 18) + '</summary><div class="help-body">' + t('p.answers.a') + '</div></details>' +
-    linkRow(t('p.swap'), CONFIG.swapUrl, true) + linkRow(t('p.site'), 'https://cojam.app', true) + '</div>';
+    linkRow(t('p.swap'), CONFIG.swapUrl, true) + linkRow(t('p.site'), 'https://cojam.app', true) + '</div><div class="sheet-acts">' + btn(t('common.close'), { block: true, attrs: 'data-sheet-close' }) + '</div>');
+  useEffect(() => { if (st === 'help') helpSheet(); }, [st]); // eslint-disable-line
   const onClick = (e: React.MouseEvent) => { if ((e.target as Element).closest('button#code-row')) openCode(); };
   const changeLang = (l: Lang) => { setLang(l); void api.patchMe({ language: l }).catch(() => {}); };
   return (
@@ -177,27 +183,28 @@ export default function Profile() {
         <Html as="section" className="sec" html={account} />
         <section className="sec">
           <div className="field">
-            <div className="field-label"><label htmlFor="name"><b>{t('p.name')}</b></label></div>
+            <div className="field-label"><label htmlFor="name"><b>{t('p.name')}</b></label><span style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: qbtn('name', t('p.name')) }} /></div>
             <div className={'field-box field-box--text' + (err ? ' is-error' : '')}>
               <input id="name" name="nickname" type="text" autoComplete="nickname" spellCheck={false} maxLength={24} value={name} aria-describedby="name-msg" aria-invalid={err ? 'true' : 'false'}
-                onChange={(e) => setName(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') void save(); }} />
+                onChange={(e) => { setName(e.target.value); setTaken(false); }} onKeyDown={(e) => { if (e.key === 'Enter') void save(); }} />
               <button type="button" className="field-max" id="save" disabled={!canSave} onClick={save}>{t('p.name.save.short')}</button>
             </div>
-            <div className={'field-msg' + (err ? ' is-error' : '')} id="name-msg" aria-live="polite">{err ? t(err) : t('p.name.help')}</div>
+            {/* the line under the field appears only when there is something to fix; what the name is for is behind "?" */}
+            <div className={'field-msg' + (err ? ' is-error' : '')} id="name-msg" aria-live="polite">{err ? t(err) : ''}</div>
           </div>
         </section>
         <section className="sec">
-          <h2 className="sect-h">{t('p.prefs')}</h2>
+          <h2>{t('p.prefs')}</h2>
           <div className="stack-8"><p className="small" id="l-lang">{t('lang.label')}</p>
-            <Seg<Lang> label={t('lang.label')} value={lang} onChange={changeLang} items={LANGS.map((l) => ({ label: LANG_NAMES[l], value: l }))} /></div>
+            <Seg<Lang> label={t('lang.label')} value={lang} onChange={changeLang} items={LANGS.map((l) => ({ label: LANG_NAMES[l], value: l }))} lang /></div>
           <div className="stack-8"><p className="small">{t('p.view')}</p>
             <Seg<'card' | 'term'> label={t('p.view')} value={view} onChange={(v) => { setView(v); try { localStorage.setItem('cjp.view', v); } catch { /* */ } }} items={[{ label: t('h.view.card'), value: 'card' }, { label: t('h.view.term'), value: 'term' }]} /></div>
         </section>
         <section className="sec">
-          <Html as="div" style={{ display: 'contents' }} html={helpSec} />
+          <div className="list"><button type="button" className="rowlink" id="help-row" onClick={helpSheet}><span><b>{t('pp.help')}</b></span><Icon name="chev" size={18} /></button></div>
           <div className="pfoot">
             <button type="button" className="btn btn-danger" id="logout" onClick={logout}><span>{t('p.logout')}</span></button>
-            <div className="row-between small muted"><span>{t('p.version', { v: CONFIG.appVersion })}</span><button type="button" className="linkish" id="upd" onClick={() => toast(t('p.uptodate'))}>{t('p.update')}</button></div>
+            <button type="button" className="linkish muted-link" id="upd" aria-label={t('p.update')} onClick={() => toast(t('p.uptodate'))}>{t('p.version', { v: CONFIG.appVersion })}</button>
           </div>
         </section>
       </div>

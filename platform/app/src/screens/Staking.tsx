@@ -1,11 +1,13 @@
-// S1 New stake (platform/design/staking.html): amount, lock period with the rate per tier, what it pays, the review sheet,
-// then approve and stake as two sponsored transactions (the sheet shows the two steps).
+// S1 Staking, new stake: the rates page (platform/design-variants/paper/staking.html). The amount, the four lock periods as
+// one rate table (the chosen one inverted), what it pays as one figure that rolls, the lock as one line in ink (the date and
+// "No early exit"), and the action pinned with the figure beside it on short phones. How rates work is behind the "?" beside
+// the title. Every stake is reviewed in a sheet first, then approve and stake run as two sponsored transactions.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useConfig, useQuote, useWallet } from '../api';
 import { t, currentLang } from '../i18n';
 import { F, parseAmount } from '../lib/fmt';
-import { btn, errorNote, help, hold, icon, note, skel } from '../ui/h';
-import { AmountField, Html, Shell } from '../ui/kit';
+import { btn, errorNote, hold, icon, note, qbtn, skel } from '../ui/h';
+import { AmountField, Html, Shell, useRoll } from '../ui/kit';
 import { useHold, useOffline, usePreset } from '../state/app';
 import { runTx, showTx, useTx, useTxBusy, type TxCfg } from '../ui/tx';
 import { actions } from '../chain/chain';
@@ -59,13 +61,15 @@ export default function Staking() {
   else if (a > bal && !loading) { err = t('s.e.bal', { b: F.dec(bal) }); fix = btn(t('s.fix.bal', { b: F.dec(bal) }), { sm: true, attrs: 'data-fix="' + bal + '"' }); }
   const ti = err ? 0 : tierOf(a, th);
   useEffect(() => { if (lastTier.current !== null && lastTier.current !== ti) setRoll({ dir: ti > lastTier.current ? 'up' : 'down', seq: Date.now() }); lastTier.current = ti; }, [ti]);
-  const cue = a < minStake ? t('s.min') : t('s.tier.cue' + ti);
-  const msgHtml = err ? '<span>' + err + '</span>' + fix : '<span class="tier-cue' + (a >= minStake && ti ? ' is-on' : '') + '">' + (a >= minStake ? icon(ti ? 'check' : 'chart', 14) : '') + '<span>' + cue + '</span></span>' + (ko && a ? '<span>' + F.krw(a) + '</span>' : '');
+  // under the field: the minimum until it is met, then the next tier as a short cue (the full sentence is in the "?" sheet)
+  const cue = a < minStake ? t('s.min') : ti === 0 ? t('pp.tier1') : ti === 1 ? t('pp.tier2') : t('s.tier.cue2');
+  const msgHtml = err ? '<span>' + err + '</span>' + fix : '<span class="tier-cue' + (a >= minStake && ti ? ' is-on' : '') + '">' + (a >= minStake && ti ? icon('check', 14) : '') + '<span>' + cue + '</span></span>' + (ko && a ? '<span>' + F.krw(a) + '</span>' : '');
   const over = !err && a > room;
   const valid = !err && !p.empty && !blocked && !over;
   const r = rates[String(period)][ti], interest = ((a * r) / 100) * period / 365;
   const shown = !err && !p.empty;
   const unlock = F.dateLong(Date.now() + period * 86400000);
+  const sumHtml = useRoll(shown ? interest : 0, (x) => (shown ? F.dec(x) + '<small>CT</small>' : '<span class="is-zero">0 CT</span>'));
 
   const txCfg = (amt: number): TxCfg => {
     const rr = rates[String(period)][tierOf(amt, th)], A = F.dec(amt);
@@ -75,6 +79,7 @@ export default function Staking() {
       success: { title: t('s.ok.h', { a: A }), rows: [[t('s.unlock'), unlock], [t('s.apr'), rr + '%']], btn: { label: t('s.ok.btn'), href: '/stakes' } },
       exec: (pr) => actions.stake(String(amt), period, pr),
       onSuccess: () => setVal(''),
+      onDone: () => { if (!st) void w.refetch(); },
     };
   };
   // design review presets of the sheet
@@ -94,13 +99,14 @@ export default function Staking() {
   const goLabel = busy ? null : valid ? t('s.btn', { a: F.dec(a) }) : t(held ? 'hold.stake.btn' : 's.btn.idle');
   const pin = st === 'error' || w.isError ? null : (
     <div className="pin pin--act">
+      <p className="pin-fig" id="pin-fig" aria-hidden="true"><span>{t('s.interest', { d: period })}</span><b className="nw">{shown ? F.dec(interest) : '0'} CT</b></p>
       <button type="button" className={'btn btn-primary btn-block' + (busy ? ' is-busy' : '')} id="go" disabled={!valid || !!busy} onClick={() => { if (valid) void runTx(txCfg(a)); }}>
         {busy ? <><span className="spin" /><span>{busy}</span></> : <span>{goLabel}</span>}
       </button>
-      {!held && <p className="pin-note">{t('s.fee')}</p>}
+      <p className="pin-note">{held ? t('pp.youpay') : t('pp.nofee2')}</p>
     </div>
   );
-  const head = <Html className="ph-top" html={'<h1>' + t('s.title') + '</h1>'} />;
+  const head = <Html className="ph-top ph-top--q" html={'<h1>' + t('s.title') + '</h1>' + qbtn('staking', t('s.title'))} />;
   if (st === 'error' || w.isError) return <Shell tab="stake" docTitle={t('s.title')} head={head}><StakeTabs cur="new" n={openN} hq={hq} /><Html as="div" style={{ display: 'contents' }} html={errorNote()} /></Shell>;
   const notes = (paused ? note('warn', t('s.paused')) : '') + (st === 'fullnone' ? note('warn', t('s.full') + ' ' + t('s.full.none')) : '') + (max20 ? note('warn', t('s.max20'), btn(t('s.mine', { n: 20 }), { sm: true, href: '/stakes' })) : '');
   const after = (offline ? note('warn', t('s.offline')) : '') +
@@ -116,13 +122,13 @@ export default function Staking() {
         <section className="msec" id="form">
           <AmountField id="amt" label={t('s.amount')} unit="CT" value={val} onChange={setVal} disabled={blocked}
             side={loading ? skel('110px', '12px') : t('s.avail') + ' <b id="avail">' + F.ct(bal) + '</b>'} msgHtml={msgHtml} error={!!err} onMax={() => setVal(F.dec(bal))} />
-          <div>
-            <p className="field-label"><b id="per-l">{t('s.period')}</b></p>
+          <div className="stack-8">
+            <p className="field-label"><b id="per-l">{t('s.period')}</b><span>{t('pp.peryear')}</span></p>
             <div className="period" role="group" aria-labelledby="per-l" id="period">
               {PERIODS.map((d, i) => (
                 <button key={d} type="button" data-d={d} aria-pressed={d === period} disabled={blocked} onClick={() => setPeriod(d)}>
-                  <b>{d}<small>{t('s.d')}</small></b>
-                  <span data-rate={d} key={roll ? roll.seq + ':' + d : d} className={roll ? 'is-' + roll.dir : undefined} style={{ ['--i' as string]: i }}>{rates[String(d)][ti]}%</span>
+                  <span className="per-d">{t('s.days', { d })}</span>
+                  <b data-rate={d} key={roll ? roll.seq + ':' + d : d} className={roll ? 'is-' + roll.dir : undefined} style={{ ['--i' as string]: i }}>{rates[String(d)][ti]}%</b>
                 </button>
               ))}
             </div>
@@ -131,13 +137,11 @@ export default function Staking() {
         <section className="msec stk-sum">
           <div className="mhero" aria-live="polite">
             <h2 className="lbl" id="sum-l">{t('s.interest', { d: period })}</h2>
-            <p className="fig" id="sum-v" dangerouslySetInnerHTML={{ __html: loading ? skel('170px', '30px') : shown ? F.dec(interest) + '<small>CT</small>' : '–' }} />
+            <p className="fig" id="sum-v" dangerouslySetInnerHTML={{ __html: loading ? skel('170px', '40px') : sumHtml }} />
             <p className="sub" id="sum-k" hidden={!(ko && shown)}>{shown ? F.krw(interest) : ''}</p>
           </div>
           <p className="stk-lock" id="rules" dangerouslySetInnerHTML={{ __html: icon('lock', 18) + '<span>' + t('s.rules', { date: unlock }) + '</span>' }} />
         </section>
-        <Html as="details" className="help" html={help(t('s.help.q'), '<p>' + t('s.help.a') + '</p><div class="scrollx"><table class="ratetable"><tr><th>' + t('s.th.lock') + '</th><th>' + t('s.th.1') + '</th><th>' + t('s.th.2') + '</th><th>' + t('s.th.3') + '</th></tr>' +
-          PERIODS.map((d) => '<tr><td>' + t('s.days', { d }) + '</td>' + rates[String(d)].map((x) => '<td>' + x + '%</td>').join('') + '</tr>').join('') + '</table></div>').replace(/^<details class="help">|<\/details>$/g, '')} />
       </div>
     </Shell>
   );

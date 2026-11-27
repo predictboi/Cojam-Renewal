@@ -38,7 +38,7 @@ export const F = {
 
 /** forgiving amount parser (App.parseAmount) */
 export function parseAmount(s: string): { empty?: true; bad?: true; value?: number; decimals?: number } {
-  s = String(s).trim().replace(/\s*(ct|p|kaia)$/i, '').replace(/,/g, '');
+  s = String(s).replace(/[\uFF10-\uFF19\uFF0E\uFF0C]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).trim().replace(/\s*(ct|p|kaia)$/i, '').replace(/,/g, '');
   if (s === '') return { empty: true };
   if (!/^\d*\.?\d+$|^\d+\.$/.test(s)) return { bad: true };
   const dec = (s.split('.')[1] || '').length;

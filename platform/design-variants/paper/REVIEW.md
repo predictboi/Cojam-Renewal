@@ -320,3 +320,17 @@ Review F scored 84 / 100 and 36 / 40 with no blocker (`reviews/review-F.md`).
 | No last used address | Needs real account data; nothing in the mock to remember across sessions |
 | No hint that the keyboard works | A visible hint adds a line on the home screen, which is kept as approved; on a device with a fine pointer the hint already names the arrow keys |
 | The lock line on staking can sit behind the pinned bar at 320 x 568 until the page is scrolled | The pinned bar carries the figure and the action; the lock date and "No early exit" are repeated in the review sheet before signing |
+
+### Verification of round 4 (after the fixes for reviews E and F)
+
+| Check | Result |
+| --- | --- |
+| `node tools/state-check.js` with the covered target test: EN at 390 x 844, KO at 320 x 568, JA at 360 x 640 | 215 states each, 645 pages, 0 problems |
+| `node tools/small-check.js`, now with the Undo visibility and hit test after a pick at 320 x 568, 360 x 640, 375 x 667 and 390 x 844 in three languages, the swipe hint test and the new picture rule | 645 checks, 0 failed |
+| `node tools/focus-check.js` | 201 focus stops, 0 hidden |
+| `node tools/lang-switch-check.js` | 45 checks, 0 failed |
+| `node tools/flow-test.js`, extended | All steps as expected. New: the focus is never on `BODY` through a stake withdrawal (sheet, heading, Done); after withdrawing 503.2877 CT the head reads 1,000 CT and 1 stake, a reload keeps it, the wallet goes from 1,591.5 to 2,094.7877 CT; after the finished day the own bar reads "11, 50P behind the top 10, 1,050P", the profile and results read 1,050P and the tab bar has no badges; a wrong checksum is refused with the fix; letters typed into an amount are refused and Enter opens the review; a keyboard pick is announced with 10 seconds, is still open at 5 s and final at 10.0 s |
+| `sh tools/audit-all.sh` (the repository audit): EN every state at 390 x 844; KO and JA base screens at 390 x 844; EN at 360 x 640; KO at 320 x 568 | 287 URLs, all with 0 overflow, 0 contrast failures, 0 small targets |
+| `node tools/motion-run.js all` and `node tools/motion-trace.js` | Five flows recorded again, 19 stills, no page errors. Drag: 121 frames, average 16.67 ms, maximum 16.8 ms at CPU 1x and 4x. Raster during a 2 s drag: 16.2 ms with layers, 57.1 ms without |
+| Captures | 168 stills in `captures/` retaken, 6 videos and 19 frames in `captures/video/` |
+

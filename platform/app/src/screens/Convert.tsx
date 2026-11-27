@@ -1,17 +1,20 @@
-// W2 Convert points (platform/design/convert.html): 1,000P = 1 CT, in steps of 1,000P, within the daily cap,
-// from 7 days after sign up. One sponsored transaction signed by the Privy wallet.
+// W2 Convert points (platform/design-variants/paper/convert.html): a sub page. The points to convert, the CT they become
+// as the figure of the screen (it rolls while typing), three labelled facts, and the action naming both amounts. The rules
+// are behind "?". A short review sheet says that points cannot be converted back before the one sponsored transaction.
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useConfig, useWallet } from '../api';
 import { t } from '../i18n';
 import { F, parseAmount } from '../lib/fmt';
-import { btn, empty, hold, note, rows, skel } from '../ui/h';
-import { AmountField, Html, Shell } from '../ui/kit';
+import { btn, empty, hold, note, qbtn, skel } from '../ui/h';
+import { AmountField, Html, Shell, useRoll } from '../ui/kit';
 import { useHold, useOffline, usePreset } from '../state/app';
 import { runTx, showTx, useTx, useTxBusy, type TxCfg } from '../ui/tx';
 import { actions } from '../chain/chain';
 
 export default function Convert() {
   const st = usePreset();
+  const nav = useNavigate();
   const q = useWallet();
   const cfg = useConfig();
   const offline = useOffline();
@@ -33,19 +36,24 @@ export default function Convert() {
   const p = parseAmount(val), v = Math.floor(p.value || 0);
   let err = '', fix = '';
   const use = (f: number) => btn(t('c.fix', { f: F.int(f) }), { sm: true, attrs: 'data-fix="' + f + '"' });
-  if (p.bad) err = t('c.e.min');
+  if (p.bad) err = t('pp.c.nan');
   else if (!p.empty && v > bal) { err = t('c.e.bal', { p: F.int(bal) }); if (maxP) fix = use(maxP); }
   else if (!p.empty && v < min) err = t('c.e.min');
   else if (!p.empty && v % rate) { const f = Math.floor(v / rate) * rate; err = t('c.e.step', { f: F.int(f) }); fix = use(f); }
   else if (!p.empty && v > capLeft * rate && capLeft) { err = t('c.cap.over', { n: capLeft, f: F.int(capLeft * rate) }); fix = use(capLeft * rate); }
   const valid = !err && !p.empty && !blocked;
   const n = valid ? v / rate : 0;
+  // the result rolls to its new value and retargets while typing; a zero drops to plain grey text
+  const getHtml = useRoll(n, (x) => (Math.round(x) ? F.dec(Math.round(x)) + '<small>CT</small>' : '<span class="is-zero">0 CT</span>'));
 
   const txCfg = (pts: number): TxCfg => ({
     key: 'convert', label: t('c.chip', { p: F.int(pts) }),
+    review: { title: t('c.btn', { p: F.int(pts), n: pts / rate }), rows: [[t('pp.points'), F.pts(pts)], [t('c.get'), F.ct(pts / rate), true], [t('c.ok.left'), F.pts(bal - pts)]], note: t('pp.c.final'), confirm: t('c.btn', { p: F.int(pts), n: pts / rate }) },
     success: { title: t('c.ok.h', { p: F.int(pts), n: pts / rate }), rows: [[t('c.ok.left'), F.pts(bal - pts)], [t('c.ok.ct'), F.ct((d?.ct || 0) + pts / rate)]] },
     exec: (pr) => actions.convert(pts, pr),
     onSuccess: () => setVal(''),
+    // after a conversion the form is cleared and the wallet opens
+    onDone: () => { if (!st) nav('/wallet'); },
   });
   useEffect(() => {
     if (!d) return;
@@ -54,35 +62,47 @@ export default function Convert() {
     return () => { if (show) useTx.setState({ pending: false }); };
   }, [st, !!d]);
 
-  // the fix buttons sit inside HTML strings: one delegated listener (no wrapper box, so .pg:has(> .mgrow) still applies)
+  // the fix buttons sit inside HTML strings: one delegated listener
   useEffect(() => { const h = (e: MouseEvent) => { const f = (e.target as Element).closest?.('[data-fix]'); if (f) setVal(F.int(+f.getAttribute('data-fix')!)); }; document.addEventListener('click', h); return () => document.removeEventListener('click', h); }, []);
   let body: React.ReactNode;
   const short = !loading && bal < min && !held;
   if (short) {
-    body = <Html as="div" style={{ display: 'contents' }} html={'<section class="msec"><div class="mhero"><h2 class="lbl">' + t('c.avail') + '</h2><p class="fig">' + F.int(bal) + '<small>P</small></p></div></section>' +
+    body = <Html as="div" style={{ display: 'contents' }} html={'<section class="msec"><div class="mhero"><h2 class="lbl">' + t('c.avail') + '</h2><p class="fig fig--xl">' + (bal ? F.int(bal) + '<small>P</small>' : '<span class="is-zero">0P</span>') + '</p></div></section>' +
       empty({ icon: 'bolt', title: t('c.short.h'), body: t('c.short.b', { p: F.int(bal), g: F.int(min - bal) }), action: btn(t('k.play'), { kind: 'primary', href: '/' }) })} />;
   } else {
     let waitNote = '';
-    if (wait && d?.convert.firstConvertAt) { const dt = d.convert.firstConvertAt, secs = (dt - Date.now()) / 1000; waitNote = note('sky', t('c.wait.b', { date: '<b>' + F.date(dt, true) + '</b>' }) + '<br><b>' + t('c.wait.left', { d: Math.floor(secs / 86400), h: Math.floor((secs % 86400) / 3600) }) + '</b>'); }
+    if (wait && d?.convert.firstConvertAt) { const dt = d.convert.firstConvertAt, secs = (dt - Date.now()) / 1000; waitNote = note('', t('c.wait.b', { date: '<b>' + F.date(dt, true) + '</b>' }) + '<br><b>' + t('c.wait.left', { d: Math.floor(secs / 86400), h: Math.floor((secs % 86400) / 3600) }) + '</b>'); }
     const notes = waitNote + (capLeft === 0 && d ? note('warn', t('c.cap.hit', { time: t('time.kst9') })) : '') + (capGlobal ? note('warn', t('c.cap.global', { time: t('time.kst9') })) : '') + (paused ? note('warn', t('c.paused')) : '') + (offline ? note('warn', t('w.offline')) : '') + (held ? hold(t('hold.convert')) : '');
     body = (
       <>
         {notes && <Html as="div" style={{ display: 'contents' }} html={notes} />}
         <section className="msec">
-          <AmountField id="amt" label={t('c.amount')} unit="P" mode="numeric" value={val} onChange={setVal} disabled={blocked} error={!!err}
+          <AmountField id="amt" label={t('pp.points')} unit="P" mode="numeric" value={val} onChange={setVal} disabled={blocked} error={!!err}
             side={loading ? skel('96px', '12px') : t('c.avail') + ' <b>' + F.pts(bal) + '</b>'} msgHtml={err ? '<span>' + err + '</span>' + fix : '<span>' + t('c.step') + '</span>'} onMax={() => setVal(F.int(maxP))} />
         </section>
-        <section className="msec mgrow"><div className="mhero"><h2 className="lbl">{t('c.get')}</h2><p className="fig" id="get" aria-live="polite" dangerouslySetInnerHTML={{ __html: F.dec(n) + '<small>CT</small>' }} /></div></section>
-        <Html as="section" className="msec" html={rows([[t('c.rate'), '1,000P = 1 CT'], [t('c.minimum'), '1,000P'], [t('c.capleft'), t('c.capof', { n: capLeft })], [t('c.fee'), t('c.fee.v')]])} />
+        {/* the result is the figure of this screen; the rate, the fee and what is left today are three labelled facts, every other rule is behind "?" */}
+        <section className="msec mgrow">
+          <div className="getbox">
+            <h2 className="lbl lbl--q" dangerouslySetInnerHTML={{ __html: t('c.get') + qbtn('convert', t('c.title')) }} />
+            <p className="fig" id="get" aria-live="polite" dangerouslySetInnerHTML={{ __html: getHtml }} />
+            <p className="fact" id="left" dangerouslySetInnerHTML={{ __html: valid ? t('c.ok.left') + ' <b>' + F.pts(bal - v) + '</b>' : '' }} />
+          </div>
+          <dl className="facts3">
+            <div><dt>{t('c.rate')}</dt><dd>{F.int(rate)}P = 1 CT</dd></div>
+            <div><dt>{t('c.fee')}</dt><dd>{held ? t('pp.youpay') : t('pp.none')}</dd></div>
+            <div><dt>{t('pp.lefttoday')}</dt><dd>{F.dec(capLeft)} CT</dd></div>
+          </dl>
+        </section>
       </>
     );
   }
+  // an amount in error: the sentence is under the field, once; the disabled action keeps its own words or says why it is off
+  const why = held || paused ? t('hold.convert.btn') : wait && d?.convert.firstConvertAt ? t('pp.c.wait', { date: F.date(d.convert.firstConvertAt, true) }) : capLeft === 0 || capGlobal ? t('pp.c.cap') : offline ? t('off.bar').split('.')[0] : t('c.btn.empty');
   const pin = short ? null : (
     <div className="pin pin--act">
       <button type="button" className={'btn btn-primary btn-block' + (busy ? ' is-busy' : '')} id="go" disabled={!valid || !!busy} onClick={() => { if (valid) void runTx(txCfg(v)); }}>
-        {busy ? <><span className="spin" /><span>{busy}</span></> : <span>{valid ? t('c.btn', { p: F.int(v), n }) : t(held ? 'hold.convert.btn' : 'c.btn.empty')}</span>}
+        {busy ? <><span className="spin" /><span>{busy}</span></> : <span>{valid ? t('c.btn', { p: F.int(v), n }) : why}</span>}
       </button>
-      {!held && <p className="pin-note">{t('c.rank')}</p>}
     </div>
   );
   return <Shell tab="wallet" back="/wallet" title={t('c.title')} pin={pin} points={loading ? undefined : bal} pts={loading ? 'loading' : ''}>{body}</Shell>;

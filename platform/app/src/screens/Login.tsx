@@ -1,4 +1,4 @@
-// A1 Login (platform/design/login.html): email (allow listed providers, typo help), the six digit code, then
+// A1 Log in, the cover of the paper (platform/design-variants/paper/login.html): email (allow listed providers, typo help), the six digit code, then
 // "Setting up your game": create the wallet (Privy createWallet), register the account (POST /v1/session, wait for the
 // operator's registerPlayer), and get this device ready (play key + setPlayKey signed by the Privy wallet, sponsored).
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -7,8 +7,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { api, useConfig } from '../api';
 import { LANG_NAMES, currentLang, t, useLang } from '../i18n';
 import { esc, sleep } from '../lib/fmt';
-import { btn, help, icon, langSelect, logo } from '../ui/h';
-import { Html, Shell } from '../ui/kit';
+import { btn, help, icon, langSelect, plate, qbtn } from '../ui/h';
+import { Dateline, Html, Shell } from '../ui/kit';
 import { useOffline, usePreset } from '../state/app';
 import { useWalletStore, walletApi } from '../wallet/wallet';
 import { ensurePlayKey, setChainConfig } from '../chain/chain';
@@ -123,8 +123,7 @@ export default function Login() {
   const factsRef = useRef<HTMLUListElement>(null);
   useLayoutEffect(() => {
     const f = factsRef.current; if (!f) return;
-    f.hidden = !(step === 'code' || (step === 'email' && S !== 'toomany'));
-    if (!f.hidden && f.getBoundingClientRect().bottom > innerHeight - 8) f.hidden = true;
+    f.hidden = step === 'setup';
   });
   const headline = step === 'email' ? t('a.h1') : step === 'code' ? t('a.code.h1') : t('a.setup.h1');
 
@@ -143,18 +142,17 @@ export default function Login() {
           void send(v);
         }}>
           <div className="field">
-            <div className="field-label"><label htmlFor="email"><b>{t('a.email.label')}</b></label></div>
+            <div className="field-label"><label htmlFor="email"><b>{t('a.email.label')}</b></label><span style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: qbtn('email', t('pp.i.email')) }} /></div>
             <div className={'field-box field-box--text' + (bad ? ' is-error' : '') + (off ? ' is-off' : '')}>
               <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: icon('mail', 20).replace(/^<svg[^>]*>|<\/svg>$/g, '') }} />
               <input id="email" name="email" type="email" inputMode="email" autoComplete="email" autoCapitalize="off" spellCheck={false} enterKeyHint="send" placeholder="you@gmail.com" value={email} autoFocus
-                aria-describedby="email-msg email-cap" aria-invalid={bad ? 'true' : undefined} disabled={off || sending} onChange={(e) => { setEmail(e.target.value); if (S) setS(''); }} />
+                aria-describedby="email-msg" aria-invalid={bad ? 'true' : undefined} disabled={off || sending} onChange={(e) => { setEmail(e.target.value); if (S) setS(''); }} />
             </div>
             <div id="email-fb" aria-live="polite" onClick={(e) => { const fx = (e.target as Element).closest('[data-fix-email]'); if (fx) { e.preventDefault(); void send(fx.getAttribute('data-fix-email')!); } }}>
               {msg && <div className={'field-msg' + (bad ? ' is-error' : '')} id="email-msg"><span>{msg}</span></div>}
               {err?.typo && <Html className="typo" id="typo" html={'<span>' + t('a.email.typo', { domain: '<b translate="no">' + err.typo + '</b>' }) + '</span>' + btn(t('a.email.typo.fix', { email: '<span translate="no">' + esc(err.fixed!) + '</span>' }), { sm: true, wrap: true, attrs: 'data-fix-email="' + esc(err.fixed!) + '"' })} />}
               {noteProv && <Html className="note note-warn" role="alert" id="prov-note" html={icon('warn', 18) + '<div class="note-body"><b>' + t('a.email.unsupported') + '</b><span>' + t('a.email.supported', { list: providerNames }) + '</span></div>'} />}
             </div>
-            {!noteProv && <p className="field-cap" id="email-cap" dangerouslySetInnerHTML={{ __html: t('a.email.cap', { list: providerNames }) }} />}
           </div>
           <button type="submit" id="send" className={'btn btn-primary btn-block' + (sending ? ' is-loading' : '')} disabled={off || !!noteProv}>{sending && <span className="spin" />}<span>{t(sending ? 'a.email.sending' : 'a.email.btn')}</span></button>
         </form>
@@ -168,7 +166,7 @@ export default function Login() {
     panel = (
       <>
         <form className="stack" id="f-code" noValidate onSubmit={(e) => { e.preventDefault(); if (code.length < 6) { setS('short'); return; } void verify(code); }}>
-          <div className="stack-8"><h2>{t('a.code.h')}</h2><p className="muted" dangerouslySetInnerHTML={{ __html: t('a.code.body', { email: '<b translate="no">' + esc(email) + '</b>' }) }} /></div>
+          <div className="stack-8"><h2>{t('a.code.h')}</h2><p className="muted small" dangerouslySetInnerHTML={{ __html: t('a.code.body', { email: '<b translate="no">' + esc(email) + '</b>' }) }} /></div>
           <div className="field">
             <div className={'field-box field-box--code' + (hard ? ' is-error' : '') + (locked ? ' is-off' : '')}>
               <input id="code" name="code" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]*" placeholder="______" value={code} autoFocus
@@ -185,24 +183,23 @@ export default function Login() {
             <button type="button" className="linkish" id="resend" disabled={!(S === 'expired' || left <= 0)} onClick={() => void send(email)}>{t('a.code.resend')}</button>
             <button type="button" className="linkish" id="change" onClick={() => { setStep('email'); setS(''); }}>{t('a.code.change')}</button>
           </div>
-          <p className="small muted">{t('a.code.tip')}</p>
         </div>
       </>
     );
   } else {
     const out = <button type="button" className="btn btn-block" id="change" onClick={async () => { try { await walletApi().logout(); } catch { /* */ } setStep('email'); setS(''); }}><span>{t('p.logout')}</span></button>;
     const retry = <button type="button" className="btn btn-primary btn-block" id="retry" onClick={() => { setS('setup'); }}><span>{t('common.retry')}</span></button>;
-    const refused = (key: string, btns: React.ReactNode) => <><div className="setup"><div className="sheet-ic is-bad" dangerouslySetInnerHTML={{ __html: icon('warn', 30) }} /><h2>{t('a.refused.h')}</h2><p className="muted" role="alert" dangerouslySetInnerHTML={{ __html: t(key, { list: providerNames }) }} /></div>{btns}</>;
+    const refused = (key: string, btns: React.ReactNode) => <><div className="setup"><div className="sheet-ic is-bad" dangerouslySetInnerHTML={{ __html: icon('warn', 28) }} /><h2>{t('a.refused.h')}</h2><p className="muted" role="alert" dangerouslySetInnerHTML={{ __html: t(key, { list: providerNames }) }} /></div>{btns}</>;
     if (S === 'refused-used') panel = refused('a.refused.used', out);
     else if (S === 'refused-provider') panel = refused('a.refused.provider', out);
     else if (S === 'refused-many') panel = refused('a.refused.many', <>{retry}{out}</>);
     else if (S === 'refused') panel = refused('a.setup.refused', out);
-    else if (S === 'walletfail' || S === 'devicefail') panel = <><div className="setup"><div className="sheet-ic is-bad" dangerouslySetInnerHTML={{ __html: icon('x', 30) }} /><h2 role="alert">{t(S === 'walletfail' ? 'a.setup.fail' : 'a.setup.devicefail')}</h2></div>{retry}</>;
+    else if (S === 'walletfail' || S === 'devicefail') panel = <><div className="setup"><div className="sheet-ic is-bad" dangerouslySetInnerHTML={{ __html: icon('x', 28) }} /><h2 role="alert">{t(S === 'walletfail' ? 'a.setup.fail' : 'a.setup.devicefail')}</h2></div>{retry}</>;
     else {
       const back = S === 'returning';
       panel = (
         <>
-          <div className="setup" role="status"><div className="sheet-ic"><span className="spin" /></div><h2>{t('a.setup.h')}</h2><p className="muted">{t(back ? 'a.setup.body2' : 'a.setup.body')}</p></div>
+          <div className="stack-8" role="status"><h2>{t('a.setup.h')}</h2><p className="muted small">{t(back ? 'a.setup.body2' : 'a.setup.body')}</p></div>
           <ol className="txsteps" id="setup-steps" data-done={done}>
             {['a.setup.s1', 'a.setup.s2', 'a.setup.s3'].map((k, i) => {
               const s = i < done ? 'done' : i === done ? 'now' : 'wait';
@@ -222,11 +219,14 @@ export default function Login() {
   return (
     <Shell bare docTitle={headline} raw={
       <div className="auth">
-        <Html className="gate-bar" html={logo() + langSelect(currentLang(), LANG_NAMES)} />
+        <Html as="header" className="gate-bar" html={plate(true) + langSelect(currentLang(), LANG_NAMES)} />
+        <div className="oxford" aria-hidden="true" />
+        <Dateline cls="dateline--cover" live={'<span>' + t('d.next.at') + '</span>'} />
         <div className="auth-main">
-          <div className="stack-12"><h1 id="h1">{headline}</h1><p className="auth-lede" id="lede" hidden={step !== 'email'}>{t('a.lede')}</p></div>
+          <div className="stack-12"><h1 id="h1">{headline}</h1><p className="auth-lede" id="lede" hidden={step !== 'email'}>{t('pp.lede')}</p></div>
           <section className="panel" id="panel">{panel}</section>
-          <Html as="ul" className="facts" id="facts" ref={factsRef} html={'<li>' + icon('bolt', 18) + t('a.fact.1') + '</li><li>' + icon('shield', 18) + t('a.fact.2') + '</li><li>' + icon('swap', 18) + t('a.fact.3') + '</li>'} />
+          {/* three plain lines between hairlines: no icon row */}
+          <Html as="ul" className="facts" id="facts" ref={factsRef} html={'<li>' + t('a.fact.1') + '</li><li>' + t('a.fact.2') + '</li><li>' + t('a.fact.3') + '</li>'} />
         </div>
       </div>
     } />

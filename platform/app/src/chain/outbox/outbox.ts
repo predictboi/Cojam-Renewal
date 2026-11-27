@@ -3,7 +3,7 @@
 // All I/O comes in through OutboxDeps, so the same code runs against the chain, the mock adapter and the unit tests.
 import type { CojamDb, OutboxItem } from '../db';
 import {
-  backoffMs, classify, nextNonce, sendAfterFor, RESEND_AFTER_MS, RESIGN_AFTER_MS, SPONSOR_DOWN_RETRY_MS, UNCERTAIN_WAIT_MS,
+  backoffMs, classify, nextNonce, sendAfterFor, KEY_HOLD_MAX_MS, RESEND_AFTER_MS, RESIGN_AFTER_MS, SPONSOR_DOWN_RETRY_MS, UNCERTAIN_WAIT_MS,
 } from './policy';
 
 export interface SponsorErrorLike { code: string; status?: number; txHash?: string; retryable?: boolean }
@@ -75,6 +75,19 @@ export class Outbox {
     });
     this.emit();
     return out;
+  }
+
+  /** The Undo window waits while Undo has keyboard focus (an accessibility aid): move a held item's sendAfter, never past
+      createdAt + KEY_HOLD_MAX_MS and never for an item that already left its window. */
+  async setHold(id: string, sendAfter: number): Promise<boolean> {
+    const ok = await this.d.db.transaction('rw', this.d.db.outbox, async () => {
+      const i = await this.d.db.outbox.get(id);
+      if (!i || i.state !== 'held') return false;
+      await this.d.db.outbox.update(id, { sendAfter: Math.min(Math.max(sendAfter, this.d.now()), i.createdAt + KEY_HOLD_MAX_MS) });
+      return true;
+    });
+    if (ok) this.emit();
+    return ok;
   }
 
   /** held -> queued once the Undo window is over. */
