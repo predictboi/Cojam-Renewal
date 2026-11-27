@@ -51,6 +51,7 @@ Target check: the aim was a cut of at least 40% on the money, profile and invite
 - The Korean and Japanese counts run higher than English because the segmenter counts particles and counters as separate words.
 - "Staking, on hold" grew by a few words: the hold notice was already the only sentence there, and the lock line is now always shown.
 - Results is long because it lists four days of five questions; the question texts are most of the words. A waiting row says "Answer at 21:00" and "+50P if hit" again (review A).
+- The card line "+50P if right. Undo for 3 seconds." is a rule of the game and shows at every screen size; the Rules sheet adds "A pick can be undone for 3 seconds. After that it is final."
 - Home was not part of the pass (the founder asked to keep it). The source line now ends with the word "Rules", and the "0/5" figure is gone.
 
 ## Where each explanation went

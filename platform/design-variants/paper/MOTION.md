@@ -47,6 +47,10 @@ The motion language is the print shop: sheets of paper, ink, stamps, type being 
 | Slope | Horizontal travel must be at least 1.3 times the vertical travel, for arming and for the release | A mostly downward drag (160 px across, 150 px down) no longer picks |
 | Guards | A tap within 400 ms of a pick is dropped; a swipe or key within 200 ms is queued | A double tap never answers two cards |
 
+### The picture on short phones
+
+The card always takes the deck's height. The picture shows only when it gets at least 96 px; with less it is dropped (never a sliver), the headline stays directly under the kicker rule and the two answers sit at the bottom of the card. If the card needs more than the deck has even without the picture, the deck grows and the page scrolls. The sheets under the front card show their edge only: their content is hidden until they rise. The line "+50P if right. Undo for 3 seconds." shows at every size, and the Rules sheet says that a pick is final after 3 seconds.
+
 ### Undo and time (the rule stays: 3 seconds, then the pick is sent and is final)
 
 | Aid | What it does |
@@ -62,10 +66,10 @@ Purpose: delight, once a day, earned by finishing. The page opens the moment the
 
 | Time | What | Motion | Duration and curve |
 | --- | --- | --- | --- |
-| 0 ms | The page opens; the press runs | Under the dateline the band is an ink frame with vertical bars running to the left. The dateline still reads "Closes in". The row under the figure holds **Undo** for the fifth pick with its fuse (what is left of the 3 seconds) | 420 ms loop, linear; fuse linear |
+| 0 ms | The page opens; the press runs | Under the dateline the band is an ink frame with vertical bars running to the left. The dateline still reads "Closes in". **Undo** for the fifth pick is in a pick bar pinned above the tab bar, message left and Undo bottom right, exactly where it sits on the deck, with its fuse (what is left of the 3 seconds); the focus is on it. The row under the figure counts "Finishing in 3" | 420 ms loop, linear; fuse linear |
 | 80 ms | The headline is set | "All 5 done" drops in letter by letter from above (0.55 em, 1.12 scale), 30 ms apart | 240 ms each, `--ease-out` |
 | Undo | Taken back | Undo (or Z, Backspace) removes the fifth pick and returns to the deck, where its card is on top again | Page change |
-| Fuse out, or a tap anywhere | Sent | The row changes to "Saving your last pick" (same height). A tap anywhere but Undo means "finish now" | 900 ms mock save (500 ms after a tap) |
+| Fuse out, or a tap on the headline area or the primary action | Sent | The pick bar leaves and the row changes to "Saving your last pick" (same height). Only a tap on the headline area or the primary action means "finish now"; a tap on the list below, or a scroll, changes nothing | 900 ms mock save (500 ms after a tap) |
 | Paid | The band | The band inks in from the left and reads "Extra"; the press stops | `clip-path` 280 ms `--ease-out` |
 | Paid | The figure | "+100P" appears in the blue spot ink and counts up from 0 to 100. It never shows any amount that is not on the way to 100 | 620 ms, ease out (quartic) |
 | Paid | The fifth box, the points | The fifth box inks in; the points in the masthead count up from 1,250P to 1,350P; a haptic pattern | 300 ms and 400 ms |

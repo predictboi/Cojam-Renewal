@@ -57,6 +57,13 @@
     "pp.x.fix": ["Fix the address", "주소를 확인하세요", "アドレスを確認してください"],
     "pp.name.removed": ["Name removed. Your address is shown.", "이름을 지웠어요. 지갑 주소가 표시돼요.", "名前を削除しました。アドレスが表示されます。"],
     "pp.name.taken": ["This name is taken.", "이미 쓰이고 있는 이름이에요.", "この名前はすでに使われています。"],
+    /* review D */
+    "pp.hm": ["{h} hours {m} minutes", "{h}시간 {m}분", "{h}時間{m}分"],
+    "pp.rule.final": ["A pick can be undone for 3 seconds. After that it is final.", "선택은 3초 동안 되돌릴 수 있고, 그 뒤에는 바꿀 수 없어요.", "選択は3秒以内なら取り消せます。その後は変更できません。"],
+    "pp.c.final": ["Points cannot be converted back.", "전환한 포인트는 되돌릴 수 없어요.", "交換したポイントは元に戻せません。"],
+    "pp.stake": ["Stake", "원금", "元本"],
+    "pp.total": ["Total", "합계", "合計"],
+    "pp.x.dec": ["Enter an amount in CT, like 250.", "250처럼 CT 수량을 입력하세요.", "250のようにCTの数量を入力してください。"],
     "pp.lede": ["We email you a code.", "이메일로 코드를 보내 드려요.", "メールでコードをお送りします。"]
   };
   var d = window.CJ_I18N.dict;

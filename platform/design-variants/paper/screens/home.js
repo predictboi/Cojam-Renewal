@@ -23,7 +23,7 @@
       /* progress is shown once, as the five boxes (the card carries its own number); the count is kept for screen readers */
       '<div class="ph-line"><span class="sr-only"><span id="cnt">' + (S === "loading" ? "0" : count) + "</span>/5</span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs, { id: "day5" }) + "</div>";
   }
-  function liveCell() { if (fin) return "<span>" + t("d.next") + '</span> <b data-cd="' + M.untilNextSet() + '"></b>';   /* the day is done: what counts now is the next set */
+  function liveCell() { if (fin) return C.count("d.next", M.untilNextSet());   /* the day is done: what counts now is the next set */
     return S === "empty" || S === "closed" || S === "hold" || S === "otherdevice" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet()); }
   /* the wait before the day is sent is a printer's rule that is used up from the right: the same fuse as under the pick bar */
   function endRing(id) { return '<div class="end-mark" aria-hidden="true">' + C.icon("check", 30) + '</div><span class="fuse fuse--end" aria-hidden="true"' + (id ? ' id="' + id + '"' : "") + "></span>"; }
@@ -107,6 +107,7 @@
     function send(p) {
       held.splice(held.indexOf(p), 1);
       p.state = "saving"; shown = p; render();
+      if (!held.length) App.live(t("pp.final"));   /* the window has closed: the announcement no longer offers Undo */
       setTimeout(function () { p.state = "saved"; seg(p.n, "is-done"); if (shown === p) render(); }, 900 + Math.random() * 500);
       finishDay();
     }

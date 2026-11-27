@@ -1325,3 +1325,60 @@ button.pin .tag, aside.pin .tag { background: var(--ink-2); color: var(--on-ink)
 
 /* 11. the links in the terms sentence sit in the sentence (44 px tall by padding, no extra width) */
 .fine a, .note a { display: inline-block; min-width: 0; min-height: 0; padding: var(--s-12) 0; margin: calc(var(--s-12) * -1) 0; text-align: left; }
+
+/* =====================================================================================================================
+   REVIEW D
+   ===================================================================================================================== */
+
+/* a "?" is never covered by the figure under it */
+.qbtn { position: relative; z-index: 2; margin: -8px -6px -8px -4px; }
+.lbl--q { min-height: 28px; }
+.mhero > .fig, .getbox > .fig { position: relative; z-index: 0; }
+
+/* the card on short phones: the picture shows with at least 96 px or not at all; without it the headline sits under the kicker and the answers at the bottom */
+.qcard-body { margin-top: 0; }
+.qcard.is-tight .qcard-body { flex: 1 1 auto; display: flex; flex-direction: column; gap: var(--s-10); }
+.qcard.is-tight .qmeta { margin-bottom: auto; }
+.qimg { min-height: 0; }
+/* "+50P if right. Undo for 3 seconds." is a rule of the game: it shows at every size */
+@media (max-height: 640px) { .qcard-final { display: block; } }
+.qcard-final { white-space: normal; text-wrap: balance; }
+.is-home main > * { flex-shrink: 0; }
+.is-home main > .pg { flex: 1 0 auto; }
+
+/* large text: the title breaks between words only and the view switch drops under it; the skip link stays off screen at any text size */
+.ph h1, .is-home .ph h1, .is-list .ph h1 { overflow-wrap: normal; word-break: normal; hyphens: none; white-space: normal; }
+:lang(ko) .ph h1 { word-break: keep-all; }
+.ph-top { flex-wrap: wrap; row-gap: 0; }
+.skip { top: 0; transform: translateY(-250%); }
+.skip:focus { top: var(--s-8); transform: none; }
+/* a pinned bar that would cover more than a quarter of the view goes back into the page flow */
+.pin.is-flow { position: static; width: auto; margin: 0; }
+.app--pin:has(> .pin.is-flow) { padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom)); }
+
+/* the Undo of the fifth pick: the same bar, in the same place, as on the deck */
+.pin--undo { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); min-height: 54px; padding: var(--s-4) var(--gutter); border-top: var(--rule); background: var(--paper); font-size: var(--fs-14); }
+.pin--undo .fuse { top: auto; bottom: 0; }
+.cd { display: inline-block; }
+.cd.is-flip { animation: date-flip 220ms var(--ease-out); }
+#fin-n { font-family: var(--font-display); font-weight: var(--fw-fig); }
+
+/* the address field is 16 px so iOS does not zoom on focus */
+.field-box--mono input { font-size: var(--fs-16); letter-spacing: -0.02em; }
+.linkish--pad { min-height: var(--target); min-width: var(--target); }
+#panels { align-content: start; }
+.gate-demo { height: 400px; }
+/* Japanese titles at the real weight: the antique's kana are wide, so the title is set tighter still */
+:lang(ja) :is(.ph h1, .auth h1, .sys h1, .h-page) { letter-spacing: -0.09em; }
+:lang(ja) .is-home .ph h1, :lang(ja) .is-list .ph h1 { letter-spacing: -0.03em; }
+@media (max-height: 600px) {
+  .dateline { min-height: 24px; padding: 2px 0; }
+  .ph-top { min-height: 30px; } .ph h1 { font-size: 1.25rem; }
+  .pg { padding-top: var(--s-4); gap: var(--s-8); }
+  .msec { gap: var(--s-8); } .stack-8 { gap: var(--s-4); }
+  .field { gap: var(--s-2); } .field-box { min-height: 46px; } .field-box input { min-height: 44px; } .field-msg { min-height: 16px; }
+  .period button { min-height: 50px; }
+  .pin--act .btn-primary { min-height: 46px; }
+  .pin--act { padding-top: var(--s-4); padding-bottom: var(--s-4); gap: 2px; }
+  .mtabs a { min-height: var(--target); }
+}

@@ -39,7 +39,9 @@ const { chromium } = require('playwright');
   log.push('after undo on done: back on home, count ' + await count() + ', front card q' + await pg.locator('.qcard[data-pos="0"]').getAttribute('data-q'));
   await swipe(-1); await pg.waitForURL(/done\.html/, { timeout: 5000 }); await pg.waitForSelector('#undo-last');
   const y0 = await pg.locator('#day5').evaluate(e => e.getBoundingClientRect().top);
-  await pg.locator('h1').tap(); await pg.waitForTimeout(250); await pg.screenshot({ path: 'captures/done-saving-en-390.png' });   // a tap anywhere means finish now
+  const ub = await pg.locator('#undo-last').boundingBox(); log.push('Undo on day done: right edge ' + Math.round(390 - ub.x - ub.width) + ' px from the right, ' + Math.round(844 - ub.y - ub.height) + ' px from the bottom (bottom right, as on the deck); focus on ' + await pg.evaluate(() => document.activeElement && document.activeElement.id));
+  await pg.locator('.pick').first().tap(); await pg.waitForTimeout(300); log.push('tap on the list during the Undo window: Undo still there: ' + (await pg.locator('#undo-last').count() === 1));
+  await pg.locator('#hero h1').tap(); await pg.waitForTimeout(250); await pg.screenshot({ path: 'captures/done-saving-en-390.png' });   // a tap on the headline area means finish now
   await pg.waitForSelector('#hero.is-paid');
   const seen = await pg.evaluate(() => new Promise(res => { const out = new Set(), f = document.querySelector('#done-fig'); const t = setInterval(() => out.add(f.textContent), 16); setTimeout(() => { clearInterval(t); res([...out]); }, 1600); }));
   const nums = seen.map(x => +x.replace(/\D/g, '')), mono = nums.every((v, i) => i === 0 || v >= nums[i - 1]) && nums.every(v => v <= 100);
@@ -50,6 +52,18 @@ const { chromium } = require('playwright');
   await pg.screenshot({ path: 'captures/done-moment-en-390.png' });
   await pg.goto('http://localhost:8851/home.html', { waitUntil: 'networkidle' }); await pg.waitForTimeout(500);
   log.push('home after the day: dateline "' + (await pg.locator('.dateline-live').textContent()).trim().replace(/\d\d:\d\d:\d\d/, 'hh:mm:ss') + '"');
+  // money: a conversion and a withdrawal are reviewed, and the wallet shows them afterwards (one mock ledger)
+  const bal = async () => (await pg.locator('#ct-fig').textContent()).replace(/[^0-9.]/g, '');
+  await pg.goto('http://localhost:8851/wallet.html', { waitUntil: 'networkidle' }); const ct0 = +(await bal());
+  await pg.goto('http://localhost:8851/convert.html', { waitUntil: 'networkidle' }); await pg.locator('#go').tap(); await pg.waitForSelector('#tx-confirm');
+  log.push('convert review says: "' + (await pg.locator('#tx-note').textContent()).trim() + '"'); await pg.locator('#tx-confirm').tap(); await pg.waitForSelector('[data-tx="done"]', { timeout: 15000 }); await pg.locator('[data-tx="done"]').tap(); await pg.waitForURL(/wallet\.html/);
+  const ct1 = +(await bal()); log.push('after converting 1,000P: wallet ' + ct0 + ' -> ' + ct1 + ' CT, points ' + (await pg.locator('#pt-fig').textContent()));
+  await pg.goto('http://localhost:8851/withdraw.html', { waitUntil: 'networkidle' }); await pg.locator('#to').fill('0x52908400098527886E0F7030069857D2E4169EE7'); await pg.locator('#amt').fill('0.0000001'); await pg.waitForTimeout(200);
+  log.push('withdraw 0.0000001: action disabled ' + (await pg.locator('#go').isDisabled()) + ', label "' + (await pg.locator('#go').textContent()).trim() + '"');
+  await pg.locator('#amt').fill('250'); await pg.locator('#go').tap(); await pg.locator('#tx-check').check(); await pg.locator('#tx-confirm').tap(); await pg.waitForSelector('[data-tx="done"]', { timeout: 15000 });
+  log.push('withdraw success rows: ' + (await pg.locator('#sheet .rows dt').allTextContents()).join(', ') + '; form cleared: ' + ((await pg.locator('#amt').inputValue()) === ''));
+  await pg.locator('[data-tx="done"]').tap(); await pg.waitForURL(/wallet\.html/); log.push('after withdrawing 250 CT: wallet ' + ct1 + ' -> ' + (await bal()) + ' CT');
+  await pg.goto('http://localhost:8851/stakes.html', { waitUntil: 'networkidle' }); await pg.locator('[data-wd]').first().tap(); await pg.waitForSelector('#tx-confirm'); log.push('unlocked stake withdraw is reviewed: ' + (await pg.locator('#sheet .rows dt').allTextContents()).join(', '));
   console.log(log.join('\n')); if (errs.length) console.log('ERRORS', errs);
   await b.close();
 })();

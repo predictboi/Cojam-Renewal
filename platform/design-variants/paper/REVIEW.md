@@ -183,3 +183,54 @@ Not done from review B: a static masthead and skeleton in the HTML for slow line
 | `node tools/flow-test.js` | All steps as expected (flick rules, keyboard Undo, five picks, Undo on the done page, finish now, the figure only ever counts up to 100, 0 px layout shift, dateline "Next set in") |
 | `node tools/motion-run.js all` | Five flows recorded, 19 stills, no page errors. Drag frame intervals: 121 frames, average 16.67 ms, maximum 16.8 ms at CPU 1x and 4x |
 | `node tools/motion-trace.js` | Raster during a 2 s drag: 20.6 ms with layers, 62.6 ms without |
+
+## Round 3 (reviews C and D)
+
+Review C scored 83 / 100 and 35 / 40, review D 81 / 100 and 33 / 40. Both are in `reviews/`. Every finding is mapped below. The rules that were not to be lost stayed: far less text, a 3 second Undo and then the pick is final, labelled values, critical facts on the surface.
+
+### Review C: finding by finding
+
+| # | Finding | What was done |
+| --- | --- | --- |
+| 1 | Nameplate cut by the language select on log in and gate at 360 and 320 px | The language control on cover screens is now a globe and a two letter code (44 px, native list behind it), so "Cojam Daily" is whole at 320 px in all three languages. `system.html` and `hold.html` drop the words and keep the mark when the hold tag leaves no room |
+| 2 | A unit wraps alone ("+100" then "P", "9,850" then "P") | Figure and unit are one unbreakable piece everywhere; the figure size is fluid (`clamp` with a 12 px floor) so the pair steps down instead of breaking |
+| 3 | "Example" tag over the card kicker; the iOS slip covers the content it explains | "Example" sits in the kicker row of the demo card. The gate shows the install panel first and the demo below it at a fixed 400 px; the iOS Share hint is a step in the panel, not a floating slip |
+| 4 | Japanese display face thickened by the browser | At 32 px and above the real weight is used with `font-synthesis: none`, one size step larger, proportional kana and tight tracking; synthetic bold remains only up to 26 px, where it stays open. Question titles end in a Latin question mark. A licensed heavy antique is still the production answer (see "Not fixed") |
+| 5 | Next card's answers show as slivers at 320 x 568; the title row breaks | Cards under the front card hide their content and show an edge only. The title row is fluid and the view switch drops under the title when it does not fit |
+| 6 | First run picture band changes height and place; action below the screen | The band has one height and one place on all three steps, the art scales inside it, and the action is pinned to the foot at every size |
+| 7 | Ranking and staking leave too little on short phones | Under 700 px and again under 600 px of height the title, the own bar and the paddings compact; ranking shows complete rows above the own bar at 320 x 568; on staking the interest figure moves into the pinned bar beside the action, so it is always on screen. A pinned bar taller than a quarter of the view unpins |
+| 8 | Frame and pattern drift | The "27" in the own bar has no frame. Login and "Get the app" are bands of sheet colour between rules, not framed panels. The QR keeps a white quiet zone without an ink frame. One tag skin. Two switch patterns only: the segmented control switches in place, underlined words lead to another view (CONCEPT.md) |
+| 9 | Closing hairline and opening rule 16 to 20 px apart | The last row of a section drops its hairline when a section rule follows |
+| 10 | Text under 12 px at 320 px | 12 px is the floor of every fluid size; the tab bar grows instead of shrinking its labels |
+| 11 | "Terms   and the", "Saving: Q1: Yes" | Stray gaps removed; the bar reads "Saving Q1: Yes" |
+| 12 | The fifth picture is a solid black block | Redrawn as a light line drawing (`assets/img/q5-xrp.svg`). The tone limit for real pictures belongs to the server halftone job and is noted in CONCEPT.md |
+| 13 | 1,350P on day done and 1,250P on results | Both read one ledger value |
+
+### Review D: finding by finding
+
+| # | Finding | What was done |
+| --- | --- | --- |
+| B1 | The "?" beside Points on the wallet cannot be tapped | The "?" has its own stacking level above the row link. `tools/state-check.js` now tests every control with `elementFromPoint` at its centre and at four inner points, so a covered or partly covered target fails the check in every state |
+| B2 | "0.0000001" reaches a "Send 0 CT" review; the form stays armed | Amounts below the smallest unit and more than the allowed decimals are refused with a reason and the action stays disabled. After a withdrawal or a conversion the form is cleared, the wallet opens and the balance comes from one session ledger |
+| B3 | Picture rule misfires at 375 x 667; next card shows through | The picture shows only with at least 96 px of room, otherwise it is dropped whole; the deck grows when the card needs more. Cards behind hide their content |
+| M1 | The 3 second rule line is hidden on short screens | "+50P if right. Undo for 3 seconds." shows at every size. The Rules sheet says "A pick can be undone for 3 seconds. After that it is final." |
+| M2 | Undo of the fifth pick moves and is easy to lose | On day done the Undo is in a pick bar pinned above the tab bar, bottom right as on the deck, and takes the focus. Only a tap on the headline area or the primary action finishes early; the list and scrolling do not |
+| M3 | 200% text on home | The dateline wraps to its own row, titles break between words only, the skip link is moved off with a transform that does not depend on text size, pinned bars unpin when they pass a quarter of the view |
+| M4 | A 365 day stake shows the same date at both ends | Stake dates carry the year whenever the two ends are in different years |
+| M5 | Screen reader dateline contradicts the visible one | The visible countdown is `aria-hidden`; the spoken sentence is complete for its state ("Closes in 3 hours 11 minutes") |
+| M6 | Unlocked stake withdrawal and convert sign with no review | Both open a short review sheet first (stake, interest and total; points, CT and points left). The convert review and its "?" sheet say "Points cannot be converted back." |
+| M7 | Small finish defects | See C1, C2 and C10 |
+| M8 | Address input 14 px; Skip and Back under 44 px; Undo after an Enter pick; stale live region; language names without `lang`; dark picture; real offline; fonts | The address input is 16 px. Skip and Back are 44 x 44. After a keyboard pick the focus goes to Undo. When the window closes the live region says "Final". The language options carry `lang`. The picture was redrawn. The prototype listens to the browser's `online` and `offline` events: the offline banner shows and actions disable with the reason. Font caching is a production task (see "Not fixed") |
+
+### Not fixed, and why
+
+| Item | Why |
+| --- | --- |
+| A licensed heavy Japanese antique | Needs a paid licence; the free face has one weight. The interim rule (real weight at 32 px and above) is in place |
+| Halftone made by the server | The prototype draws it in CSS; production should render it once per picture with a tone limit. Described in CONCEPT.md |
+| Self hosted fonts and offline caching | A build and service worker task, outside a static prototype |
+| First run step 1 is a picture, not a swipeable card | The founder's rule is one action per screen; a second practice deck would add a step. Open for a decision |
+| Capped chrome text at 200% (tab labels, points pill, answer buttons) | Review D accepts it as the trade off; growing them would clip the answers at 320 px |
+| Shortcut list and last used address | Review D lists them as absent, not as defects; both add surface text against the founder's rule. The last used address also needs real account data |
+| "Extra", "FILED", "Set" need one visit to learn | They carry the concept and each has a labelled neighbour or a "?" sheet |
+| `login.html?state=returning` gives the audit no result | The state finishes its setup and moves on to home by design; `setup` and `busy` cover the same screen |

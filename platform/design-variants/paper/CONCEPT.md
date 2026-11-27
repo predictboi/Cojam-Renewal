@@ -51,7 +51,7 @@ The blue has four jobs: the primary action, text links, the reward (the "+100P" 
 | --- | --- | --- |
 | Display | **Besley** (a Clarendon slab, variable 500 to 900, Google Fonts) | Headlines at 800, figures at 900: questions, page titles, balances, points, ranks, prizes, rates, the answers on the two buttons, stamps |
 | Display, Korean | **Hahmlet** (a Korean slab serif, variable, Google Fonts) | Hangul in every display role; Latin letters and numerals in Korean text stay Besley because Besley comes first in the stack |
-| Display, Japanese | **Shippori Antique B1** (Google Fonts) | Kana and kanji in every display role, switched by `:lang(ja)`; numerals stay Besley. An antique face is the Japanese counterpart of a Clarendon: sturdy bracketed kana, heavy low contrast kanji. It replaced Noto Serif JP, which read lighter and more formal than the Latin and Korean slabs. The free font has one weight, so the browser emboldens it at display weights; production should license a true heavy antique |
+| Display, Japanese | **Shippori Antique B1** (Google Fonts) | Kana and kanji in every display role, switched by `:lang(ja)`; numerals stay Besley. An antique face is the Japanese counterpart of a Clarendon: sturdy bracketed kana, heavy low contrast kanji. It replaced Noto Serif JP, which read lighter and more formal than the Latin and Korean slabs. The free font has one weight. Up to 26 px (questions, card headlines, section heads) the browser emboldens it, which brings it level with Besley 800. At 32 px and above (page titles) that fills in dense kanji, so there the real weight is used, one size step larger, with `font-synthesis: none`, proportional kana (`palt`) and tight tracking. A question ends in a Latin question mark (Besley, like the numerals), so there is no full width gap before it. Production should license a true heavy antique |
 | Text | **Pretendard Variable**, Pretendard JP under `:lang(ja)` (the brand face, jsDelivr) | Every label, row, sentence, button label, table cell, the dateline |
 | Data | system monospace | Addresses, the invite code and the invite link only |
 
@@ -87,6 +87,10 @@ Only things that can be pressed carry the ink frame: buttons, fields, the "?" bo
 - A question is never truncated: long titles step down twice (26, 23, 18 px) and then take room from the picture. Long answers step down and wrap inside a taller button.
 - The masthead gives way in a fixed order: the words of the nameplate go first (the mark stays), the points and the profile never leave the screen. Tab labels stay on one line. Figures that sit side by side wrap to rows when they no longer fit. Checked at 320 px and with the root font at 130% and 200%.
 - A focused control is never left behind the tab bar or a pinned bar (`tools/focus-check.js`).
+
+## Controls that change a view
+
+Two patterns only. A segmented control (ink frame, the current segment inverted) filters or switches in place: This week and Last week, All, Waiting and Set, the language, the home view preference. Underlined words (the current one bold with a 3 px ink bar) lead to another page or view: Cards and List, New stake and My stakes. The language control on the cover screens is a globe and a two letter code that opens the native list; the nameplate there always keeps its words.
 
 ## Copy on the surface
 

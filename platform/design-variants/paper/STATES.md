@@ -58,7 +58,11 @@ Total: 17 screens, 215 states.
 
 ## Flow change against the reference
 
-The fifth pick opens `done.html?state=moment&undo=<ms left>&q=<question id>` at once. The Undo of that pick lives on the day done page for what is left of its 3 seconds (a tap anywhere else means "finish now"); Undo returns to the deck with that card on top. The reference waits on the deck ("Finishing in 3", "Finish now") before it changes page. The finished home (`home.html` after the day) keeps the reference panel and its dateline reads "Next set in".
+The fifth pick opens `done.html?state=moment&undo=<ms left>&q=<question id>` at once. The Undo of that pick lives on the day done page for what is left of its 3 seconds, in a pick bar pinned above the tab bar (bottom right, as on the deck); a tap on the headline area or the primary action means "finish now"; Undo returns to the deck with that card on top. The reference waits on the deck ("Finishing in 3", "Finish now") before it changes page. The finished home (`home.html` after the day) keeps the reference panel and its dateline reads "Next set in".
+
+## Mock ledger
+
+A stake, a conversion and a withdrawal made in a session are written to one mock ledger (`App.sess`, `App.ledger`), so the wallet, the masthead and the other screens agree afterwards. After a withdrawal or a conversion the form is cleared and the wallet opens. Both, and the withdrawal of an unlocked stake, pass a short review sheet before signing; the convert review says that points cannot be converted back. `results.html` shows the same balance as day done (today's +100P counted).
 
 ## Example questions
 

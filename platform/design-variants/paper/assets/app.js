@@ -49,7 +49,7 @@
   App.sess = (function () {
     var K = "cjp.sess", day = new Date().toISOString().slice(0, 10), d = null;
     try { d = JSON.parse(sessionStorage.getItem(K) || "null"); } catch (e) {}
-    if (!d || d.day !== day || !d.picks || !d.stakes) d = { day: day, picks: {}, paid: false, stakes: [], left: 0 };
+    if (!d || d.day !== day || !d.picks || !d.stakes) d = { day: day, picks: {}, paid: false, stakes: [], left: 0, ct: 0, pts: 0 };
     var api = { data: d, save: function () { try { sessionStorage.setItem(K, JSON.stringify(api.data)); } catch (e) {} },
       resetDay: function () { api.data.picks = {}; api.data.paid = false; api.data.left = 0; api.save(); },
       /* Leaving the home screen inside an undo window sends the held picks at once (they can no longer be undone). The count is kept so the
@@ -60,6 +60,9 @@
     return api;
   })();
   if (App.sess.data.paid) M.user.points += 100;
+  M.user.ct = Math.round((M.user.ct + (App.sess.data.ct || 0)) * 1e4) / 1e4; M.user.points += App.sess.data.pts || 0;
+  /* a withdrawal or a conversion is written here: ct and pts are the changes of this session */
+  App.ledger = function (ct, pts) { var d = App.sess.data; d.ct = Math.round(((d.ct || 0) + (ct || 0)) * 1e4) / 1e4; d.pts = (d.pts || 0) + (pts || 0); App.sess.save(); };
   App.sess.data.stakes.forEach(function (s, i) {
     M.user.ct = Math.round((M.user.ct - s.amount) * 1e4) / 1e4; M.user.staked += s.amount;
     M.stakes.unshift({ id: "n" + i, amount: s.amount, days: s.days, rate: s.rate, start: new Date(s.start) });
@@ -151,7 +154,7 @@
     o = o || {};
     return '<div class="seg" role="group" aria-label="' + esc(o.label || "") + '"' + (o.name ? ' data-seg="' + o.name + '"' : "") + ">" + items.map(function (it) {
       if (it.href) return '<a class="seg-btn" href="' + it.href + '"' + (it.on ? ' aria-current="page"' : "") + ">" + it.label + "</a>";
-      return '<button type="button" class="seg-btn" data-value="' + esc(it.value) + '" aria-pressed="' + (it.on ? "true" : "false") + '"' + (o.disabled ? " disabled" : "") + ">" + it.label + "</button>";
+      return '<button type="button" class="seg-btn" data-value="' + esc(it.value) + '" aria-pressed="' + (it.on ? "true" : "false") + '"' + (o.name === "lang" ? ' lang="' + esc(it.value) + '"' : "") + (o.disabled ? " disabled" : "") + ">" + it.label + "</button>";
     }).join("") + "</div>";
   };
   /* the day in five numbered boxes, like the squares of a puzzle page: empty, hatched while a pick is being saved, inked when it is in.
@@ -298,7 +301,8 @@
     function a(id, file) { var on = id === cur; return '<a href="' + file + (on || !state ? "" : "?state=" + state) + '"' + (on ? ' aria-current="page"' : "") + ">" + t("h.view." + id) + "</a>"; }
     return '<div class="viewsw" role="group" aria-label="' + esc(t("h.view.label")) + '">' + a("card", "home.html") + a("term", "home-list.html") + "</div>";
   };
-  C.closes = function (secs) { return "<span>" + t("h.closes") + '</span> <b data-cd="' + secs + '" aria-hidden="true"></b><span class="sr-only" data-cd-sr></span>'; };
+  C.count = function (labelKey, secs, id) { return '<span class="cd"' + (id ? ' id="' + id + '"' : "") + ' aria-hidden="true"><span>' + t(labelKey) + '</span> <b data-cd="' + secs + '"></b></span><span class="sr-only" data-cd-sr="' + labelKey + '"></span>'; };
+  C.closes = function (secs) { return C.count("h.closes", secs); };
   C.thumb = function (q) {
     if (typeof q === "string") q = App.q(q);
     return '<span class="thumb' + (q.img ? "" : " thumb--none") + '" aria-hidden="true">' + (q.img ? '<span class="ht"><img src="' + q.img + '" alt="" width="64" height="64" loading="lazy" decoding="async" draggable="false" style="--f:' + (q.focus || "50% 15%") + '"></span>' : ic(CAT_ICON[q.cat] || "spark", 28)) + "</span>";
@@ -372,14 +376,14 @@
     App.enhance(document.body);
     App.pinFit();
     /* the masthead gives way in a fixed order: when the nameplate's words no longer fit beside the points and the profile, only the mark stays (never a cut word) */
-    (function () { var pl = $(".mast .plate"); if (!pl) return; function fitPlate() { pl.classList.remove("is-mark"); var sp = $("span", pl); if (sp && sp.scrollWidth > sp.clientWidth + 1) pl.classList.add("is-mark"); }
+    (function () { var pl = $(".mast .plate") || $(".gate-bar .plate:not(.plate--big)"); if (!pl) return; function fitPlate() { pl.classList.remove("is-mark"); var sp = $("span", pl), nx = pl.closest(".gate-bar") ? $(".tag, .linkish", pl.closest(".gate-bar")) : null; if (sp && (sp.scrollWidth > sp.clientWidth + 1 || (nx && sp.getBoundingClientRect().right > nx.getBoundingClientRect().left - 4))) pl.classList.add("is-mark"); }
       fitPlate(); window.addEventListener("resize", fitPlate); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitPlate); })();
     if (cfg.after) cfg.after();
     App.pinFit();
   };
   App.pinFit = function () {
     var app = $(".app--pin"); if (!app) return;
-    function fit() { var p = $(".app--pin > .pin"); if (p) app.style.setProperty("--pin-h", p.offsetHeight + "px"); }
+    function fit() { var p = $(".app--pin > .pin"); if (!p) return; p.classList.remove("is-flow"); var big = p.offsetHeight > innerHeight * 0.25; p.classList.toggle("is-flow", big); app.style.setProperty("--pin-h", (big ? 0 : p.offsetHeight) + "px"); }
     fit();
     if (!app._ro && window.ResizeObserver) { app._ro = new ResizeObserver(fit); var p0 = $(".app--pin > .pin"); if (p0) app._ro.observe(p0); window.addEventListener("resize", fit); }
   };
@@ -392,6 +396,8 @@
     var sc = $(".is-home main") || null;
     if (r.bottom > low) (sc || window).scrollBy(0, r.bottom - low); else if (r.top < high) (sc || window).scrollBy(0, r.top - high);
   });
+  window.addEventListener("offline", function () { App.offline = true; App.toast(t("off.bar"), { key: "net" }); });
+  window.addEventListener("online", function () { if (App.state !== "offline") App.offline = false; App.toast(t("off.back"), { key: "net" }); });
   App.live = function (msg) { var l = $("#live"); if (l) { l.textContent = ""; setTimeout(function () { l.textContent = msg; }, 30); } };
 
   /* ---------- enhance: countdowns, QR, stamps, tickers ---------- */
@@ -403,7 +409,8 @@
       var end = Date.now() + (+el.getAttribute("data-cd")) * 1000, fmt = el.getAttribute("data-cd-fmt") || "inline", lastMin = -1;
       function tick() {
         var s = Math.max(0, Math.round((end - Date.now()) / 1000)), p = F.hms(s);
-        var sr = el.parentNode.querySelector("[data-cd-sr]"); if (sr && +p[1] !== lastMin) { lastMin = +p[1]; sr.textContent = t("d.next.sr", { h: +p[0], m: +p[1] }); }
+        var host = el.closest(".dateline-live") || el.parentNode.parentNode || el.parentNode, sr = host.querySelector("[data-cd-sr]") || el.parentNode.querySelector("[data-cd-sr]");
+        if (sr && (+p[1] !== lastMin || sr._k !== sr.getAttribute("data-cd-sr"))) { lastMin = +p[1]; sr._k = sr.getAttribute("data-cd-sr"); sr.textContent = t(sr._k || "d.next") + " " + t("pp.hm", { h: +p[0], m: +p[1] }); }
         if (fmt === "clock") { var sp = $$("span", el); sp[0].textContent = p[0]; sp[1].textContent = p[1]; sp[2].textContent = p[2]; }
         else if (fmt === "dh") el.textContent = t("k.dh", { d: Math.floor(s / 86400), h: Math.floor(s % 86400 / 3600) });
         else App.digits(el, p.join(":"));
@@ -667,7 +674,7 @@
   App.aiSheet = function (id) {
     var q = App.q(id);
     App.sheet.open("<h2>" + t("h.ai.h") + '</h2><ol class="txsteps txsteps--plain">' + ["h.ai.1", "h.ai.2", "h.ai.3"].map(function (k, i) { return '<li><span class="n">' + (i + 1) + "</span><span>" + t(k) + "</span></li>"; }).join("") + "</ol>" +
-      C.rows([[t("h.ai.src"), esc(q.rule)], [t("h.ai.when"), t("h.ai.after", { time: q.settle })]]) +
+      C.rows([[t("h.ai.src"), esc(q.rule)], [t("h.ai.when"), t("h.ai.after", { time: q.settle })]]) + '<p class="sheet-warn">' + ic("undo", 18) + "<span>" + t("pp.rule.final") + "</span></p>" +
       '<div class="sheet-acts">' + C.btn(t("common.close"), { block: true, attrs: "data-sheet-close" }) + "</div>");
   };
 
@@ -710,9 +717,11 @@
     function fit() {
       root.style.minHeight = "";
       var c = live()[0]; if (!c) return;
-      var body = $(".qcard-body", c), top = $(".qcard-top", c), need = (top ? top.offsetHeight : 0) + (body ? body.offsetHeight : 0) + 4;
-      c.classList.toggle("is-tight", root.clientHeight < need + 56);   /* under 56 px of room the picture is dropped rather than shown as a sliver */
-      if (root.clientHeight < need) root.style.minHeight = need + "px";
+      c.classList.remove("is-tight");
+      var body = $(".qcard-body", c), top = $(".qcard-top", c), need = (top ? top.offsetHeight : 0) + (body ? body.offsetHeight : 0) + 4, room = root.clientHeight - need - 12;
+      /* the picture needs 96 px to read; with less it is dropped (never a sliver). The card keeps the deck's height: the headline stays under the kicker and the two answers go to the bottom. */
+      if (room < 96) c.classList.add("is-tight");
+      if (root.clientHeight < need) root.style.minHeight = need + "px";   /* still too short without the picture: the deck grows and the page scrolls */
     }
     window.addEventListener("resize", fit);
     if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);

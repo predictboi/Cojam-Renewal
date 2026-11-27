@@ -20,7 +20,7 @@
       '<p class="fact" id="left"></p></div>' +
       '<dl class="facts3"><div><dt>' + t("c.rate") + "</dt><dd>1,000P = 1 CT</dd></div><div><dt>" + t("c.fee") + "</dt><dd>" + (S === "hold" ? t("pp.youpay") : t("pp.none")) + "</dd></div><div><dt>" + t("pp.lefttoday") + "</dt><dd>" + capLeft + " CT</dd></div></dl></section>";
   }
-  function cfg(p) { var n = p / 1000; return { label: t("c.chip", { p: F.int(p) }), success: { title: t("c.ok.h", { p: F.int(p), n: n }), rows: [[t("c.ok.left"), F.pts(bal - p)], [t("c.ok.ct"), F.ct(M.user.ct + n)]] }, onSuccess: function () { App.addPoints(-p); } }; }
+  function cfg(p) { var n = p / 1000; return { label: t("c.chip", { p: F.int(p) }), review: { title: t("c.btn", { p: F.int(p), n: n }), rows: [[t("pp.points"), F.pts(p)], [t("c.get"), F.ct(n), true], [t("c.ok.left"), F.pts(bal - p)]], note: t("pp.c.final"), confirm: t("c.btn", { p: F.int(p), n: n }) }, success: { title: t("c.ok.h", { p: F.int(p), n: n }), rows: [[t("c.ok.left"), F.pts(bal - p)], [t("c.ok.ct"), F.ct(M.user.ct + n)]] }, onSuccess: function () { App.addPoints(-p); if (S === "") App.ledger(n, -p); }, onDone: function () { if (S === "") location.href = "wallet.html"; } }; }
   App.mount({ tab: "wallet", back: "wallet.html", title: t("c.title"), body: body(), pin: S === "short" ? "" : C.actbar(C.btn("", { kind: "primary", block: true, id: "go", disabled: true })), points: bal, pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
     var inp = $("#amt"); if (!inp) return;
     var msg = $("#amt-msg"), box = inp.closest(".field-box"), go = $("#go"), get = $("#get"), maxP = Math.min(Math.floor(bal / 1000) * 1000, capLeft * 1000);

@@ -21,9 +21,15 @@
      then "Saving your last pick", then the "Paid" stamp. */
   var qs2 = new URLSearchParams(location.search), undoMs = moment ? Math.max(0, Math.min(3000, +(qs2.get("undo") || 0))) : 0, undoQ = qs2.get("q") || "";
   function row(p) {
-    if (p === "undo") return '<button type="button" class="undo" id="undo-last" aria-label="' + App.esc(t("h.undo.aria", { n: 5, choice: undoQ && sess.data.picks[undoQ] ? App.q(undoQ)[sess.data.picks[undoQ]] : "" })) + '">' + C.icon("undo", 18) + "<span>" + t("h.undo") + '</span></button><span class="fuse fuse--row" aria-hidden="true"><i style="--gone:-' + (3000 - undoMs) + 'ms"></i></span>';
+    if (p === "undo") return '<p class="done-st" id="fin-line">' + t("h.end.in", { n: '<b id="fin-n">' + Math.max(1, Math.ceil(undoMs / 1000)) + "</b>" }) + "</p>";
     if (p === "saving") return '<p class="done-st"><span class="spin"></span>' + t("d.saving.st") + "</p>";
     return '<span class="seal" id="seal" aria-hidden="true">' + C.rstamp("hit", t("pp.paid")) + "</span>" + (wel ? '<p class="done-st">' + t("d.wel.st", { n: 100 + W }) + "</p>" : '<p class="sr-only">' + t("d.paid.st") + "</p>");
+  }
+  function undoBar() {
+    var dir = undoQ && sess.data.picks[undoQ], q = undoQ ? App.q(undoQ) : null;
+    return '<div class="pin pin--undo" id="undo-bar"><span class="fuse" aria-hidden="true"><i style="--gone:-' + (3000 - undoMs) + 'ms"></i></span>' +
+      '<span class="pickbar-msg">' + C.icon("check", 16) + "<span>" + (q && dir ? t("h.sync", { n: q.n, choice: C.pick(dir, App.esc(q[dir])) }) : "") + "</span></span>" +
+      '<button type="button" class="undo" id="undo-last" aria-label="' + App.esc(t("h.undo.aria", { n: q ? q.n : 5, choice: q && dir ? q[dir] : "" })) + '">' + C.icon("undo", 18) + "<span>" + t("h.undo") + '</span><kbd aria-hidden="true">Z</kbd></button></div>';
   }
   function letters(text) {
     var i = 0;
@@ -55,16 +61,20 @@
   }
   /* the dateline: while the last pick is saved it still reads "Closes in" (this edition is on the press); once paid it turns to the next set */
   var secs = S === "zero" ? 0 : M.untilNextSet();
-  function cell(key) { return '<span class="flip" id="dl-flip"><span>' + t(key) + '</span> <b id="clock" data-cd="' + secs + '" aria-hidden="true"></b></span><span class="sr-only" data-cd-sr></span>'; }
+  function cell(key) { return C.count(key, secs, "dl-flip"); }
   var liveCell = S === "zero" ? '<span class="spin"></span> ' + t("d.loading") : cell(moment ? "h.closes" : "d.next");
-  App.mount({ tab: "home", cls: "is-done", docTitle: t("d.h1"), raw: C.dateline(liveCell) + hero() + '<div class="pg">' + body() + "</div>", points: basePts, pts: phase === "saving" ? "pending" : S === "results" ? "hits" : "", badges: { results: 2 }, after: function () {
+  App.mount({ tab: "home", cls: "is-done", docTitle: t("d.h1"), raw: C.dateline(liveCell) + hero() + '<div class="pg">' + body() + "</div>", pin: undoMs ? undoBar() : "", points: basePts, pts: phase === "saving" ? "pending" : S === "results" ? "hits" : "", badges: { results: 2 }, after: function () {
     document.addEventListener("cd:zero", function () { if (S !== "zero") setTimeout(function () { location.href = "home.html"; }, 1200); });
     if (S === "zero") setTimeout(function () { App.toast(t("h.new")); }, 600);
     if (!moment) return;
     var hero = $("#hero"), day5 = $("#day5"), wrap = $("#reward-wrap"), fig = $("#done-fig"), timers = [], paid = false, settled = false, mode = undoMs ? "undo" : "saving";
     function at(ms, fn) { timers.push(setTimeout(fn, App.reduce ? Math.min(ms, 300) : ms)); }
     /* the Undo window of the fifth pick has closed (or the player tapped anywhere to finish now): the pick is sent, then the points are paid */
-    function toSaving(wait) { if (mode !== "undo") return; mode = "saving"; wrap.innerHTML = row("saving"); at(wait, pay); }
+    function dropBar() { clearInterval(finT); var bar = $("#undo-bar"); if (bar) bar.parentNode.removeChild(bar); var app = $(".app"); if (app) app.classList.remove("app--pin"); }
+    function toSaving(wait) { if (mode !== "undo") return; mode = "saving"; dropBar(); wrap.innerHTML = row("saving"); at(wait, pay); }
+    var finT = 0, t0 = Date.now();
+    if (undoMs) { finT = setInterval(function () { var n = $("#fin-n"); if (n) n.textContent = Math.max(1, Math.ceil((undoMs - (Date.now() - t0)) / 1000)); }, 200);
+      var ub = $("#undo-last"); if (ub) ub.focus({ preventScroll: true }); }   /* the focus goes to Undo, where it also was on the deck */
     /* the points are credited with the fifth pick: only then does anything say "paid" */
     function pay() {
       if (paid) return; paid = true; mode = "paid";
@@ -77,7 +87,7 @@
       try { if (navigator.vibrate) navigator.vibrate([12, 40, 18]); } catch (e) {}
       App.addPoints(100);   /* the row under the figure is the one live region that says it */
       at(640, function () { if (settled) return; wrap.innerHTML = row("paid"); App.stampLand($("#seal .rstamp"), 0);
-        var f = $("#dl-flip"); if (f) { f.firstChild.textContent = t("d.next"); if (!App.reduce) { f.classList.remove("is-flip"); void f.offsetWidth; f.classList.add("is-flip"); } } });
+        var f = $("#dl-flip"); if (f) { f.firstChild.textContent = t("d.next"); var srr = f.parentNode.querySelector("[data-cd-sr]"); if (srr) srr.setAttribute("data-cd-sr", "d.next"); if (!App.reduce) { f.classList.remove("is-flip"); void f.offsetWidth; f.classList.add("is-flip"); } } });
       at(1400, settle);
     }
     /* settle: the page is exactly the settled done page, nothing left to run */
@@ -87,19 +97,23 @@
       if (!paid) { mode = "saving"; pay(); timers.forEach(clearTimeout); }
       if (fig._roll) cancelAnimationFrame(fig._roll); fig.innerHTML = num(100);
       wrap.innerHTML = row("paid");
-      var f = $("#dl-flip"); if (f) f.firstChild.textContent = t("d.next");
+      var f = $("#dl-flip"); if (f) { f.firstChild.textContent = t("d.next"); var s2 = f.parentNode.querySelector("[data-cd-sr]"); if (s2) s2.setAttribute("data-cd-sr", "d.next"); }
+      dropBar();
       hero.classList.add("is-settled");
       if (hero.getAnimations) hero.getAnimations({ subtree: true }).forEach(function (a) { try { a.finish(); } catch (e) {} });
     }
     /* Undo on this page takes the fifth pick back and returns to the deck, where its card is on top again */
-    function undoLast() { timers.forEach(clearTimeout); if (undoQ) { delete sess.data.picks[undoQ]; sess.save(); } location.replace("home.html"); }
+    function undoLast() { timers.forEach(clearTimeout); clearInterval(finT); if (undoQ) { delete sess.data.picks[undoQ]; sess.save(); } location.replace("home.html"); }
     /* a tap or a key: during the Undo window it means "finish now" (unless it is on Undo itself); after the points are paid it skips the rest of the show */
     function skip(e) {
-      if (e && e.target && e.target.closest && e.target.closest("#undo-last")) return;
-      if (mode === "undo") toSaving(500); else if (paid) settle();
+      var tg = e && e.target && e.target.closest ? e.target : null;
+      if (tg && tg.closest("#undo-bar")) return;
+      /* during the Undo window only the headline area or the primary action ends it early: a tap on the list below, or a scroll, changes nothing */
+      if (mode === "undo") { if (e.type === "keydown" ? (e.key === "Enter" && tg && tg.closest(".btn-primary")) : (tg && (tg.closest("#hero") || tg.closest(".pg .btn-primary")))) toSaving(500); }
+      else if (paid) settle();
     }
     document.addEventListener("pointerdown", skip, true); document.addEventListener("keydown", skip, true);
-    wrap.addEventListener("click", function (e) { if (e.target.closest("#undo-last")) undoLast(); });
+    document.addEventListener("click", function (e) { if (e.target.closest("#undo-last")) undoLast(); });
     document.addEventListener("keydown", function (e) { if (mode === "undo" && (e.key === "z" || e.key === "Z" || e.key === "Backspace")) { e.preventDefault(); undoLast(); } });
     if (undoMs) at(undoMs, function () { toSaving(900); }); else at(900, pay);
   } });

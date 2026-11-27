@@ -15,6 +15,8 @@
   var total = stakes.reduce(function (a, s) { return a + s.amount; }, 0);
   var sofar = stakes.reduce(function (a, s) { return a + calc(s).interest; }, 0), perAll = stakes.reduce(function (a, s) { var c = calc(s); return a + (c.unlocked ? 0 : c.per); }, 0);
   var claimable = stakes.reduce(function (a, s) { var c = calc(s); return a + (c.unlocked || c.interest >= M.minClaim ? c.interest : 0); }, 0);
+  /* a date carries its year whenever that is not the current year (a 365 day stake ends next year) */
+  function dt(d) { d = new Date(d); return d.getFullYear() === new Date().getFullYear() ? F.date(d) : F.dateLong(d); }
   function fix4(n) { return Number(n).toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 }); }
   function dg(s) { return String(s).replace(/\d/g, '<i class="dg">$&</i>'); }
 
@@ -33,7 +35,7 @@
       '<span data-status>' + (c.unlocked ? C.tag(t("m.unlocked"), "", "check") : C.tag(t("m.locked"), "", "lock")) + "</span></div>" +
       /* the bar stands between its two dates, with the day count in the middle: no "started" or "unlocks" words */
       '<div class="stack-8"><div class="mbar' + (c.unlocked ? " is-full" : "") + '" role="img" aria-label="' + App.esc(t("m.day", { x: c.day, d: s.days }) + ". " + t("m.started", { date: F.date(s.start) }) + ". " + t("m.unlocks", { date: F.date(c.unlock) })) + '"><i style="width:' + c.pct.toFixed(1) + '%"></i></div>' +
-      '<div class="mbar-meta" aria-hidden="true"><span>' + F.date(s.start) + "</span><b>" + t("m.day", { x: c.day, d: s.days }) + "</b><span>" + F.date(c.unlock) + "</span></div></div>" +
+      '<div class="mbar-meta" aria-hidden="true"><span>' + dt(s.start) + "</span><b>" + t("m.day", { x: c.day, d: s.days }) + "</b><span>" + dt(c.unlock) + "</span></div></div>" +
       C.rows([[t("m.interest"), '<span data-tick="' + c.interest + "|" + (c.unlocked ? 0 : c.per) + "|" + c.cap + '">' + dg(fix4(c.interest)) + "</span> CT" + (App.offline ? "<small>" + t("m.paused") + "</small>" : ""), true]]) +
       actions + "</article>";
   }
@@ -56,7 +58,9 @@
       /* on hold every claim and withdrawal is reviewed first: the sheet states the fee, who pays it and the KAIA balance */
       function rv(title, amount) { return hold ? { title: title, rows: [[t("x.amount"), amount], [t("x.fee"), t("x.fee.v", { f: M.fee })], [t("x.kaia"), F.kaia(kaia)]], note: t("hold.fee.line") + ". " + t("hold.fee.rv"), confirm: t("tx.confirm") } : null; }
       if (c) { var s = find(c.getAttribute("data-claim")), i = F.dec(calc(s).interest, 2); App.tx.run({ label: t("m.chip.claim", { i: i }), review: rv(t("m.claim", { i: i }), F.ct(calc(s).interest)), success: { title: t("m.ok.claim", { i: i }) } }); }
-      if (w) { var s2 = find(w.getAttribute("data-wd")), a = F.dec(out(s2), 4); App.tx.run({ label: t("m.chip.wd", { a: a }), review: rv(t("m.withdraw", { a: a }), F.ct(out(s2))), success: { title: t("m.ok.wd", { a: a }) }, onDone: function () { var el = $('[data-stake="' + s2.id + '"]'); if (el) el.parentNode.removeChild(el); } }); }
+      if (w) { var s2 = find(w.getAttribute("data-wd")), a = F.dec(out(s2), 4), c2 = calc(s2);
+        var rvw = { title: t("m.withdraw", { a: a }), rows: [[t("pp.stake"), F.ct(s2.amount)], [t("m.interest"), F.ct(c2.interest)], [t("pp.total"), F.ct(out(s2)), true]].concat(hold ? [[t("x.fee"), t("x.fee.v", { f: M.fee })], [t("x.kaia"), F.kaia(kaia)]] : []), note: hold ? t("hold.fee.line") + ". " + t("hold.fee.rv") : "", confirm: t("m.withdraw", { a: a }) };
+        App.tx.run({ label: t("m.chip.wd", { a: a }), review: rvw, success: { title: t("m.ok.wd", { a: a }) }, onDone: function () { var el = $('[data-stake="' + s2.id + '"]'); if (el) el.parentNode.removeChild(el); } }); }
     });
     if (S === "claim") App.tx.show("success", { label: "", success: { title: t("m.ok.claim", { i: "263.01" }) } });
     if (S === "unlocking") setTimeout(function () {   /* the unlock moment: the tag flips and the withdraw button appears, no reload */

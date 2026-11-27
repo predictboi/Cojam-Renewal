@@ -16,13 +16,17 @@
       '<section class="msec">' + C.rows([[t("x.kaia") + C.q("withdraw", t("x.fee")), F.kaia(kaia)], [t("x.fee"), t("x.fee.v", { f: fee }) + "<small><b>" + t("pp.youpay") + "</b></small>"], [t("dp.net"), t("dp.net.v")]]) + "</section>" +
       '<div id="kaia-note"></div>';
   }
+  var touched = false, update0 = function () {};
+  function update() { return update0(); }
   function cfg(to, a) {
     var amt = F.dec(a);
     return { label: t("x.chip", { a: amt }), review: { title: t("x.rv.h", { a: amt }), rows: [[t("x.rv.to"), '<span class="addr-v" translate="no">' + F.groups(to) + "</span>"], [t("x.amount"), F.ct(a), true], [t("x.fee"), t("x.fee.v", { f: fee })]], check: t("x.rv.check"), confirm: t("x.rv.h", { a: amt }) },
-      success: { title: t("x.ok", { a: amt }), rows: [[t("x.rv.to"), '<span class="addr-v" translate="no">' + F.groups(to) + "</span>"], [t("pp.balance"), F.ct(Math.round((bal - a) * 1e4) / 1e4)]] } };
+      success: { title: t("x.ok", { a: amt }), rows: [[t("x.rv.to"), '<span class="addr-v" translate="no">' + F.groups(to) + "</span>"], [t("pp.balance"), F.ct(Math.round((bal - a) * 1e4) / 1e4)]] },
+      onSuccess: function () { if (S === "" || S === "filled") App.ledger(-a, 0); var t1 = $("#to"), a1 = $("#amt"); if (t1) t1.value = ""; if (a1) a1.value = ""; touched = false; update(); },
+      onDone: function () { if (S === "" || S === "filled") location.href = "wallet.html"; } };
   }
   App.mount({ tab: "wallet", back: "wallet.html", title: t("x.title"), body: body(), pin: C.actbar(C.btn("", { kind: "primary", block: true, id: "go", disabled: true })), pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
-    var to = $("#to"), inp = $("#amt"), go = $("#go"), toMsg = $("#to-msg"), aMsg = $("#amt-msg"), touched = !!addr0;
+    var to = $("#to"), inp = $("#amt"), go = $("#go"), toMsg = $("#to-msg"), aMsg = $("#amt-msg"); touched = !!addr0; update0 = function () { return updateForm(); };
     function checkAddr(v) {
       if (!v) return touched ? "x.e.empty" : "";
       if (!/^0x[0-9a-fA-F]{40}$/.test(v)) return "x.e.bad";
@@ -31,12 +35,13 @@
       if (M.contracts.indexOf(v.toLowerCase()) >= 0) return "x.e.contract";
       return "";
     }
-    function update() {
+    function updateForm() {
       var v = to.value.trim(), e1 = checkAddr(v), p = App.parseAmount(inp.value), a = p.value || 0, e2 = "", fix = "";
       to.closest(".field-box").classList.toggle("is-error", !!e1); to.closest(".field-box").classList.toggle("is-ok", !!v && !e1); to.setAttribute("aria-invalid", e1 ? "true" : "false");
       /* the field cannot show 42 characters: a valid address is repeated in full, grouped as on the wallet, so it can be checked by eye */
       toMsg.className = "field-msg field-msg--stack" + (e1 ? " is-error" : ""); toMsg.innerHTML = e1 ? "<span>" + t(e1) + "</span>" : v ? '<span class="tier-cue is-on">' + C.icon("check", 14) + t("x.addr.ok") + '</span><span class="addr-v" translate="no">' + F.groups(v) + "</span>" : "";
       if (p.bad || (!p.empty && a <= 0)) e2 = t("s.e.nan");
+      else if (!p.empty && (p.decimals > 4 || Math.round(a * 1e4) / 1e4 <= 0)) e2 = t("pp.x.dec");   /* nothing that rounds to 0 CT, nothing finer than the unit shown */
       else if (a > bal) { e2 = t("s.e.bal", { b: F.dec(bal) }); fix = C.btn(t("s.fix.bal", { b: F.dec(bal) }), { sm: true, attrs: 'data-fix="' + bal + '"' }); }
       inp.closest(".field-box").classList.toggle("is-error", !!e2); aMsg.className = "field-msg" + (e2 ? " is-error" : ""); aMsg.innerHTML = e2 ? "<span>" + e2 + "</span>" + fix : "";
       var noKaia = kaia < fee;
