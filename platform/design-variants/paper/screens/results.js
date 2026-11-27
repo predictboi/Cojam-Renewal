@@ -83,7 +83,7 @@
     return summary() + seg + legend() + '<div class="pg-groups" id="groups">' + days.map(group).join("") + '</div><div id="fempty" hidden></div>' +
       C.btn(t("r.more"), { block: true, id: "more", icon: "down" });
   }
-  App.mount({ tab: "results", cls: "sc-results", docTitle: t("r.title"), live: "<span>" + t("d.next") + '</span> <b data-cd="' + M.untilNextSet() + '"></b>', head: head(), body: body(), pts: S === "" ? "hits" : S === "loading" ? "loading" : "", badges: { home: "dot" }, after: function () {
+  App.mount({ tab: "results", cls: "sc-results", docTitle: t("r.title"), live: "<span>" + t("d.next") + '</span> <b data-cd="' + M.untilNextSet() + '"></b>', head: head(), body: body(), points: App.sess.data.paid ? M.user.points : M.user.points + 100, pts: S === "" ? "hits" : S === "loading" ? "loading" : "", badges: { home: "dot" }, after: function () {
     var groups = $("#groups"); if (!groups) return;
     function apply(f) {
       var any = false;

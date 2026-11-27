@@ -48,7 +48,7 @@
         en: { title: "Tomorrow night's Premier League match: 3 goals or more?", left: "2 or fewer", right: "3 or more", rule: "Total goals at full time", settle: "07:00 in two days" },
         ko: { title: "내일 밤 프리미어리그 경기, 3골 이상 나올까요?", left: "2골 이하", right: "3골 이상", rule: "정규 시간 90분 기준 합계 득점", settle: "모레 오전 7시" },
         ja: { title: "明日夜のプレミアリーグ、合計3点以上入る？", left: "2点以下", right: "3点以上", rule: "90分終了時の合計得点", settle: "あさっての午前7時" } },
-      q5: { n: 5, img: "assets/img/q5-kaia.svg", cat: "crypto", focus: "50% 22%",
+      q5: { n: 5, img: "assets/img/q5-xrp.svg", cat: "crypto", focus: "50% 14%",
         en: { title: "Will XRP be above $2.50 at 21:00 tomorrow?", left: "No", right: "Yes", rule: "Binance XRP/USDT price at 21:00 KST", settle: "21:00 tomorrow" },
         ko: { title: "내일 밤 9시, XRP는 2.5달러 위에 있을까요?", left: "아니요", right: "예", rule: "바이낸스 XRP/USDT 오후 9시 가격", settle: "내일 오후 9시" },
         ja: { title: "明日の21時、XRPは2.5ドルを超えている？", left: "超えない", right: "超える", rule: "Binance XRP/USDTの21時の価格", settle: "明日の21時" } },

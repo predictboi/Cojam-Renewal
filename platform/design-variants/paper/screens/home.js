@@ -93,9 +93,9 @@
         return;
       }
       bar._held = null;
-      if (shown && shown.state === "saving") { bar.innerHTML = '<span class="pickbar-msg is-quiet" role="status"><span class="spin"></span><span>' + t("common.saving") + ": " + label(shown) + "</span></span>"; return; }
+      if (shown && shown.state === "saving") { bar.innerHTML = '<span class="pickbar-msg is-quiet" role="status"><span class="spin"></span><span>' + t("common.saving") + " " + label(shown) + "</span></span>"; return; }
       if (shown && shown.state === "saved") {
-        bar.innerHTML = '<span class="pickbar-msg is-quiet" role="status">' + C.icon("check", 16) + "<span>" + t("h.saved") + ": " + label(shown) + "</span></span>";
+        bar.innerHTML = '<span class="pickbar-msg is-quiet" role="status">' + C.icon("check", 16) + "<span>" + t("h.saved") + " " + label(shown) + "</span></span>";
         fade = setTimeout(function () { var m = $(".pickbar-msg", bar); if (m) m.classList.add("is-out"); fade = setTimeout(function () { if (!held.length && shown && shown.state === "saved") { shown = null; render(); } }, 400); }, 1200);
         return;
       }

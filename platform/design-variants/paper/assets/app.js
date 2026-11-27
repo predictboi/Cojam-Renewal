@@ -67,7 +67,7 @@
   /* a question in the chosen language. The server sends title, choices and answer rule authored per language (see mock.js). */
   App.q = function (id) {
     var q = M.questions[id], L = q[App.lang] || q.en;
-    return { id: id, n: q.n, img: q.img, focus: q.focus, cat: q.cat, title: L.title, l: L.left, r: L.right, rule: L.rule, settle: L.settle };
+    return { id: id, n: q.n, img: q.img, focus: q.focus, cat: q.cat, title: App.lang === "ja" ? L.title.replace(/\uFF1F/g, "?") : L.title, l: L.left, r: L.right, rule: L.rule, settle: L.settle };
   };
 
   /* ---------- icons: one stroke family, 24 grid ---------- */
@@ -202,8 +202,8 @@
   /* "Updated 6s ago": a live line, used on the dateline of the money screens and beside live tables */
   C.stamp = function (n) { return '<span class="upd"><span data-stamp="' + (n || 4) + '">' + t("common.updated", { n: n || 4 }) + "</span></span>"; };
   C.lang = function () {
-    return '<label class="select">' + ic("globe", 18) + '<span class="sr-only">' + t("lang.label") + '</span><select data-lang aria-label="' + esc(t("lang.label")) + '">' +
-      I.langs.map(function (l) { return '<option value="' + l + '"' + (l === App.lang ? " selected" : "") + ">" + I.names[l] + "</option>"; }).join("") + "</select>" + ic("down", 16) + "</label>";
+    return '<label class="select select--code">' + ic("globe", 18) + '<span class="select-v" aria-hidden="true">' + App.lang.toUpperCase() + '</span><select data-lang aria-label="' + esc(t("lang.label")) + '">' +
+      I.langs.map(function (l) { return '<option value="' + l + '"' + (l === App.lang ? " selected" : "") + ">" + I.names[l] + "</option>"; }).join("") + "</select></label>";
   };
   /* the nameplate: the Cojam mark and the paper's name. It is a logo, so it is the same in every language. */
   C.logo = function (big) { return '<span class="plate' + (big ? " plate--big" : "") + '" translate="no"><img src="assets/cojam-mark.svg" alt="" width="' + (big ? 40 : 28) + '" height="' + (big ? 40 : 28) + '"><span>Cojam Daily</span></span>'; };

@@ -38,20 +38,23 @@
     return "";
   }
   /* today's lead story as the example; it cannot be played here */
-  var demo = '<div class="gate-demo" aria-hidden="true"><span class="gate-demo-tag">' + t("g.example") + "</span>" + C.qcard(M.set[0], { static: true }) + "</div>";
+  var demo = '<div class="gate-demo" aria-hidden="true">' + C.qcard(M.set[0], { static: true }).replace(/(<span class="qno"[^>]*>)[^<]*/, "$1" + t("g.example")) + "</div>";
   /* the headline of the reference is "Predict daily. <em>Earn CT.</em>": one voice here, the second sentence on its own line, no italic word */
   var h1 = t("g.h1").replace(/<em>(.*?)<\/em>/, '<span class="gate-h1-2">$1</span>');
   var raw = '<div class="auth gate"><p class="gate-top" role="note">' + C.icon("shield", 16) + "<span>" + t("g.top") + "</span></p>" +
     '<header class="gate-bar">' + C.logo(true) + C.lang() + '</header><div class="oxford" aria-hidden="true"></div>' + C.dateline("<span>" + t("d.next.at") + "</span>").replace('class="dateline"', 'class="dateline dateline--cover"') +
     '<div class="gate-cols"><div class="gate-col"><div class="stack-12"><h1>' + h1 + '</h1><p class="auth-lede">' + t("g.lede") + "</p></div>" +
-    (inv ? "" : demo) + "</div>" +
-    '<div class="gate-col"><section class="panel" aria-live="polite" id="panel">' + panel() + "</section>" + (inv ? demo : "") +
+    "</div>" +
+    '<div class="gate-col"><section class="panel" aria-live="polite" id="panel">' + panel() + "</section>" + demo +
     '<ul class="facts"><li>' + C.icon("bolt", 18) + t("g.fact.1") + "</li><li>" + C.icon("mail", 18) + t("g.fact.2") + "</li><li>" + C.icon("shield", 18) + t("g.fact.3") + "</li></ul>" +
     '<section class="gate-swap"><h2>' + t("g.swap.h") + "</h2><p>" + t("g.swap.body") + "</p>" + C.btn(t("g.swap.btn"), { href: "https://cojam.app/migrate/", ext: true, iconEnd: "ext" }) + "</section></div></div>" +
     '<footer class="gate-foot"><a href="https://cojam.app">' + t("hd.home") + "</a><span>© 2026 Cojam</span></footer></div>" +
     (v === "ios" ? '<p class="ios-point" aria-hidden="true"><span>' + t("g.ios.point") + "</span>" + C.icon("down", 20) + "</p>" : "");
   App.mount({ bare: true, cls: "is-gate", docTitle: "Cojam", raw: raw, after: function () {
     var q = $(".gate-demo .qcard"); if (q) q.setAttribute("inert", "");
+    /* the slip that points at Safari's Share button never lies on the steps it explains: it steps aside while they are on screen */
+    var slip = $(".ios-point"), steps = $("#panel .steps");
+    if (slip && steps && window.IntersectionObserver) new IntersectionObserver(function (en) { slip.classList.toggle("is-away", en[0].isIntersecting); }, { rootMargin: "0px 0px -8px 0px", threshold: 0.05 }).observe($("#panel"));
     var ins = $("#install"); if (ins) ins.addEventListener("click", function () { $("#panel").innerHTML = C.note("ok", t("g.android.accepted")); setTimeout(function () { $("#panel").innerHTML = C.note("ok", t("g.installed")); }, 2200); });
     var oe = $("#openext"); if (oe) oe.addEventListener("click", function () { setTimeout(function () { $("#inapp-more").hidden = false; }, 1500); });
   } });

@@ -1194,3 +1194,134 @@ html { scroll-padding-top: calc(var(--mast-h) + 12px); scroll-padding-bottom: ca
 .check input { appearance: none; -webkit-appearance: none; display: grid; place-items: center; width: var(--target); height: var(--target); margin: -10px -6px -10px -10px; border: 0; background: none; accent-color: auto; }
 .check input::before { content: ""; width: 24px; height: 24px; border: var(--edge); background: var(--sheet); }
 .check input:checked::before { background: var(--ink); box-shadow: inset 0 0 0 4px var(--sheet); }
+
+/* =====================================================================================================================
+   REVIEW C (round 3)
+   ===================================================================================================================== */
+
+/* 1. the language control: a globe and a two letter code, 72 px wide; the nameplate keeps its words */
+.select--code { position: relative; gap: var(--s-6); min-width: 72px; justify-content: center; padding: 0 var(--s-10); }
+.select-v { font-size: var(--fs-14); font-weight: var(--fw-bold); letter-spacing: 0.02em; }
+.select--code select, .gate-bar .select--code select { position: absolute; inset: 0; width: 100%; max-width: none; min-height: 0; height: 100%; padding: 0; opacity: 0; font-size: var(--fs-16); cursor: pointer; }
+.gate-bar .select { max-width: none; }
+.gate-bar .plate--big { font-size: clamp(1.25rem, 6.6vw, var(--fs-26)); }
+.gate-bar .plate > span { overflow: visible; }
+.gate-bar .plate--big img { width: clamp(30px, 9.4vw, 40px); height: clamp(30px, 9.4vw, 40px); }
+.mast-back { flex: none; }
+
+/* 2. a figure and its unit never break apart; the figure steps down instead */
+.fig, .tri-fig, .stat b, .rs-count, .rs-pts, .done-fig, .pin-pts, .krow-prize, .rows dd, .wrow b, .inv-ex b, .inv-row-go, .facts3 dd, .getbox .fig, .sheet-done-fig, .pts-in, .nw, .fact b, .period b, .mbar-meta b, .art-coin, .extra-ink b, .field-unit { white-space: nowrap; overflow-wrap: normal; }
+.rows dd { white-space: normal; }
+.rows dd > span[data-tick], .rows .is-em dd { white-space: nowrap; }
+.tri-fig { font-size: clamp(0.9375rem, 5.2vw, var(--fs-21)); }
+.stat b { font-size: clamp(0.9375rem, 5.2vw, var(--fs-21)); }
+.fig { font-size: clamp(1.5rem, 11.2vw, var(--fs-44)); }
+.fig--xl { font-size: clamp(1.75rem, 13.6vw, var(--fs-56)); }
+.fig--md { font-size: clamp(1.125rem, 6.6vw, var(--fs-26)); }
+.mstake .fig { font-size: clamp(1.25rem, 8.2vw, var(--fs-32)); }
+.pool .fig { font-size: clamp(1.5rem, 11.2vw, var(--fs-44)); }
+.getbox .fig { font-size: clamp(2.5rem, 20vw, var(--fs-88)); }
+.onb-art .fig { font-size: clamp(1.5rem, 10.2vw, 2.75rem); }
+.rs-count { font-size: clamp(1.125rem, 6.6vw, var(--fs-26)); }
+.inv-ex b { font-size: clamp(1.125rem, 6.2vw, var(--fs-26)); }
+.sheet-done-fig { font-size: clamp(1.5rem, 10.4vw, var(--fs-44)); }
+.pid-name { font-size: clamp(1.5rem, 11vw, var(--fs-44)); }
+
+/* 3. gate */
+.gate-demo-tag { display: none; }
+.gate-demo .qno { padding: 2px var(--s-6); background: var(--ink); color: var(--on-ink); font-weight: var(--fw-bold); }
+.gate-demo { height: 300px; }
+.is-gate { padding-bottom: 76px; }
+.ios-point { transition: transform var(--dur-mid) var(--ease-drawer), opacity var(--dur-fast) var(--ease); }
+.ios-point.is-away { opacity: 0; transform: translateY(140%); pointer-events: none; }
+.gate-cols { padding-top: var(--s-16); gap: var(--s-16); }
+.gate .auth h1, .is-gate h1 { font-size: clamp(1.75rem, 9.6vw, 2.5rem); }
+
+/* 4. Japanese display: the real (single) weight at 32 px and above, one step larger; proportional kana, slightly tight */
+:lang(ja) :is(.ph h1, .auth h1, .sys h1, .h-page, .hub h1) { font-synthesis: none; font-synthesis-weight: none; letter-spacing: -0.04em; }
+:lang(ja) .ph h1 { font-size: 2.125rem; }
+:lang(ja) .auth h1 { font-size: 2.5rem; line-height: 1.16; }
+:lang(ja) .sys h1 { font-size: 2.125rem; }
+:lang(ja) .is-home .ph h1, :lang(ja) .is-list .ph h1 { font-synthesis: weight; font-size: clamp(1.25rem, 6.6vw, var(--fs-26)); }
+
+/* 5. home on the smallest phones: the sheets under the front card show their edge only, never their content; the title steps down */
+.qcard:not([data-pos="0"]):not(.is-out) > * { visibility: hidden; }
+.is-home .ph h1, .is-list .ph h1 { font-size: clamp(1.25rem, 6.6vw, var(--fs-26)); white-space: nowrap; }
+.ph h1 { font-size: clamp(1.5rem, 8.4vw, var(--fs-32)); }
+.ph-line { margin-top: var(--s-4); }
+
+/* 6. first run: one band, same top and height on the three pages; the text under it; the action row pinned to the bottom */
+.auth--onb { height: 100dvh; min-height: 0; padding-bottom: var(--s-12); overflow: hidden; }
+.onb-wrap { flex: 1; min-height: 0; gap: var(--s-12); padding-top: 0; }
+#panels { flex: 1; min-height: 0; display: block; overflow-y: auto; }
+.onb { display: grid; grid-template-rows: auto auto; gap: var(--s-16); align-content: start; }
+.onb-art { height: clamp(132px, 30dvh, 280px); min-height: 0; padding: 0; display: grid; place-items: center; overflow: hidden; border-top: 0; }
+.onb-art > * { transform-origin: 50% 50%; }
+.auth--onb h1 { font-size: clamp(1.625rem, min(10vw, 5.4dvh), 2.75rem); }
+:lang(ko) .auth--onb h1, :lang(ja) .auth--onb h1 { font-size: clamp(1.5rem, min(9vw, 4.8dvh), 2.375rem); }
+.auth--onb .auth-lede { font-size: clamp(0.9375rem, 4.4vw, var(--fs-18)); }
+.onb-foot { flex: none; margin-top: 0; gap: var(--s-8); }
+@media (max-height: 660px) { .onb-foot .setup-line { display: none; } .onb-foot { gap: var(--s-6); } .onb-code-open { min-height: var(--target); } }
+
+/* 7. short screens: the ranking header folds, the own bar is one line; staking shows the interest in the pinned bar */
+.pin-fig { display: none; align-items: baseline; justify-content: space-between; gap: var(--s-12); font-size: var(--fs-13); color: var(--ink-2); }
+.pin-fig b { color: var(--ink); font-family: var(--font-display); font-weight: var(--fw-fig); font-size: var(--fs-18); }
+@media (max-height: 700px) {
+  .ph { padding-top: var(--s-6); }
+  .ph-top { min-height: 36px; }
+  .ph h1 { font-size: clamp(1.25rem, 6.4vw, 1.5rem); }
+  .pg { gap: var(--s-12); padding-top: var(--s-8); }
+  .sec + .sec, .sec-rule, .msec + .msec { padding-top: var(--s-10); }
+  .sc-rank .pool { gap: 0; }
+  .sc-rank .pool-top { flex-wrap: nowrap; align-items: center; }
+  .sc-rank .pool .mhero { display: flex; align-items: baseline; gap: var(--s-8); }
+  .sc-rank .pool .fig { font-size: clamp(1.25rem, 6.6vw, var(--fs-26)); }
+  .sc-rank .pool .linkish { margin: 0; }
+  .sc-rank .sh h2 { font-size: var(--fs-18); }
+  .krow--first { min-height: 48px; } .krow--lead { min-height: 44px; }
+  .krow--first .krow-rank { font-size: clamp(1.5rem, 8vw, var(--fs-32)); } .krow--first .krow-name { font-size: clamp(1.125rem, 5.6vw, var(--fs-21)); }
+  .krow--lead .krow-rank { font-size: clamp(1.25rem, 6.4vw, var(--fs-26)); }
+  button.pin, aside.pin { min-height: 46px; padding-top: 0; padding-bottom: 0; }
+  .pin-rank { min-width: 0; height: auto; padding: 0; }
+  .pin-main { display: flex; align-items: baseline; gap: var(--s-8); white-space: nowrap; overflow: hidden; }
+  .pin-main > span { overflow: hidden; text-overflow: ellipsis; }
+  .pin-pts { display: flex; align-items: baseline; gap: var(--s-6); }
+  .pin-fig { display: flex; }
+  .pin--act { padding-top: var(--s-6); padding-bottom: var(--s-6); gap: var(--s-4); }
+  .period button { min-height: 56px; }
+  .field-box { min-height: 50px; } .field-box input { min-height: 46px; }
+  .mtabs a { min-height: var(--target); }
+}
+
+/* 8. the frame rule and the patterns */
+.pin-rank { border: 0; min-width: 0; padding: 0; font-size: var(--fs-26); }
+.panel { margin: 0 calc(var(--gutter) * -1); padding: var(--s-16) var(--gutter); border: 0; border-top: var(--rule-heavy); border-bottom: var(--rule); background: var(--sheet); }
+.qr { border: 0; }
+/* one tag skin: a word on the second paper tone (a state that matters is bold, never inverted) */
+.tag-ink { background: var(--paper-2); color: var(--ink); font-weight: var(--fw-bold); }
+button.pin .tag, aside.pin .tag { background: var(--ink-2); color: var(--on-ink); }
+/* two patterns that change a view: a segmented control filters in place; underlined words lead to another page or view (Cards and List, New stake and My stakes) */
+.viewsw a, .mtabs a { border-bottom: 3px solid transparent; text-decoration: none; }
+.viewsw a[aria-current], .mtabs a[aria-current] { border-bottom-color: var(--ink); color: var(--ink); font-weight: var(--fw-bold); text-decoration: none; }
+.mtabs a { border-bottom-width: 3px; }
+
+/* 9. a section never closes with a hairline right before the next section's rule */
+.msec:not(:last-child) > .list > :last-child, .sec:not(:last-child) > .list > :last-child, .msec:not(:last-child) > .rows > div:last-child, .sec:not(:last-child) > .rows > div:last-child,
+.msec:not(:last-child) > .inv-row:last-child, .sec:not(:last-child) > .inv-row:last-child, .msec:not(:last-child) > .list:last-child .wrow:last-child, .msec > .help:last-child, .pg > .help:last-child { border-bottom: 0; }
+.msec:not(:last-child) > .list:last-child, .sec:not(:last-child) > .list:last-child { margin-bottom: calc(var(--s-4) * -1); }
+
+/* 10. nothing under 12 px, at any width */
+.tb a { font-size: clamp(12px, 3.3vw, var(--fs-12)); }
+.pts-tag { font-size: clamp(12px, 3.4vw, var(--fs-12)); }
+.per-d { font-size: clamp(12px, 3.5vw, var(--fs-13)); }
+.cols { font-size: clamp(12px, 3.2vw, var(--fs-12)); }
+.krow-pts { font-size: clamp(12px, 3.6vw, var(--fs-14)); }
+.seg-btn { font-size: clamp(12px, 3.8vw, var(--fs-14)); }
+.select-v, .gate-bar .select select { font-size: var(--fs-14); }
+.krow-prize, .krow--lead .krow-prize { font-size: clamp(13px, 4vw, var(--fs-15)); }
+.krow-prize small { font-size: 12px; }
+.pts-in { font-size: clamp(13px, 4.2vw, var(--fs-15)); }
+.me-in { font-size: clamp(12px, 4vw, var(--fs-14)); }
+
+/* 11. the links in the terms sentence sit in the sentence (44 px tall by padding, no extra width) */
+.fine a, .note a { display: inline-block; min-width: 0; min-height: 0; padding: var(--s-12) 0; margin: calc(var(--s-12) * -1) 0; text-align: left; }

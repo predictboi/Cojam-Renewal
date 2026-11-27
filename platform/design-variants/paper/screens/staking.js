@@ -47,7 +47,7 @@
     var inp = $("#amt"); if (inp) inp.value = "";
     refresh();
   }
-  var act = S === "error" ? "" : C.actbar(C.btn("", { kind: "primary", block: true, id: "go", disabled: true }), S === "hold" ? t("pp.youpay") : t("pp.nofee2"));
+  var act = S === "error" ? "" : '<div class="pin pin--act"><p class="pin-fig" id="pin-fig" aria-hidden="true"></p>' + C.btn("", { kind: "primary", block: true, id: "go", disabled: true }) + '<p class="pin-note">' + (S === "hold" ? t("pp.youpay") : t("pp.nofee2")) + "</p></div>";
   App.mount({ tab: "stake", docTitle: t("s.title"), head: head(), body: body(), pin: act, pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
     var inp = $("#amt"); if (!inp) return;
     var msg = $("#amt-msg"), box = inp.closest(".field-box"), go = $("#go"); if (!go) return;
@@ -81,6 +81,7 @@
       if (S === "loading") sv.innerHTML = C.skel("170px", "40px");
       else if (!shown) { sv._val = 0; sv.innerHTML = '<span class="is-zero">0 CT</span>'; }
       else App.countTo(sv, sv._val === undefined ? interest : sv._val, interest, function (v) { return F.dec(v) + "<small>CT</small>"; }, null, 260);
+      var pf = $("#pin-fig"); if (pf) pf.innerHTML = "<span>" + t("s.interest", { d: period }) + '</span><b class="nw">' + (shown ? F.dec(interest) : "0") + " CT</b>";
       var kr = $("#sum-k"); kr.hidden = !(App.isKo && shown); kr.textContent = shown ? F.krw(interest) : "";
       /* the lock as two tags: the day it opens, and that there is no way out before it. The fee is a tag too. */
       /* the one condition that cannot be undone gets its own line in ink: the day the lock ends and that there is no way out before it */

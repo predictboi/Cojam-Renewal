@@ -25,6 +25,9 @@
     '<p class="row setup-line" id="setup-line" role="status"><span class="spin"></span><span>' + t("a.setup.h") + "</span></p></div></div></div>";
   App.mount({ bare: true, docTitle: t("o.1.h"), raw: raw, after: function () {
     var ready = from === "profile", waiting = false, line = $("#setup-line");
+    /* the drawing is scaled to the band, whatever the band's height on this phone */
+    function fitArt() { App.$$(".onb-art").forEach(function (band) { var f = band.firstElementChild; if (!f) return; f.style.transform = ""; var hidden = band.closest("[hidden]"); if (hidden) hidden.hidden = false; var k = Math.min(1, (band.clientHeight - 24) / f.offsetHeight, (band.clientWidth - 24) / f.offsetWidth); if (hidden) hidden.hidden = true; f.style.transform = k < 1 ? "scale(" + k.toFixed(3) + ")" : ""; }); }
+    fitArt(); window.addEventListener("resize", fitArt); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitArt);
     function setReady() { ready = true; line.innerHTML = C.icon("check", 16) + "<span>" + t("o.3.wait") + "</span>"; if (waiting) location.href = exit; }
     if (ready) line.hidden = true; else setTimeout(setReady, S === "settingup" ? 9000 : 3200);
     function leave() { if (ready) { location.href = exit; return; } waiting = true; var b = $("#next"); b.classList.add("is-loading"); b.innerHTML = '<span class="spin"></span><span>' + t("a.setup.h") + "</span>"; }
