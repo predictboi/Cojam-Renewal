@@ -59,7 +59,14 @@
       picked: function () { return M.set.filter(function (id) { return api.data.picks[id]; }).length; } };
     return api;
   })();
-  if (App.sess.data.paid) M.user.points += 100;
+  /* a finished day pays 100P: it counts in the balance and in the week everywhere (results, profile, the ranking's own bar and its gap line).
+     With 1,050P the player draws level with rank 10, who reached it first, so the player is 11th and 50P short of the top 10. */
+  if (App.sess.data.paid) {
+    M.user.points += 100; M.week.pts += 100; M.week.days += 1;
+    M.me = { rank: 11, pts: M.me.pts + 100, gap: 50 };
+    M.around = [M.ranking[8], M.ranking[9], { rank: 11, name: M.user.name, pts: M.me.pts, me: true }, { rank: 12, name: M.around[0].name, pts: M.around[0].pts }, { rank: 13, name: M.around[1].name, pts: M.around[1].pts }]
+      .map(function (r) { return { rank: r.rank, name: r.name, pts: r.pts, me: r.me }; });
+  }
   M.user.ct = Math.round((M.user.ct + (App.sess.data.ct || 0)) * 1e4) / 1e4; M.user.points += App.sess.data.pts || 0;
   /* a withdrawal or a conversion is written here: ct and pts are the changes of this session */
   App.ledger = function (ct, pts) { var d = App.sess.data; d.ct = Math.round(((d.ct || 0) + (ct || 0)) * 1e4) / 1e4; d.pts = (d.pts || 0) + (pts || 0); App.sess.save(); };
@@ -67,6 +74,13 @@
     M.user.ct = Math.round((M.user.ct - s.amount) * 1e4) / 1e4; M.user.staked += s.amount;
     M.stakes.unshift({ id: "n" + i, amount: s.amount, days: s.days, rate: s.rate, start: new Date(s.start) });
   });
+  /* a stake withdrawn in this session is closed (its total went to the wallet through App.ledger); interest claimed in this session starts again from the claim */
+  (App.sess.data.closed || []).forEach(function (id) {
+    for (var i = 0; i < M.stakes.length; i++) if (M.stakes[i].id === id) { M.user.staked -= M.stakes[i].amount; M.stakes.splice(i, 1); break; }
+  });
+  M.stakes.forEach(function (s) { var c = (App.sess.data.claimed || {})[s.id]; if (c) s.claimAt = c; });
+  App.closeStake = function (id) { var d = App.sess.data; d.closed = d.closed || []; if (d.closed.indexOf(id) < 0) d.closed.push(id); App.sess.save(); };
+  App.claimStake = function (id, at) { var d = App.sess.data; d.claimed = d.claimed || {}; d.claimed[id] = at; App.sess.save(); };
   /* a question in the chosen language. The server sends title, choices and answer rule authored per language (see mock.js). */
   App.q = function (id) {
     var q = M.questions[id], L = q[App.lang] || q.en;
@@ -328,6 +342,10 @@
   App.homeHref = function () { return TABS[0].href(); };
   C.tabbar = function (current, badges) {
     badges = badges || { home: "dot", results: 2 };
+    /* the badges follow the session: no "predictions left" once the five are picked, no "new answers" once Results was opened */
+    badges = { home: badges.home, results: badges.results };
+    if (App.sess.data.paid || App.sess.picked() >= 5) badges.home = 0;
+    if (App.sess.data.seen || current === "results") badges.results = 0;
     return '<nav class="tb" aria-label="' + esc(t("nav.tabs")) + '">' + TABS.map(function (tb) {
       var b = badges[tb.id], badge = "";
       if (b === "dot") badge = '<span class="tb-dot"></span><span class="sr-only">' + t("tab.badge." + tb.id) + "</span>";
@@ -437,7 +455,7 @@
       function tick() {
         var s = Math.max(0, Math.round((end - Date.now()) / 1000)), p = F.hms(s);
         var host = el.closest(".dateline-live") || el.parentNode.parentNode || el.parentNode, sr = host.querySelector("[data-cd-sr]") || el.parentNode.querySelector("[data-cd-sr]");
-        if (sr && (+p[1] !== lastMin || sr._k !== sr.getAttribute("data-cd-sr"))) { lastMin = +p[1]; sr._k = sr.getAttribute("data-cd-sr"); sr.textContent = t(sr._k || "d.next") + " " + t("pp.hm", { h: +p[0], m: +p[1] }); }
+        if (sr && (+p[1] !== lastMin || sr._k !== sr.getAttribute("data-cd-sr"))) { lastMin = +p[1]; sr._k = sr.getAttribute("data-cd-sr"); sr.textContent = t(sr._k || "d.next") + " " + (App.lang === "en" ? +p[0] + (+p[0] === 1 ? " hour " : " hours ") + +p[1] + (+p[1] === 1 ? " minute" : " minutes") : t("pp.hm", { h: +p[0], m: +p[1] })); }
         if (fmt === "clock") { var sp = $$("span", el); sp[0].textContent = p[0]; sp[1].textContent = p[1]; sp[2].textContent = p[2]; }
         else if (fmt === "dh") el.textContent = t("k.dh", { d: Math.floor(s / 86400), h: Math.floor(s % 86400 / 3600) });
         else App.digits(el, p.join(":"));
@@ -590,6 +608,10 @@
       App.tx.cfg = cfg; App.tx.state = state;
       App.sheet.open(App.tx.view(state, cfg), { closable: state === "review" || state === "success" || state === "failed", label: cfg.label, onClose: function () { txClear(); if (state === "success" && cfg.onDone) cfg.onDone(); } });
       App.live($("#sheet h2") ? $("#sheet h2").textContent : "");
+      /* the focus never falls out of the sheet between steps: after each swap it is on the heading, and on Done when the transaction has succeeded */
+      var fx = state === "success" ? $('#sheet [data-tx="done"]') : state === "review" ? null : $("#sheet h2");
+      if (fx) { if (fx.tagName === "H2") fx.setAttribute("tabindex", "-1"); fx.focus({ preventScroll: true }); }
+      else if (!$("#sheet").contains(document.activeElement)) $("#sheet").focus({ preventScroll: true });
       if (state === "success") App.stampLand($("#sheet .sheet-done .rstamp"), 3);   /* the filed stamp lands once the sheet is up; nothing plays on a failure */
     },
     /* While a transaction runs, the button that started it is disabled and carries the status ("Staking 500 CT: sending").
@@ -706,6 +728,42 @@
   };
 
   /* ---------- forgiving amount parser ---------- */
+  /* EIP-55: a mixed case address carries a checksum in its capital letters (keccak-256 of the lower case hex). A small keccak-256 for that one check. */
+  App.keccak256 = function (str) {
+    var RC = [], R = [], M64 = (1n << 64n) - 1n, i, x, y, t, r = 1n;
+    for (i = 0; i < 24; i++) { var c = 0n; for (var j = 0; j < 7; j++) { if (r & 1n) c ^= 1n << ((1n << BigInt(j)) - 1n); r = ((r << 1n) ^ ((r >> 7n) * 0x71n)) & 0xffn; } RC.push(c); }
+    x = 1; y = 0; R[0] = 0; for (t = 0; t < 24; t++) { R[x + 5 * y] = ((t + 1) * (t + 2) / 2) % 64; var nx = y; y = (2 * x + 3 * y) % 5; x = nx; }
+    function rot(v, n) { n = BigInt(n); return n ? ((v << n) | (v >> (64n - n))) & M64 : v; }
+    var bytes = [], s = [], rate = 136; for (i = 0; i < str.length; i++) bytes.push(str.charCodeAt(i) & 255);
+    bytes.push(1); while (bytes.length % rate) bytes.push(0); bytes[bytes.length - 1] |= 0x80;
+    for (i = 0; i < 25; i++) s.push(0n);
+    for (var off = 0; off < bytes.length; off += rate) {
+      for (i = 0; i < rate / 8; i++) { var l = 0n; for (var b = 7; b >= 0; b--) l = (l << 8n) | BigInt(bytes[off + i * 8 + b]); s[i] ^= l; }
+      for (var rd = 0; rd < 24; rd++) {
+        var C = [], D = [], B = [];
+        for (x = 0; x < 5; x++) C[x] = s[x] ^ s[x + 5] ^ s[x + 10] ^ s[x + 15] ^ s[x + 20];
+        for (x = 0; x < 5; x++) { D[x] = C[(x + 4) % 5] ^ rot(C[(x + 1) % 5], 1); for (y = 0; y < 5; y++) s[x + 5 * y] ^= D[x]; }
+        for (x = 0; x < 5; x++) for (y = 0; y < 5; y++) B[y + 5 * ((2 * x + 3 * y) % 5)] = rot(s[x + 5 * y], R[x + 5 * y]);
+        for (x = 0; x < 5; x++) for (y = 0; y < 5; y++) s[x + 5 * y] = B[x + 5 * y] ^ ((~B[(x + 1) % 5 + 5 * y] & M64) & B[(x + 2) % 5 + 5 * y]);
+        s[0] ^= RC[rd];
+      }
+    }
+    var out = ""; for (i = 0; i < 4; i++) for (b = 0; b < 8; b++) out += ("0" + Number((s[i] >> BigInt(8 * b)) & 0xffn).toString(16)).slice(-2);
+    return out;
+  };
+  App.toChecksum = function (addr) { var a = addr.slice(2).toLowerCase(), h = App.keccak256(a), o = "0x"; for (var i = 0; i < 40; i++) o += parseInt(h.charAt(i), 16) >= 8 ? a.charAt(i).toUpperCase() : a.charAt(i); return o; };
+  /* all lower case carries no checksum and passes; any capital letter means the checksum must be right */
+  App.checksumOk = function (addr) { var a = addr.slice(2); return a === a.toLowerCase() || addr === App.toChecksum(addr); };
+  /* amount fields: a key that cannot be part of an amount is refused as it is typed (letters, signs, a second point); a paste is still checked by the form.
+     Enter (the "Go" key of a phone keyboard) in a field of a form with one pinned action runs that action's own check. */
+  document.addEventListener("beforeinput", function (e) {
+    var el = e.target; if (!el || !el.closest || !el.closest(".field-box--fig") || e.inputType !== "insertText" || !e.data) return;
+    if (!/^[0-9\uFF10-\uFF19.,\uFF0E\uFF0C]+$/.test(e.data) || (/[.\uFF0E]/.test(e.data) && /[.\uFF0E]/.test(el.value) && el.selectionStart === el.selectionEnd)) e.preventDefault();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key !== "Enter" || e.isComposing) return; var el = e.target; if (!el || el.tagName !== "INPUT" || !el.closest(".field-box") || el.closest("form, #sheet")) return;
+    var go = $("#go"); if (go) { e.preventDefault(); if (!go.disabled) go.click(); }
+  });
   App.parseAmount = function (s) {
     s = String(s).replace(/[\uFF10-\uFF19\uFF0E\uFF0C]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); }).trim().replace(/\s*(ct|p|kaia)$/i, "").replace(/,/g, "");
     if (s === "") return { empty: true };

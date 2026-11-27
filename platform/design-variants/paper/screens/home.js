@@ -116,8 +116,8 @@
       disabled: function () { return App.offline; },
       onBlocked: function () { App.toast(t("h.offline"), { key: "offline" }); },
       onCommit: function (n, dir, remaining, card) {
-        var ae = document.activeElement, p = { n: n, id: card.getAttribute("data-id"), dir: dir, card: card, t0: Date.now(), state: "held", focusUndo: !!ae && (ae.id === "undo" || card.contains(ae) || keyPick) };
-        keyPick = false;
+        var ae = document.activeElement, p = { n: n, id: card.getAttribute("data-id"), dir: dir, card: card, t0: Date.now(), made: Date.now(), state: "held", focusUndo: !!ae && (ae.id === "undo" || card.contains(ae) || keyPick) };
+        keyPick = false; var byKey = p.focusUndo;
         held.forEach(resume);   /* an earlier pick whose fuse was waiting on a focused Undo runs on: only the newest pick can be held */
         p.timer = setTimeout(function () { send(p); }, UNDO_MS);
         held.push(p);
@@ -125,7 +125,7 @@
         stopNudge();
         seg(n, "is-pend"); count++; cnt.textContent = count;
         render();
-        App.live(t("pp.live.picked", { choice: App.q(p.id)[dir] }));   /* short enough to be heard inside the 3 seconds */
+        App.live(t(byKey ? "pp.live.key" : "pp.live.picked", { choice: App.q(p.id)[dir] }));   /* a keyboard pick moves the focus to Undo, which holds it for up to 10 seconds */   /* short enough to be heard inside the 3 seconds */
         /* the fifth pick: the day done page opens at once (the throw is still on screen for a moment). Its Undo stays open there for what is left of the 3 seconds. */
         if (count === 5 && !leaving) { leaving = true; setTimeout(function () { location.href = "done.html?state=moment&undo=" + Math.max(0, UNDO_MS - (Date.now() - p.t0)) + "&q=" + p.id; }, App.reduce ? 0 : 320); }
       }
@@ -133,14 +133,17 @@
     /* The fuse waits while Undo has keyboard focus (a screen reader or keyboard user is on it), never on hover or touch. It runs on when the focus leaves.
        The rule itself stays: once the fuse is out the pick is sent and is final. */
     var keyPick = false;
-    function pause(p) { if (!p || p.paused || p.state !== "held") return; p.paused = true; clearTimeout(p.timer); p.left = Math.max(300, UNDO_MS - (Date.now() - p.t0)); var f = $(".fuse i", bar); if (f) f.style.animationPlayState = "paused"; }
-    function resume(p) { if (!p || !p.paused) return; p.paused = false; p.t0 = Date.now() - (UNDO_MS - p.left); p.timer = setTimeout(function () { send(p); }, p.left); var f = $(".fuse i", bar); if (f) f.style.animationPlayState = ""; }
+    /* the pause is capped: a pick is final 10 seconds after it was made at the latest, also while Undo keeps the focus */
+    var KEY_MS = 10000;
+    function pause(p) { if (!p || p.paused || p.state !== "held") return; p.paused = true; clearTimeout(p.timer);
+      p.cap = setTimeout(function () { if (p.paused && p.state === "held") { p.paused = false; send(p); } }, Math.max(0, KEY_MS - (Date.now() - p.made))); p.left = Math.max(300, UNDO_MS - (Date.now() - p.t0)); var f = $(".fuse i", bar); if (f) f.style.animationPlayState = "paused"; }
+    function resume(p) { if (!p || !p.paused) return; clearTimeout(p.cap); p.paused = false; p.t0 = Date.now() - (UNDO_MS - p.left); p.timer = setTimeout(function () { send(p); }, p.left); var f = $(".fuse i", bar); if (f) f.style.animationPlayState = ""; }
     bar.addEventListener("focusin", function (e) { var u = e.target.closest && e.target.closest("#undo"); if (u && u.matches(":focus-visible")) pause(held[held.length - 1]); });
     bar.addEventListener("focusout", function (e) { if (e.target.closest && e.target.closest("#undo")) setTimeout(function () { if (!document.activeElement || document.activeElement.id !== "undo") held.forEach(resume); }, 0); });
     document.addEventListener("keydown", function (e) { if (e.key === "ArrowLeft" || e.key === "ArrowRight") keyPick = true; }, true);
     function undo() {
       var p = held.pop(); if (!p) return;
-      clearTimeout(p.timer);
+      clearTimeout(p.timer); clearTimeout(p.cap);
       if (live) { delete sess.data.picks[p.id]; sess.save(); }
       seg(p.n, ""); count--; cnt.textContent = count;
       deck.restore(p.card, p.dir);

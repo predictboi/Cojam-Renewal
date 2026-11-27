@@ -61,7 +61,7 @@ The pick bar (the hint, then the pick with Undo) is pinned directly above the ta
 | --- | --- |
 | Next focus stop | After a pick made with the keyboard or a screen reader (the focus was in the card or on Undo), the focus moves to Undo. Arrow keys keep picking from there |
 | Short announcement | The live region says "Picked Yes. Undo, 3 seconds." so it can be heard inside the window |
-| The fuse waits on focus | While Undo has keyboard focus (`:focus-visible`, never hover or touch) the fuse is paused and the pick is held; it runs on when the focus leaves or the next pick is made |
+| The fuse waits on focus, up to 10 seconds | While Undo has keyboard focus (`:focus-visible`, never hover or touch) the fuse is paused and the pick is held; it runs on when the focus leaves or the next pick is made. The hold is an accessibility aid with a cap: a pick becomes final 10 seconds after it was made at the latest, also while Undo still has the focus. After a keyboard pick the announcement says so ("Picked Yes. Undo within 10 seconds."); a touch or mouse pick keeps the plain 3 seconds |
 | Final, said plainly | In the list view a sent answer carries the tag "Final" with a lock |
 
 ## 2. The fifth pick and day done: the extra edition

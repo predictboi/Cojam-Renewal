@@ -17,7 +17,7 @@
     var pend = null; M.results.forEach(function (g) { g.rows.forEach(function (r) { if (r.out === "pend" && !pend) pend = r; }); });
     function col(fig, label, sub) { return '<div class="tri-c"><h2 class="tri-lbl">' + label + '</h2><p class="tri-fig">' + fig + "</p>" + (sub ? '<p class="tri-sub tnum">' + sub + "</p>" : "") + "</div>"; }
     return '<section class="sec" aria-label="' + esc(t("r.sum.sr")) + '"><div class="tri">' +
-      col(F.pts(M.week.pts), t("r.week"), t("r.sum.hits", { a: M.week.hits, b: M.week.answered })) +
+      col(F.pts(M.week.pts + (App.sess.data.paid ? 0 : 100)), t("r.week"),   /* this page shows the finished day, so its 100P is in the week */ t("r.sum.hits", { a: M.week.hits, b: M.week.answered })) +
       col(F.pts(M.all.pts), t("r.all"), t("r.sum.rate", { n: M.all.rate })) +
       col("+" + F.pts(M.user.pendingHit), t("r.pending"), pend ? t("r.at", { time: pend.at }) : "") + "</div></section>";
   }
@@ -83,6 +83,7 @@
     return summary() + seg + legend() + '<div class="pg-groups" id="groups">' + days.map(group).join("") + '</div><div id="fempty" hidden></div>' +
       C.btn(t("r.more"), { block: true, id: "more", icon: "down" });
   }
+  if (S === "") { App.sess.data.seen = true; App.sess.save(); }
   App.mount({ tab: "results", cls: "sc-results", docTitle: t("r.title"), live: C.count("d.next", M.untilNextSet()), head: head(), body: body(), points: App.sess.data.paid ? M.user.points : M.user.points + 100, pts: S === "" ? "hits" : S === "loading" ? "loading" : "", badges: { home: "dot" }, after: function () {
     var groups = $("#groups"); if (!groups) return;
     function apply(f) {

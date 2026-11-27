@@ -282,3 +282,41 @@ Review E scored 81 / 100 and 35 / 40 (`reviews/review-E.md`, written without rea
 | Tab order starts in the deck on home | Deliberate for a game: the first key press answers. |
 | Wallet sets two equal figures | CT and points are the two balances of the screen; review E lists it as an observation, not a defect |
 | Gate example card answers stay coloured | They show the product; the card has a hairline and "Example" in the kicker row, and is inert |
+
+## Round 4 (review F)
+
+Review F scored 84 / 100 and 36 / 40 with no blocker (`reviews/review-F.md`).
+
+### Review F: finding by finding
+
+| # | Finding | What was done |
+| --- | --- | --- |
+| 1 | Withdrawing an unlocked stake does not reach the wallet | The total goes to the session ledger, the stake is closed for the session, the head (staked, earned, claimable, the count on the tab) is drawn again in place, the wallet shows the new balance and staked amount, and a reload does not bring the stake back. A claim of interest is written the same way and its row falls back to "Min. claim 10 CT" |
+| 2 | Weekly figures ignore the 100P of a finished day | The 100P counts in the week everywhere: results 1,050P, profile 1,050P and rank 11, the ranking's own bar "11, 50P behind the top 10, 1,050P", and the rows around the player |
+| 3 | Focus falls out of the transaction sheet between steps | After each swap of the sheet the focus is on its heading, and on Done when the transaction has succeeded. Measured through a whole stake withdrawal: never `BODY` |
+| 4 | Undo never expires while it has keyboard focus | The hold stays as an aid but is capped: the pick is final 10 seconds after it was made at the latest. A keyboard pick is announced as "Picked Yes. Undo within 10 seconds." Measured: still open at 5 s, final at 10.0 s. Written into MOTION.md and STATES.md |
+| 5 | Own rank bar truncates at 320 px | Below 360 px the bar has two lines: rank, name and points, then the status in full. No ellipsis in any state or language; the prize is whole |
+| 6 | Japanese sub page titles wrap and clip at 320 px | One line of 18 px inside the header |
+| 7 | Card picture dropped with a blank band | Same fix as review E 3: a strip down to 64 px, otherwise the question block is centred and the headline steps up |
+| 8 | A typed mixed case address with a wrong checksum is accepted | The EIP-55 check (keccak-256 in the page) runs on every address with a capital letter, typed or pasted. A wrong one is an error that states the fix: "A letter in this address is wrong. Paste it again from where you copied it." The player's own mock address was replaced by its checksummed form |
+| 9 | Stale and ungrammatical screen reader text on day done | The spoken dateline changes with the visible one at once, hours and minutes take the singular ("1 hour 3 minutes"), and the headline is named once (`aria-label` on the `h1`, the set letters hidden) |
+| 10 | Tab badges do not follow state | No dot on Home once the five are picked; the Results count goes once Results was opened |
+| 11 | Enter in an amount field does nothing | Enter in an amount or address field runs the pinned action's own check |
+| 12 | Back on the hold page always goes to the wallet | It returns to the page the player came from; the wallet is the fallback for a direct visit |
+| 13 | Disabled primary labelled "Deposit KAIA" | With too little KAIA the pinned action is enabled and leads to the deposit page |
+| 14 | "Skip" 28 x 44, "Terms" 38 x 44 | Skip is at least 44 px wide; the legal links are 50 px and wider |
+| 15 | Staking at 320 x 568: half a label above the pinned bar | On short phones the interest figure lives in the pinned bar only; the copy in the page stays for screen readers |
+| 16 | After a claim the page still offers the claim | The row is drawn again without the claim, in every state |
+| 17 | Amount fields keep junk | A key that cannot be part of an amount (letters, signs, a second point) is refused as it is typed; a paste is still checked by the form. A value the points field cannot read answers "Enter points as a number, like 1,000." instead of the minimum |
+| 18 | Wallet zero shows a count of 2 beside "Staked 0 CT" | The count is 0 |
+| 19 | Check box focus ring touches the label | The ring is drawn around the box itself |
+| Table notes | "Fee: you pay" in the slab on wallet hold; stat cells touching in Japanese convert at 320 px | Text face, right aligned under the KAIA value; the three facts stack as rows below 360 px |
+
+### Not changed, and why
+
+| Item | Why |
+| --- | --- |
+| First run pages 2 and 3 and convert leave half the screen empty at 390 x 844 | One question, one figure per screen is the founder's rule; filling the space would add text |
+| No last used address | Needs real account data; nothing in the mock to remember across sessions |
+| No hint that the keyboard works | A visible hint adds a line on the home screen, which is kept as approved; on a device with a fine pointer the hint already names the arrow keys |
+| The lock line on staking can sit behind the pinned bar at 320 x 568 until the page is scrolled | The pinned bar carries the figure and the action; the lock date and "No early exit" are repeated in the review sheet before signing |

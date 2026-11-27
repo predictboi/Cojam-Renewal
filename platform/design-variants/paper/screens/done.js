@@ -33,7 +33,7 @@
   }
   function letters(text) {
     var i = 0;
-    return '<span class="sr-only">' + App.esc(text) + '</span><span aria-hidden="true">' + text.split(" ").map(function (w) {
+    return '<span aria-hidden="true">' + text.split(" ").map(function (w) {
       return '<span class="wd">' + Array.from(w).map(function (c) { return '<span class="ltr" style="--i:' + (i++) + '">' + App.esc(c) + "</span>"; }).join("") + "</span>";
     }).join(" ") + "</span>";
   }
@@ -42,7 +42,7 @@
     var segs = phase === "saving" ? ["done", "done", "done", "done", "pend"] : ["done", "done", "done", "done", "done"];
     return '<section class="done-hero' + (moment ? " is-moment" : "") + (phase === "saving" ? " is-saving" : "") + '" id="hero">' +
       '<div class="extra" id="extra"><span class="extra-run" aria-hidden="true"></span><p class="extra-ink"><b>' + t("pp.extra") + "</b></p></div>" +
-      "<h1>" + letters(t("d.h1")) + '</h1><div class="done-figs"><p class="done-fig' + (phase === "saving" ? " is-wait" : "") + '" id="done-fig" data-dg aria-hidden="true">' + num(100) + "</p>" +
+      '<h1 aria-label="' + App.esc(t("d.h1")) + '">' + letters(t("d.h1")) + '</h1><div class="done-figs"><p class="done-fig' + (phase === "saving" ? " is-wait" : "") + '" id="done-fig" data-dg aria-hidden="true">' + num(100) + "</p>" +
       (wel ? '<p class="done-wel" id="done-wel" aria-hidden="true"><b>+' + W + "P</b><span>" + t("d.wel.tag") + "</span></p>" : "") + "</div>" +
       '<div class="done-row" aria-live="polite" id="reward-wrap">' + row(undoMs ? "undo" : phase) + "</div>" +
       '<div class="ph-line">' + C.day5(segs, { id: "day5", label: "5/5" }) + "</div></section>";
@@ -87,7 +87,7 @@
       try { if (navigator.vibrate) navigator.vibrate([12, 40, 18]); } catch (e) {}
       App.addPoints(100);   /* the row under the figure is the one live region that says it */
       at(640, function () { if (settled) return; wrap.innerHTML = row("paid"); App.stampLand($("#seal .rstamp"), 0);
-        var f = $("#dl-flip"); if (f) { f.firstChild.textContent = t("d.next"); var srr = f.parentNode.querySelector("[data-cd-sr]"); if (srr) srr.setAttribute("data-cd-sr", "d.next"); if (!App.reduce) { f.classList.remove("is-flip"); void f.offsetWidth; f.classList.add("is-flip"); } } });
+        var f = $("#dl-flip"); if (f) { f.firstChild.textContent = t("d.next"); var srr = f.parentNode.querySelector("[data-cd-sr]"); if (srr) { srr.setAttribute("data-cd-sr", "d.next"); srr.textContent = srr.textContent.replace(t("h.closes"), t("d.next")); } if (!App.reduce) { f.classList.remove("is-flip"); void f.offsetWidth; f.classList.add("is-flip"); } } });
       at(1400, settle);
     }
     /* settle: the page is exactly the settled done page, nothing left to run */
@@ -97,7 +97,7 @@
       if (!paid) { mode = "saving"; pay(); timers.forEach(clearTimeout); }
       if (fig._roll) cancelAnimationFrame(fig._roll); fig.innerHTML = num(100);
       wrap.innerHTML = row("paid");
-      var f = $("#dl-flip"); if (f) { f.firstChild.textContent = t("d.next"); var s2 = f.parentNode.querySelector("[data-cd-sr]"); if (s2) s2.setAttribute("data-cd-sr", "d.next"); }
+      var f = $("#dl-flip"); if (f) { f.firstChild.textContent = t("d.next"); var s2 = f.parentNode.querySelector("[data-cd-sr]"); if (s2) { s2.setAttribute("data-cd-sr", "d.next"); s2.textContent = s2.textContent.replace(t("h.closes"), t("d.next")); } }
       dropBar();
       hero.classList.add("is-settled");
       if (hero.getAnimations) hero.getAnimations({ subtree: true }).forEach(function (a) { try { a.finish(); } catch (e) {} });

@@ -10,11 +10,15 @@
   if (S === "unlocking") stakes[0] = { id: "u", amount: 1000, days: 90, rate: 13, start: new Date(Date.now() - 90 * DAY + 6000) };
   function calc(s) {
     var el = Math.min((Date.now() - s.start) / 1000, s.days * 86400), per = s.amount * s.rate / 100 / YEAR;
-    return { interest: per * el, per: per, cap: per * s.days * 86400, day: Math.min(s.days, Math.floor(el / 86400) + 1), unlocked: el >= s.days * 86400, unlock: new Date(+s.start + s.days * DAY), pct: Math.min(100, el / (s.days * 864)) };
+    var from = s.claimAt ? Math.min(el, Math.max(0, (s.claimAt - s.start) / 1000)) : 0;   /* interest already claimed is not counted again */
+    return { interest: per * (el - from), per: per, cap: per * s.days * 86400, day: Math.min(s.days, Math.floor(el / 86400) + 1), unlocked: el >= s.days * 86400, unlock: new Date(+s.start + s.days * DAY), pct: Math.min(100, el / (s.days * 864)) };
   }
-  var total = stakes.reduce(function (a, s) { return a + s.amount; }, 0);
-  var sofar = stakes.reduce(function (a, s) { return a + calc(s).interest; }, 0), perAll = stakes.reduce(function (a, s) { var c = calc(s); return a + (c.unlocked ? 0 : c.per); }, 0);
-  var claimable = stakes.reduce(function (a, s) { var c = calc(s); return a + (c.unlocked || c.interest >= M.minClaim ? c.interest : 0); }, 0);
+  /* the summary is computed from the list each time it is drawn, so it follows a withdrawal or a claim at once */
+  function sums() {
+    return { total: stakes.reduce(function (a, s) { return a + s.amount; }, 0), sofar: stakes.reduce(function (a, s) { return a + calc(s).interest; }, 0),
+      perAll: stakes.reduce(function (a, s) { var c = calc(s); return a + (c.unlocked ? 0 : c.per); }, 0),
+      claimable: stakes.reduce(function (a, s) { var c = calc(s); return a + (c.unlocked || c.interest >= M.minClaim ? c.interest : 0); }, 0) };
+  }
   /* a date carries its year whenever that is not the current year (a 365 day stake ends next year) */
   function dt(d) { d = new Date(d); return d.getFullYear() === new Date().getFullYear() ? F.date(d) : F.dateLong(d); }
   function fix4(n) { return Number(n).toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 }); }
@@ -45,22 +49,32 @@
     if (S === "loading") return sw() + '<section class="msec" aria-busy="true">' + C.skel("90px") + C.skel("170px", "44px") + C.skel("70%", "22px") + "</section>" + [1, 2].map(function () { return '<article class="msec" aria-busy="true">' + C.skel("120px", "30px") + C.skel("100%", "10px") + C.skel("100%") + C.skel("100%", "44px") + "</article>"; }).join("") + '<p class="sr-only" role="status">' + t("common.loading") + "</p>";
     return sw() + (App.offline ? C.note("warn", t("s.offline")) : "") +
       (hold ? C.hold(t("hold.stakes")) + (noKaia ? C.note("warn", t("hold.nokaia", { f: M.fee, k: F.dec(kaia, 4) }), C.btn(t("x.fix.kaia"), { sm: true, href: "deposit.html", id: "get-kaia" })) : "") : "") +
-      '<section class="msec" id="total"><div class="mhero"><h2 class="lbl">' + t("m.staked") + '</h2><p class="fig fig--xl">' + F.dec(total) + "<small>CT</small></p></div>" +
-      '<div class="stats"><div class="stat"><b><span data-tick="' + sofar + "|" + perAll + '">' + dg(fix4(sofar)) + "</span></b><span>" + t("pp.earned") + '</span></div><div class="stat"><b>' + fix4(claimable) + "</b><span>" + t("pp.claimable") + "</span></div></div>" +
-      (hold ? C.rows([[t("x.kaia"), F.kaia(kaia)]]) : "") + "</section>" +
+      '<section class="msec" id="total">' + totalHtml() + "</section>" +
       stakes.map(card).join("") +
       C.help(t("m.closed.q", { n: M.stakesClosed.length }), M.stakesClosed.map(function (s) { return '<div class="mclosed"><div class="row-between"><span>' + F.ct(s.amount) + ", " + t("m.card.period", { d: s.days, r: s.rate }) + "</span>" + C.tag(t("m.closed"), "line") + '</div><p class="tiny muted">' + t("m.paidout", { a: F.dec(s.paid, 2) }) + "</p></div>"; }).join(""));
   }
+  function totalHtml() {
+    var m = sums();
+    return '<div class="mhero"><h2 class="lbl">' + t("m.staked") + '</h2><p class="fig fig--xl">' + (m.total ? F.dec(m.total) + "<small>CT</small>" : '<span class="is-zero">0 CT</span>') + "</p></div>" +
+      '<div class="stats"><div class="stat"><b><span data-tick="' + m.sofar + "|" + m.perAll + '">' + dg(fix4(m.sofar)) + "</span></b><span>" + t("pp.earned") + '</span></div><div class="stat"><b>' + fix4(m.claimable) + "</b><span>" + t("pp.claimable") + "</span></div></div>" +
+      (hold ? C.rows([[t("x.kaia"), F.kaia(kaia)]]) : "");
+  }
+  /* after a withdrawal or a claim: the head (staked total, earned, claimable) and the count on the tab are drawn again in place */
+  function redraw() { var tot = $("#total"); if (tot) tot.innerHTML = totalHtml(); var n = $("#sw .mtabs-n"); if (n) n.textContent = stakes.length; App.enhance(document.body); }
   function find(id) { return stakes.filter(function (s) { return s.id === id; })[0]; }
   App.mount({ tab: "stake", docTitle: t("s.title"), head: head(), body: body(), badges: { home: "dot", results: 2 }, after: function () {
     document.addEventListener("click", function (e) {
       var c = e.target.closest("[data-claim]"), w = e.target.closest("[data-wd]");
       /* on hold every claim and withdrawal is reviewed first: the sheet states the fee, who pays it and the KAIA balance */
       function rv(title, amount) { return hold ? { title: title, rows: [[t("x.amount"), amount], [t("x.fee"), t("x.fee.v", { f: M.fee })], [t("x.kaia"), F.kaia(kaia)]], note: t("hold.fee.line") + ". " + t("hold.fee.rv"), confirm: t("tx.confirm") } : null; }
-      if (c) { var s = find(c.getAttribute("data-claim")), i = F.dec(calc(s).interest, 2); App.tx.run({ label: t("m.chip.claim", { i: i }), review: rv(t("m.claim", { i: i }), F.ct(calc(s).interest)), success: { title: t("m.ok.claim", { i: i }) } }); }
+      if (c) { var s = find(c.getAttribute("data-claim")), i = F.dec(calc(s).interest, 2); App.tx.run({ label: t("m.chip.claim", { i: i }), review: rv(t("m.claim", { i: i }), F.ct(calc(s).interest)), success: { title: t("m.ok.claim", { i: i }) },
+        onSuccess: function () { var got = calc(s).interest, now = Date.now(); s.claimAt = now; if (S === "") { App.ledger(Math.round(got * 1e4) / 1e4, 0); App.claimStake(s.id, now); }
+          var el = $('[data-stake="' + s.id + '"]'); if (el) el.outerHTML = card(s); redraw(); } }); }
       if (w) { var s2 = find(w.getAttribute("data-wd")), a = F.dec(out(s2), 4), c2 = calc(s2);
         var rvw = { title: t("m.withdraw", { a: a }), rows: [[t("pp.stake"), F.ct(s2.amount)], [t("m.interest"), F.ct(c2.interest)], [t("pp.total"), F.ct(out(s2)), true]].concat(hold ? [[t("x.fee"), t("x.fee.v", { f: M.fee })], [t("x.kaia"), F.kaia(kaia)]] : []), note: hold ? t("hold.fee.line") + ". " + t("hold.fee.rv") : "", confirm: t("m.withdraw", { a: a }) };
-        App.tx.run({ label: t("m.chip.wd", { a: a }), review: rvw, success: { title: t("m.ok.wd", { a: a }) }, onDone: function () { var el = $('[data-stake="' + s2.id + '"]'); if (el) el.parentNode.removeChild(el); } }); }
+        App.tx.run({ label: t("m.chip.wd", { a: a }), review: rvw, success: { title: t("m.ok.wd", { a: a }) },
+          /* the stake and its interest go to the wallet (the session ledger), the stake is closed for the session, and the head follows */
+          onSuccess: function () { if (S === "") { App.ledger(out(s2), 0); App.closeStake(s2.id); } stakes.splice(stakes.indexOf(s2), 1); var el = $('[data-stake="' + s2.id + '"]'); if (el) el.parentNode.removeChild(el); redraw(); } }); }
     });
     if (S === "claim") App.tx.show("success", { label: "", success: { title: t("m.ok.claim", { i: "263.01" }) } });
     if (S === "unlocking") setTimeout(function () {   /* the unlock moment: the tag flips and the withdraw button appears, no reload */

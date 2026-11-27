@@ -27,7 +27,7 @@
     function update() {
       var p = App.parseAmount(inp.value), v = Math.floor(p.value || 0), err = "", fix = "";
       function use(f) { return C.btn(t("c.fix", { f: F.int(f) }), { sm: true, attrs: 'data-fix="' + f + '"' }); }
-      if (p.bad) err = t("c.e.min");
+      if (p.bad) err = t("pp.c.nan");
       else if (!p.empty && v > bal) { err = t("c.e.bal", { p: F.int(bal) }); if (maxP) fix = use(maxP); }
       else if (!p.empty && v < 1000) err = t("c.e.min");
       else if (!p.empty && v % 1000) { var f = Math.floor(v / 1000) * 1000; err = t("c.e.step", { f: F.int(f) }); fix = use(f); }

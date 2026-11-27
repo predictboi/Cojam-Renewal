@@ -30,7 +30,7 @@
     function checkAddr(v) {
       if (!v) return touched ? "x.e.empty" : "";
       if (!/^0x[0-9a-fA-F]{40}$/.test(v)) return "x.e.bad";
-      if (S === "sum" && v === addr0) return "x.e.sum";
+      if (!App.checksumOk(v)) return "pp.x.sum";   /* EIP-55 on every address with a capital letter, typed or pasted */
       if (v.toLowerCase() === M.user.address.toLowerCase()) return "x.e.own";
       if (M.contracts.indexOf(v.toLowerCase()) >= 0) return "x.e.contract";
       return "";
@@ -47,7 +47,8 @@
       var noKaia = kaia < fee;
       $("#kaia-note").innerHTML = noKaia ? C.note("error", t("x.e.kaia", { f: fee, k: F.dec(kaia) }), C.btn(t("x.fix.kaia"), { sm: true, href: "deposit.html" })) : "";
       var valid = v && !e1 && !e2 && !p.empty && !noKaia && !blocked;
-      go.disabled = !valid; go.querySelector("span").textContent = e1 ? t("pp.x.fix") : noKaia ? t("x.fix.kaia") : !p.empty && !e2 && a ? t("x.btn", { a: F.dec(a) }) : t("x.btn.empty");
+      /* without KAIA for the fee the pinned action is the way out: it leads to the deposit page (never a dead button that names an action) */
+      go.disabled = !valid && !(noKaia && !blocked); go._dep = noKaia && !valid; go.querySelector("span").textContent = e1 ? t("pp.x.fix") : noKaia ? t("x.fix.kaia") : !p.empty && !e2 && a ? t("x.btn", { a: F.dec(a) }) : t("x.btn.empty");
       return valid ? { to: v, a: a } : null;
     }
     to.addEventListener("input", function () { touched = true; update(); }); to.addEventListener("blur", function () { touched = true; update(); }); inp.addEventListener("input", update);
@@ -56,7 +57,7 @@
       if (e.target.closest("[data-max]")) { inp.value = F.dec(bal); update(); return; }   /* Max subtracts nothing: the fee is paid in KAIA */
       if (e.target.closest("#paste")) { touched = true; var done = function (s) { to.value = (s || GOOD).trim(); update(); }; try { navigator.clipboard.readText().then(done, function () { done(""); }); } catch (err) { done(""); } }
     });
-    go.addEventListener("click", function () { var r = update(); if (r) App.tx.run(cfg(r.to, r.a)); });
+    go.addEventListener("click", function () { if (go._dep) { location.href = "deposit.html"; return; } var r = update(); if (r) App.tx.run(cfg(r.to, r.a)); });
     update();
     var show = { review: "review", signing: "signing", sending: "sending", success: "success", failed: "failed" }[S];
     if (show) App.tx.show(show, cfg(GOOD, 250));

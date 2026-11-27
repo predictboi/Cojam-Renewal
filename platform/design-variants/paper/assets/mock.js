@@ -18,7 +18,7 @@
     qrUrl: "https://app.cojam.app/?src=qr",
     user: {
       name: "minji", email: "minji@naver.com",
-      address: "0x7A3fC2b91E5d4086aB17c93D5E0f6A2948bD1C7e",
+      address: "0x7A3Fc2b91E5D4086AB17c93D5E0f6a2948bd1C7e",
       points: 1250, pendingHit: 50, ct: 1840.5, staked: 1500, kaia: 2.4,
       firstConvert: ahead(3.4),
       signedUp: ago(3.2 / 24)   /* used by the profile states code-*: an invite code can be added for 24 hours after sign up */

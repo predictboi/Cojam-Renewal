@@ -25,6 +25,8 @@
   var plain = '<div class="sys sys--center">' + C.notice(v.icon) + "<h1>" + t(v.h) + "</h1><p>" + (v.b ? t(v.b) : "") + "</p>" + (v.extra || "") +
     C.btn(t(v.btn || "common.retry"), { kind: "primary", href: v.href, id: "act" }) + (v.foot ? '<p class="sys-fee">' + v.foot + "</p>" : "") + "</div>";
   App.mount({ bare: true, docTitle: t(v.h), raw: '<div class="auth">' + top + (S === "blocked" ? hold : plain) + "</div>", after: function () {
+    /* Back returns to where the player came from (Home, Wallet, Staking); the wallet is only the fallback for a direct visit */
+    var bk = $(".mast-back"); if (bk && S === "blocked") bk.addEventListener("click", function (e) { var ref = document.referrer; if (ref && ref.indexOf(location.origin) === 0 && history.length > 1 && !/system\.html|hold\.html/.test(ref)) { e.preventDefault(); history.back(); } });
     var b = $("#act"); if (b && b.tagName === "BUTTON") b.addEventListener("click", function () { b.classList.add("is-loading"); b.innerHTML = '<span class="spin"></span><span>' + t("common.loading") + "</span>"; setTimeout(function () { location.reload(); }, 900); });
   } });
 })();

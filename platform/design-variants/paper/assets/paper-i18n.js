@@ -74,6 +74,10 @@
     "pp.st.update": ["Update", "업데이트", "アップデート"],
     "pp.st.offline": ["Offline", "오프라인", "オフライン"],
     "pp.st.404": ["404", "404", "404"],
+    /* review F */
+    "pp.x.sum": ["A letter in this address is wrong. Paste it again from where you copied it.", "주소에 잘못된 글자가 있어요. 복사한 곳에서 다시 붙여 넣어 주세요.", "アドレスに誤った文字があります。コピー元からもう一度貼り付けてください。"],
+    "pp.c.nan": ["Enter points as a number, like 1,000.", "포인트를 숫자로 입력해 주세요. 예: 1,000", "ポイントを数字で入力してください。例: 1,000"],
+    "pp.live.key": ["Picked {choice}. Undo within 10 seconds.", "{choice} 선택. 10초 안에 되돌릴 수 있어요.", "{choice}を選択。10秒以内なら取り消せます。"],
     "pp.lede": ["We email you a code.", "이메일로 코드를 보내 드려요.", "メールでコードをお送りします。"]
   };
   var d = window.CJ_I18N.dict;

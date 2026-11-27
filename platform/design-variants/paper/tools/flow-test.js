@@ -64,6 +64,29 @@ const { chromium } = require('playwright');
   log.push('withdraw success rows: ' + (await pg.locator('#sheet .rows dt').allTextContents()).join(', ') + '; form cleared: ' + ((await pg.locator('#amt').inputValue()) === ''));
   await pg.locator('[data-tx="done"]').tap(); await pg.waitForURL(/wallet\.html/); log.push('after withdrawing 250 CT: wallet ' + ct1 + ' -> ' + (await bal()) + ' CT');
   await pg.goto('http://localhost:8851/stakes.html', { waitUntil: 'networkidle' }); await pg.locator('[data-wd]').first().tap(); await pg.waitForSelector('#tx-confirm'); log.push('unlocked stake withdraw is reviewed: ' + (await pg.locator('#sheet .rows dt').allTextContents()).join(', '));
+  // review F: the withdrawn stake reaches the wallet, closes for the session and the head follows; the focus stays in the sheet; the finished day counts in the week
+  const walletBefore = +(ct1 - 250).toFixed(4); const wdText = (await pg.locator('#tx-confirm').textContent()).replace(/[^0-9.]/g, '');
+  await pg.locator('#tx-confirm').focus(); await pg.keyboard.press('Enter'); const foc = [];
+  for (let i = 0; i < 8; i++) { await pg.waitForTimeout(450); foc.push(await pg.evaluate(() => document.activeElement === document.body ? 'BODY' : (document.activeElement.getAttribute('data-tx') || document.activeElement.tagName))); }
+  await pg.waitForSelector('[data-tx="done"]', { timeout: 15000 }); await pg.waitForTimeout(200); foc.push(await pg.evaluate(() => document.activeElement.getAttribute('data-tx') || document.activeElement.tagName));
+  log.push('focus during the stake withdrawal: ' + [...new Set(foc)].join(', ') + ' (never BODY: ' + (foc.indexOf('BODY') < 0) + ')');
+  await pg.locator('[data-tx="done"]').tap(); await pg.waitForTimeout(400);
+  log.push('stakes head after withdrawing ' + wdText + ' CT: staked ' + (await pg.locator('#total .fig').textContent()) + ', count ' + (await pg.locator('#sw .mtabs-n').textContent()) + ', rows ' + (await pg.locator('[data-stake]').count()));
+  await pg.reload({ waitUntil: 'networkidle' }); log.push('after a reload: rows ' + (await pg.locator('[data-stake]').count()) + ', withdraw buttons ' + (await pg.locator('[data-wd]').count()));
+  await pg.goto('http://localhost:8851/wallet.html', { waitUntil: 'networkidle' }); log.push('wallet after the stake withdrawal: ' + walletBefore + ' -> ' + (await bal()) + ' CT, staked ' + (await pg.locator('#staked').textContent()).trim());
+  await pg.goto('http://localhost:8851/ranking.html', { waitUntil: 'networkidle' }); log.push('ranking own bar after the finished day: ' + (await pg.locator('#pin').innerText()).replace(/\s+/g, ' '));
+  await pg.goto('http://localhost:8851/profile.html', { waitUntil: 'networkidle' }); log.push('profile figures: ' + (await pg.locator('.stats--3').innerText()).replace(/\s+/g, ' '));
+  await pg.goto('http://localhost:8851/results.html', { waitUntil: 'networkidle' }); log.push('results this week: ' + (await pg.locator('main').innerText()).replace(/\s+/g, ' ').slice(0, 130) + '; tab badges: "' + (await pg.locator('.tb').innerText()).replace(/\s+/g, ' ') + '"');
+  // a typed mixed case address with a wrong checksum is refused; Enter in the amount field runs the action
+  await pg.goto('http://localhost:8851/withdraw.html', { waitUntil: 'networkidle' }); await pg.locator('#to').fill('0x52908400098527886e0F7030069857D2E4169EE7'); await pg.locator('#amt').fill('10'); await pg.waitForTimeout(200);
+  log.push('wrong checksum: "' + (await pg.locator('#to-msg').textContent()).trim() + '", action disabled ' + (await pg.locator('#go').isDisabled()));
+  await pg.locator('#to').fill('0x52908400098527886E0F7030069857D2E4169EE7'); await pg.locator('#amt').focus(); await pg.keyboard.type('abc'); const junk = await pg.locator('#amt').inputValue(); await pg.keyboard.press('Enter'); await pg.waitForTimeout(400);
+  log.push('typing "abc" into the amount leaves "' + junk + '"; Enter opens the review: ' + ((await pg.locator('#tx-confirm').count()) === 1));
+  // a keyboard pick: Undo holds the pick while it has the focus, but only up to 10 seconds after the pick
+  const kp = await b.newPage({ viewport: { width: 390, height: 844 } }); await kp.addInitScript(() => { try { localStorage.setItem('cjp.nudged', '1'); } catch (e) {} });
+  await kp.goto('http://localhost:8851/home.html?state=fresh', { waitUntil: 'networkidle' }); await kp.waitForTimeout(600); await kp.keyboard.press('Tab'); await kp.keyboard.press('ArrowRight'); const k0 = Date.now(); await kp.waitForTimeout(600);
+  const said = await kp.locator('#live').textContent(); const at5 = await kp.waitForTimeout(4400).then(() => kp.locator('#undo').count());
+  await kp.waitForFunction(() => !document.querySelector('#undo'), null, { timeout: 9000 }); log.push('keyboard pick: announced "' + said + '"; Undo still there at 5 s: ' + (at5 === 1) + '; final after ' + ((Date.now() - k0) / 1000).toFixed(1) + ' s'); await kp.close();
   console.log(log.join('\n')); if (errs.length) console.log('ERRORS', errs);
   await b.close();
 })();
