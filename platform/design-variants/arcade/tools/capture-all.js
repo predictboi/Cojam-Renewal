@@ -1,5 +1,5 @@
 // node tools/capture-all.js : every screen at 390 x 844 in EN and KO, plus home, done and ranking at 360 x 780, into captures/<screen>-<lang>-<width>.png
-// Also a few named states (suffix after the screen name). Preview server on port 8851. Animations settled before each capture.
+// Also a few named states (suffix after the screen name). Preview server on port 8855. Animations settled before each capture.
 const { chromium } = require('playwright');
 const path = require('path');
 const out = path.join(__dirname, '..', 'captures');
@@ -21,7 +21,7 @@ const SMALL = ['home', 'home-partial', 'done', 'ranking'];
     const pg = await ctx.newPage(); const errs = [];
     pg.on('pageerror', e => errs.push(e.message));
     await pg.addInitScript(() => { try { localStorage.setItem('cjp.nudged', '1'); } catch (e) {} });
-    await pg.goto('http://localhost:8851/' + url + (url.includes('?') ? '&' : '?') + 'lang=' + lang, { waitUntil: 'networkidle' });
+    await pg.goto('http://localhost:8855/' + url + (url.includes('?') ? '&' : '?') + 'lang=' + lang, { waitUntil: 'networkidle' });
     await pg.evaluate(() => document.fonts.ready);
     await pg.waitForTimeout(1500);   // stamps have landed, rows have set, figures have stopped rolling
     if (act === 'drag') {   // the card held past the commit threshold: the stamp is solid, the answer button hot

@@ -698,7 +698,7 @@
       var tint = $(".qtint", card); if (dir) tint.setAttribute("data-dir", dir); tint.style.opacity = armed ? 0.2 : 0;
       [["l", 7], ["r", -7]].forEach(function (x) {
         var el = $(".qstamp--" + x[0], card), on = dir === x[0];
-        el.style.opacity = on ? (armed ? 1 : Math.min(1, a * 12)) : 0;
+        el.style.opacity = on ? (armed ? 1 : Math.min(1, a * 12)) : 0; el.style.visibility = on ? "visible" : "";
         el.style.transform = on && !armed ? "rotate(" + x[1] * 2 + "deg) scale(" + (0.55 + Math.min(0.3, a * 0.86)).toFixed(3) + ")" : "";
         el.classList.toggle("is-armed", !!armed && on);
       });

@@ -123,12 +123,13 @@ img, svg { display: block; }
 .card { position: absolute; inset: 0; display: flex; flex-direction: column; transition: transform var(--t-slow) var(--ease-out), opacity var(--t-base) ease; will-change: transform; }
 .card[data-pos="1"] { transform: translateY(10px) scale(0.955); }
 .card[data-pos="2"] { transform: translateY(20px) scale(0.91); opacity: 0; }
-.card[data-pos="1"] .card-in { opacity: 0.35; }
+.card .tkt-a > *, .card .tkt-b > .ans { transition: opacity var(--t-base) ease; }
+.card[data-pos="1"] .tkt-a > *, .card[data-pos="1"] .tkt-b > .ans, .card[data-pos="2"] .tkt-a > *, .card[data-pos="2"] .tkt-b > .ans { opacity: 0.2; }
+.card[data-pos="out"] { pointer-events: none; }
 .card[data-pos="gone"] { visibility: hidden; }
 .piece { filter: var(--shadow-ticket); will-change: transform; }
 .card-body { flex: 1; min-height: 0; display: flex; transform-origin: 50% 100%; }
 .card-body .tkt-a { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: var(--s3); padding: var(--s4) var(--s4) var(--s5); }
-.card-in { display: contents; }
 .card-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s2); flex: none; }
 .card-art { flex: 1; min-height: 56px; background: var(--stock-2); border-radius: 6px; display: grid; place-items: center; color: var(--blue); overflow: hidden; position: relative; }
 .card-art svg { width: auto; height: 78%; max-height: 190px; max-width: 80%; }
@@ -186,17 +187,22 @@ img, svg { display: block; }
 
 /* finishing panel in the deck area */
 .finish { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: var(--s3); text-align: center; padding: var(--s5); animation: rise var(--t-base) var(--ease-out) both; }
+.finish--inline { position: static; padding: var(--s5) var(--s4); }
+.lrow { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: var(--s3); padding: 10px var(--s3); min-height: 56px; }
+.lrow .n { width: 34px; height: 30px; display: grid; place-items: center; font-weight: 800; font-stretch: 84%; font-size: var(--fs-18); color: var(--ink-2); }
+.lrow.is-next { background: none; box-shadow: inset 0 0 0 1.5px var(--line); }
+.lopen .tkt-a { display: grid; gap: var(--s2); }
+.lopen .card-q { font-size: var(--fs-18); }
+.lopen .card-stub .tkt-b { height: 64px; }
 .finish .count { font-size: var(--fs-56); }
 @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
 /* ---------- day done: the printed strip ---------- */
-.printer { height: 10px; border-radius: 5px; background: var(--ink); margin: 0 -4px; position: relative; z-index: 2; flex: none; }
-.strip-clip { overflow: hidden; margin-top: -5px; padding: 0 2px 10px; position: relative; }
+.printer { height: 12px; border-radius: 6px; background: var(--ink); margin: 0 -5px; position: relative; z-index: 2; flex: none; }
+.strip-clip { overflow: hidden; padding: 6px 3px 0; margin-bottom: -5px; position: relative; }
 .strip { filter: var(--shadow-ticket); position: relative; will-change: transform; }
-.strip.is-print { animation: print 1100ms steps(1, end) both; }
-@keyframes print { 0% { transform: translateY(-100%); } 16% { transform: translateY(-80%); } 32% { transform: translateY(-60%); } 48% { transform: translateY(-40%); } 64% { transform: translateY(-20%); } 80%, 100% { transform: none; } }
-.strip.is-print .strip-in { animation: feed 220ms var(--ease-out) 5; }
-@keyframes feed { from { transform: translateY(-14px); } to { transform: none; } }
+.strip-in { position: relative; }
+.total { display: flex; align-items: center; min-height: 92px; padding: 12px 196px 16px var(--s4); font-weight: 700; font-size: var(--fs-13); line-height: 1.35; }
 .strip.is-jolt .strip-in { animation: jolt 260ms var(--ease-out); }
 @keyframes jolt { 0% { transform: none; } 30% { transform: translateY(4px) rotate(-0.4deg); } 100% { transform: none; } }
 .seg4 { background: var(--stock); position: relative;
@@ -212,7 +218,7 @@ img, svg { display: block; }
 .pick.r { background: var(--blue); }
 .pick.none { background: none; box-shadow: inset 0 0 0 1.5px var(--line-strong); color: var(--ink-2); }
 .done-hero { position: relative; }
-.stamp { position: absolute; right: 14px; top: 50%; margin-top: -40px; padding: 8px 16px 6px; border: 3px solid var(--blue); border-radius: 10px; background: var(--stock); color: var(--blue); font-weight: 900; font-stretch: 84%; font-size: 2.75rem; line-height: 1; transform: rotate(-9deg); z-index: 3; outline: 1.5px solid var(--blue); outline-offset: -7px; }
+.stamp { position: absolute; right: 16px; bottom: 16px; padding: 8px 16px 6px; border: 3px solid var(--blue); border-radius: 10px; background: var(--stock); color: var(--blue); font-weight: 900; font-stretch: 84%; font-size: 2.5rem; line-height: 1; transform: rotate(-9deg); z-index: 3; outline: 1.5px solid var(--blue); outline-offset: -7px; }
 .stamp small { display: block; font-size: var(--fs-11); font-weight: 700; font-stretch: 100%; text-align: center; margin-top: 2px; }
 .stamp.is-slam { animation: slam 300ms var(--ease-snap) both; }
 @keyframes slam { 0% { opacity: 0; transform: rotate(-16deg) scale(2.1); } 60% { opacity: 1; } 100% { opacity: 1; transform: rotate(-9deg) scale(1); } }

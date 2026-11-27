@@ -138,11 +138,11 @@
     });
     /* the very first card a player ever sees leans right, then left, once: it teaches the throw. Never under reduced motion, never again. */
     var nudge = [], nudgeT = [], STEP = "steps(1, end)", PR = "rotate(-10deg) scale(0.9)", PL = "rotate(10deg) scale(0.9)";
-    function stopNudge() { nudge.forEach(function (a) { try { a.cancel(); } catch (e) {} }); nudge = []; nudgeT.forEach(clearTimeout); nudgeT = []; App.$$(".choice.is-hot", deckEl).forEach(function (b) { b.classList.remove("is-hot"); }); deckEl.removeAttribute("data-nudge"); }
+    function stopNudge() { nudge.forEach(function (a) { try { a.cancel(); } catch (e) {} }); nudge = []; nudgeT.forEach(clearTimeout); nudgeT = []; App.$$(".choice.is-hot", deckEl).forEach(function (b) { b.classList.remove("is-hot"); }); deckEl.removeAttribute("data-nudge"); App.$$(".qstamp", deckEl).forEach(function (q) { if (!q.style.opacity || q.style.opacity === "0") q.style.visibility = ""; }); }
     if (live && count === 0 && !App.reduce && !App.offline && App.store.get("nudged", "") !== "1") {
       setTimeout(function () {
         var card = $('.qcard[data-pos="0"]', deckEl); if (!card || count || card.classList.contains("is-drag") || !card.animate) return;
-        App.store.set("nudged", "1"); deckEl.setAttribute("data-nudge", "1");
+        App.store.set("nudged", "1"); deckEl.setAttribute("data-nudge", "1"); App.$$(".qstamp", card).forEach(function (q) { q.style.visibility = "visible"; });
         var o = { duration: 1500, easing: "cubic-bezier(0.45, 0, 0.25, 1)" };
         nudge = [card.animate([{ transform: "none" }, { transform: "translateX(38px) rotate(4deg)", offset: 0.24 }, { transform: "translateX(38px) rotate(4deg)", offset: 0.4 }, { transform: "translateX(-38px) rotate(-4deg)", offset: 0.68 }, { transform: "translateX(-38px) rotate(-4deg)", offset: 0.82 }, { transform: "none" }], o),
           /* each lean shows the answer of that side as a proof stamp at full strength (ink on the sheet, no faint text). It steps in and out, never half visible,

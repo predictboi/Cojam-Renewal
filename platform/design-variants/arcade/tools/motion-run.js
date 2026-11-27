@@ -1,12 +1,12 @@
 // node tools/motion-run.js [video|stills|perf|all]
-// Scripted runs of the motion round against the preview server on port 8851.
+// Scripted runs of the motion round against the preview server on port 8855.
 //   video : records five flows at 390 x 844 with Playwright recordVideo into captures/video/*.webm (convert with tools/motion-mp4.sh)
 //   stills: PNG frames of key moments, taken mid animation by pausing every running animation at a set time (device scale 2)
 //   perf  : frame intervals during a scripted 2 second drag of the front card, driven from requestAnimationFrame, at CPU throttle 1x and 4x
 // Every page is watched for page errors; the run prints them at the end.
 const { chromium } = require('playwright');
 const path = require('path'), fs = require('fs');
-const BASE = 'http://localhost:8851/', OUT = path.join(__dirname, '..', 'captures', 'video');
+const BASE = 'http://localhost:8855/', OUT = path.join(__dirname, '..', 'captures', 'video');
 const mode = process.argv[2] || 'all', errors = [];
 fs.mkdirSync(OUT, { recursive: true });
 
@@ -36,22 +36,22 @@ async function videos(b) {
     await down(pg, 195, 640); await glide(pg, 195, 120, 640, 380); await glide(pg, 120, 195, 640, 300); await up(pg, 190, 640); await sleep(pg, 800);   // held low, let go under the threshold: it flicks back
     await swipe(pg, -1, { ms: 300 }); await sleep(pg, 900);                       // a quick swipe left
     await pg.locator('.qcard[data-pos="0"] .choice[data-dir="r"]').tap(); await sleep(pg, 3600);   // a tap: the stamp lands, then the throw; the fuse runs out
-    await finish(ctx, pg, 'a-swipe-stamp-undo-ko'); }
+    await finish(ctx, pg, 'a-swipe-sticker-undo-ko'); }
   // (b) five picks through the extra edition to the done page, KO and EN
   for (const lang of ['ko', 'en']) { const { ctx, pg } = await ctxFor(b, 'b-' + lang, lang, true); await pg.__go('home.html?state=fresh'); await sleep(pg, 800);
     await swipe(pg, 1, { ms: 330 }); await sleep(pg, 650); await swipe(pg, -1, { ms: 330 }); await sleep(pg, 650);
     await pg.locator('.qcard[data-pos="0"] .choice[data-dir="r"]').tap(); await sleep(pg, 750);
     await swipe(pg, 1, { ms: 330 }); await sleep(pg, 650); await swipe(pg, 1, { ms: 330 }); await sleep(pg, 1300);
     await pg.locator('#finish').tap(); await pg.waitForURL(/done\.html/); await sleep(pg, 4200);
-    await finish(ctx, pg, 'b-five-picks-extra-edition-' + lang); }
+    await finish(ctx, pg, 'b-five-picks-capsule-reward-' + lang); }
   // (c) results: stamps land, totals count up, a row opens like a clipping
   { const { ctx, pg } = await ctxFor(b, 'c', 'ko', true); await pg.__go('wallet.html'); await sleep(pg, 500); await pg.locator('.tb a').nth(1).tap(); await pg.waitForURL(/results\.html/); await sleep(pg, 2200);
     await pg.locator('button.rrow').first().tap(); await sleep(pg, 1200); await pg.mouse.wheel(0, 520); await sleep(pg, 1600); await pg.locator('button.rrow').nth(4).tap(); await sleep(pg, 1400);
-    await finish(ctx, pg, 'c-results-stamps-ko'); }
+    await finish(ctx, pg, 'c-results-stickers-ko'); }
   // (d) ranking: the table sets, prizes roll, the own bar comes up, the week turns
   { const { ctx, pg } = await ctxFor(b, 'd', 'ko', true); await pg.__go('results.html'); await sleep(pg, 600); await pg.locator('.tb a').nth(2).tap(); await pg.waitForURL(/ranking\.html/); await sleep(pg, 2200);
     await pg.locator('.seg-btn').nth(1).tap(); await sleep(pg, 1800); await pg.locator('.seg-btn').nth(0).tap(); await sleep(pg, 1800); await pg.locator('#pin').tap(); await sleep(pg, 1500);
-    await finish(ctx, pg, 'd-ranking-setting-page-turn-ko'); }
+    await finish(ctx, pg, 'd-ranking-podium-ko'); }
   // (e) staking: the figure rolls while typing, the review sheet rises, the stamp on success
   { const { ctx, pg } = await ctxFor(b, 'e', 'ko', true); await pg.__go('ranking.html'); await sleep(pg, 500); await pg.locator('.tb a').nth(3).tap(); await pg.waitForURL(/stakes\.html/); await sleep(pg, 900);
     await pg.locator('.mtabs a').first().tap(); await pg.waitForURL(/staking\.html/); await sleep(pg, 900);
@@ -72,24 +72,23 @@ async function still(b, name, lang, url, at, act) {
   await ctx.close();
 }
 async function stills(b) {
-  await still(b, 'frame-01-stamp-proof-ko', 'ko', 'home.html?state=fresh', 60, async pg => { await down(pg, 195, 330); await glide(pg, 195, 270, 330, 200); });
-  await still(b, 'frame-02-stamp-pressed-ko', 'ko', 'home.html?state=fresh', 90, async pg => { await down(pg, 195, 330); await glide(pg, 195, 345, 330, 260); });
-  await still(b, 'frame-03-tap-thunk-throw-ko', 'ko', 'home.html?state=fresh', 215, async pg => { await pg.locator('.qcard[data-pos="0"] .choice[data-dir="l"]').tap(); });
-  await still(b, 'frame-04-undo-pulled-back-ko', 'ko', 'home.html?state=fresh', 110, async pg => { await swipe(pg, 1, { ms: 260 }); await sleep(pg, 700); await pg.locator('#undo').tap(); });
-  await still(b, 'frame-05-fuse-rule-ko', 'ko', 'home.html?state=fresh', 1300, async pg => { await swipe(pg, 1, { ms: 260 }); });
-  await still(b, 'frame-06-extra-press-running-ko', 'ko', 'done.html?state=moment', 520);
-  await still(b, 'frame-07-extra-figures-rolling-ko', 'ko', 'done.html?state=moment', 1180);
-  await still(b, 'frame-08-extra-stamp-landing-ko', 'ko', 'done.html?state=moment', 1790);
-  await still(b, 'frame-09-extra-settled-ko', 'ko', 'done.html?state=moment', 3200);
-  await still(b, 'frame-07-extra-figures-rolling-en', 'en', 'done.html?state=moment', 1180);
-  await still(b, 'frame-08-extra-stamp-landing-en', 'en', 'done.html?state=moment', 1790);
-  await still(b, 'frame-10-results-stamps-landing-ko', 'ko', 'results.html', 430);
-  await still(b, 'frame-11-results-clipping-opening-ko', 'ko', 'results.html', 110, async pg => { await sleep(pg, 900); await pg.locator('button.rrow').first().tap(); });
-  await still(b, 'frame-12-ranking-type-setting-ko', 'ko', 'ranking.html', 300);
-  await still(b, 'frame-13-ranking-page-turn-ko', 'ko', 'ranking.html', 190, async pg => { await sleep(pg, 900); await pg.locator('.seg-btn').nth(1).tap(); });
+  await still(b, 'frame-01-sticker-growing-ko', 'ko', 'home.html?state=fresh', 60, async pg => { await down(pg, 195, 330); await glide(pg, 195, 270, 330, 200); });
+  await still(b, 'frame-02-sticker-slapped-ko', 'ko', 'home.html?state=fresh', 90, async pg => { await down(pg, 195, 330); await glide(pg, 195, 345, 330, 260); });
+  await still(b, 'frame-03-tap-sticker-throw-ko', 'ko', 'home.html?state=fresh', 260, async pg => { await pg.locator('.qcard[data-pos="0"] .choice[data-dir="l"]').tap(); });
+  await still(b, 'frame-04-undo-flying-back-ko', 'ko', 'home.html?state=fresh', 110, async pg => { await swipe(pg, 1, { ms: 260 }); await sleep(pg, 700); await pg.locator('#undo').tap(); });
+  await still(b, 'frame-05-undo-fuse-ko', 'ko', 'home.html?state=fresh', 1300, async pg => { await swipe(pg, 1, { ms: 260 }); });
+  await still(b, 'reward-1-capsule-drops-ko', 'ko', 'done.html?state=moment', 260);
+  await still(b, 'reward-2-capsule-wobbles-ko', 'ko', 'done.html?state=moment', 720);
+  await still(b, 'reward-3-lid-flies-jam-jumps-ko', 'ko', 'done.html?state=moment', 1080);
+  await still(b, 'reward-4-coin-sticker-slapped-ko', 'ko', 'done.html?state=moment', 1290);
+  await still(b, 'reward-5-fifth-sticker-and-paid-ko', 'ko', 'done.html?state=moment', 1560);
+  await still(b, 'reward-6-settled-ko', 'ko', 'done.html?state=moment', 3200);
+  await still(b, 'reward-4-coin-sticker-slapped-en', 'en', 'done.html?state=moment', 1290);
+  await still(b, 'frame-10-results-stickers-landing-ko', 'ko', 'results.html', 330);
+  await still(b, 'frame-12-ranking-podium-rising-ko', 'ko', 'ranking.html', 420);
+  await still(b, 'frame-13-ranking-avatars-dropping-ko', 'ko', 'ranking.html', 700);
   await still(b, 'frame-14-staking-review-rising-ko', 'ko', 'staking.html', 140, async pg => { await pg.locator('#go').tap(); });
-  await still(b, 'frame-15-staking-success-stamp-ko', 'ko', 'staking.html?state=success', 1060);
-  await still(b, 'frame-16-toast-slip-ko', 'ko', 'profile.html', 120, async pg => { await pg.locator('#upd').scrollIntoViewIfNeeded(); await pg.locator('#upd').tap(); });
+  await still(b, 'frame-15-staking-success-sticker-ko', 'ko', 'staking.html?state=success', 1060);
 }
 
 // frame intervals while the front card is dragged for 2 seconds, driven from requestAnimationFrame inside the page
@@ -99,7 +98,7 @@ async function perf(b) {
     const { ctx, pg } = await ctxFor(b, 'perf', 'ko', false);
     const cdp = await ctx.newCDPSession(pg); await cdp.send('Emulation.setCPUThrottlingRate', { rate });
     await pg.__go('home.html?state=fresh'); await sleep(pg, 900);
-    if (variant === 'no-layers') await pg.addStyleTag({ content: '.qimg .ht, .qtint, .qstamp, .deck-lift { will-change: auto !important; }' });
+    if (variant === 'no-layers') await pg.addStyleTag({ content: '.qtint, .qstamp, .deck-lift, .qcard { will-change: auto !important; }' });
     await sleep(pg, 300);
     const r = await pg.evaluate(() => new Promise(res => {
       const c = document.querySelector('.qcard[data-pos="0"]'), ev = (t, x) => c.dispatchEvent(new PointerEvent(t, { bubbles: true, cancelable: true, pointerId: 9, clientX: x, clientY: 330, pointerType: 'touch', isPrimary: true }));

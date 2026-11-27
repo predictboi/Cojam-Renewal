@@ -1,0 +1,17 @@
+/* Invite friends: the offer is the poster. 10% set as large as the sheet allows. */
+(function () {
+  "use strict";
+  var A = window.App, t = A.t, M = A.M, esc = A.esc, st = A.state, fmt = A.fmt, v = M.invite, hold = st === "hold", empty = st === "empty";
+  var cover = '<div class="cover"><div class="win-fig" style="font-size:min(46vw,12.5rem)"><span>' + v.rate + '</span><small style="font-size:0.5em">%</small></div><h1 class="hh" style="font-size:var(--t-h2);margin-top:14px;max-width:16em">' + t("inv.hero.line", { r: v.rate }) + "</h1><p>" + t("inv.hero.sub") + "</p>" +
+    '<div class="ex" role="img" aria-label="' + t("inv.ex.sr", { a: 350, b: 35 }) + '"><div><span class="fig-l">' + t("inv.ex.friend") + '</span><span class="fig-v">+350<small>P</small></span></div><div><span class="fig-l">' + t("inv.ex.you") + '</span><span class="fig-v">+35<small>P</small></span></div></div></div>';
+  var share = hold ? '<div class="pad" style="padding-top:14px"><p class="note note-k"><b>' + t("hold.t") + "</b>" + t("hold.invite") + " " + t("hold.invite.bonus") + "</p></div>" :
+    '<section class="sec is-bare" style="padding-top:16px"><p class="lab" style="margin-bottom:6px">' + t("inv.code.h") + '</p><button type="button" class="codeblock" data-copy="' + v.code + '"><b>' + v.code + "</b><span>" + t("common.copy") + '</span></button><p class="addr" style="margin:10px 0 12px">' + v.linkShort + "</p>" +
+    '<button type="button" class="btn btn-p" id="share"><span>' + t("inv.share") + "</span>" + A.ICON.go + '</button><button type="button" class="btn btn-s" style="margin-top:8px" data-copy="' + v.link + '" data-copied="' + t("inv.linkcopied") + '"><span>' + t("inv.copylink") + "</span>" + A.ICON.copy + "</button></section>";
+  var body = cover + share +
+    '<section class="sec"><h2 class="sec-h hh" style="margin-bottom:6px">' + t("inv.how.h") + '</h2><ol class="how">' + [1, 2, 3].map(function (n) { return "<li><b>" + n + "</b><span>" + t("inv.how." + n, { w: v.welcome, r: v.rate }) + "</span></li>"; }).join("") + "</ol></section>" +
+    '<section class="sec"><h2 class="sec-h hh" style="margin-bottom:6px">' + t("inv.res.h") + '</h2><div class="trio"><div><span class="fig-l">' + t("inv.res.joined") + '</span><span class="fig-v">' + (empty ? 0 : v.joined) + '</span></div><div><span class="fig-l">' + t("inv.res.week") + '</span><span class="fig-v">+' + (empty ? 0 : v.week) + '<small>P</small></span></div><div><span class="fig-l">' + t("inv.res.total") + '</span><span class="fig-v">+' + (empty ? 0 : fmt(v.total)) + "<small>P</small></span></div></div>" +
+      (empty ? '<p class="sub" style="margin-top:10px">' + t("inv.empty") + "</p>" : '<p class="lab" style="margin:14px 0 2px">' + t("inv.friends.h") + '</p><ul class="rows">' + v.friends.map(function (f) { return '<li class="row"><span class="row-m"><span class="row-t">' + esc(f.name) + '</span><br><span class="row-s">' + t("inv.st." + f.st) + '</span></span><span class="row-e">+' + fmt(f.pts) + "P</span></li>"; }).join("") + "</ul>") + "</section>" +
+    '<section class="sec"><h2 class="sec-h hh" style="margin-bottom:6px">' + t("inv.rules.h") + '</h2><ul class="bul">' + [1, 2, 3, 4].map(function (n) { return "<li>" + t("inv.rule." + n) + "</li>"; }).join("") + "</ul></section>";
+  A.shell({ back: "wallet.html", title: t("inv.title"), body: body });
+  var s = document.getElementById("share"); if (s) s.addEventListener("click", function () { A.toast(t("inv.shared")); });
+})();

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#FBF3E1">
-<title>Daily Paper: every screen and state | Cojam Daily</title>
+<title>Pocket Arcade: every screen and state | Cojam Daily</title>
 <link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,33 +13,32 @@
 <link rel="stylesheet" href="tokens.css">
 <link rel="stylesheet" href="components.css">
 <style>
-.hub { max-width: 880px; margin: 0 auto; min-height: 100dvh; padding: 0 var(--s-24) var(--s-48); background: var(--paper); }
-.hub-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); min-height: 72px; }
+.hub { max-width: 920px; margin: 0 auto; min-height: 100dvh; padding: 0 var(--s-24) var(--s-48); background: var(--cream); }
+.hub-top { display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); min-height: 76px; }
 .hub-top .plate { min-width: 0; }
-/* the language switch never wraps or clips: short labels (EN, 한, 日) in cells of a fixed width, and it keeps its size while the nameplate gives way */
+/* the language switch never wraps or clips: short labels (EN, 한, 日) in cells of a fixed width, and it keeps its size while the wordmark gives way */
 .hub-top .seg { flex: none; grid-auto-columns: 48px; }
-@media (max-width: 400px) { .hub { padding-left: var(--gutter); padding-right: var(--gutter); } .hub-top .plate { gap: var(--s-6); font-size: var(--fs-18); } .hub-top .plate img { width: 28px; height: 28px; } }
-.hub .oxford { margin: 0; }
-.hub .dateline { margin: 0; }
-.hub h1 { margin-top: var(--s-24); font-family: var(--font-display); font-weight: var(--fw-fig); font-size: var(--fs-44); line-height: 1.04; letter-spacing: -0.03em; text-wrap: balance; }
+@media (max-width: 400px) { .hub { padding-left: var(--gutter); padding-right: var(--gutter); } }
+.hub-chips { display: flex; flex-wrap: wrap; gap: var(--s-6); }
+.hub h1 { margin-top: var(--s-20); font-family: var(--font-display); font-weight: var(--fw-display); font-size: var(--fs-44); line-height: 1.04; text-wrap: balance; overflow-wrap: break-word; min-width: 0; }
 .hub-lede { max-width: 62ch; margin-top: var(--s-12); color: var(--ink-2); }
-.hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0 var(--s-24); margin-top: var(--s-24); }
-.hub-sec { padding: var(--s-12) 0 var(--s-16); border-top: var(--rule); }
-.hub-sec h2 { font-family: var(--font-display); font-weight: var(--fw-head); font-size: var(--fs-18); }
+.hub-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: var(--s-12); margin-top: var(--s-24); }
+.hub-sec { padding: var(--s-16); border: var(--line); border-radius: var(--r-box); background: var(--card); }
+.hub-sec h2 { font-family: var(--font-display); font-weight: var(--fw-display); font-size: var(--fs-21); line-height: 1.2; }
 .hub-sec p { color: var(--ink-2); font-size: var(--fs-13); }
 .hub-sec ul { display: flex; flex-wrap: wrap; gap: 0 var(--s-12); margin-top: var(--s-4); }
-.hub-sec a { display: inline-flex; align-items: center; min-height: var(--target); font-size: var(--fs-14); font-weight: var(--fw-mid); text-underline-offset: 3px; }
-.hub-sec a.is-main { font-weight: var(--fw-bold); }
+.hub-sec a { display: inline-flex; align-items: center; min-height: var(--target); font-size: var(--fs-14); font-weight: var(--fw-mid); text-decoration: none; }
+.hub-sec a.is-main { padding: 0 var(--s-12); min-height: 36px; margin: 4px 0; border-radius: var(--r-pill); background: var(--accent); color: var(--on-accent); font-weight: var(--fw-bold); position: relative; }
+.hub-sec a.is-main::after { content: ""; position: absolute; inset: -4px 0; }
 </style>
 </head>
 <body>
 <div class="hub">
-  <div class="hub-top"><span class="plate plate--big" translate="no"><img src="assets/cojam-mark.svg" alt="" width="40" height="40"><span>Cojam Daily</span></span>
+  <div class="hub-top"><span class="plate plate--big" translate="no"><img src="assets/cojam-mark.svg" alt="" width="44" height="44"><span>Cojam</span></span>
     <div class="seg" role="group" aria-label="Language" id="langs"></div></div>
-  <div class="oxford" aria-hidden="true"></div>
-  <div class="dateline"><span>Design variant A</span><span>Daily Paper</span><span class="dateline-live">Mock data, no network calls</span></div>
-  <h1>Every screen and state of the Daily Paper concept</h1>
-  <p class="hub-lede">The Cojam Daily Prediction app drawn as the front page of a small daily newspaper. Each link opens one screen in one state at phone width; the language follows the switch above. Concept and rules are in CONCEPT.md, the last review in REVIEW.md.</p>
+  <div class="hub-chips"><span class="livechip">Design variant</span><span class="livechip"><b>Pocket Arcade</b></span><span class="livechip">Mock data, no network calls</span></div>
+  <h1>Every screen and state of the Pocket Arcade concept</h1>
+  <p class="hub-lede">The Cojam Daily Prediction app as a toy you hold in one hand: five collectible cards, two chunky keys, a sticker for every pick. Each link opens one screen in one state at phone width; the language follows the switch above. Concept and rules are in CONCEPT.md, motion in MOTION.md, the last review in REVIEW.md.</p>
   <div class="hub-grid" id="grid"></div>
 </div>
 <script>
@@ -47,16 +46,16 @@
   var qs = new URLSearchParams(location.search), lang = qs.get("lang") || "en";
   if (["en", "ko", "ja"].indexOf(lang) < 0) lang = "en";
   var S = [
-    ["Log in", "The cover: email, code, setting up", "login.html", ["typo", "unsupported", "bademail", "sending", "code", "wrong", "expired", "setup", "refused", "offline"]],
+    ["Log in", "Email, code, setting up", "login.html", ["typo", "unsupported", "bademail", "sending", "code", "wrong", "expired", "setup", "refused", "offline"]],
     ["First run", "Three pages, invite code, language", "first-run.html", ["2", "3", "code-valid", "code-unknown"]],
-    ["Home, card view", "The front page: swipe, Undo, fifth pick leads to done", "home.html?state=fresh", ["partial", "syncing", "slow", "failed", "offline", "noimage", "loading", "empty", "closed", "error", "hold"], "home.html"],
-    ["Home, list view", "The five questions as an index", "home-list.html?state=fresh", ["(sample)", "syncing", "failed", "offline", "loading", "empty", "error", "hold"], "home-list.html"],
-    ["Day done", "The reward is the headline", "done.html", ["moment", "saving", "results", "welcome", "zero"]],
-    ["Results", "Box scores with HIT and MISS stamps", "results.html", ["open", "nowaiting", "noset", "loading", "empty", "error"]],
-    ["Weekly ranking", "The league table and the prize pool", "ranking.html", ["how", "lastweek", "sent", "top10", "unranked", "short", "loading", "error", "hold"]],
-    ["Staking, new stake", "The rates page", "staking.html", ["empty", "below", "above", "big", "rates", "review", "success", "failed", "zero", "paused", "loading", "error", "offline", "hold"]],
-    ["Staking, my stakes", "One entry per stake", "stakes.html", ["claimable", "unlocking", "empty", "loading", "error", "hold"]],
-    ["Wallet", "The accounts, with deposit and withdraw sheets", "wallet.html", ["deposit", "withdraw", "zero", "new", "loading", "error", "offline", "hold"]],
+    ["Home, card view", "The card deck: swipe, Undo, fifth pick leads to done", "home.html?state=fresh", ["partial", "syncing", "slow", "failed", "offline", "noimage", "loading", "empty", "closed", "error", "hold"], "home.html"],
+    ["Home, list view", "The five questions as rows", "home-list.html?state=fresh", ["(sample)", "syncing", "failed", "offline", "loading", "empty", "error", "hold"], "home-list.html"],
+    ["Day done", "The capsule opens: +100P", "done.html", ["moment", "saving", "results", "welcome", "zero"]],
+    ["Results", "Hit and miss stickers, day by day", "results.html", ["open", "nowaiting", "noset", "loading", "empty", "error"]],
+    ["Weekly ranking", "The podium and the prize pool", "ranking.html", ["how", "lastweek", "sent", "top10", "unranked", "short", "loading", "error", "hold"]],
+    ["Staking, new stake", "Amount, period, rate", "staking.html", ["empty", "below", "above", "big", "rates", "review", "success", "failed", "zero", "paused", "loading", "error", "offline", "hold"]],
+    ["Staking, my stakes", "One card per stake", "stakes.html", ["claimable", "unlocking", "empty", "loading", "error", "hold"]],
+    ["Wallet", "Balances, with deposit and withdraw sheets", "wallet.html", ["deposit", "withdraw", "zero", "new", "loading", "error", "offline", "hold"]],
     ["Convert points", "Points to CT", "convert.html", ["empty", "step", "above", "short", "wait", "cap", "paused", "loading", "success", "failed", "hold"]],
     ["Profile", "Name, account, preferences, help", "profile.html", ["nameerror", "unranked", "logout", "hold"]],
     ["Invite friends", "The offer, the code, the results", "invite.html", ["copied", "empty", "loading", "error", "offline", "hold"]],

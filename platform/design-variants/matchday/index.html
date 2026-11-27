@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0E1420">
+<title>Matchday | Cojam Daily design variation</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Do+Hyeon&family=M+PLUS+1p:wght@800&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body class="hub" data-zone="play">
+<noscript>This hub lists every screen. It needs JavaScript for the language switch.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/md-i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  var A = App, T = A.t;
+  var G = [
+    ["md.hub.start", [
+      ["login.html", "a.h1", ["code", "setup", "bad", "wrong", "offline"]],
+      ["first-run.html", "o.1.h", ["2", "3", "code"]]]],
+    ["md.hub.play", [
+      ["home.html", "h.title", ["partial", "last", "noimage", "hold", "empty", "closed", "loading", "error", "offline"], "h.view.card"],
+      ["home-list.html", "h.title", ["fresh", "offline"], "h.view.term"],
+      ["done.html", "d.h1", ["moment", "saving", "welcome"]],
+      ["results.html", "r.title", ["empty", "loading", "error", "offline"]],
+      ["ranking.html", "k.title", ["lastweek", "none", "hold", "loading", "error", "offline"]]]],
+    ["md.office", [
+      ["staking.html", "s.new", ["review", "done", "zero", "hold", "loading", "error", "offline"]],
+      ["stakes.html", "s.tab.mine", ["empty", "hold", "offline"]],
+      ["wallet.html", "w.title", ["deposit", "withdraw", "hold", "loading", "error", "offline"]],
+      ["convert.html", "c.title", ["short", "wait", "ok", "hold"]],
+      ["profile.html", "p.title", ["code", "logout", "hold"]],
+      ["invite.html", "inv.title", ["empty", "hold"]],
+      ["hold.html", "hold.t", []]]]
+  ];
+  var h = '<header class="hub-top on-dark"><div class="row sb"><img src="assets/cojam-mark.svg" alt="Cojam" width="44" height="44" style="background:var(--kit);border-radius:50%;padding:3px">' + A.langSwitch().replace('class="lang"', 'class="lang" style="max-width:230px"') + '</div><h1 class="disp caps">' + T("md.hub.h") + "</h1><p>" + T("md.hub.b") + "</p></header>";
+  G.forEach(function (g) {
+    h += '<section class="hub-sec"><span class="lt" style="align-self:flex-start;margin-left:calc(-1 * var(--pad))">' + T(g[0]) + '</span><ul class="hub-l">' + g[1].map(function (s) {
+      return '<li><a class="main-l" href="' + s[0] + '"><span>' + T(s[1]) + (s[3] ? ", " + T(s[3]) : "") + "</span>" + A.ic.right.replace("<svg", '<svg width="20" height="20"') + "</a>" + (s[2].length ? '<div class="hub-st">' + s[2].map(function (st) { return '<a href="' + s[0] + "?state=" + st + '">' + st + "</a>"; }).join("") + "</div>" : "") + "</li>"; }).join("") + "</ul></section>";
+  });
+  h += '<section class="hub-sec"><p class="small dim">CONCEPT.md, MOTION.md and REVIEW.md sit next to this file. Captures and videos are in captures/.</p></section>';
+  var ns = document.querySelector("noscript"); if (ns) ns.remove();
+  document.body.insertAdjacentHTML("afterbegin", h);
+})();
+</script>
+</body>
+</html>

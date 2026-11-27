@@ -5,7 +5,7 @@ const { chromium } = require('playwright');
   const ctx = await b.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   const pg = await ctx.newPage(); const errs = []; pg.on('pageerror', e => errs.push(e.message));
   await pg.addInitScript(() => { try { localStorage.setItem('cjp.nudged', '1'); } catch (e) {} });
-  await pg.goto('http://localhost:8851/home.html?state=fresh', { waitUntil: 'networkidle' });
+  await pg.goto('http://localhost:8855/home.html?state=fresh', { waitUntil: 'networkidle' });
   const log = [];
   const count = async () => (await pg.locator('#cnt').textContent()).trim();
   async function swipe(dir) {
