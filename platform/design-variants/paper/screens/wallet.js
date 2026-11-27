@@ -17,14 +17,14 @@
       '<div class="list"><div class="wrow wrow--addr"><span>' + t("pp.addr") + "</span>" + C.addr(a, { id: "copy-addr" }) + "</div>" +
       '<a class="wrow" href="stakes.html"><span>' + t("w.staked") + '</span><b id="staked">' + F.dec(staked) + ' <small>CT</small></b><span class="wrow-go"><span class="sr-only">' + t("s.mine", { n: M.stakes.length }) + '</span><span aria-hidden="true">' + M.stakes.length + "</span>" + C.icon("chev", 16) + "</span></a>" +
       /* why KAIA matters is one tap away; on hold the player pays fees, which is a state, so it is a tag */
-      '<div class="wrow"><span class="wrow-l">KAIA' + C.q("kaia", "KAIA") + "</span><b>" + F.dec(kaia, 4) + " <small>KAIA</small></b>" + (hold ? C.tag(t("pp.youpay")) : "<span></span>") + "</div></div></section>" +
+      '<div class="wrow"><span class="wrow-l">KAIA' + C.q("kaia", "KAIA") + "</span><b>" + F.dec(kaia, 4) + " <small>KAIA</small></b>" + (hold ? '<small class="fact"><b>' + t("pp.youpay") + "</b></small>" : "") + "</div></div></section>" +
       '<section class="msec" aria-labelledby="pt-h"><div class="mhero"><h2 class="lbl lbl--q" id="pt-h">' + t("w.points") + C.q("points", t("w.points")) + '</h2><p class="fig" id="pt-fig">' + F.int(pts) + "<small>P</small></p></div>" +
-      '<p class="wpend">' + C.tag(canCt ? "= " + canCt + " CT" : "1,000P = 1 CT", canCt ? "ink" : "") + (S === "" || off || hold ? C.tag("+" + u.pendingHit + "P 22:10", "", "clock") : "") + "</p>" +
+      '<p class="fact"><b>1,000P = 1 CT</b>' + (S === "" || off || hold ? '<span class="fact-sep" aria-hidden="true"></span>' + t("pp.at", { p: u.pendingHit, time: "22:10" }) : "") + "</p>" +
       '<div class="wconvert">' + C.btn(t("w.convert"), { kind: "primary", block: true, href: "convert.html" + (S === "new" || S === "zero" ? "?state=short" : ""), disabled: off || hold, id: "convert" }) + "</div>" +
       '<a class="inv-row" id="to-invite" href="invite.html?from=wallet"><span class="inv-row-t"><b>' + t("w.invite") + '</b></span><span class="inv-row-go">+' + F.pts(S === "zero" || S === "new" ? 0 : M.invite.week) + C.icon("chev", 16) + "</span></a></section>" +
       C.help(t("w.info"), '<p class="hold-why">' + C.icon("warn", 16) + "<span>" + t("w.token") + '</span></p><div class="mcontract"><p class="addr-v" translate="no">' + F.groups(M.token) + "</p>" +
         C.btn(t("w.token.copy"), { sm: true, icon: "copy", attrs: 'data-copy="' + M.token + '" data-toast="' + App.esc(t("w.token.copied")) + '" data-done="' + App.esc(t("w.copy.done")) + '"' }) +
         '<a class="linkish" id="scan" translate="no" href="https://kaiascan.io/address/' + a + '" target="_blank" rel="noopener" aria-label="' + App.esc(t("w.scan")) + '">Kaiascan' + C.icon("ext", 16) + "</a></div>");
   }
-  App.mount({ tab: "wallet", docTitle: t("w.title"), live: C.stamp(S === "error" ? 48 : 6), head: head(), body: body(), points: pts, pts: S === "loading" ? "loading" : S === "error" ? "stale" : "", badges: { home: "dot", results: 2 } });
+  App.mount({ tab: "wallet", docTitle: t("w.title"), live: S === "error" ? C.stamp(48) : "", head: head(), body: body(), points: pts, pts: S === "loading" ? "loading" : S === "error" ? "stale" : "", badges: { home: "dot", results: 2 } });
 })();

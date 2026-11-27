@@ -300,7 +300,7 @@
   C.closes = function (secs) { return "<span>" + t("h.closes") + '</span> <b data-cd="' + secs + '"></b>'; };
   C.thumb = function (q) {
     if (typeof q === "string") q = App.q(q);
-    return '<span class="thumb' + (q.img ? "" : " thumb--none") + '" aria-hidden="true">' + (q.img ? '<span class="cut"><img src="' + q.img + '" alt="" width="60" height="60" loading="lazy" decoding="async" draggable="false" style="--f:' + (q.focus || "50% 15%") + '"></span>' : ic(CAT_ICON[q.cat] || "spark", 28)) + "</span>";
+    return '<span class="thumb' + (q.img ? "" : " thumb--none") + '" aria-hidden="true">' + (q.img ? '<span class="ht"><img src="' + q.img + '" alt="" width="64" height="64" loading="lazy" decoding="async" draggable="false" style="--f:' + (q.focus || "50% 15%") + '"></span>' : ic(CAT_ICON[q.cat] || "spark", 28)) + "</span>";
   };
   /* the dateline: the date, the issue (day of the week and week number) and one live fact of the screen, divided by column rules */
   C.dateline = function (liveHtml) {
@@ -365,6 +365,8 @@
       var m = $("#main"); if (m && !reduce) m.setAttribute("data-in", dir);
     })();
     document.title = (cfg.docTitle || cfg.title || "Cojam") + " | Cojam Daily";
+    /* a language change reloads the page: it comes back at the same scroll position, not at the top */
+    try { var keep = JSON.parse(sessionStorage.getItem("cjp.scroll") || "null"); sessionStorage.removeItem("cjp.scroll"); if (keep && keep.p === location.pathname) setTimeout(function () { window.scrollTo(0, keep.y); }, 0); } catch (e) {}
     App.enhance(document.body);
     App.pinFit();
     if (cfg.after) cfg.after();
@@ -376,6 +378,9 @@
     fit();
     if (!app._ro && window.ResizeObserver) { app._ro = new ResizeObserver(fit); var p0 = $(".app--pin > .pin"); if (p0) app._ro.observe(p0); window.addEventListener("resize", fit); }
   };
+  App.setLang = function (l) { try { sessionStorage.setItem("cjp.scroll", JSON.stringify({ p: location.pathname, y: window.scrollY })); } catch (e) {} I.setLang(l); };
+  /* a short wallet address is always set in the data face (one face for every address, no "0x" turned into a multiplication sign) */
+  App.name = function (n) { return /^0x/i.test(n) ? '<span class="mono" translate="no">' + esc(n) + "</span>" : '<span translate="no">' + esc(n) + "</span>"; };
   App.live = function (msg) { var l = $("#live"); if (l) { l.textContent = ""; setTimeout(function () { l.textContent = msg; }, 30); } };
 
   /* ---------- enhance: countdowns, QR, stamps, tickers ---------- */
@@ -534,7 +539,7 @@
       var fig = ok.fig, m;
       if (!fig) { var txt = String(ok.title).replace(/<[^>]+>/g, ""), re = /([+\-]?\d[\d,]*(?:\.\d+)?)\s?(CT|P)(?![A-Za-z])/g, hit = null; while ((m = re.exec(txt))) { if (!hit || (m[2] === "CT" && hit[2] !== "CT") || m[2] === hit[2]) hit = m; } if (hit) fig = hit[1] + " " + hit[2]; }
       var parts = fig ? /^(.*?)(?:\s(CT|P))?$/.exec(fig) : null;
-      return '<div class="sheet-done" aria-hidden="true">' + C.rstamp("hit", t("common.done")) + (parts ? '<span class="sheet-done-fig">' + parts[1] + (parts[2] ? "<small>" + parts[2] + "</small>" : "") + "</span>" : "") + "</div>";
+      return '<div class="sheet-done" aria-hidden="true">' + C.rstamp("hit", t("pp.filed")) + (parts ? '<span class="sheet-done-fig">' + parts[1] + (parts[2] ? "<small>" + parts[2] + "</small>" : "") + "</span>" : "") + "</div>";
     },
     show: function (state, cfg) {
       App.tx.cfg = cfg; App.tx.state = state;
@@ -586,7 +591,7 @@
   });
   document.addEventListener("change", function (e) {
     if (e.target.id === "tx-check") { var c = $("#tx-confirm"); if (c) c.disabled = !e.target.checked; }
-    if (e.target.matches("[data-lang]")) I.setLang(e.target.value);
+    if (e.target.matches("[data-lang]")) App.setLang(e.target.value);
   });
 
   /* ---------- global behaviours: press feedback, copy, seg, sheet close, max, reload ---------- */

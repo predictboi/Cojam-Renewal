@@ -20,9 +20,11 @@
   /* the head: the page title with the view switch, then the count and the five boxes. The time left is on the dateline. */
   function head() {
     return '<div class="ph-top"><h1>' + t("h.title") + "</h1>" + C.viewSwitch("card", S) + "</div>" +
-      '<div class="ph-line"><span class="ph-count"><span id="cnt">' + (S === "loading" ? "0" : count) + "</span><small>/5</small></span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs, { id: "day5" }) + "</div>";
+      /* progress is shown once, as the five boxes (the card carries its own number); the count is kept for screen readers */
+      '<div class="ph-line"><span class="sr-only"><span id="cnt">' + (S === "loading" ? "0" : count) + "</span>/5</span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs, { id: "day5" }) + "</div>";
   }
-  function liveCell() { return S === "empty" || S === "closed" || S === "hold" || S === "otherdevice" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet()); }
+  function liveCell() { if (fin) return "<span>" + t("d.next") + '</span> <b data-cd="' + M.untilNextSet() + '"></b>';   /* the day is done: what counts now is the next set */
+    return S === "empty" || S === "closed" || S === "hold" || S === "otherdevice" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet()); }
   /* the wait before the day is sent is a printer's rule that is used up from the right: the same fuse as under the pick bar */
   function endRing(id) { return '<div class="end-mark" aria-hidden="true">' + C.icon("check", 30) + '</div><span class="fuse fuse--end" aria-hidden="true"' + (id ? ' id="' + id + '"' : "") + "></span>"; }
   function body() {
@@ -49,7 +51,7 @@
     if (S === "failed") { App.toast(t("h.toast.fail", { n: 2 }), { btn: t("common.retry") }); }
     if (leftSaved) App.toast(leftSaved > 1 ? t("h.left.savedn", { n: leftSaved }) : t("h.left.saved"));
 
-    var held = [], shown = null, fade;
+    var held = [], shown = null, fade, leaving = false;
     function label(p) { return t("h.sync", { n: p.n, choice: C.pick(p.dir, App.esc(App.q(p.id)[p.dir])) }); }
     function seg(n, cls) { day5.children[n - 1].className = cls; }
     var canHover = matchMedia("(hover: hover) and (pointer: fine)").matches;
@@ -97,7 +99,6 @@
       }
       bar.innerHTML = rest();
     }
-    var leaving = false;
     function finishDay(now) { if (count === 5 && !held.length && !leaving) { leaving = true; setTimeout(function () { location.href = "done.html?state=moment"; }, now || App.reduce ? 0 : 500); } }
     function finishNow() { held.slice().forEach(function (p) { clearTimeout(p.timer); held.splice(held.indexOf(p), 1); p.state = "saving"; shown = p; }); render(); finishDay(true); }
     window.addEventListener("pagehide", function () { if (live && held.length && !leaving) sess.leave(held.length); });
@@ -119,6 +120,8 @@
         seg(n, "is-pend"); count++; cnt.textContent = count;
         render();
         App.live(t("h.live.picked", { choice: App.q(p.id)[dir], k: remaining }));
+        /* the fifth pick: the day done page opens at once (the throw is still on screen for a moment). Its Undo stays open there for what is left of the 3 seconds. */
+        if (count === 5 && !leaving) { leaving = true; setTimeout(function () { location.href = "done.html?state=moment&undo=" + Math.max(0, UNDO_MS - (Date.now() - p.t0)) + "&q=" + p.id; }, App.reduce ? 0 : 320); }
       }
     });
     function undo() {

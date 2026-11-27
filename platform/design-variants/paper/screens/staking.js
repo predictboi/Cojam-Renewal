@@ -23,11 +23,11 @@
       (S === "zero" ? C.note("", t("s.zero"), '<div class="row">' + C.btn(t("w.deposit"), { sm: true, href: "deposit.html" }) + C.btn(t("w.convert"), { sm: true, href: "convert.html" }) + "</div>") : "") +
       '<section class="msec" id="form">' +
       C.amount({ id: "amt", label: t("s.amount"), unit: "CT", value: initial, disabled: blocked, side: S === "loading" ? C.skel("110px", "12px") : avail(), msg: t("s.min") }) +
-      '<div class="stack-8"><p class="field-label"><b id="per-l">' + t("pp.lock") + '</b></p><div class="period" role="group" aria-labelledby="per-l" id="period">' +
-      PERIODS.map(function (d) { return '<button type="button" data-d="' + d + '" aria-pressed="' + (d === period) + '"' + (blocked ? " disabled" : "") + '><span class="per-d" aria-label="' + App.esc(t("s.days", { d: d })) + '">' + d + t("s.d") + '</span><b data-rate="' + d + '"></b></button>'; }).join("") + "</div></div>" +
+      '<div class="stack-8"><p class="field-label"><b id="per-l">' + t("s.period") + "</b><span>" + t("pp.peryear") + "</span></p>" + '<div class="period" role="group" aria-labelledby="per-l" id="period">' +
+      PERIODS.map(function (d) { return '<button type="button" data-d="' + d + '" aria-pressed="' + (d === period) + '"' + (blocked ? " disabled" : "") + '><span class="per-d">' + t("s.days", { d: d }) + '</span><b data-rate="' + d + '"></b></button>'; }).join("") + "</div></div>" +
       "</section>" +
       '<section class="msec stk-sum"><div class="mhero" aria-live="polite"><h2 class="lbl" id="sum-l"></h2><p class="fig" id="sum-v"></p><p class="sub" id="sum-k" hidden></p></div>' +
-      '<p class="tags" id="rules"></p></section>';
+      '<p class="stk-lock" id="rules"></p></section>';
   }
   function txCfg(a) {
     var r = M.rates[period][tier(a)], unlock = F.dateLong(M.ahead(period)), amt = F.dec(a);
@@ -47,8 +47,8 @@
     var inp = $("#amt"); if (inp) inp.value = "";
     refresh();
   }
-  var act = S === "error" ? "" : C.actbar(C.btn("", { kind: "primary", block: true, id: "go", disabled: true }));
-  App.mount({ tab: "stake", docTitle: t("s.title"), live: C.stamp(6), head: head(), body: body(), pin: act, pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
+  var act = S === "error" ? "" : C.actbar(C.btn("", { kind: "primary", block: true, id: "go", disabled: true }), S === "hold" ? t("pp.youpay") : t("pp.nofee2"));
+  App.mount({ tab: "stake", docTitle: t("s.title"), head: head(), body: body(), pin: act, pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
     var inp = $("#amt"); if (!inp) return;
     var msg = $("#amt-msg"), box = inp.closest(".field-box"), go = $("#go"); if (!go) return;
     var lastTier = null;
@@ -76,14 +76,15 @@
       lastTier = ti;
       var r = M.rates[period][ti], interest = a * r / 100 * period / 365;
       var shown = !err && !p.empty;
-      $("#sum-l").textContent = t("pp.interest");
+      $("#sum-l").textContent = t("s.interest", { d: period });
       var sv = $("#sum-v");
       if (S === "loading") sv.innerHTML = C.skel("170px", "40px");
-      else if (!shown) { sv._val = 0; sv.innerHTML = "–"; }
+      else if (!shown) { sv._val = 0; sv.innerHTML = '<span class="is-zero">0 CT</span>'; }
       else App.countTo(sv, sv._val === undefined ? interest : sv._val, interest, function (v) { return F.dec(v) + "<small>CT</small>"; }, null, 260);
       var kr = $("#sum-k"); kr.hidden = !(App.isKo && shown); kr.textContent = shown ? F.krw(interest) : "";
       /* the lock as two tags: the day it opens, and that there is no way out before it. The fee is a tag too. */
-      $("#rules").innerHTML = C.tag(F.dateLong(M.ahead(period)), "", "lock") + C.tag(t("pp.noexit")) + (S === "hold" ? C.tag(t("pp.youpay")) : C.tag(t("pp.nofee")));
+      /* the one condition that cannot be undone gets its own line in ink: the day the lock ends and that there is no way out before it */
+      $("#rules").innerHTML = C.icon("lock", 18) + "<span>" + t("s.rules", { date: F.dateLong(M.ahead(period)) }) + "</span>";
       go.disabled = !valid || !!pending; go.classList.toggle("is-busy", !!pending);
       go.innerHTML = (pending ? '<span class="spin"></span>' : "") + "<span>" + (pending ? pending : valid ? t("s.btn", { a: F.dec(a) }) : t(S === "hold" ? "hold.stake.btn" : "s.btn.idle")) + "</span>";
       return valid && !pending ? a : 0;

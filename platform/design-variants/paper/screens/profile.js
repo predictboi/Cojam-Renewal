@@ -19,7 +19,7 @@
       '<div class="stat"><b>' + (me && S !== "unranked" && S !== "hold" ? me.rank : "&ndash;") + "</b><span>" + (me && S !== "unranked" ? t("p.rank") : t("p.norank")) + "</span></div>" +
       '<div class="stat"><b>' + F.pts(me ? me.pts : 0) + "</b><span>" + t("r.week") + "</span></div>" +
       '<div class="stat"><b>' + F.pts(M.user.points) + "</b><span>" + t("p.pts") + "</span></div></div>" +
-      '<a class="inv-row" id="to-invite" href="invite.html"><span class="inv-row-t"><b>' + t("inv.entry") + '</b></span><span class="inv-row-go"><span class="sr-only">' + t("inv.entry.n", { n: M.invite.joined }) + '</span><span aria-hidden="true">' + M.invite.joined + "</span>" + C.icon("chev", 16) + "</span></a></section>";
+      '<a class="inv-row" id="to-invite" href="invite.html"><span class="inv-row-t"><b>' + t("inv.entry") + '</b></span><span class="inv-row-go inv-row-go--text">' + t("inv.entry.n", { n: M.invite.joined }) + C.icon("chev", 16) + "</span></a></section>";
   }
   function device() {
     if (S === "notset") return '<div class="row">' + C.icon("phone", 20) + '<p class="grow">' + t("p.device.notset") + "</p></div>" + C.btn(t("p.device.setup"), { block: true, href: "login.html?state=returning" });
@@ -66,7 +66,7 @@
     name.addEventListener("input", sync); sync();
     name.addEventListener("keydown", function (e) { if (e.key === "Enter" && !save.disabled) save.click(); });
     save.addEventListener("click", function () { if (check()) { M.user.name = name.value; $("#pid-name").textContent = name.value || F.short(M.user.address); App.toast(t("p.name.saved")); save.disabled = true; } else name.focus(); });
-    document.addEventListener("seg", function (e) { if (e.detail.name === "lang") I.setLang(e.detail.value); if (e.detail.name === "view") App.store.set("view", e.detail.value); });
+    document.addEventListener("seg", function (e) { if (e.detail.name === "lang") App.setLang(e.detail.value); if (e.detail.name === "view") App.store.set("view", e.detail.value); });
     function logout() { App.sheet.open("<h2>" + t("p.logout.h") + '</h2><p class="sheet-lead">' + t("p.logout.b") + '</p><div class="sheet-acts">' + C.btn(t("p.logout"), { block: true, href: "login.html" }) + C.btn(t("common.cancel"), { kind: "ghost", block: true, attrs: "data-sheet-close" }) + "</div>"); }
     $("#logout").addEventListener("click", logout);
     $("#upd").addEventListener("click", function () { App.toast(t("p.uptodate")); });

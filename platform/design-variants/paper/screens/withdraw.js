@@ -13,13 +13,13 @@
       '<section class="msec">' +
       '<div class="field"><div class="field-label"><label for="to"><b>' + t("x.to") + '</b></label></div><div class="field-box field-box--text field-box--mono' + (blocked ? " is-off" : "") + '"><input id="to" name="to" type="text" inputmode="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="0x…" value="' + addr0 + '" aria-describedby="to-msg"' + (blocked ? " disabled" : "") + '><button type="button" class="field-max" id="paste"' + (blocked ? " disabled" : "") + ">" + t("x.paste") + '</button></div><div class="field-msg field-msg--stack" id="to-msg" aria-live="polite"></div></div>' +
       C.amount({ id: "amt", label: t("x.amount"), unit: "CT", value: amt0, disabled: blocked, side: S === "loading" ? C.skel("110px", "12px") : t("x.avail", { c: "<b>" + F.dec(bal) + "</b>" }) }) + "</section>" +
-      '<section class="msec">' + C.rows([[t("x.kaia") + C.q("withdraw", t("x.fee")), F.kaia(kaia)], [t("x.fee"), t("x.fee.v", { f: fee }) + " " + C.tag(t("pp.youpay"))], [t("dp.net"), t("dp.net.v")]]) + "</section>" +
+      '<section class="msec">' + C.rows([[t("x.kaia") + C.q("withdraw", t("x.fee")), F.kaia(kaia)], [t("x.fee"), t("x.fee.v", { f: fee }) + "<small><b>" + t("pp.youpay") + "</b></small>"], [t("dp.net"), t("dp.net.v")]]) + "</section>" +
       '<div id="kaia-note"></div>';
   }
   function cfg(to, a) {
     var amt = F.dec(a);
     return { label: t("x.chip", { a: amt }), review: { title: t("x.rv.h", { a: amt }), rows: [[t("x.rv.to"), '<span class="addr-v" translate="no">' + F.groups(to) + "</span>"], [t("x.amount"), F.ct(a), true], [t("x.fee"), t("x.fee.v", { f: fee })]], check: t("x.rv.check"), confirm: t("x.rv.h", { a: amt }) },
-      success: { title: t("x.ok", { a: amt }) } };
+      success: { title: t("x.ok", { a: amt }), rows: [[t("x.rv.to"), '<span class="addr-v" translate="no">' + F.groups(to) + "</span>"], [t("pp.balance"), F.ct(Math.round((bal - a) * 1e4) / 1e4)]] } };
   }
   App.mount({ tab: "wallet", back: "wallet.html", title: t("x.title"), body: body(), pin: C.actbar(C.btn("", { kind: "primary", block: true, id: "go", disabled: true })), pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
     var to = $("#to"), inp = $("#amt"), go = $("#go"), toMsg = $("#to-msg"), aMsg = $("#amt-msg"), touched = !!addr0;

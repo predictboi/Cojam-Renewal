@@ -27,7 +27,7 @@
     App.sheet.open("<h2>" + t("k.split.q") + '</h2><div class="stack-8"><p class="sheet-lead">' + t("k.pool.line", { n: F.int(ct) }) + '</p><p class="sheet-lead">' + t("k.tie") + " " + t("k.tie.note") + '</p><p class="sheet-lead">' + t("k.split.note") + "</p></div>" +
       '<div class="split">' + split + '</div><div class="sheet-acts">' + C.btn(t("common.close"), { block: true, attrs: "data-sheet-close" }) + "</div>");
   }
-  function name(r) { return '<span translate="no">' + App.esc(r.name) + "</span>"; }
+  function name(r) { return App.name(r.name); }
   function rankNo(n) { return '<span class="sr-only">' + t("k.rank.sr", { n: n }) + '</span><span aria-hidden="true">' + n + "</span>"; }
   function gap(g) { return t(g > 0 ? "k.gap.up" : g < 0 ? "k.gap.down" : "k.gap.same", { n: F.int(Math.abs(g)) }); }
   /* one row pattern for the whole table: rank, player, points, prize. Ranks 1 to 3 take the larger setting. */
@@ -73,6 +73,12 @@
   }
   /* the prizes of the first three roll up as their rows set; the rest are still (ten rolling figures would be noise) */
   function roll() { App.$$("#top10 .krow--lead [data-prize]").forEach(function (el, i) { var to = +el.getAttribute("data-prize"); el.textContent = prize(0); setTimeout(function () { App.countTo(el, 0, to, prize, null, 560); }, 120 + i * 90); }); }
+  /* while the player's own row is on screen the pinned own bar steps aside: the same line is never shown twice */
+  var io = null;
+  function watchOwn() {
+    if (io) io.disconnect(); var row = $("#around .is-me"), p = $("#pin"); if (!row || !p || !window.IntersectionObserver) return;
+    io = new IntersectionObserver(function (en) { var pin = $("#pin"); if (pin) pin.classList.toggle("is-away", en[0].isIntersecting); }, { rootMargin: "0px 0px -130px 0px", threshold: 0.6 }); io.observe(row);
+  }
   function toAround() {
     var a = $("#around"); if (!a) return;
     a.scrollIntoView({ behavior: App.reduce ? "auto" : "smooth", block: "center" }); a.focus({ preventScroll: true });
@@ -100,15 +106,13 @@
         v.innerHTML = view(week); var p = $("#pin"); if (p) p.outerHTML = pin(week); App.enhance(document.body); App.pinFit(); roll();
         if (!App.reduce && v.animate) v.animate([{ opacity: 0, transform: "translateX(" + dir * -18 + "px)" }, { opacity: 1, transform: "none" }], { duration: 200, easing: "cubic-bezier(0.23, 1, 0.32, 1)" });
       }
-      clearTimeout(v._turn);
-      if (App.reduce || !v.animate) swap();
-      else { v.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateX(" + dir * 18 + "px)" }], { duration: 120, easing: "cubic-bezier(0.23, 1, 0.32, 1)", fill: "forwards" }); v._turn = setTimeout(function () { v.getAnimations().forEach(function (a) { a.cancel(); }); swap(); }, 120); }
+      swap(); watchOwn();   /* the new page is in place at once and comes in from its side: the screen is never blank during the turn */
     });
     document.addEventListener("click", function (e) {
       if (e.target.closest("#how")) howSheet();
       else if (e.target.closest("button#pin")) toAround();
     });
     if (S === "how") howSheet();
-    roll();
+    roll(); watchOwn();
   } });
 })();

@@ -1,7 +1,8 @@
-/* Day done: an extra edition. While the last pick is saved the press runs (a moving hatch in the band under the dateline and the headline set letter by letter);
-   when the points are paid the band inks in as "Extra", "+100P" prints with its figures rolling, a "Paid" stamp lands, the fifth box inks in,
-   the dateline turns from "Closes in" to "Next set in" and the points in the masthead count up. About 2.2 seconds, and a tap skips to the settled page.
-   The settled page is the same layout with nothing moving. */
+/* Day done: an extra edition. It opens the moment the fifth pick is made. While that pick can still be undone, the row under the figure holds Undo with
+   its fuse and the press runs (a moving hatch in the band under the dateline, the headline set letter by letter); a tap anywhere means "finish now".
+   When the points are paid the band inks in as "Extra", "+100P" counts up from 0 in the blue spot ink (it never shows any other amount), a "Paid" stamp
+   lands in the same row, the fifth box inks in, the dateline turns from "Closes in" to "Next set in" and the points in the masthead count up.
+   A tap skips to the settled page, which is the same layout with nothing moving. */
 (function () {
   var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$;
   var sess = App.sess;
@@ -16,34 +17,29 @@
   var outcome = ["wait", "wait", "wait", "wait", "wait"];   /* today's answers are set only after the day ends: every pick waits. "results" shows the hit points of an earlier day on their way (the masthead) */
   var waiting = outcome.filter(function (o) { return o === "wait"; }).length;
 
-  function status(p) {
-    if (p === "saving") return '<p class="done-st" id="reward"><span class="spin"></span>' + t("d.saving.st") + "</p>";
-    /* once paid, the figure and the stamp say it; the sentence stays for screen readers only (a welcome bonus keeps its line: it changes the amount) */
-    return wel ? '<p class="done-st" id="reward">' + C.icon("check", 16) + t("d.wel.st", { n: 100 + W }) + "</p>" : '<p class="sr-only" id="reward">' + t("d.paid.st") + "</p>";
+  /* the row under the figure has one height in every phase, so nothing below it ever moves: first the Undo of the fifth pick with its fuse,
+     then "Saving your last pick", then the "Paid" stamp. */
+  var qs2 = new URLSearchParams(location.search), undoMs = moment ? Math.max(0, Math.min(3000, +(qs2.get("undo") || 0))) : 0, undoQ = qs2.get("q") || "";
+  function row(p) {
+    if (p === "undo") return '<button type="button" class="undo" id="undo-last" aria-label="' + App.esc(t("h.undo.aria", { n: 5, choice: undoQ && sess.data.picks[undoQ] ? App.q(undoQ)[sess.data.picks[undoQ]] : "" })) + '">' + C.icon("undo", 18) + "<span>" + t("h.undo") + '</span></button><span class="fuse fuse--row" aria-hidden="true"><i style="--gone:-' + (3000 - undoMs) + 'ms"></i></span>';
+    if (p === "saving") return '<p class="done-st"><span class="spin"></span>' + t("d.saving.st") + "</p>";
+    return '<span class="seal" id="seal" aria-hidden="true">' + C.rstamp("hit", t("pp.paid")) + "</span>" + (wel ? '<p class="done-st">' + t("d.wel.st", { n: 100 + W }) + "</p>" : '<p class="sr-only">' + t("d.paid.st") + "</p>");
   }
-  /* the headline as letters, so it can be set one by one; words stay whole for line breaks, and a screen reader gets the plain sentence */
   function letters(text) {
     var i = 0;
     return '<span class="sr-only">' + App.esc(text) + '</span><span aria-hidden="true">' + text.split(" ").map(function (w) {
       return '<span class="wd">' + Array.from(w).map(function (c) { return '<span class="ltr" style="--i:' + (i++) + '">' + App.esc(c) + "</span>"; }).join("") + "</span>";
     }).join(" ") + "</span>";
   }
-  /* "+100P" as three reels: each column runs through a few figures and stops on its own, the last one last */
-  function reels(n) {
-    return "+" + String(n).split("").map(function (d, k) {
-      var seq = []; for (var j = 0; j < 6 + k * 3; j++) seq.push((+d + 10 - (6 + k * 3 - 1 - j) % 10) % 10);
-      return '<span class="reel"><span class="reel-in" style="--n:' + (seq.length - 1) + ";--k:" + k + '">' + seq.map(function (x) { return "<i>" + x + "</i>"; }).join("") + "</span></span>";
-    }).join("") + "P";
-  }
+  function num(v) { return "+" + String(Math.round(v)).replace(/\d/g, '<i class="dg">$&</i>') + "P"; }
   function hero() {
     var segs = phase === "saving" ? ["done", "done", "done", "done", "pend"] : ["done", "done", "done", "done", "done"];
     return '<section class="done-hero' + (moment ? " is-moment" : "") + (phase === "saving" ? " is-saving" : "") + '" id="hero">' +
-      '<div class="extra" id="extra"><span class="extra-run" aria-hidden="true"></span><p class="extra-ink"><b>' + t("pp.extra") + "</b><span>" + t("pp.issue", { d: App.issue.day, w: App.issue.week }) + "</span></p></div>" +
-      "<h1>" + letters(t("d.h1")) + '</h1><div class="done-figs"><p class="done-fig' + (phase === "saving" ? " is-wait" : "") + '" id="done-fig" aria-hidden="true">' + reels(100) + "</p>" +
-      '<span class="seal" id="seal" aria-hidden="true">' + C.rstamp("hit", t("pp.paid")) + "</span>" +
+      '<div class="extra" id="extra"><span class="extra-run" aria-hidden="true"></span><p class="extra-ink"><b>' + t("pp.extra") + "</b></p></div>" +
+      "<h1>" + letters(t("d.h1")) + '</h1><div class="done-figs"><p class="done-fig' + (phase === "saving" ? " is-wait" : "") + '" id="done-fig" data-dg aria-hidden="true">' + num(100) + "</p>" +
       (wel ? '<p class="done-wel" id="done-wel" aria-hidden="true"><b>+' + W + "P</b><span>" + t("d.wel.tag") + "</span></p>" : "") + "</div>" +
-      '<div aria-live="polite" id="reward-wrap">' + status(phase) + "</div>" +
-      '<div class="ph-line"><span class="ph-count">5<small>/5</small></span>' + C.day5(segs, { id: "day5", label: "5/5" }) + "</div></section>";
+      '<div class="done-row" aria-live="polite" id="reward-wrap">' + row(undoMs ? "undo" : phase) + "</div>" +
+      '<div class="ph-line">' + C.day5(segs, { id: "day5", label: "5/5" }) + "</div></section>";
   }
   function pickRow(p, i) {
     var o = outcome[i], q = App.q(p[0]);
@@ -65,35 +61,46 @@
     document.addEventListener("cd:zero", function () { if (S !== "zero") setTimeout(function () { location.href = "home.html"; }, 1200); });
     if (S === "zero") setTimeout(function () { App.toast(t("h.new")); }, 600);
     if (!moment) return;
-    var hero = $("#hero"), day5 = $("#day5"), wrap = $("#reward-wrap"), fig = $("#done-fig"), timers = [], paid = false, settled = false;
+    var hero = $("#hero"), day5 = $("#day5"), wrap = $("#reward-wrap"), fig = $("#done-fig"), timers = [], paid = false, settled = false, mode = undoMs ? "undo" : "saving";
     function at(ms, fn) { timers.push(setTimeout(fn, App.reduce ? Math.min(ms, 300) : ms)); }
+    /* the Undo window of the fifth pick has closed (or the player tapped anywhere to finish now): the pick is sent, then the points are paid */
+    function toSaving(wait) { if (mode !== "undo") return; mode = "saving"; wrap.innerHTML = row("saving"); at(wait, pay); }
     /* the points are credited with the fifth pick: only then does anything say "paid" */
     function pay() {
-      if (paid) return; paid = true;
+      if (paid) return; paid = true; mode = "paid";
       var sp = App.$("#pts .spin"); if (sp) sp.remove();
       sess.data.paid = true; sess.save();
-      hero.classList.remove("is-saving"); hero.classList.add("is-paid");   /* the band inks in, the reels run, the stamp lands (CSS, each with its own delay) */
+      hero.classList.remove("is-saving"); hero.classList.add("is-paid");   /* the band inks in (CSS); the figure counts up; the stamp lands */
       fig.classList.remove("is-wait");
-      wrap.innerHTML = status("paid");
+      App.countTo(fig, 0, 100, num, null, 620);   /* the figure only ever shows amounts on the way to 100 */
       day5.children[4].className = "is-done";
       try { if (navigator.vibrate) navigator.vibrate([12, 40, 18]); } catch (e) {}
       App.addPoints(100); App.live(t("toast.paid", { n: 100 }));
-      /* the dateline turns to the next set as the stamp lands */
-      at(760, function () { var f = $("#dl-flip"); if (!f) return; f.firstChild.textContent = t("d.next"); if (!App.reduce && !settled) { f.classList.remove("is-flip"); void f.offsetWidth; f.classList.add("is-flip"); } });
-      at(1500, settle);
+      at(640, function () { if (settled) return; wrap.innerHTML = row("paid"); App.stampLand($("#seal .rstamp"), 0);
+        var f = $("#dl-flip"); if (f) { f.firstChild.textContent = t("d.next"); if (!App.reduce) { f.classList.remove("is-flip"); void f.offsetWidth; f.classList.add("is-flip"); } } });
+      at(1400, settle);
     }
     /* settle: the page is exactly the settled done page, nothing left to run */
     function settle() {
       if (settled) return; settled = true;
       timers.forEach(clearTimeout); document.removeEventListener("pointerdown", skip, true); document.removeEventListener("keydown", skip, true);
-      pay();
+      if (!paid) { mode = "saving"; pay(); timers.forEach(clearTimeout); }
+      if (fig._roll) cancelAnimationFrame(fig._roll); fig.innerHTML = num(100);
+      wrap.innerHTML = row("paid");
       var f = $("#dl-flip"); if (f) f.firstChild.textContent = t("d.next");
       hero.classList.add("is-settled");
       if (hero.getAnimations) hero.getAnimations({ subtree: true }).forEach(function (a) { try { a.finish(); } catch (e) {} });
     }
-    /* a tap or a key anywhere skips the show; the tap is not swallowed, so a tap on a button still works */
-    function skip() { settle(); }
+    /* Undo on this page takes the fifth pick back and returns to the deck, where its card is on top again */
+    function undoLast() { timers.forEach(clearTimeout); if (undoQ) { delete sess.data.picks[undoQ]; sess.save(); } location.replace("home.html"); }
+    /* a tap or a key: during the Undo window it means "finish now" (unless it is on Undo itself); after the points are paid it skips the rest of the show */
+    function skip(e) {
+      if (e && e.target && e.target.closest && e.target.closest("#undo-last")) return;
+      if (mode === "undo") toSaving(500); else if (paid) settle();
+    }
     document.addEventListener("pointerdown", skip, true); document.addEventListener("keydown", skip, true);
-    at(900, pay);
+    wrap.addEventListener("click", function (e) { if (e.target.closest("#undo-last")) undoLast(); });
+    document.addEventListener("keydown", function (e) { if (mode === "undo" && (e.key === "z" || e.key === "Z" || e.key === "Backspace")) { e.preventDefault(); undoLast(); } });
+    if (undoMs) at(undoMs, function () { toSaving(900); }); else at(900, pay);
   } });
 })();

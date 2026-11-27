@@ -30,7 +30,7 @@ The motion language is the print shop: sheets of paper, ink, stamps, type being 
 | Rotation | Spatial: paper turns about the hand | During the drag | Up to 7 degrees with the travel. Held by the upper part the sheet leans with the drag; held by the lower 40% it leans the other way | Follows the finger | No rotation |
 | Proof stamp | State: this is what a release would pick, not yet | Drag under the threshold (35% of the width) | The answer appears as an unfilled, dashed stamp (ink on the sheet, readable at once), growing from 0.8 to 1.0 with the travel | Follows the finger | Same, without scale |
 | Stamp pressed | State and feedback: a release now picks | Drag crosses the threshold | The stamp fills with the answer's ink, comes down from 1.36 to 1.05 and recoils to 1.12; a 2 px ring of ink spreads to 1.24 and fades; the card gets a 20% wash; the answer button turns hot; 5 ms haptic tick | Press 210 ms `--ease-out`; ink ring 380 ms `--ease-out` | Fill and wash change at once |
-| Thunk and throw | Feedback: the pick is made | Release past the threshold, a fling, a tap or an arrow key | The stamp hits once more (1.3 to 0.98 to 1.06). On a swipe the sheet leaves at once with the speed of the release, turned 18 degrees. On a tap or a key the sheet rises 3 px for 130 ms while the stamp lands, then is thrown. 12 ms haptic | Thunk 160 ms `--ease-out`; throw 190 to 380 ms from the release speed, `cubic-bezier(0.3, 0.55, 0.4, 1)` | The card fades out in 200 ms |
+| Thunk and throw | Feedback: the pick is made (the fifth one opens day done, see 2) | Release past the threshold, a fling, a tap or an arrow key | The stamp hits once more (1.3 to 0.98 to 1.06). On a swipe the sheet leaves at once with the speed of the release, turned 18 degrees. On a tap or a key the sheet rises 3 px for 130 ms while the stamp lands, then is thrown. 12 ms haptic | Thunk 160 ms `--ease-out`; throw 190 to 380 ms from the release speed, `cubic-bezier(0.3, 0.55, 0.4, 1)` | The card fades out in 200 ms |
 | Next sheet | Spatial: the next page comes off the stack | Any pick | The card below rises 7 px and grows from 0.972 to 1; the third takes its place | 420 ms `--ease-out` | Instant |
 | Flick back | Feedback: nothing was picked | Release under the threshold | The sheet returns with a small overshoot | 440 ms `--ease-thunk` | Instant |
 | Boxes ink in | State: which of the five are in | A pick is saved; also when a page with finished boxes opens | A box fills with ink from the bottom; its number turns to paper at 45% of the way; boxes follow each other 70 ms apart | 300 ms `--ease-out` | Instant |
@@ -39,27 +39,29 @@ The motion language is the print shop: sheets of paper, ink, stamps, type being 
 
 ## 2. The fifth pick and day done: the extra edition
 
-Purpose: delight, once a day, earned by finishing. About 2.2 seconds from the page opening. A tap or a key anywhere skips to the settled page (the tap still does what it was aimed at). It plays once; a reload shows the settled page.
+Purpose: delight, once a day, earned by finishing. The page opens the moment the fifth pick is made (320 ms after the throw starts), so no day ends with a wait on the deck. It plays once; a reload shows the settled page.
 
 | Time | What | Motion | Duration and curve |
 | --- | --- | --- | --- |
-| 0 ms | The press runs | Under the dateline the band is an ink frame with vertical bars running to the left, while the status says "Saving your last pick". The dateline still reads "Closes in" | 420 ms loop, linear |
+| 0 ms | The page opens; the press runs | Under the dateline the band is an ink frame with vertical bars running to the left. The dateline still reads "Closes in". The row under the figure holds **Undo** for the fifth pick with its fuse (what is left of the 3 seconds) | 420 ms loop, linear; fuse linear |
 | 80 ms | The headline is set | "All 5 done" drops in letter by letter from above (0.55 em, 1.12 scale), 30 ms apart | 240 ms each, `--ease-out` |
-| 900 ms | Paid (the mock save ends) | The band inks in from the left and reads "Extra" with the issue ("Day 5, week 48"); the press stops | `clip-path` 280 ms `--ease-out` |
-| 980 ms | The figure prints | "+100P" appears in the blue spot ink and its three figures roll like reels, each through a few digits, stopping one after the other | 520, 670 and 820 ms, `--ease-out` |
-| 900 ms | The fifth box, the points | The fifth box inks in; the points in the masthead count up from 1,250P to 1,350P; a haptic pattern | 300 ms and 400 ms |
-| 1660 ms | The stamp | A "Paid" stamp lands on the right of the figure at minus 9 degrees, from 1.6 to 1, with a ring of ink | 240 ms `--ease-thunk`, ring 420 ms |
-| 1660 ms | The dateline | The live cell turns from "Closes in" to "Next set in": the words drop in from above | 220 ms `--ease-out` |
-| 2400 ms | Settled | Nothing moves. The layout is exactly the settled done page | |
+| Undo | Taken back | Undo (or Z, Backspace) removes the fifth pick and returns to the deck, where its card is on top again | Page change |
+| Fuse out, or a tap anywhere | Sent | The row changes to "Saving your last pick" (same height). A tap anywhere but Undo means "finish now" | 900 ms mock save (500 ms after a tap) |
+| Paid | The band | The band inks in from the left and reads "Extra"; the press stops | `clip-path` 280 ms `--ease-out` |
+| Paid | The figure | "+100P" appears in the blue spot ink and counts up from 0 to 100. It never shows any amount that is not on the way to 100 | 620 ms, ease out (quartic) |
+| Paid | The fifth box, the points | The fifth box inks in; the points in the masthead count up from 1,250P to 1,350P; a haptic pattern | 300 ms and 400 ms |
+| Paid + 640 ms | The stamp | A "Paid" stamp lands in the row under the figure (inside the gutter in every language), from 1.6 to 1, with a ring of ink | 240 ms `--ease-thunk`, ring 400 ms |
+| Paid + 640 ms | The dateline | The live cell turns from "Closes in" to "Next set in": the words drop in from above | 220 ms `--ease-out` |
+| Paid + 1400 ms | Settled | Nothing moves. The layout never shifted: the row under the figure has one height in every phase. A tap after the points are paid skips straight here | |
 
-Reduced motion: the band, the figure, the stamp and the dateline change state at once when the points are paid; no letters, reels or landing.
+From the fifth pick to the settled page: about 3 seconds of Undo window (or one tap), then about 2.3 seconds. Reduced motion: the band, the figure, the stamp and the dateline change state at once; no letters, count up or landing; the fuse still runs.
 
 ## 3. Results
 
 | Moment | Purpose | Trigger | Motion | Duration and curve | Reduced motion |
 | --- | --- | --- | --- | --- | --- |
 | Stamps land | State: these answers are set | The list first appears (and "Show earlier days") | Each HIT, MISS and Corrected stamp lands from 1.6 to 1 with a ring of ink, 70 ms apart in list order (capped at the tenth). Each stamp has its own small angle from a fixed table by its place in the list, so it is the same on every visit | 230 ms `--ease-thunk` | Stamps are simply there |
-| Going to press | State: this answer is not set yet | Always, on waiting rows | A 18 x 10 px frame with bars moving slowly to the left, beside "Waiting, 09:00" (it replaces the clock icon and is labelled "Going to press" for screen readers) | 1100 ms loop, linear | Bars stand still |
+| Going to press | State: this answer is not set yet | Always, on waiting rows (and beside "Waiting for deposits") | A 18 x 10 px frame with bars moving slowly to the left, beside the time the answer is due (it replaces the clock icon and the word "Waiting", and is labelled "Going to press" for screen readers) | 1100 ms loop, linear | Bars stand still |
 | Totals count up | Feedback: what each day paid | The list first appears | The day totals of the first two days count from 0 | 520 ms, ease out (quartic) | Final value at once |
 | Clipping | Preventing a jarring change | Tap a row with a set answer | The detail unfolds under the row below a dashed cut line; closes the same way | 240 ms `--ease-out` on `grid-template-rows` | Opens at once |
 
@@ -70,7 +72,8 @@ Reduced motion: the band, the figure, the stamp and the dateline change state at
 | The table sets like type | Spatial: a table being composed, top first | The screen opens, and after a page turn | Rows drop in from 10 px above, 34 ms apart | 240 ms `--ease-out` | Instant |
 | Prizes roll | Feedback | With the rows | The prizes of ranks 1 to 3 count up from 0.00 (ten rolling figures would be noise, so the rest stand still) | 560 ms, 90 ms apart | Final value at once |
 | Ticker strip | Spatial: your own line arrives under the table | 240 ms after the screen opens, and after a page turn | The pinned own bar slides up from behind the tab bar | 320 ms `--ease-drawer` | Instant |
-| Page turn | Spatial: this week and last week are two pages | Tap the segmented control | The old table leaves 18 px towards its side while fading (120 ms), the new one comes in from the other side (200 ms) and sets again. The control switches at once and a second tap during the turn wins | `--ease-out` | Content swaps at once |
+| Page turn | Spatial: this week and last week are two pages | Tap the segmented control | The new table is in place at once and comes in 18 px from its side while its rows set again (the screen is never blank); a second tap during the turn wins | 200 ms `--ease-out` | Content swaps at once |
+| Own bar steps aside | Preventing a duplicate | The player's own row in "Around you" scrolls into view | The pinned own bar slides down behind the tab bar, and comes back when the row leaves | 240 ms `--ease-drawer` | Hidden and shown at once |
 
 ## 5. Staking and wallet
 
@@ -80,6 +83,7 @@ Reduced motion: the band, the figure, the stamp and the dateline change state at
 | Proof sheet | Spatial: a sheet laid on the desk | Review, deposit, withdraw, any sheet | The sheet rises from the bottom edge under its heavy rule; the scrim fades | 320 ms `--ease-drawer` | Appears at once |
 | Stamp on success | Feedback: it is done | A transaction succeeds | A "Done" stamp lands beside the amount, from 1.6 to 1 with a ring of ink, 210 ms after the sheet changes | 230 ms `--ease-thunk` | Stamp is simply there |
 | Date stamp tick | State: time is passing | Every countdown, each second | Only the digit that changed is replaced; it drops into place from 40% above | 150 ms `--ease-out` | Digit changes at once |
+| Deposit arrived | Feedback | A deposit is seen on chain | The "Waiting for deposits" line becomes a stamp with the amount, which lands like any stamp; a slip of paper says how much | 230 ms `--ease-thunk` | Stamp is simply there |
 | Errors and failures | | | Nothing plays | | |
 
 ## 6. Navigation and chrome

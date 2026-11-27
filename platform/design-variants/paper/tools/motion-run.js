@@ -41,8 +41,8 @@ async function videos(b) {
   for (const lang of ['ko', 'en']) { const { ctx, pg } = await ctxFor(b, 'b-' + lang, lang, true); await pg.__go('home.html?state=fresh'); await sleep(pg, 800);
     await swipe(pg, 1, { ms: 330 }); await sleep(pg, 650); await swipe(pg, -1, { ms: 330 }); await sleep(pg, 650);
     await pg.locator('.qcard[data-pos="0"] .choice[data-dir="r"]').tap(); await sleep(pg, 750);
-    await swipe(pg, 1, { ms: 330 }); await sleep(pg, 650); await swipe(pg, 1, { ms: 330 }); await sleep(pg, 1300);
-    await pg.locator('#finish').tap(); await pg.waitForURL(/done\.html/); await sleep(pg, 4200);
+    await swipe(pg, 1, { ms: 330 }); await sleep(pg, 650); await swipe(pg, 1, { ms: 330 });
+    await pg.waitForURL(/done\.html/); await sleep(pg, 6200);   // the fifth pick opens the extra edition at once: Undo with its fuse, then paid
     await finish(ctx, pg, 'b-five-picks-extra-edition-' + lang); }
   // (c) results: stamps land, totals count up, a row opens like a clipping
   { const { ctx, pg } = await ctxFor(b, 'c', 'ko', true); await pg.__go('wallet.html'); await sleep(pg, 500); await pg.locator('.tb a').nth(1).tap(); await pg.waitForURL(/results\.html/); await sleep(pg, 2200);
@@ -77,12 +77,13 @@ async function stills(b) {
   await still(b, 'frame-03-tap-thunk-throw-ko', 'ko', 'home.html?state=fresh', 215, async pg => { await pg.locator('.qcard[data-pos="0"] .choice[data-dir="l"]').tap(); });
   await still(b, 'frame-04-undo-pulled-back-ko', 'ko', 'home.html?state=fresh', 110, async pg => { await swipe(pg, 1, { ms: 260 }); await sleep(pg, 700); await pg.locator('#undo').tap(); });
   await still(b, 'frame-05-fuse-rule-ko', 'ko', 'home.html?state=fresh', 1300, async pg => { await swipe(pg, 1, { ms: 260 }); });
+  await still(b, 'frame-06-extra-undo-fuse-ko', 'ko', 'done.html?state=moment&undo=2600&q=q5', 900);
   await still(b, 'frame-06-extra-press-running-ko', 'ko', 'done.html?state=moment', 520);
-  await still(b, 'frame-07-extra-figures-rolling-ko', 'ko', 'done.html?state=moment', 1180);
-  await still(b, 'frame-08-extra-stamp-landing-ko', 'ko', 'done.html?state=moment', 1790);
+  await still(b, 'frame-07-extra-figure-counting-ko', 'ko', 'done.html?state=moment', 1150);
+  await still(b, 'frame-08-extra-stamp-landing-ko', 'ko', 'done.html?state=moment', 1660);
   await still(b, 'frame-09-extra-settled-ko', 'ko', 'done.html?state=moment', 3200);
-  await still(b, 'frame-07-extra-figures-rolling-en', 'en', 'done.html?state=moment', 1180);
-  await still(b, 'frame-08-extra-stamp-landing-en', 'en', 'done.html?state=moment', 1790);
+  await still(b, 'frame-07-extra-figure-counting-en', 'en', 'done.html?state=moment', 1150);
+  await still(b, 'frame-08-extra-stamp-landing-en', 'en', 'done.html?state=moment', 1660);
   await still(b, 'frame-10-results-stamps-landing-ko', 'ko', 'results.html', 430);
   await still(b, 'frame-11-results-clipping-opening-ko', 'ko', 'results.html', 110, async pg => { await sleep(pg, 900); await pg.locator('button.rrow').first().tap(); });
   await still(b, 'frame-12-ranking-type-setting-ko', 'ko', 'ranking.html', 300);

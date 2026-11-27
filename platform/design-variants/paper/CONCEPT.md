@@ -43,7 +43,7 @@ Contrast ratios (WCAG 2.1, checked by script and by `tools/design/audit.js` on e
 
 Never: persimmon or teal as text on paper (2.4 and 2.1), blue text on ink (2.5). The two answer inks have the same OKLCH lightness (0.706 and about 0.71), so neither looks like the recommended answer.
 
-The blue has four jobs: the primary action, text links, the reward (the "+100P" figure, the HIT stamp and its small mark), and the player's own row in a table. The current tab, the current segment and a chosen option are ink, never blue. The home screen at rest carries no blue except the mark in the nameplate.
+The blue has four jobs: the primary action, text links, the reward (the "+100P" figure, the HIT stamp and its small mark), and the player's own row in a table. The current tab, the current segment and a chosen option are ink, never blue. The home screen at rest carries blue only in the mark of the nameplate and in the one text link on the card ("Rules", the way to the answer source).
 
 ## Type system
 
@@ -51,7 +51,7 @@ The blue has four jobs: the primary action, text links, the reward (the "+100P" 
 | --- | --- | --- |
 | Display | **Besley** (a Clarendon slab, variable 500 to 900, Google Fonts) | Headlines at 800, figures at 900: questions, page titles, balances, points, ranks, prizes, rates, the answers on the two buttons, stamps |
 | Display, Korean | **Hahmlet** (a Korean slab serif, variable, Google Fonts) | Hangul in every display role; Latin letters and numerals in Korean text stay Besley because Besley comes first in the stack |
-| Display, Japanese | **Noto Serif JP** at 900 (Google Fonts) | Kana and kanji in every display role, switched by `:lang(ja)`; numerals stay Besley |
+| Display, Japanese | **Shippori Antique B1** (Google Fonts) | Kana and kanji in every display role, switched by `:lang(ja)`; numerals stay Besley. An antique face is the Japanese counterpart of a Clarendon: sturdy bracketed kana, heavy low contrast kanji. It replaced Noto Serif JP, which read lighter and more formal than the Latin and Korean slabs. The free font has one weight, so the browser emboldens it at display weights; production should license a true heavy antique |
 | Text | **Pretendard Variable**, Pretendard JP under `:lang(ja)` (the brand face, jsDelivr) | Every label, row, sentence, button label, table cell, the dateline |
 | Data | system monospace | Addresses, the invite code and the invite link only |
 
@@ -69,6 +69,18 @@ Labels are sentence case and untracked everywhere. The only capitals are the res
 4. **Three inks with fixed jobs.** Black for the paper, blue for action and reward, persimmon and teal for left and right. The answer colour follows a pick everywhere as a small printed block: the pick bar, the list, day done, results.
 5. **Print marks carry state.** Pictures are printed through a halftone screen in one ink (CSS only, any picture works). A result is a stamp: HIT in blue with two frames, MISS hollow, at a slight angle; "Corrected" is a dashed stamp. The day is five numbered boxes: empty, hatched while a pick is being saved, inked when it is in. The drag preview is the answer as a stamp that lands a size up once a release would pick.
 
+## Pictures: the halftone as a production approach
+
+- **In production the halftone is rendered once per picture on the server.** When a question's picture is approved in the admin, a job prints it through the screen (grey, lift, dot screen, threshold) and stores a 1 bit PNG at two sizes (card and 2x), plus the square block for the list. The app shows plain images: no filters, nothing to compute on the phone, identical on every device.
+- **The CSS version in this prototype is the stand in.** `.ht` builds the same look live (blur, multiply with a dot gradient, hard contrast) so that any picture dropped into the mock works without a build step. Its parameters are the specification for the server job: `--ht-cell` 5 px dot pitch at 1x, `--ht-lift` 2.9, `--ht-contrast` 9.
+- **Drags stay cheap either way.** In the prototype the picture, the colour wash and the stamps each have their own compositor layer, so the filters run once per picture and never while the card moves (measured in `REVIEW.md`: raster work during a drag fell by about 60%).
+- **The list thumbnail is a different cut.** At 60 px a dot screen turns to texture, so the list uses a square block: the picture is cropped on its focal point (`focus` on each question, enlarged 1.5 times), pushed to two tones and reversed, so the subject stands in paper on a block of ink, like a small printer's cut. In production it is the third file of the same server job.
+- **The source line on the card is a worded control.** The answer source and the settle time are one button that ends in an underlined "Rules" with a chevron, in place of the earlier small info icon.
+
+## Copy on the surface
+
+A screen answers one question with one figure or one action; labels are 1 to 3 words; explanations sit behind a "?" that opens a short sheet. The rule, the word counts before and after, and where every removed sentence went are in `COPY.md`.
+
 ## What was deliberately avoided
 
 - Gradients as decoration, glass, blur, glow, soft shadows, emoji. The only gradients are the halftone dot screen and the hatch of a pending box, and both carry information.
@@ -82,7 +94,7 @@ Labels are sentence case and untracked everywhere. The only capitals are the res
 
 ## What stayed the same
 
-The product and its rules (5 questions a day, swipe left or right or tap or arrow keys, 3 second Undo, "Finish now", +100P for all five, +50P per hit, results, weekly ranking with prizes, staking, wallet with convert, deposit and withdraw, invite, profile, account on hold), the information on every screen, the copy and the mock data (`assets/i18n.js` and `assets/mock.js` are unchanged copies), the Cojam mark, left and right answers in two distinct colours, 44 px touch targets, WCAG AA contrast, reduced motion support, EN / KO / JA.
+State names follow the functional reference one to one (`STATES.md`, 17 screens and 215 states). The product and its rules (5 questions a day, swipe left or right or tap or arrow keys, 3 second Undo, "Finish now", +100P for all five, +50P per hit, results, weekly ranking with prizes, staking, wallet with convert, deposit and withdraw, invite, profile, account on hold), the information on every screen, the copy dictionary (`assets/i18n.js` is an unchanged copy; `assets/mock.js` is a copy whose example questions were replaced by the compliant sets of `platform/shared/src/devQuestions.ts`), the Cojam mark, left and right answers in two distinct colours, 44 px touch targets, WCAG AA contrast, reduced motion support, EN / KO / JA.
 
 Wording added for the concept, in three languages (`assets/paper-i18n.js`): the issue on the dateline ("Day 5, week 48"), the card number ("No. 1 of 5"), and the three column heads of the ranking table (Rank, Player, Points). The nameplate "Cojam Daily" is a logo and is not translated.
 
@@ -94,8 +106,11 @@ Wording added for the concept, in three languages (`assets/paper-i18n.js`): the 
 | `tokens.css`, `components.css` | Tokens and every component and screen style |
 | `assets/app.js` | Shell and builders (new), behaviour carried over from `platform/design/assets/components.js` (deck, Undo, sheets, transactions, countdowns, QR) |
 | `screens/*.js` | One script per screen; the HTML files are thin shells |
-| `tools/` | `capture-all.js`, `shot.js`, `sheet.py`, `flow-test.js`, `audit-all.sh` |
+| `tools/` | `state-check.js`, `capture-all.js`, `shot.js`, `sheet.py`, `flow-test.js`, `audit-all.sh`, `word-count.js`, `lang-switch-check.js`, `motion-run.js`, `motion-trace.js`, `motion-mp4.sh` |
 | `captures/` | `<screen>-<lang>-<width>.png` |
 | `REVIEW.md` | The quality loop: scores of the last round and what was fixed |
+| `STATES.md` | Every screen and state, the names that differ from the reference, what was added and what behaves differently |
+| `COPY.md` | The copy rule, visible words per screen before and after, and where each explanation went |
+| `assets/states.js` | The machine readable list of screens and states (hub and tools) |
 | `MOTION.md` | The motion spec: every moment with its purpose, trigger, duration, curve and reduced motion answer |
 | `captures/video/` | Recordings of five flows (mp4 and webm) and still frames taken mid animation |

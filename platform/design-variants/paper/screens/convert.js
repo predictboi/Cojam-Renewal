@@ -7,7 +7,7 @@
   var blocked = S === "cap" || S === "capglobal" || S === "paused" || S === "wait" || S === "loading" || App.state === "offline" || S === "hold";
   function body() {
     if (S === "short") return '<section class="msec"><div class="mhero"><h2 class="lbl">' + t("c.avail") + '</h2><p class="fig fig--xl">' + F.int(bal) + "<small>P</small></p></div></section>" +
-      C.empty({ icon: "bolt", title: t("c.short.h"), extra: '<p class="tags tags--center">' + C.tag("1,000P = 1 CT") + C.tag("-" + F.pts(1000 - bal)) + "</p>", action: C.btn(t("k.play"), { kind: "primary", href: "home.html" }) });
+      C.empty({ icon: "bolt", title: t("c.short.h"), body: t("c.short.b", { p: F.int(bal), g: F.int(1000 - bal) }), action: C.btn(t("k.play"), { kind: "primary", href: "home.html" }) });
     var waitNote = "";
     if (S === "wait") { var d = M.user.firstConvert, secs = (d - Date.now()) / 1000;
       waitNote = C.note("", t("c.wait.b", { date: "<b>" + F.date(d, true) + "</b>" }) + "<br><b>" + t("c.wait.left", { d: Math.floor(secs / 86400), h: Math.floor(secs % 86400 / 3600) }) + "</b>"); }
@@ -16,8 +16,9 @@
       C.amount({ id: "amt", label: t("pp.points"), unit: "P", mode: "numeric", value: initial, disabled: blocked, side: S === "loading" ? C.skel("96px", "12px") : t("c.avail") + " <b>" + F.pts(bal) + "</b>", msg: t("c.step") }) +
       "</section>" +
       /* the result is the figure of this screen; the rate and the fee are two tags, every other rule is behind "?" */
-      '<section class="msec mgrow"><div class="mhero"><h2 class="lbl lbl--q">' + t("c.get") + C.q("convert", t("c.title")) + '</h2><p class="fig" id="get" aria-live="polite">0<small>CT</small></p></div>' +
-      '<p class="tags">' + C.tag("1,000P = 1 CT") + (S === "hold" ? "" : C.tag(t("pp.nofee"))) + C.tag(t("pp.capleft", { n: capLeft })) + "</p></section>";
+      '<section class="msec mgrow"><div class="getbox"><h2 class="lbl lbl--q">' + t("c.get") + C.q("convert", t("c.title")) + '</h2><p class="fig" id="get" aria-live="polite">0<small>CT</small></p>' +
+      '<p class="fact" id="left"></p></div>' +
+      '<dl class="facts3"><div><dt>' + t("c.rate") + "</dt><dd>1,000P = 1 CT</dd></div><div><dt>" + t("c.fee") + "</dt><dd>" + (S === "hold" ? t("pp.youpay") : t("pp.none")) + "</dd></div><div><dt>" + t("pp.lefttoday") + "</dt><dd>" + capLeft + " CT</dd></div></dl></section>";
   }
   function cfg(p) { var n = p / 1000; return { label: t("c.chip", { p: F.int(p) }), success: { title: t("c.ok.h", { p: F.int(p), n: n }), rows: [[t("c.ok.left"), F.pts(bal - p)], [t("c.ok.ct"), F.ct(M.user.ct + n)]] }, onSuccess: function () { App.addPoints(-p); } }; }
   App.mount({ tab: "wallet", back: "wallet.html", title: t("c.title"), body: body(), pin: S === "short" ? "" : C.actbar(C.btn("", { kind: "primary", block: true, id: "go", disabled: true })), points: bal, pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
@@ -35,6 +36,7 @@
       msg.className = "field-msg" + (err ? " is-error" : ""); msg.innerHTML = err ? "<span>" + err + "</span>" + fix : "<span>" + t("c.step") + "</span>";
       var valid = !err && !p.empty && !blocked, n = valid ? v / 1000 : 0;
       App.countTo(get, get._val === undefined ? n : get._val, n, function (v) { return F.dec(Math.round(v)) + "<small>CT</small>"; }, null, 260);
+      var lf = $("#left"); if (lf) lf.innerHTML = valid ? t("c.ok.left") + " <b>" + F.pts(bal - v) + "</b>" : "";
       go.disabled = !valid; go.querySelector("span").textContent = valid ? t("c.btn", { p: F.int(v), n: n }) : t(S === "hold" ? "hold.convert.btn" : "c.btn.empty");
       return valid ? v : 0;
     }

@@ -37,6 +37,18 @@
     "pp.tier1": ["+1% from 1,000 CT", "1,000 CT부터 +1%", "1,000 CTから+1%"],
     "pp.tier2": ["+2% from 10,000 CT", "10,000 CT부터 +2%", "10,000 CTから+2%"],
     "pp.help": ["Help", "도움말", "ヘルプ"],
+    /* labelled facts: a value always carries a plain word label, never a bare symbol */
+    "pp.rate": ["Rate", "이율", "利率"],
+    "pp.ayear": ["{r}% a year", "연 {r}%", "年率{r}%"],
+    "pp.peryear": ["Rate a year", "연 이율", "年率"],
+    "pp.minclaim": ["Min. claim {n} CT", "최소 수령 {n} CT", "受取は{n} CTから"],
+    "pp.at": ["+{p}P at {time}", "+{p}P, {time} 지급", "+{p}P、{time}に付与"],
+    "pp.nofee2": ["No fee: Cojam pays", "수수료 없음: Cojam 부담", "手数料なし：Cojam負担"],
+    "pp.answerat": ["Answer at {time}", "{time} 정답 확정", "{time}に結果確定"],
+    "pp.lefttoday": ["Left today", "오늘 남은 한도", "今日の残り"],
+    "pp.none": ["None", "없음", "なし"],
+    "pp.filed": ["Filed", "접수 완료", "受付済"],
+    "pp.balance": ["Balance left", "남은 잔액", "残高"],
     "pp.lede": ["We email you a code.", "이메일로 코드를 보내 드려요.", "メールでコードをお送りします。"]
   };
   var d = window.CJ_I18N.dict;

@@ -20,7 +20,7 @@ small { font-size: inherit; }
 [hidden] { display: none !important; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 /* figures line up in the text face only; the slab keeps its own proportional figures (its tabular zero is a different, lighter glyph) */
-.tnum, .dateline, .krow-pts, .rows dd, .mbar-meta, .pickbar, .rs-meta, .split, .ratetable { font-variant-numeric: tabular-nums; }
+.tnum, .dateline, .krow-pts, .mbar-meta, .pickbar, .rs-meta { font-variant-numeric: tabular-nums; }   /* never on an element set in the slab: its tabular zero is a hairline glyph */
 .rows .is-em dd, .ratetable td:not(:first-child) { font-variant-numeric: normal; }
 /* a ticking figure in the slab: every digit sits in a cell of one width, so the line does not shake */
 .dg { display: inline-block; font-style: normal; }
@@ -795,7 +795,7 @@ button.pin:focus-visible { outline-color: var(--on-ink); outline-offset: -4px; }
 .extra { position: relative; height: 30px; overflow: hidden; }
 .extra-ink { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); padding: 0 var(--s-10); background: var(--ink); color: var(--on-ink); font-size: var(--fs-13); line-height: 1; }
 .extra-ink b { font-family: var(--font-display); font-weight: var(--fw-fig); font-size: var(--fs-18); }
-.extra-ink span { color: var(--on-ink-2); }
+
 .extra-run { position: absolute; inset: 0; display: none; border: var(--edge); overflow: hidden; }
 .extra-run::before { content: ""; position: absolute; inset: 0 -12px 0 0; background: repeating-linear-gradient(90deg, var(--ink) 0 3px, transparent 3px 12px); animation: press-run 420ms linear infinite; }
 @keyframes press-run { to { transform: translateX(-12px); } }
@@ -970,3 +970,136 @@ div.qmeta .qmeta-go { display: none; }
 :lang(ja) h1, :lang(ja) h2, :lang(ja) .trow-q, :lang(ja) .rrow-q, :lang(ja) .pick-q, :lang(ja) .auth-lede { word-break: auto-phrase; }
 .muted-link { color: var(--ink-2); font-weight: var(--fw-text); }
 .mstake .tags { margin-top: var(--s-2); }
+
+/* =====================================================================================================================
+   REVIEW A: a frame means pressable (static labels get their own skin), labelled facts, composition, type fixes.
+   ===================================================================================================================== */
+
+/* ---------- static things are never framed ----------
+   Only controls keep the ink frame (buttons, fields, the "?" box, the address chip, Undo, Pick, the period options).
+   A tag is a word on the second paper tone; a count is a bold number on the same tone; the day boxes, step numbers and icon tiles lose their edge. */
+.tag { min-height: 22px; padding: 0 var(--s-6); border: 0; background: var(--paper-2); color: var(--ink); font-weight: var(--fw-mid); }
+.tag-ink { background: var(--ink); color: var(--on-ink); }
+.tag-line { background: none; padding: 0; color: var(--ink-2); }
+.mtabs-n, .wrow-go > span[aria-hidden], .inv-row-go > span[aria-hidden] { min-width: 20px; height: 20px; border: 0; background: var(--paper-2); }
+.day5 i { border: 0; background: var(--paper-2); }
+.day5 .is-done::before { background: var(--paper-2); }
+.day5 .is-pend { background: var(--hatch), var(--paper-2); }
+.day5 .is-pend b { background: var(--paper-2); }
+.day5 .is-fail { box-shadow: inset 0 0 0 1.5px var(--down); }
+.txsteps .n { border: 0; background: var(--paper-2); }
+.txsteps .is-wait .n { background: var(--paper-2); color: var(--ink-2); }
+.empty-ic, .sys-ic, .sheet-ic, .end-mark { border: 0; background: var(--paper-2); }
+.sheet-ic.is-bad { background: var(--down-tint); }
+.sheet .txsteps .n, .sheet .empty-ic { background: var(--paper-2); }
+.dots i { border: 0; background: var(--line); }
+.dots i.is-on { background: var(--ink); }
+.art-coin { border: 0; background: var(--paper-2); }
+
+/* ---------- labelled facts: a short word and its value, in the text face, no frame ---------- */
+.fact { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s-2) var(--s-8); color: var(--ink-2); font-size: var(--fs-14); line-height: 1.4; }
+.fact b { color: var(--ink); font-weight: var(--fw-bold); }
+.fact-sep { width: 1px; height: 12px; background: var(--ink-3); }
+.fact--center { justify-content: center; }
+small.fact { display: flex; grid-column: 1 / -1; font-size: var(--fs-13); }
+.rows dd small b { color: var(--ink); }
+.facts3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.facts3 > div { display: grid; gap: 2px; padding: 0 var(--s-10); border-left: var(--rule); }
+.facts3 > div:first-child { padding-left: 0; border-left: 0; }
+.facts3 dt { color: var(--ink-2); font-size: var(--fs-13); }
+.facts3 dd { font-size: var(--fs-15); font-weight: var(--fw-bold); }
+/* the condition that cannot be undone, and who pays: in ink, bold, never a chip */
+.stk-lock { align-items: center; color: var(--ink); font-size: var(--fs-15); font-weight: var(--fw-bold); }
+.pin-note { color: var(--ink); font-weight: var(--fw-mid); }
+.field-label > span { font-size: var(--fs-13); }
+.wrow:not(a):not(.wrow--addr) { grid-template-columns: minmax(0, 1fr) auto; }
+.inv-row-go--text { font-family: var(--font-text); font-size: var(--fs-14); font-weight: var(--fw-mid); color: var(--ink-2); }
+.dp-qr ~ .msec .hold-why { color: var(--ink); font-size: var(--fs-14); font-weight: var(--fw-mid); }
+
+/* ---------- the primary action switched off: paper, not a pale blue slab ---------- */
+.btn-primary:disabled { border-color: var(--ink-3); background: var(--paper-2); color: var(--ink-2); }
+
+/* ---------- convert: the figure being produced sits on a fresh sheet and fills the page ---------- */
+.mgrow { gap: var(--s-16); }
+.getbox { display: grid; gap: var(--s-6); margin: 0 calc(var(--gutter) * -1); padding: var(--s-24) var(--gutter); border-top: var(--rule); border-bottom: var(--rule); background: var(--sheet); }
+.msec + .msec.mgrow { padding-top: 0; border-top: 0; }
+.getbox .fig { font-size: var(--fs-88); }
+.getbox .fact { min-height: 20px; }
+
+/* ---------- day done: the row under the figure keeps one height; the stamp lives in it ---------- */
+.done-figs { align-items: flex-end; }
+.done-fig { display: block; font-size: min(5.5rem, 22vw); line-height: 0.95; }
+.is-paid .done-fig { animation: none; }
+.is-moment.is-saving .done-fig { opacity: 0; }
+.done-row { position: relative; display: flex; align-items: center; gap: var(--s-12); min-height: 48px; }
+.done-row .seal { position: static; transform: none; }
+.done-row .seal .rstamp { --rot: -4deg; margin: 0 var(--s-4); padding: 6px 10px 4px; font-size: var(--fs-16); }
+.is-saving .seal { opacity: 1; }
+.is-paid .seal .rstamp { animation: none; }
+.is-paid .seal .rstamp::after { content: none; }
+.done-row .rstamp.is-land { animation: stamp-land 240ms var(--ease-thunk) backwards; }
+.fuse--row { left: 0; right: 0; bottom: 0; }
+.extra-ink { justify-content: flex-start; }
+.done-hero .ph-line { margin-top: 0; }
+
+/* ---------- list view: the card's own picture, cropped to its subject; Pick on the row's edge; answered rows stay in ink ---------- */
+.thumb { width: 64px; height: 64px; background: var(--paper-2); --ht-cell: 3px; --ht-lift: 3; }
+.thumb .ht img { object-position: var(--f, 50% 15%); transform: scale(1.55); transform-origin: var(--f, 50% 15%); filter: blur(0.3px) brightness(var(--ht-lift)); }
+.trow { grid-template-columns: 30px minmax(0, 1fr) 64px; }
+.trow > div:not(.trow-body) { display: contents; }
+.trow-n { grid-column: 1; grid-row: 1 / span 2; }
+.trow-q { grid-column: 2; grid-row: 1; align-self: start; }
+.trow > .thumb { grid-column: 3; grid-row: 1; }
+.trow-foot { grid-column: 2 / -1; grid-row: 2; margin-top: 0; min-height: var(--target); }
+.trow-body { grid-row: 3; }
+.trow.is-done .trow-n, .trow.is-done .trow-q { color: var(--ink); }
+.trow.is-done .trow-foot { min-height: 28px; }
+.trow.is-done .trow-state { color: var(--ink); font-weight: var(--fw-mid); }
+
+/* ---------- results ---------- */
+.rmark { width: 12px; height: 12px; }
+.rchip--wait { color: var(--ink); gap: var(--s-6); }
+.rs-pts.is-if { color: var(--ink-2); }
+.rrow-clip { justify-items: stretch; }
+.rrow-clip > .linkish { justify-self: start; }
+
+/* ---------- ranking ---------- */
+.krow-name { font-feature-settings: "calt" 0; }
+.krow-name .mono { font-size: 0.92em; letter-spacing: -0.01em; }
+.krow--lead .krow-name .mono { font-family: var(--font-data); font-weight: var(--fw-bold); font-size: 0.82em; }
+.sc-rank > .pin { transition: transform var(--dur-mid) var(--ease-drawer); }
+.sc-rank > .pin.is-away { transform: translateY(110%); }
+.pin-pts { line-height: 1.3; gap: 2px; }
+
+/* ---------- the colour wash never tints the two answers ---------- */
+.choices { position: relative; z-index: 3; }
+
+/* ---------- targets are 44 px wide as well as tall ---------- */
+.viewsw { gap: var(--s-4); }
+.viewsw a { justify-content: center; min-width: var(--target); padding: 0 var(--s-6); }
+.linkish--pad { justify-content: center; min-width: var(--target); }
+.fine a { min-width: var(--target); text-align: center; }
+
+/* ---------- the source line: two lines, never cut ---------- */
+.qmeta-t span, .qmeta-t span:first-child { display: block; overflow: visible; white-space: normal; text-overflow: clip; -webkit-line-clamp: none; text-wrap: pretty; }
+.is-home .qcard h2 { -webkit-line-clamp: 3; }
+
+/* ---------- first run: the nameplate over the rule, the figure sized to the page, a lean that shows the gesture ---------- */
+.onb-wrap { gap: var(--s-16); }
+#panels { flex: 1; display: grid; align-content: center; }
+.onb { gap: var(--s-24); }
+.onb-art { height: auto; min-height: 0; padding: var(--s-32) var(--s-16); border: 0; border-top: var(--rule-heavy); border-bottom: var(--rule); margin: 0 calc(var(--gutter) * -1); }
+.onb-art .fig { font-size: var(--fs-56); }
+.onb-art .art-cards { width: 208px; height: 172px; }
+.onb-art .day5 i { width: 30px; height: 30px; }
+.onb-art .day5 b { font-size: var(--fs-14); }
+.art-coin { padding: var(--s-16) var(--s-16); font-size: var(--fs-32); }
+.art-cards i:last-child { animation: art-lean 2600ms var(--ease-in-out) 600ms 2 both; }
+@keyframes art-lean { 0%, 100% { transform: rotate(-5deg) translateX(-8px); } 30%, 45% { transform: rotate(6deg) translateX(26px); } 75%, 90% { transform: rotate(-9deg) translateX(-30px); } }
+.onb-foot .dots { justify-self: center; }
+.auth--onb .auth-lede { font-size: var(--fs-18); color: var(--ink); }
+.auth-main { gap: var(--s-24); }
+
+/* ---------- Japanese display: the antique face is set tighter, with proportional kana ---------- */
+:lang(ja) :is(h1, h2, .plate, .qcard h2, .trow-q, .choice, .mast-title, .inv-line, .rstamp, .deck-end h2, .extra-ink b) { font-feature-settings: "palt"; letter-spacing: -0.03em; }
+:lang(ja) .qmeta-t span, :lang(ja) .fact, :lang(ja) .rows dd { word-break: auto-phrase; }

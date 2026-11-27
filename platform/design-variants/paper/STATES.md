@@ -56,6 +56,10 @@ Total: 17 screens, 215 states.
 | `results.html?state=noset` | Today's rows forced to waiting | Only today's set (which is all waiting by the rule) | The same rule |
 | `wallet.html` Deposit and Withdraw | Links to the two pages | Links to the two pages (the earlier sheets `?state=deposit` and `?state=withdraw` on the wallet are gone) | Full pages with every state, as the reference |
 
+## Flow change against the reference
+
+The fifth pick opens `done.html?state=moment&undo=<ms left>&q=<question id>` at once. The Undo of that pick lives on the day done page for what is left of its 3 seconds (a tap anywhere else means "finish now"); Undo returns to the deck with that card on top. The reference waits on the deck ("Finishing in 3", "Finish now") before it changes page. The finished home (`home.html` after the day) keeps the reference panel and its dateline reads "Next set in".
+
 ## Example questions
 
 `assets/mock.js` now carries the compliant sets of `platform/shared/src/devQuestions.ts` in EN, KO and JA: today's five (`q1` to `q5`, DEV_TODAY), yesterday's five (`p1` to `p5`, DEV_YESTERDAY) and the set before (`p6` to `p10`, DEV_EARLIER). Every question asks about the day after the set opens ("Will Bitcoin be above $100,000 at 21:00 tomorrow?"), each with its own answer source and settle time. `pastRules` is empty because every question now carries its rule. Each question also has a `focus` (the focal point of its picture) for the square thumbnail crop.

@@ -19,7 +19,7 @@
     return '<section class="sec" aria-label="' + esc(t("r.sum.sr")) + '"><div class="tri">' +
       col(F.pts(M.week.pts), t("r.week"), t("r.sum.hits", { a: M.week.hits, b: M.week.answered })) +
       col(F.pts(M.all.pts), t("r.all"), t("r.sum.rate", { n: M.all.rate })) +
-      col("+" + F.pts(M.user.pendingHit), t("r.pending"), pend ? pend.at : "") + "</div></section>";
+      col("+" + F.pts(M.user.pendingHit), t("r.pending"), pend ? t("r.at", { time: pend.at }) : "") + "</div></section>";
   }
   function legend() {
     return '<ul class="rs-legend" aria-label="' + esc(t("r.legend")) + '"><li>' + mark("hit") + t("r.o.hit") + "</li><li>" + mark("miss") + t("r.o.miss") + "</li><li>" + mark("wait") + t("r.f.wait") + "</li></ul>";
@@ -31,9 +31,9 @@
   function side(r) {
     var chip, pts;
     switch (r.out) {
-      case "wait": chip = '<span class="rchip rchip--wait"><i class="press" role="img" aria-label="' + esc(t("pp.press")) + '"></i><span class="sr-only">' + t("r.o.wait") + ' </span><span class="tnum">' + r.exp + "</span></span>"; pts = ""; break;
+      case "wait": chip = '<span class="rchip rchip--wait">' + mark("wait") + t("pp.answerat", { time: r.exp }) + "</span>"; pts = '<span class="rs-pts is-if">' + t("r.o.ifhit") + "</span>"; break;
       case "hit": chip = stamp("hit", t("r.o.hit")); pts = '<span class="rs-pts">+50P</span>'; break;
-      case "pend": chip = stamp("hit", t("r.o.hit")); pts = '<span class="rs-pts">+50P<small class="tnum">' + r.at + "</small></span>"; break;
+      case "pend": chip = stamp("hit", t("r.o.hit")); pts = '<span class="rs-pts">+50P<small>' + t("r.at", { time: r.at }) + "</small></span>"; break;
       case "corr": chip = stamp("corr", t("r.o.corr")); pts = '<span class="rs-pts">+50P</span>'; break;
       case "miss": chip = stamp("miss", t("r.o.miss")); pts = ""; break;
       case "none": chip = '<span class="rchip">' + t("r.o.none") + "</span>"; pts = ""; break;

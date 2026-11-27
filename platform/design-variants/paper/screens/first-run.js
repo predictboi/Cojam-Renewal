@@ -19,9 +19,8 @@
       '<div class="field-box field-box--text"><input id="code" name="invite-code" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" enterkeyhint="done" maxlength="8" placeholder="' + App.esc(t("o.code.ph")) + '" value="' + (PRESET[S] || "") + '" aria-describedby="code-msg">' +
       '<button type="button" class="field-max" id="code-apply">' + t("o.code.apply") + '</button></div><div class="onb-code-msg" id="code-msg" aria-live="polite"></div></div></div>';
   }
-  var raw = '<div class="auth auth--onb"><div class="gate-bar"><div class="dots" role="img" aria-label="' + t("o.step", { n: n }) + '" id="dots">' + [1, 2, 3].map(function (i) { return "<i" + (i === n ? ' class="is-on"' : "") + "></i>"; }).join("") + "</div>" +
-    '<a class="linkish" href="' + exit + '">' + t("o.skip") + '</a></div><div class="oxford" aria-hidden="true"></div><div class="onb-wrap"><ol id="panels">' + [1, 2, 3].map(panel).join("") + "</ol>" +
-    '<div class="onb-foot">' + codeBox() + '<div id="langrow"' + (n === 1 ? "" : " hidden") + ">" + C.seg(I.langs.map(function (l) { return { label: I.names[l], value: l, on: l === App.lang }; }), { name: "lang", label: t("lang.label") }) + "</div>" +
+  var raw = '<div class="auth auth--onb"><div class="gate-bar">' + C.logo() + '<a class="linkish linkish--pad" href="' + exit + '">' + t("o.skip") + '</a></div><div class="oxford" aria-hidden="true"></div><div class="onb-wrap"><ol id="panels">' + [1, 2, 3].map(panel).join("") + "</ol>" +
+    '<div class="onb-foot"><div class="dots" role="img" aria-label="' + t("o.step", { n: n }) + '" id="dots">' + [1, 2, 3].map(function (i) { return "<i" + (i === n ? ' class="is-on"' : "") + "></i>"; }).join("") + "</div>" + codeBox() + '<div id="langrow"' + (n === 1 ? "" : " hidden") + ">" + C.seg(I.langs.map(function (l) { return { label: I.names[l], value: l, on: l === App.lang }; }), { name: "lang", label: t("lang.label") }) + "</div>" +
     C.btn(t(n === 3 ? "o.start" : "o.next"), { kind: "primary", block: true, id: "next", iconEnd: "right" }) +
     '<p class="row setup-line" id="setup-line" role="status"><span class="spin"></span><span>' + t("a.setup.h") + "</span></p></div></div></div>";
   App.mount({ bare: true, docTitle: t("o.1.h"), raw: raw, after: function () {
@@ -75,7 +74,7 @@
       if (n === 1 && !form.hidden && inp.value && !codeOk) { if (box.classList.contains("is-error")) inp.focus(); else check(function () { go(2); }); return; }
       go(n + 1);
     });
-    document.addEventListener("seg", function (e) { if (e.detail.name === "lang") { var u = new URL(location.href); u.searchParams.set("state", n); history.replaceState(null, "", u); I.setLang(e.detail.value); } });
+    document.addEventListener("seg", function (e) { if (e.detail.name === "lang") { var u = new URL(location.href); u.searchParams.set("state", n); history.replaceState(null, "", u); App.setLang(e.detail.value); } });
     var x0 = null, pn = $("#panels");
     pn.addEventListener("pointerdown", function (e) { x0 = e.clientX; });
     pn.addEventListener("pointerup", function (e) { if (x0 === null) return; var d = e.clientX - x0; x0 = null; if (d < -60) $("#next").click(); else if (d > 60) go(n - 1); });

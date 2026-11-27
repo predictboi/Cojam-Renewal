@@ -22,18 +22,18 @@
   function sw() { return '<nav class="mtabs" id="sw" aria-label="' + App.esc(t("s.switch")) + '"><a href="staking.html' + HQ + '">' + t("s.new") + '</a><a href="stakes.html' + (hold ? "?state=" + S : "") + '" aria-current="page">' + t("s.tab.mine") + '<span class="mtabs-n">' + (S === "empty" ? 0 : stakes.length) + "</span></a></nav>"; }
   function out(s) { return Math.round((s.amount + calc(s).interest) * 1e4) / 1e4; }
   /* on hold the player pays the network fee: a tag under each action, and with too little KAIA the action is off */
-  var feeTag = hold ? '<p class="tags tags--center" data-fee-line>' + C.tag(t("pp.youpay")) + C.tag(t("x.fee.v", { f: M.fee })) + "</p>" : "";
+  var feeTag = hold ? '<p class="fact fact--center" data-fee-line><b>' + t("pp.youpay") + '</b><span class="fact-sep" aria-hidden="true"></span>' + t("x.fee.v", { f: M.fee }) + "</p>" : "";
   function card(s) {
     var c = calc(s), actions;
     if (c.unlocked) actions = '<div class="mstake-acts" data-actions>' + C.btn(t("m.withdraw", { a: F.dec(out(s), 4) }), { kind: "primary", block: true, attrs: 'data-wd="' + s.id + '"', disabled: App.offline || noKaia }) + feeTag + "</div>";
     else if (c.interest >= M.minClaim) actions = '<div class="mstake-acts" data-actions>' + C.btn(t("m.claim", { i: F.dec(c.interest, 2) }), { block: true, attrs: 'data-claim="' + s.id + '"', disabled: App.offline || noKaia }) + feeTag + "</div>";
     /* under the 10 CT minimum there is nothing to press: one short line says from when */
-    else actions = '<p class="tags" data-actions aria-label="' + App.esc(t("pp.claimfrom", { n: M.minClaim })) + '">' + C.tag("≥ " + M.minClaim + " CT", "line") + "</p>";
-    return '<article class="msec mstake" data-stake="' + s.id + '"><div class="mstake-top"><div class="mhero"><p class="fig">' + F.dec(s.amount) + '<small>CT</small></p><p class="tags" aria-label="' + App.esc(t("m.card.period", { d: s.days, r: s.rate })) + '">' + C.tag(s.days + t("s.d")) + C.tag(s.rate + "%") + "</p></div>" +
-      '<span data-status>' + (c.unlocked ? C.tag(t("m.unlocked"), "ink") : C.tag(t("m.locked"), "", "lock")) + "</span></div>" +
+    else actions = '<p class="fact" data-actions>' + t("pp.minclaim", { n: M.minClaim }) + "</p>";
+    return '<article class="msec mstake" data-stake="' + s.id + '"><div class="mstake-top"><div class="mhero"><p class="fig">' + F.dec(s.amount) + '<small>CT</small></p><p class="fact">' + t("pp.lock") + " <b>" + t("s.days", { d: s.days }) + '</b><span class="fact-sep" aria-hidden="true"></span><b>' + t("pp.ayear", { r: s.rate }) + "</b></p></div>" +
+      '<span data-status>' + (c.unlocked ? C.tag(t("m.unlocked"), "", "check") : C.tag(t("m.locked"), "", "lock")) + "</span></div>" +
       /* the bar stands between its two dates, with the day count in the middle: no "started" or "unlocks" words */
       '<div class="stack-8"><div class="mbar' + (c.unlocked ? " is-full" : "") + '" role="img" aria-label="' + App.esc(t("m.day", { x: c.day, d: s.days }) + ". " + t("m.started", { date: F.date(s.start) }) + ". " + t("m.unlocks", { date: F.date(c.unlock) })) + '"><i style="width:' + c.pct.toFixed(1) + '%"></i></div>' +
-      '<div class="mbar-meta" aria-hidden="true"><span>' + F.date(s.start) + "</span><b>" + c.day + " / " + s.days + "</b><span>" + F.date(c.unlock) + "</span></div></div>" +
+      '<div class="mbar-meta" aria-hidden="true"><span>' + F.date(s.start) + "</span><b>" + t("m.day", { x: c.day, d: s.days }) + "</b><span>" + F.date(c.unlock) + "</span></div></div>" +
       C.rows([[t("m.interest"), '<span data-tick="' + c.interest + "|" + (c.unlocked ? 0 : c.per) + "|" + c.cap + '">' + dg(fix4(c.interest)) + "</span> CT" + (App.offline ? "<small>" + t("m.paused") + "</small>" : ""), true]]) +
       actions + "</article>";
   }
@@ -50,7 +50,7 @@
       C.help(t("m.closed.q", { n: M.stakesClosed.length }), M.stakesClosed.map(function (s) { return '<div class="mclosed"><div class="row-between"><span>' + F.ct(s.amount) + ", " + t("m.card.period", { d: s.days, r: s.rate }) + "</span>" + C.tag(t("m.closed"), "line") + '</div><p class="tiny muted">' + t("m.paidout", { a: F.dec(s.paid, 2) }) + "</p></div>"; }).join(""));
   }
   function find(id) { return stakes.filter(function (s) { return s.id === id; })[0]; }
-  App.mount({ tab: "stake", docTitle: t("s.title"), live: C.stamp(6), head: head(), body: body(), badges: { home: "dot", results: 2 }, after: function () {
+  App.mount({ tab: "stake", docTitle: t("s.title"), head: head(), body: body(), badges: { home: "dot", results: 2 }, after: function () {
     document.addEventListener("click", function (e) {
       var c = e.target.closest("[data-claim]"), w = e.target.closest("[data-wd]");
       /* on hold every claim and withdrawal is reviewed first: the sheet states the fee, who pays it and the KAIA balance */

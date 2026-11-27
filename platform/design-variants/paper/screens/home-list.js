@@ -22,9 +22,10 @@
   function head() {
     var c = S === "loading" ? 0 : count();
     return '<div class="ph-top"><h1>' + t("h.title") + "</h1>" + C.viewSwitch("term", S === "fresh" ? "" : S) + "</div>" +
-      '<div class="ph-line"><span class="ph-count"><span id="cnt">' + c + "</span><small>/5</small></span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs(), { id: "day5" }) + "</div>";
+      '<div class="ph-line"><span class="sr-only"><span id="cnt">' + c + "</span>/5</span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs(), { id: "day5" }) + "</div>";
   }
-  function liveCell() { return S === "empty" || S === "closed" || S === "hold" || S === "otherdevice" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet()); }
+  function liveCell() { if (fin) return "<span>" + t("d.next") + '</span> <b data-cd="' + M.untilNextSet() + '"></b>';
+    return S === "empty" || S === "closed" || S === "hold" || S === "otherdevice" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet()); }
   function row(q) {
     var n = q.n, p = picks[n], num = '<span class="trow-n" aria-hidden="true">' + n + "</span>", cat = "<span>" + t("cat." + q.cat) + "</span>";
     if (p && p.sync !== "fail") {
