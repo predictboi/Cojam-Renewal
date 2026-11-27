@@ -38,12 +38,12 @@ const { chromium } = require('playwright');
   async function open(url, w, h, lang) { const pg = await b.newPage({ viewport: { width: w, height: h }, isMobile: true, hasTouch: true }); await pg.addInitScript(() => { try { localStorage.setItem('cjp.nudged', '1'); } catch (e) {} });
     await pg.goto('http://localhost:8851/' + url + (url.includes('?') ? '&' : '?') + 'lang=' + lang, { waitUntil: 'load' }); await pg.evaluate(() => document.fonts.ready); await pg.waitForTimeout(1300); return pg; }
   for (const lang of ['en', 'ko', 'ja']) {
-    // the "+50P if right. Undo for 3 seconds." line shows at every size; the picture is at least 96 px tall or absent; nothing of the next card shows inside the front card's box
+    // the "+50P if right. Undo for 3 seconds." line shows at every size; the picture is at least 64 px tall or absent, and without it the question block is centred (no blank band on one side); nothing of the next card shows inside the front card's box
     for (const [w, h] of [[320, 568], [360, 640], [375, 667], [390, 844]]) { const pg = await open('home.html?state=fresh', w, h, lang);
       const r = await pg.evaluate(() => { const c = document.querySelector('.qcard[data-pos="0"]'), f = c.querySelector('.qcard-final'), im = c.querySelector('.qimg'), fr = f.getBoundingClientRect(), ir = im.getBoundingClientRect(), h2 = c.querySelector('h2').getBoundingClientRect(), top = c.querySelector('.qcard-top').getBoundingClientRect();
         const under = [...document.querySelectorAll('.qcard:not([data-pos="0"]) .choice')].some(x => getComputedStyle(x).visibility !== 'hidden');
-        return { final: fr.height > 8 && getComputedStyle(f).display !== 'none', img: Math.round(ir.height), gap: Math.round(h2.top - (ir.height ? ir.bottom : top.bottom)), under }; });
-      n++; if (!r.final || (r.img > 0 && r.img < 96) || r.gap > 24 || r.under) bad.push('card rule ' + w + 'x' + h + ' ' + lang + ' ' + JSON.stringify(r)); await pg.close(); }
+        return { final: fr.height > 8 && getComputedStyle(f).display !== 'none', img: Math.round(ir.height), gap: Math.round(h2.top - (ir.height ? ir.bottom : top.bottom)), below: Math.round(c.querySelector('.choices').getBoundingClientRect().top - c.querySelector('.qmeta').getBoundingClientRect().bottom), under }; });
+      n++; if (!r.final || (r.img > 0 && (r.img < 64 || r.gap > 24)) || (!r.img && (Math.abs(r.gap - r.below) > 16 || r.gap > 48)) || r.under) bad.push('card rule ' + w + 'x' + h + ' ' + lang + ' ' + JSON.stringify(r)); await pg.close(); }
     // first run: "Next" is on screen on the three pages; the picture band keeps one top and one height
     for (const [w, h] of [[360, 640], [320, 568], [390, 844]]) { const bands = []; for (const st of ['1', '2', '3']) { const pg = await open('first-run.html?state=' + st, w, h, lang);
         const r = await pg.evaluate(() => { const nx = document.querySelector('#next').getBoundingClientRect(), bd = [...document.querySelectorAll('.onb:not([hidden]) .onb-art')][0].getBoundingClientRect(); return { next: nx.bottom <= innerHeight && nx.top >= 0, top: Math.round(bd.top), h: Math.round(bd.height) }; });
