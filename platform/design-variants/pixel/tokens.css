@@ -1,0 +1,91 @@
+/* Hallmark v2.0.0 · theme: custom · deal: manual · shape: app screen · idea: "Cojam is a handheld game cartridge: every screen is drawn on one 4 px grid in sixteen colours" · vibe: "crisp, sixteen colour, hard edged, calm" · paper #F4EFE1 · accent #124CC4 · faces Galmuri11 / Galmuri14 (pixel), Pretendard (reading) · posture light/pixel-bitmap/chromatic-blue · signature: the question cartridge with its dithered answer wash */
+/* critique: the risk of a pixel theme is costume. Here the grid is structural (frames, corners, shadows, icons and motion all step in 4 px), colour is rationed to sixteen named inks, and sentences stay in Pretendard so the money screens read like a bank statement drawn by a game studio. */
+/* waive 64: the pixel face is the material of this concept, so labels use it; it is a bitmap face, not a mono face. */
+/* answered 16: sloplint is not packaged here; the Floor was walked by hand and tools/design/audit.js was run on every screen. */
+
+@font-face { font-family: "Galmuri11"; font-weight: 400; font-display: swap; src: url("https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/Galmuri11.woff2") format("woff2"); }
+@font-face { font-family: "Galmuri11"; font-weight: 700; font-display: swap; src: url("https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/Galmuri11-Bold.woff2") format("woff2"); }
+/* The bold cut has no kanji. This second name exposes only the regular file, so a bold kanji falls through to it and the browser thickens it. */
+@font-face { font-family: "Galmuri11 Kanji"; font-weight: 400; font-display: swap; src: url("https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/Galmuri11.woff2") format("woff2"); }
+@font-face { font-family: "Galmuri14"; font-weight: 400; font-display: swap; src: url("https://cdn.jsdelivr.net/npm/galmuri@2.40.3/dist/Galmuri14.woff2") format("woff2"); }
+
+:root {
+  /* ---- Cojam 16: the whole palette. Nothing outside this list is ever painted. ---- */
+  --c-ink: #14152B;      /* outlines, text */
+  --c-night: #1C2666;    /* HUD and band ground */
+  --c-deep: #0C3690;     /* blue in shadow */
+  --c-blue: #124CC4;     /* brand, primary action */
+  --c-sky: #8AD1FF;      /* light blue, text on night */
+  --c-pale: #D6EEFF;     /* tinted block, selected ground */
+  --c-paper: #F4EFE1;    /* page ground */
+  --c-shade: #DCD4BE;    /* paper in shadow, dither, dividers */
+  --c-white: #FFFFFF;    /* cards, fields */
+  --c-muted: #595870;    /* secondary text */
+  --c-yellow: #FFC72C;   /* coins, score, reward, current selection */
+  --c-ember: #FF8A3C;    /* the LEFT answer */
+  --c-rust: #A6470A;     /* ember in shadow, ember as text */
+  --c-mint: #2CC7B0;     /* the RIGHT answer */
+  --c-pine: #0B6F61;     /* mint in shadow, mint as text, success */
+  --c-red: #C2301C;      /* errors */
+
+  /* ---- roles ---- */
+  --bg: var(--c-paper);
+  --surface: var(--c-white);
+  --text: var(--c-ink);
+  --text-2: var(--c-muted);
+  --line: var(--c-ink);
+  --rule: var(--c-shade);
+  --accent: var(--c-blue);
+  --on-accent: var(--c-white);
+  --left: var(--c-ember);
+  --left-lip: var(--c-rust);
+  --right: var(--c-mint);
+  --right-lip: var(--c-pine);
+  --focus: var(--c-blue);
+
+  /* ---- the grid: one pixel is 4 px. Half a pixel (2 px) is allowed only inside icons and hairline dividers. ---- */
+  --u: 4px;
+  --h: 2px;
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px;
+  --gutter: 16px;
+  --col: 430px;
+
+  /* ---- type. Pixel faces only at whole multiples of their design size, so every glyph pixel lands on the grid. ---- */
+  --font-read: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-read-ja: "Pretendard JP Variable", "Pretendard JP", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-px: "Galmuri11", "Galmuri11 Kanji", "Pretendard Variable", Pretendard, system-ui, sans-serif;      /* 12, 24, 36, 48 */
+  --font-px-mid: "Galmuri14", "Galmuri11", "Pretendard Variable", Pretendard, system-ui, sans-serif;   /* 15, 30 */
+  --font-data: ui-monospace, "SF Mono", Menlo, Consolas, monospace;   /* addresses and hashes only */
+  --px-12: 12px; --px-15: 15px; --px-24: 24px; --px-30: 30px; --px-36: 36px; --px-48: 48px;
+  --read-13: 13px; --read-15: 15px; --read-17: 17px;
+  --bold-px: 700;      /* Galmuri11 Bold for Latin and Hangul */
+
+  /* ---- motion: frames, not curves. Movement advances in whole steps. ---- */
+  --t-press: 0ms;
+  --t-frame: 80ms;
+  --t-throw: 240ms;
+  --t-pop: 320ms;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);   /* only for the sheet and the finger following drag release */
+
+  --hud-h: 56px;
+  --tab-h: 64px;
+}
+
+:lang(ja) { --font-read: var(--font-read-ja); }
+
+/* Frames and dither are declared on every element, not on :root, so that they read the --line and --dc of the element that uses them. */
+*, *::before, *::after {
+  /* ---- frames: a 4 px outline drawn with four shadows, which leaves the corner pixel empty (the stepped corner) ---- */
+  --fr: 0 calc(-1 * var(--u)) 0 0 var(--line), 0 var(--u) 0 0 var(--line), calc(-1 * var(--u)) 0 0 0 var(--line), var(--u) 0 0 0 var(--line);
+  --fr-raise: var(--fr), 0 calc(2 * var(--u)) 0 0 var(--line);                     /* a key standing 4 px proud */
+  --fr-drop: var(--fr), var(--u) calc(2 * var(--u)) 0 0 var(--line), calc(2 * var(--u)) var(--u) 0 0 var(--line);   /* hard shadow, down and right */
+
+  /* ---- dither: checkerboards of 4 px pixels, the only "gradient" in the system ---- */
+  --dither-50: conic-gradient(var(--dc, var(--c-shade)) 25%, transparent 0 50%, var(--dc, var(--c-shade)) 0 75%, transparent 0);
+  --dither-25: conic-gradient(var(--dc, var(--c-shade)) 25%, transparent 0);
+  --fr-h: 0 calc(-1 * var(--h)) 0 0 var(--line), 0 var(--h) 0 0 var(--line), calc(-1 * var(--h)) 0 0 0 var(--line), var(--h) 0 0 0 var(--line);   /* half pixel frame for marks, cells and small chips */
+  --dots: linear-gradient(90deg, var(--rule) 50%, transparent 0) 0 0 / 8px var(--h) repeat-x;   /* the dotted rule between rows */
+}
+:root {
+  --step: polygon(4px 0, calc(100% - 4px) 0, calc(100% - 4px) 4px, 100% 4px, 100% calc(100% - 4px), calc(100% - 4px) calc(100% - 4px), calc(100% - 4px) 100%, 4px 100%, 4px calc(100% - 4px), 0 calc(100% - 4px), 0 4px, 4px 4px);   /* stepped corner for filled blocks */
+}

@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F131B">
+<title>Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<noscript>Cojam needs JavaScript to show today's predictions.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* H2 Home, list view. States: fresh (default), partial, loading, error, offline, hold. The same game as the card view: one open question, Undo for 3 seconds, the fifth pick leads to done.html. */
+(function () {
+  var t = N.t, M = N.M, ic = N.ic, st = N.state, g, root, lastPick = 0;
+  var viewSw = N.seg([{ id: "card", label: ic.cards + t("h.view.card"), href: N.href("home.html") }, { id: "term", label: ic.list + t("h.view.term"), href: N.href("home-list.html") }], "term", t("h.view.label"));
+
+  function body() {
+    if (st === "loading") return N.skel(["cells", "row", "row", "row", "row", "row"]);
+    if (st === "error") return N.errorBox();
+    if (st === "hold") return '<section class="state"><span class="state-ic">' + ic.stake + "</span><h2>" + t("hold.home.h") + "</h2><p>" + t("hold.home.b") + '</p><a class="btn btn-2" href="' + N.href("hold.html") + '">' + t("hold.home.btn") + "</a></section>";
+    return N.cells([
+      { k: '<span id="left"></span>', v: '<span class="fig" id="cnt"></span><span id="dt"></span>' },
+      { k: t("h.closes"), v: '<span class="fig" data-cd="' + M.untilNextSet() + '"></span>' }], "tape is-right") +
+      '<ol class="qlist" id="list"></ol><div id="after"></div><p class="sr" aria-live="polite" id="live"></p>';
+  }
+  function render() {
+    var n = g.count(), cur = g.current();
+    root.querySelector("#left").textContent = t("h.left", { n: 5 - n });
+    root.querySelector("#cnt").innerHTML = n + "<small>/5</small>";
+    root.querySelector("#dt").innerHTML = N.dayTicks(g.picks, g.held && g.held.id);
+    root.querySelector("#list").innerHTML = g.order.map(function (id) {
+      var Q = N.q(id), side = g.picks[id], no = '<span class="qrow-n">' + N.pad(Q.n) + "</span>";
+      if (side) {
+        var held = g.held && g.held.id === id;
+        return '<li class="qrow is-done">' + no + "<div><h3>" + Q.title + '</h3><p class="qrow-s">' + t("cat." + Q.cat) + '</p></div><span class="qrow-pick">' + N.mark(side) + (side === "l" ? Q.left : Q.right) + "</span>" +
+          (held ? '<div class="qrow-x"><div class="foot undo"><span class="undo-l fine">' + t("h.final") + '</span><button type="button" class="undo-b" id="undo" aria-label="' + N.esc(t("h.undo.aria", { n: Q.n, choice: side === "l" ? Q.left : Q.right })) + '">' + ic.undo + t("h.undo") + '</button><div class="drain"><i></i></div></div></div>' : "") + "</li>";
+      }
+      if (id === cur) {
+        return '<li class="qrow is-open">' + no + "<div><h3>" + Q.title + '</h3><p class="qrow-s">' + t("cat." + Q.cat) + '</p></div><span></span><div class="qrow-x"><ul class="card-meta"><li>' + ic.source + "<span>" + t("h.answer", { rule: Q.rule }) + "</span></li><li>" + ic.clock + "<span>" + t("h.ai", { time: Q.settle }) + '</span></li></ul><div class="choices"><button type="button" class="choice choice-l" data-side="l"' + (st === "offline" ? ' aria-disabled="true"' : "") + ' aria-label="' + N.esc(t("h.pick.aria", { choice: Q.left, q: Q.title })) + '">' + ic.left + "<span>" + Q.left + '</span></button><button type="button" class="choice choice-r" data-side="r"' + (st === "offline" ? ' aria-disabled="true"' : "") + ' aria-label="' + N.esc(t("h.pick.aria", { choice: Q.right, q: Q.title })) + '"><span>' + Q.right + "</span>" + ic.right + "</button></div></div></li>";
+      }
+      return '<li class="qrow">' + no + "<div><h3>" + Q.title + '</h3><p class="qrow-s">' + t("cat." + Q.cat) + '</p></div><span class="qrow-wait">' + t("h.t.remaining") + "</span></li>";
+    }).join("");
+    var after = root.querySelector("#after");
+    if (!cur && g.held) {
+      after.innerHTML = '<section class="sec"><div class="sec-h"><h2>' + t("h.end.h") + '</h2><span class="lbl" id="fin">' + t("h.end.in", { n: 3 }) + '</span></div><button type="button" class="btn btn-1" id="fin-now">' + t("h.end.now") + '</button><p class="fine mt-12">' + t("h.fin.b") + "</p></section>";
+      var k = 3, iv = setInterval(function () { k -= 1; var el = document.getElementById("fin"); if (!el || k < 1) { clearInterval(iv); return; } el.textContent = t("h.end.in", { n: k }); }, 1000);
+    } else if (cur) after.innerHTML = "";
+  }
+
+  N.page({
+    tab: "home", title: t("h.title"), headRight: viewSw, body: body,
+    after: function (app) {
+      root = app; if (!app.querySelector("#list")) return;
+      g = N.game({
+        start: st === "partial" ? [["q1", "r"], ["q2", "l"]] : [],
+        change: function (kind, id, side) {
+          var Q = N.q(id), live = app.querySelector("#live"); render();
+          if (kind === "pick") live.textContent = t("h.live.picked", { choice: side === "l" ? Q.left : Q.right, k: 5 - g.count() });
+          if (kind === "undo") live.textContent = t("h.undone", { n: Q.n });
+        },
+        finish: function () { app.querySelector("#after").innerHTML = '<div class="foot"><i class="spin"></i><span>' + t("h.end.b") + "</span></div>"; setTimeout(function () { location.href = N.href("done.html", "moment"); }, 500); }
+      });
+      render();
+      app.addEventListener("click", function (e) {
+        if (e.target.closest("#undo")) { g.undo(); return; }
+        if (e.target.closest("#fin-now")) { g.flush(); return; }
+        var b = e.target.closest(".choice"); if (!b) return;
+        if (st === "offline") { N.toast(t("h.offline")); return; }
+        if (Date.now() - lastPick < 400) return; lastPick = Date.now();
+        g.pick(b.getAttribute("data-side"));
+      });
+      document.addEventListener("keydown", function (e) {
+        if (e.repeat || e.target.closest("input, a")) return;
+        if (e.key === "z" || e.key === "Z" || e.key === "Backspace") g.undo();
+      });
+      window.addEventListener("pagehide", function () { g.flush(true); });
+    }
+  });
+})();
+</script>
+</body>
+</html>

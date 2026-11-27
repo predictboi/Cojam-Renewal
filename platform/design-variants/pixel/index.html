@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en" data-screen="hub">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#14152B">
+<title>Cojam Daily Prediction: Pixel concept</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<noscript><p style="padding:16px">Cojam Daily Prediction, Pixel concept. This hub lists its screens with JavaScript: turn it on to view them.</p></noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/sprites.js"></script>
+<script src="assets/app.js"></script>
+<script>
+(function () {
+  var L = PX.lang;
+  /* [file, name, [[state label, query]]] : the first state is the default */
+  var G = [
+    ["Start", [
+      ["login.html", "Login", [["Email", ""], ["Bad email", "state=error"], ["Code", "state=code"], ["Setting up", "state=setup"]]],
+      ["first-run.html", "First run", [["Step 1", "step=1"], ["Invite code open", "step=1&state=code"], ["Step 2", "step=2"], ["Step 3", "step=3"]]]
+    ]],
+    ["Play", [
+      ["home.html", "Home, card deck", [["Fresh", ""], ["2 of 5 picked", "state=partial"], ["Fifth pick, finishing", "state=finishing"], ["Loading", "state=loading"], ["Empty", "state=empty"], ["Error", "state=error"], ["Offline", "state=offline"], ["Account on hold", "state=hold"]]],
+      ["home-list.html", "Home, list view", [["Fresh", ""], ["2 of 5 picked", "state=partial"], ["Finishing", "state=finishing"]]],
+      ["done.html", "Day done", [["Paid", ""], ["Saving the last pick", "state=saving"]]],
+      ["results.html", "Results", [["Default", ""], ["Empty", "state=empty"], ["Loading", "state=loading"], ["Error", "state=error"]]],
+      ["ranking.html", "Weekly ranking", [["This week", ""], ["Last week", "state=last"], ["No rank yet", "state=none"], ["Loading", "state=loading"], ["Error", "state=error"], ["Account on hold", "state=hold"]]]
+    ]],
+    ["Money", [
+      ["staking.html", "Staking, new stake", [["Default", ""], ["Over balance", "state=error"], ["No CT yet", "state=zero"], ["Review sheet", "state=review"], ["Account on hold", "state=hold"]]],
+      ["stakes.html", "Staking, my stakes", [["Default", ""], ["Empty", "state=empty"], ["Loading", "state=loading"], ["Account on hold", "state=hold"]]],
+      ["wallet.html", "Wallet", [["Default", ""], ["Loading", "state=loading"], ["Kaia not answering", "state=error"]]],
+      ["convert.html", "Convert points", [["Default", ""], ["7 day wait", "state=wait"], ["Under 1,000P", "state=short"], ["Account on hold", "state=hold"]]]
+    ]],
+    ["Account", [
+      ["profile.html", "Profile", [["Default", ""], ["Account on hold", "state=hold"]]],
+      ["invite.html", "Invite friends", [["Default", ""], ["No friends yet", "state=empty"], ["Account on hold", "state=hold"]]]
+    ]]
+  ];
+  function link(f, q) { return f + "?" + (q ? q + "&" : "") + "lang=" + L; }
+  var body = '<p class="lede">Concept C, Pixel: every screen and state of the Daily Prediction PWA, redrawn as a sixteen colour handheld game on a 4 px grid. Static HTML with mock data.</p>' +
+    '<div class="langs"><span class="lbl">Language of the screens</span>' + PX.seg(["en", "ko", "ja"].map(function (l) { return { label: CJ_I18N.names[l], href: "index.html?lang=" + l }; }), ["en", "ko", "ja"].indexOf(L), { label: "Language" }) + "</div>" +
+    G.map(function (g) {
+      return '<section class="sec"><h2 class="t24 b">' + g[0] + '</h2><div class="list">' + g[1].map(function (s) {
+        return '<div class="hub-row"><a class="nav-row" href="' + link(s[0], s[2][0][1]) + '"><span class="nav-b"><b class="t15">' + s[1] + '</b><span class="cap">' + s[0] + "</span></span>" + PX.icon("chev") + '</a><p class="hub-states">' + s[2].slice(1).map(function (x) { return '<a class="hub-st" href="' + link(s[0], x[1]) + '">' + x[0] + "</a>"; }).join("") + "</p></div>";
+      }).join("") + "</div></section>";
+    }).join("") +
+    '<section class="sec" id="hold"><h2 class="t24 b">Account on hold</h2>' + PX.hold("This notice sits at the top of every screen whose features change while an account is under review. The wallet version reads: You cannot convert points while on hold. You can still withdraw CT, paying the network fee in KAIA.") +
+    '<div class="list"><div class="hub-row"><a class="nav-row" href="' + link("wallet.html", "state=hold") + '"><span class="nav-b"><b class="t15">Wallet, account on hold</b><span class="cap">wallet.html?state=hold</span></span>' + PX.icon("chev") + "</a></div></div></section>" +
+    '<section class="sec"><h2 class="t24 b">Read</h2><div class="list"><a class="nav-row" href="CONCEPT.md"><span class="nav-b"><b class="t15">CONCEPT.md</b><span class="cap">Idea, palette, type, rules</span></span>' + PX.icon("chev") + '</a><a class="nav-row" href="REVIEW.md"><span class="nav-b"><b class="t15">REVIEW.md</b><span class="cap">Scores and fixes of the last round</span></span>' + PX.icon("chev") + "</a></div></section>";
+  PX.shell({ bare: true, band: '<div class="hero-row">' + PX.jam("idle", 4) + '<div><h1 class="t24 b">Pixel concept</h1><p>Cojam Daily Prediction, design variation C</p></div></div>', body: body, title: "Pixel concept", cls: "is-hub" });
+})();
+</script>
+</body>
+</html>

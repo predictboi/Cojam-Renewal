@@ -1,0 +1,102 @@
+/* Hallmark · custom · deal: manual · concept A "Daily Paper" · idea: "the day's five predictions are the front page of a small daily newspaper" · vibe: "newsprint, slab headlines, one blue spot ink" · paper #F4EFE4 · ink #16130E · accent #124CC4 (Cojam blue) · display Besley + Hahmlet + Noto Serif JP · text Pretendard · posture light/slab-serif/chromatic-blue */
+/* critique: the paper carries structure with rules, not boxes; the blue spot ink has four jobs; the two answers are persimmon (left) and teal (right) and are never the accent. */
+/* waive 9 (stamps only): result stamps HIT / MISS are set in capitals because the brief asks for a rubber stamp; every label, caption, tab and table head stays sentence case and untracked. */
+/* waive 65 (paper ground with a serif): the concept is prescribed by the brief; the answer to the cliche is a slab (not a high contrast roman), the brand blue as the only spot ink (no clay), and rules that carry real information. */
+
+/* Cojam Daily Prediction, variant "Daily Paper": design tokens.
+   Every colour, face, size, rule and duration used by components.css and the screens lives here. Screens hard code nothing. */
+
+@font-face { font-family: "Pretendard Fallback"; src: local("Arial"), local("ArialMT"), local("Helvetica"), local("Liberation Sans"); size-adjust: 101%; }
+
+:root {
+  /* ---------- colour ----------
+     Paper and ink, plus one spot ink (Cojam blue) with four jobs only:
+     1 the primary action, 2 text links, 3 the reward (the +100P figure, the HIT stamp), 4 the player's own row or figure in a table.
+     The current tab, the current segment and a chosen option are ink (inverted), never blue.
+     The two answers have their own inks: left is persimmon, right is teal. Equal OKLCH lightness (0.706 and 0.709), ink text on both.
+     Checked pairs (WCAG): ink on paper 16.2, ink-2 on paper 7.0, ink-2 on paper-2 6.3, ink-2 on sheet 7.6, blue on paper 6.4, blue on paper-2 5.7,
+     white on blue 7.35, ink on persimmon 6.7 (hot 5.8), ink on teal 7.5 (hot 6.3), up on paper 5.7, down on paper 6.1, warn on paper 6.3,
+     warn on warn-tint 5.7, down on down-tint 5.4, paper on ink 16.2, on-ink-2 on ink 10.3, blue on blue-tint 5.8.
+     Never: persimmon or teal as text on paper (2.4 and 2.1), blue text on ink (2.5). */
+  --paper: #F4EFE4;          /* the page: warm newsprint */
+  --sheet: #FBF8F0;          /* a fresh sheet: the question card, fields, bottom sheets */
+  --paper-2: #E9E2D2;        /* one tinted block per screen, and the halftone ground */
+  --stage: #D8D0BD;          /* around the phone column on wide screens */
+  --ink: #16130E;
+  --ink-2: #574F43;          /* secondary text */
+  --ink-3: #857B6A;          /* field edges and switched off edges only (3.9 on sheet), never text */
+  --line: #CDC4AF;           /* hairlines between rows */
+  --on-ink: #F4EFE4;
+  --on-ink-2: #C9C0AE;
+  --accent: #124CC4;
+  --accent-press: #0E3C9D;
+  --accent-tint: #DDE4F2;
+  --on-accent: #FFFFFF;
+  --accent-off: #C5CFE4;     /* the primary action switched off: flat pale blue, ink-2 text 4.6 */
+  --pick-l: #F07A4B;
+  --pick-l-hot: #E96A39;
+  --pick-r: #2FBBA3;
+  --pick-r-hot: #25AB94;
+  --on-pick: #16130E;
+  --up: #1F6B43;
+  --down: #A62B1B;
+  --warn: #7A4E00;
+  --warn-tint: #F1E3C2;
+  --down-tint: #F3DDD3;
+
+  /* ---------- type ----------
+     Display: Besley, a Clarendon slab, for headlines and every figure that matters. Hangul falls through to Hahmlet (a Korean slab serif),
+     kana and kanji to Noto Serif JP at its heaviest: the same sturdy, bracketed voice in each script, and the numerals stay Besley in all three.
+     Text: Pretendard (the brand face) for every label, row and sentence; Pretendard JP under :lang(ja). */
+  --font-display: "Besley", "Hahmlet", "Noto Serif KR", Georgia, serif;
+  --font-text: "Pretendard Variable", Pretendard, "Pretendard Fallback", -apple-system, BlinkMacSystemFont, "Segoe UI", "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-data: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Menlo, Consolas, monospace;
+  --fs-12: 0.75rem; --fs-13: 0.8125rem; --fs-14: 0.875rem; --fs-15: 0.9375rem; --fs-16: 1rem; --fs-18: 1.125rem;
+  --fs-21: 1.3125rem; --fs-26: 1.625rem; --fs-32: 2rem; --fs-44: 2.75rem; --fs-56: 3.5rem; --fs-88: 5.5rem;
+  --fw-text: 400; --fw-mid: 600; --fw-bold: 700;
+  --fw-head: 800;            /* headlines */
+  --fw-fig: 900;             /* figures */
+  --lh-fig: 1; --lh-head: 1.14; --lh-text: 1.5;
+  --track-head: -0.012em; --track-fig: -0.025em;
+
+  /* ---------- space ---------- */
+  --s-2: 2px; --s-4: 4px; --s-6: 6px; --s-8: 8px; --s-10: 10px; --s-12: 12px; --s-16: 16px; --s-20: 20px; --s-24: 24px; --s-32: 32px; --s-40: 40px; --s-48: 48px;
+  --gutter: 16px;
+  --target: 44px;
+  --mast-h: 54px;
+  --tab-h: 60px;
+  --app-w: 430px;
+
+  /* ---------- rules and shape ----------
+     Paper has square corners. Controls get 2 px so they read as pressable; nothing is rounder than that. */
+  --r-0: 0px;
+  --r-ctl: 2px;
+  --hair: 1px solid var(--line);
+  --rule: 1px solid var(--ink);
+  --rule-2: 2px solid var(--ink);
+  --rule-heavy: 3px solid var(--ink);
+  --edge: 1.5px solid var(--ink);
+  --hatch: repeating-linear-gradient(135deg, var(--ink) 0 1.5px, transparent 1.5px 5px);   /* a pick that is being saved */
+  --screen: radial-gradient(circle at center, var(--ink) 0 34%, transparent 36%);          /* halftone dot */
+  --ring: 0 0 0 2px var(--paper), 0 0 0 4px var(--accent);
+  /* halftone: the working greys of the dot screen before it is multiplied onto the paper (see .ht in components.css) */
+  --ht-white: #FFFFFF;
+  --ht-dot: #707070;
+  --ht-cell: 5px;
+  --ht-contrast: 9;
+  --ht-lift: 2.9;
+
+  /* ---------- motion ---------- */
+  --ease: cubic-bezier(0.3, 0, 0.2, 1);
+  --ease-out: cubic-bezier(0.16, 0.8, 0.3, 1);
+  --ease-thunk: cubic-bezier(0.2, 1.4, 0.4, 1);   /* a stamp landing */
+  --dur-press: 100ms; --dur-fast: 160ms; --dur-mid: 240ms; --dur-deck: 380ms; --dur-sheet: 300ms;
+
+  --z-head: 20; --z-pin: 25; --z-tab: 30; --z-sheet: 50; --z-toast: 60;
+}
+:root:lang(ja) {
+  --font-display: "Besley", "Noto Serif JP", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-text: "Pretendard JP Variable", "Pretendard JP", "Pretendard Variable", "Pretendard Fallback", -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --fw-head: 900; --track-head: 0;
+}
+:root:lang(ko) { --track-head: -0.02em; }

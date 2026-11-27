@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F131B">
+<title>Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<noscript>Cojam needs JavaScript to show today's predictions.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* A2 First run. States: 1 (default), 2, 3, settingup. The pictures are made of product pieces: the card on its rail, the day ticks, the points to CT rate. */
+(function () {
+  var t = N.t, M = N.M, ic = N.ic, st = N.state, step = st === "2" ? 2 : st === "3" || st === "settingup" ? 3 : 1, setting = st === "settingup";
+  function art() {
+    if (step === 1) {
+      var Q = N.q("q1");
+      return '<div class="mini" aria-hidden="true"><div class="plate plate-2"></div><div class="plate plate-1"></div><div class="card"><img class="card-img" src="' + Q.img + '" alt=""><div class="card-scrim"></div></div>' +
+        '<div class="rail mini-rail"><i class="rail-m is-l"></i><i class="rail-m is-c"></i><i class="rail-m is-r"></i><i class="needle"></i></div></div>';
+    }
+    if (step === 2) return '<div class="art-row" aria-hidden="true"><div class="art-fig">' + N.fig("+100", "P") + '<span class="lbl">' + t("o.2.a") + "</span>" + N.dayTicks({ q1: "r", q2: "l", q3: "r", q4: "r", q5: "l" }) + '</div><div class="art-fig">' + N.fig("+50", "P") + '<span class="lbl">' + t("o.2.c") + '</span><span class="chip chip-hit">' + t("r.o.hit") + "</span></div></div>";
+    return '<div class="art-row" aria-hidden="true"><div class="art-fig">' + N.fig("1,000", "P") + '</div><span class="art-arrow">' + ic.right + '</span><div class="art-fig">' + N.fig("1", "CT") + "</div></div>";
+  }
+  function body() {
+    var dots = [1, 2, 3].map(function (i) { return '<i class="' + (i <= step ? "on" : "") + '"></i>'; }).join("");
+    var top = '<div class="bare-top"><span class="brand"><span class="tile"><img src="assets/cojam-mark.svg" alt="" width="20" height="20"></span><b translate="no">Cojam</b></span>' + (setting ? "" : '<a class="lnk" href="' + N.href("home.html") + '">' + t("o.skip") + "</a>") + "</div>";
+    if (setting) {
+      return top + '<div class="lede"><h1>' + t("a.setup.h1") + "</h1><p>" + t("a.setup.body2") + '</p></div><ol class="todo" role="status">' +
+        '<li class="is-done"><span class="box">' + ic.check + "</span>" + t("a.setup.s1") + '</li><li><i class="spin"></i>' + t("a.setup.s2") + '</li><li class="is-wait"><span class="box"></span>' + t("a.setup.s3") + "</li></ol>" +
+        '<div class="grow"></div><button type="button" class="btn btn-1" disabled><i class="spin"></i>' + t("a.setup.h") + "</button>";
+    }
+    return top + '<div class="art">' + art() + '<i class="art-rule"></i></div>' +
+      '<p class="step-n mt-16"><span aria-hidden="true">' + dots + "</span>" + t("o.step", { n: step }) + "</p>" +
+      '<div class="lede" style="padding-top:var(--s-12)"><h1>' + t("o." + step + ".h") + "</h1><p>" + t("o." + step + ".b") + "</p></div>" +
+      (step === 1 ? '<button type="button" class="lnk" id="code">' + t("o.code.q") + ' <span class="muted">' + t("o.code.opt") + "</span></button>" : "") +
+      '<div style="flex:0 0 var(--s-24)"></div><a class="btn btn-1" href="' + (step < 3 ? N.href("first-run.html", String(step + 1)) : N.href("home.html")) + '">' + (step < 3 ? t("o.next") : t("o.start")) + "</a>";
+  }
+  N.page({
+    bare: true, title: t("o." + step + ".h"), body: body,
+    after: function (app) {
+      var c = app.querySelector("#code"); if (!c) return;
+      c.addEventListener("click", function () {
+        var sh = N.sheet(t("p.code.h"), '<p class="muted">' + t("o.code.help") + '</p><div class="field"><div class="field-top"><label for="ic">' + t("p.code.label") + '</label></div><div class="field-box" id="icb"><input id="ic" name="invite-code" spellcheck="false" class="num" maxlength="8" autocapitalize="characters" autocomplete="off" placeholder="' + N.esc(t("o.code.ph")) + '" aria-describedby="icm"><button type="button" class="field-act" id="ap">' + t("o.code.apply") + '</button></div><p class="field-msg" id="icm"></p></div><p class="center"><button type="button" class="lnk" data-close>' + t("o.code.without") + "</button></p>");
+        sh.el.querySelector("#ap").addEventListener("click", function () {
+          var v = sh.el.querySelector("#ic").value.trim().toUpperCase(), m = sh.el.querySelector("#icm"), name = M.invite.known[v];
+          var err = !/^[A-Z2-9]{6,8}$/.test(v) ? t("o.code.short") : v === M.invite.self ? t("o.code.own") : !name ? t("o.code.unknown") : "";
+          m.textContent = err || t("o.code.ok", { name: name, w: M.invite.welcome }); m.classList.toggle("is-bad", !!err); sh.el.querySelector("#icb").classList.toggle("is-bad", !!err);
+        });
+      });
+    }
+  });
+})();
+</script>
+</body>
+</html>

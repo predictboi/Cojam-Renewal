@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F131B">
+<title>Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<noscript>Cojam needs JavaScript to show today's predictions.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* W1 Wallet, with Deposit and Withdraw as sheets. States: default, new (nothing yet), loading, error, offline, hold, deposit (sheet open), withdraw (sheet open). */
+(function () {
+  var t = N.t, M = N.M, ic = N.ic, st = N.state, u = M.user, fresh = st === "new";
+  var ct = fresh ? 0 : u.ct, pts = fresh ? 0 : u.points;
+
+  /* a stand-in pattern in the prototype: production draws the real QR of the address */
+  function qr(seed) {
+    var n = 21, h = 0, cells = "", i, x, y;
+    function bit(k) { h = (h * 31 + seed.charCodeAt(k % seed.length) + k * 7) % 9973; return h % 2; }
+    function eye(ex, ey) { return x >= ex && x < ex + 7 && y >= ey && y < ey + 7; }
+    function eyeOn(ex, ey) { var a = x - ex, b = y - ey; return a === 0 || a === 6 || b === 0 || b === 6 || (a > 1 && a < 5 && b > 1 && b < 5); }
+    for (i = 0; i < n * n; i++) {
+      x = i % n; y = Math.floor(i / n); var on;
+      if (eye(0, 0)) on = eyeOn(0, 0); else if (eye(14, 0)) on = eyeOn(14, 0); else if (eye(0, 14)) on = eyeOn(0, 14);
+      else if ((x === 7 && y < 8) || (y === 7 && x < 8) || (x === 13 && y < 8) || (y === 7 && x > 12) || (y === 13 && x < 8) || (x === 7 && y > 12)) on = 0;
+      else on = bit(i);
+      if (on) cells += "M" + x + " " + y + "h1v1h-1z";
+    }
+    return '<svg class="qr" viewBox="0 0 21 21" role="img" aria-label="' + N.esc(t("dp.qr")) + '" shape-rendering="crispEdges"><path d="' + cells + '" fill="var(--on-paper)"/></svg>';
+  }
+  function deposit() {
+    N.sheet(t("dp.title"), '<p class="muted">' + t("dp.lead") + "</p>" + qr(u.address) + '<p class="addr-full">' + N.group(u.address) + '</p><button type="button" class="btn btn-1" id="cp">' + ic.copy + t("w.copy") + "</button>" +
+      '<dl class="kvs"><div class="kv"><dt>' + t("dp.net") + "</dt><dd>" + t("dp.net.v") + '</dd></div><div class="kv"><dt>' + t("dp.token") + "</dt><dd>" + t("dp.token.v") + "</dd></div></dl>" +
+      '<p class="note">' + ic.alert + "<span>" + t("dp.w1") + " " + t("dp.w2") + '</span></p><p class="foot"><i class="spin"></i><span>' + t("dp.watch") + "</span></p>")
+      .el.querySelector("#cp").addEventListener("click", function () { N.copy(u.address, t("w.copied", { a: N.short(u.address) })); });
+  }
+  function withdraw() {
+    var sh = N.sheet(t("x.title"),
+      '<div class="field"><div class="field-top"><label for="to">' + t("x.to") + '</label></div><div class="field-box" id="tobox"><input id="to" name="to-address" class="num" style="font-size:14px" autocomplete="off" spellcheck="false" placeholder="' + N.esc(t("n.ph.addr")) + '" aria-describedby="tomsg"><button type="button" class="field-act" id="paste">' + t("x.paste") + '</button></div><p class="field-msg" id="tomsg"></p></div>' +
+      '<div class="field"><div class="field-top"><label for="wa">' + t("x.amount") + "</label><span>" + t("x.avail", { c: N.num(ct) }) + '</span></div><div class="field-box"><input id="wa" name="amount" class="num" inputmode="decimal" value="250" autocomplete="off"><span class="field-unit">CT</span><button type="button" class="field-act" id="wmax">' + t("s.max") + "</button></div></div>" +
+      '<dl class="kvs"><div class="kv"><dt>' + t("x.kaia") + '</dt><dd class="num">' + u.kaia + ' KAIA</dd></div><div class="kv"><dt>' + t("x.fee") + '</dt><dd>' + t("x.fee.v", { f: M.fee }) + '</dd></div><div class="kv"><dt>' + t("dp.net") + "</dt><dd>" + t("dp.net.v") + "</dd></div></dl>" +
+      '<p class="fine">' + t("x.gas") + '</p><label class="check"><input type="checkbox" id="chk"><span>' + t("x.rv.check") + '</span></label><button type="button" class="btn btn-1" id="send" disabled></button>');
+    var el = sh.el, to = el.querySelector("#to"), wa = el.querySelector("#wa"), send = el.querySelector("#send"), msg = el.querySelector("#tomsg"), box = el.querySelector("#tobox");
+    function up() {
+      var a = to.value.trim(), amt = Number(wa.value), good = /^0x[0-9a-fA-F]{40}$/.test(a), err = "";
+      if (a && !good) err = t("x.e.bad"); else if (good && a.toLowerCase() === u.address.toLowerCase()) err = t("x.e.own"); else if (good && M.contracts.indexOf(a.toLowerCase()) >= 0) err = t("x.e.contract");
+      msg.textContent = err || (good ? t("x.addr.ok") : ""); msg.classList.toggle("is-bad", !!err); box.classList.toggle("is-bad", !!err);
+      var ok = good && !err && amt > 0 && amt <= ct && el.querySelector("#chk").checked;
+      send.disabled = !ok; send.textContent = good && !err && amt > 0 ? t("x.btn", { a: N.num(amt) }) : t("x.btn.empty");
+    }
+    el.addEventListener("input", up); el.querySelector("#chk").addEventListener("change", up);
+    el.querySelector("#wmax").addEventListener("click", function () { wa.value = ct; up(); });
+    el.querySelector("#paste").addEventListener("click", function () { try { navigator.clipboard.readText().then(function (v) { to.value = v; up(); }); } catch (e) { to.focus(); } });
+    send.addEventListener("click", function () { var a = N.num(Number(wa.value)); send.disabled = true; send.innerHTML = '<i class="spin"></i>' + t("tx.send.h"); setTimeout(function () { sh.close(); N.toast(t("x.ok", { a: a })); }, 1200); });
+    up();
+  }
+  function body() {
+    if (st === "loading") return N.skel(["fig", "row", "cells", "row", "row"]);
+    if (st === "error") return N.errorBox("e.rpc");
+    var hold = st === "hold", canN = Math.floor(pts / 1000);
+    return (hold ? N.hold("hold.wallet") : "") +
+      '<section class="hero"><p class="lbl">' + t("w.avail") + "</p>" + N.fig(N.num(ct), "CT", "fig-l" + (ct ? "" : " is-zero")) +
+        (N.lang === "ko" && ct ? '<p class="fine">' + t("common.krw", { krw: N.num(Math.round(ct * M.krwPerCt)) }) + "</p>" : "") +
+        '<div class="hero-meta"><button type="button" class="addr" id="addr" aria-label="' + N.esc(t("w.copy")) + '">' + N.short(u.address) + ic.copy + '</button><span class="lbl" data-ago></span></div>' +
+        '<div class="btn-row"><button type="button" class="btn btn-2" id="dep">' + t("w.deposit") + '</button><button type="button" class="btn btn-2" id="wd"' + (ct ? "" : " disabled") + ">" + t("w.withdraw") + "</button></div></section>" +
+      '<div class="rows" style="border-top:1px solid var(--line-2)">' +
+        N.row({ k: t("w.staked"), s: fresh ? null : t("s.mine", { n: M.stakes.length }), v: N.num(fresh ? 0 : u.staked) + "<small>CT</small>", href: N.href("stakes.html") }) +
+        N.row({ k: "KAIA", s: t(hold ? "hold.kaia.note" : "w.kaia.note"), v: N.num(fresh ? 0 : u.kaia) }) + "</div>" +
+      '<section class="sec"><p class="lbl">' + t("w.points") + "</p>" + N.fig(N.num(pts), "P", "fig-l" + (pts ? "" : " is-zero")) +
+        '<p class="fine mt-8">' + (canN ? t("w.ready", { n: canN }) : t("w.notyet", { g: N.num(1000 - pts) })) + "</p>" +
+        (fresh ? "" : '<div class="mt-8" style="border-top:1px solid var(--line)">' + N.row({ k: t("w.onway"), s: t("w.pendinghit", { p: u.pendingHit, time: "22:10" }), v: '<span class="held">+' + u.pendingHit + "</span>" }) + "</div>") +
+        (hold ? '<button type="button" class="btn btn-1 mt-12" disabled>' + t("hold.convert.btn") + '</button><p class="why">' + t("hold.convert.reason") + "</p>"
+          : canN ? '<a class="btn btn-1 mt-12" href="' + N.href("convert.html") + '">' + t("w.convert") + "</a>" : '<button type="button" class="btn btn-1 mt-12" disabled>' + t("w.convert") + "</button>") + "</section>" +
+      '<section class="sec">' + N.row({ k: t("inv.entry"), s: t("w.invite"), v: "+" + (fresh ? 0 : M.invite.week) + "<small>P</small>", href: N.href("invite.html") }) +
+        N.details(t("w.info"), '<p class="addr-full">' + N.group(M.token) + "</p><p>" + t("w.token") + '</p><button type="button" class="lnk" id="tok">' + ic.copy + t("w.token.copy") + "</button>") + "</section>";
+  }
+  N.page({
+    tab: "wallet", title: t("w.title"), body: body, plain: true,
+    after: function (app) {
+      var on = function (id, fn) { var el = app.querySelector(id); if (el) el.addEventListener("click", fn); };
+      on("#addr", function () { N.copy(u.address, t("w.copied", { a: N.short(u.address) })); });
+      on("#tok", function () { N.copy(M.token, t("w.token.copied")); });
+      on("#dep", deposit); on("#wd", withdraw);
+      if (st === "deposit") deposit(); if (st === "withdraw") withdraw();
+    }
+  });
+})();
+</script>
+</body>
+</html>

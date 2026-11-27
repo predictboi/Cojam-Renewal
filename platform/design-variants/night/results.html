@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F131B">
+<title>Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<noscript>Cojam needs JavaScript to show today's predictions.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* R1 Results. States: default, loading, empty, error, offline. The filter (All, Waiting, Set) works on the rows in place. */
+(function () {
+  var t = N.t, M = N.M, ic = N.ic, st = N.state;
+  var SET = { hit: 1, miss: 1, corr: 1, pend: 1, void: 1 };
+  function right(r) {
+    var P50 = N.fig("+50", "P"), zero = N.fig("0", "P", "is-zero");
+    if (r.out === "pend") return '<span class="chip chip-hit">' + t("r.o.hit") + "</span>" + P50 + '<span class="fine">' + t("r.at", { time: r.at }) + "</span>";
+    if (r.out === "wait") return '<span class="chip chip-wait">' + t("r.o.waitat", { time: r.exp }) + '</span><span class="fine">' + t("r.o.ifhit") + "</span>";
+    if (r.out === "hit") return '<span class="chip chip-hit">' + t("r.o.hit") + "</span>" + P50;
+    if (r.out === "miss") return '<span class="chip chip-miss">' + t("r.o.miss") + "</span>" + zero;
+    if (r.out === "corr") return '<span class="chip chip-corr">' + t("r.o.corr") + "</span>" + P50;
+    if (r.out === "void") return '<span class="chip chip-off">' + t("r.o.void") + "</span>" + zero;
+    return '<span class="chip chip-off">' + t("r.o.none") + "</span>" + zero;
+  }
+  function rm(out) { return '<i class="rm ' + (out === "hit" || out === "pend" || out === "corr" ? "rm-hit" : out === "wait" ? "rm-wait" : out === "miss" ? "" : "rm-none") + '"></i>'; }
+  function day(d) {
+    var title = d.day === 0 ? t("common.today") : d.day === 1 ? t("common.yesterday") : N.date(M.ago(d.day), { weekday: "short", month: "short", day: "numeric" });
+    var inv = M.invite.days[d.day], h = 0, m = 0, w = 0;
+    d.rows.forEach(function (r) { if (r.out === "hit" || r.out === "pend" || r.out === "corr") h++; else if (r.out === "miss") m++; else if (r.out === "wait") w++; });
+    return '<section class="sec day"><div class="day-h"><h2>' + title + '<span class="rmarks" role="img" aria-label="' + N.esc(t("r.marks.sr", { h: h, m: m, w: w })) + '">' + d.rows.map(function (r) { return rm(r.out); }).join("") + "</span></h2>" + N.fig("+" + d.total, "P", "fig-s") + "</div>" +
+      '<p class="day-s">' + (d.done ? t("r.g.done") : t("r.g.part", { k: d.answered })) + (d.pending ? ", " + t("r.g.pending", { q: d.pending }) : "") + "</p>" +
+      d.rows.map(function (r) {
+        var Q = N.q(r.q), kind = r.out === "wait" ? "wait" : SET[r.out] ? "set" : "none";
+        return '<article class="rrow" data-kind="' + kind + '"><div><h3>' + Q.title + '</h3><p class="rrow-s"><span>' + t("cat." + Q.cat) + "</span>" + (r.c ? "<b>" + t("r.you", { choice: N.mark(r.c) + (r.c === "l" ? Q.left : Q.right) }) + "</b>" : "") + '</p></div><div class="rrow-r">' + right(r) + "</div>" +
+          (r.out === "corr" ? '<p class="rrow-x">' + t("r.o.corr.line", { date: N.date(M.ago(d.day)) }) + "</p>" : r.out === "void" ? '<p class="rrow-x">' + t("r.o.void.line") + "</p>" : "") + "</article>";
+      }).join("") +
+      (inv ? '<div class="rrow" data-kind="inv"><div><h3>' + t("r.inv") + '</h3><p class="rrow-s">' + t("r.inv.sub", { r: M.invite.rate }) + '</p></div><div class="rrow-r">' + N.fig("+" + inv.pts, "P") + "</div></div>" : "") + "</section>";
+  }
+  function body() {
+    if (st === "loading") return N.skel(["cells", "row", "row", "row", "row"]);
+    if (st === "error") return N.errorBox();
+    if (st === "empty") return N.emptyBox(t("r.empty.h"), t("r.empty.b"), t("r.empty.btn"), N.href("home.html"));
+    var w = M.week, ticks = "";
+    for (var i = 0; i < w.answered; i++) ticks += '<i class="' + (i < w.hits ? "on" : "") + '"></i>';
+    return N.cells([
+      { k: t("r.week"), v: N.fig(N.num(w.pts), "P"), s: t("r.sum.hits", { a: w.hits, b: w.answered }) + '<span class="hticks" aria-hidden="true">' + ticks + "</span>" },
+      { k: t("r.all"), v: N.fig(N.num(M.all.pts), "P"), s: t("r.sum.rate", { n: M.all.rate }) },
+      { k: t("r.pending"), v: N.fig("+" + M.user.pendingHit, "P"), s: t("r.at", { time: "22:10" }) }]) +
+      '<div class="mt-16">' + N.seg([{ id: "all", label: t("r.f.all") }, { id: "wait", label: t("r.f.wait") }, { id: "set", label: t("r.f.set") }], "all", t("r.filter"), "is-wide") + "</div>" +
+      '<p class="legend" aria-label="' + t("r.legend") + '"><span><i class="rm rm-hit"></i>' + t("r.o.hit") + '</span><span><i class="rm"></i>' + t("r.o.miss") + '</span><span><i class="rm rm-wait"></i>' + t("r.f.wait") + "</span></p>" +
+      '<div id="days">' + M.results.map(day).join("") + '</div><p class="state" id="none" hidden></p>' +
+      '<p class="center mt-16"><button type="button" class="lnk" id="more">' + t("r.more") + "</button></p>";
+  }
+  N.page({
+    tab: "results", title: t("r.title"), body: body, noBadge: true,
+    after: function (app) {
+      var seg = app.querySelector(".seg"); if (!seg) return;
+      seg.addEventListener("click", function (e) {
+        var b = e.target.closest("button"); if (!b) return; var f = b.getAttribute("data-id"), shown = 0;
+        seg.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b); });
+        app.querySelectorAll(".day").forEach(function (d) {
+          var n = 0; d.querySelectorAll(".rrow").forEach(function (r) { var k = r.getAttribute("data-kind"), on = f === "all" || k === f; r.hidden = !on; if (on) n++; });
+          d.hidden = !n; shown += n;
+        });
+        var none = app.querySelector("#none"); none.hidden = shown > 0; none.textContent = f === "wait" ? t("r.fe.wait") : t("r.fe.set");
+      });
+      app.querySelector("#more").addEventListener("click", function () { N.toast(t("common.loading")); });
+    }
+  });
+})();
+</script>
+</body>
+</html>

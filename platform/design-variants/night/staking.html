@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F131B">
+<title>Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<noscript>Cojam needs JavaScript to show today's predictions.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* S1 Staking, new stake. States: default (500 CT, 90 days), empty, below, zero, review (the sheet), loading, error, offline, hold. */
+(function () {
+  var t = N.t, M = N.M, st = N.state, DAYS = [30, 90, 180, 365];
+  var bal = st === "zero" ? 0 : M.user.ct, days = 90, root;
+  var startVal = st === "empty" || st === "zero" ? "" : st === "below" ? "50" : "500";
+  function tier(a) { return a >= 10000 ? 2 : a >= 1000 ? 1 : 0; }
+  function tabs() { return '<nav class="ptabs" aria-label="' + t("s.switch") + '"><a class="ptab" href="' + N.href("staking.html") + '" aria-current="page">' + t("s.new") + '</a><a class="ptab" href="' + N.href("stakes.html") + '">' + t("s.tab.mine") + '<span class="count">' + M.stakes.length + "</span></a></nav>"; }
+  function rateTable(a) {
+    var tr = tier(a);
+    return '<table class="tbl tbl-rates mt-8"><thead><tr><th scope="col">' + t("s.th.lock") + "</th><th scope=\"col\">" + t("s.th.1") + '</th><th scope="col">' + t("s.th.2") + '</th><th scope="col">' + t("s.th.3") + "</th></tr></thead><tbody>" +
+      DAYS.map(function (d) { return "<tr><td>" + t("s.days", { d: d }) + "</td>" + M.rates[d].map(function (r, i) { return '<td class="num' + (d === days && i === tr ? " is-on" : "") + '">' + r + "%</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table>";
+  }
+  function body() {
+    if (st === "loading") return tabs() + N.skel(["row", "cells", "cells", "row"]);
+    if (st === "error") return tabs() + N.errorBox("e.rpc");
+    return tabs() + (st === "hold" ? '<div class="mt-16">' + N.hold("hold.stake") + "</div>" : "") +
+      '<div class="stack"><div class="field"><div class="field-top"><label for="amt">' + t("s.amount") + "</label><span>" + t("s.avail") + ' <span class="num">' + N.num(bal) + ' CT</span></span></div>' +
+        '<div class="field-box" id="box"><input class="num" id="amt" name="amount" inputmode="decimal" autocomplete="off" value="' + startVal + '" placeholder="0" aria-describedby="msg"><span class="field-unit">CT</span><button type="button" class="field-act" id="max">' + t("s.max") + "</button></div>" +
+        '<div id="msg"></div></div>' +
+      '<div class="field"><div class="field-top"><label id="pl">' + t("s.period") + '</label><span id="tier"></span></div><div class="periods" role="radiogroup" aria-labelledby="pl" id="periods"></div></div>' +
+      '<div id="out"></div>' +
+      '<div id="help"></div></div>';
+  }
+  function pin() {
+    if (st === "loading" || st === "error") return "";
+    return '<button type="button" class="btn btn-1" id="go"></button><p class="pin-note" id="pin-note"></p>';
+  }
+  function val() { var v = root.querySelector("#amt").value.replace(/,/g, "").trim(); return v === "" ? null : Number(v); }
+  function update() {
+    var a = val(), ok = a !== null && !isNaN(a) && a >= M.minStake && a <= bal, tr = tier(a || 0), rate = M.rates[days][tr];
+    var unlock = N.date(M.ahead(days), { year: "numeric", month: "short", day: "numeric" }), interest = ok ? a * rate / 100 * days / 365 : 0;
+    var msg = "", bad = false, btn = t("s.btn.empty");
+    if (st === "zero") { msg = '<p class="field-msg">' + t("s.zero") + "</p>"; btn = t("s.btn.empty"); }
+    else if (a === null) msg = '<p class="field-msg">' + t("s.min") + "</p>";
+    else if (isNaN(a)) { bad = true; msg = '<p class="field-msg is-bad">' + t("s.e.nan") + "</p>"; btn = t("s.btn.nan"); }
+    else if (a < M.minStake) { bad = true; msg = '<p class="field-msg is-bad">' + t("s.e.min") + '</p><button type="button" class="lnk" data-fix="' + M.minStake + '">' + t("s.fix.min") + "</button>"; btn = t("s.btn.min"); }
+    else if (a > bal) { bad = true; msg = '<p class="field-msg is-bad">' + t("s.e.bal", { b: N.num(bal) }) + '</p><button type="button" class="lnk" data-fix="' + bal + '">' + t("s.fix.bal", { b: N.num(bal) }) + "</button>"; btn = t("s.btn.bal"); }
+    else { msg = '<p class="field-msg">' + t("s.tier.cue" + tr) + "</p>"; btn = t("s.btn", { a: N.num(a) }); }
+    if (st === "hold") { btn = t("hold.stake.btn"); ok = false; }
+    if (st === "offline") ok = false;
+    root.querySelector("#msg").innerHTML = msg; root.querySelector("#box").classList.toggle("is-bad", bad);
+    root.querySelector("#tier").textContent = t("s.tier." + (tr + 1));
+    root.querySelector("#periods").innerHTML = DAYS.map(function (d) { return '<button type="button" class="period" role="radio" aria-checked="' + (d === days) + '" data-d="' + d + '" aria-label="' + N.esc(t("s.days", { d: d }) + ", " + M.rates[d][tr] + "%") + '"><b>' + M.rates[d][tr] + "%</b><span>" + d + t("s.d") + "</span></button>"; }).join("");
+    root.querySelector("#out").innerHTML = N.cells([
+      { k: t("s.apr"), v: N.fig(rate, "%", "fig-m") },
+      { k: t("s.interest", { d: days }), v: N.fig(ok ? "+" + N.num(interest, 2) : "0", "CT", "fig-m" + (ok ? "" : " is-zero")) },
+      { k: t("s.unlock"), v: '<span class="fig-s">' + N.date(M.ahead(days)) + "</span>" }]) + '<p class="fine mt-8">' + t("s.noexit", { date: unlock }) + "</p>";
+    var help = root.querySelector("#help"), open = help.querySelector("details") && help.querySelector("details").open;
+    help.innerHTML = N.details(t("s.help.q"), "<p>" + t("s.help.a") + "</p>" + rateTable(a || 0)); if (open) help.querySelector("details").open = true;
+    var go = root.querySelector("#go"); go.textContent = btn; N.tighten(root); go.disabled = !ok;
+    root.querySelector("#pin-note").textContent = st === "offline" ? t("s.offline") : t("s.fee");
+    return { a: a, ok: ok, rate: rate, interest: interest, unlock: unlock };
+  }
+  function review() {
+    var s = update(); if (!s.ok) return;
+    var sh = N.sheet(t("s.rv.h", { a: N.num(s.a), d: days }),
+      '<dl class="kvs"><div class="kv"><dt>' + t("s.amount") + '</dt><dd class="num">' + N.num(s.a) + ' CT</dd></div><div class="kv"><dt>' + t("s.apr") + '</dt><dd class="num">' + s.rate + '%</dd></div><div class="kv"><dt>' + t("s.interest", { d: days }) + '</dt><dd class="num">+' + N.num(s.interest, 4) + ' CT</dd></div><div class="kv"><dt>' + t("s.unlock") + "</dt><dd>" + s.unlock + '</dd></div><div class="kv"><dt>' + t("c.fee") + "</dt><dd>" + t("c.fee.v") + "</dd></div></dl>" +
+      '<p class="note">' + N.ic.stake + "<span>" + t("s.noexit", { date: s.unlock }) + '</span></p><button type="button" class="btn btn-1" id="confirm">' + t("s.btn", { a: N.num(s.a) }) + '</button><p class="center"><button type="button" class="lnk" data-close>' + t("common.cancel") + "</button></p>");
+    sh.el.querySelector("#confirm").addEventListener("click", function () {
+      var b = this; b.disabled = true; b.innerHTML = '<i class="spin"></i>' + t("tx.send.h");
+      setTimeout(function () { sh.close(); N.toast(t("s.ok.h", { a: N.num(s.a) }), t("s.ok.btn"), function () { location.href = N.href("stakes.html"); }); }, 1200);
+    });
+  }
+  N.page({
+    tab: "stake", title: t("s.title"), body: body, pin: pin,
+    after: function (app) {
+      root = app; if (!app.querySelector("#amt")) return;
+      update();
+      app.querySelector("#amt").addEventListener("input", update);
+      app.addEventListener("click", function (e) {
+        var p = e.target.closest(".period"), f = e.target.closest("[data-fix]");
+        if (p) { days = +p.getAttribute("data-d"); update(); app.querySelector('.period[aria-checked="true"]').focus(); }
+        if (f) { app.querySelector("#amt").value = f.getAttribute("data-fix"); update(); }
+        if (e.target.closest("#max")) { app.querySelector("#amt").value = bal; update(); }
+        if (e.target.closest("#go")) review();
+      });
+      if (st === "review") review();
+    }
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F131B">
+<title>Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<noscript>Cojam needs JavaScript to show today's predictions.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* P1 Profile and settings. States: default, saved, hold. */
+(function () {
+  var t = N.t, M = N.M, ic = N.ic, st = N.state, u = M.user, I = window.CJ_I18N;
+  function body() {
+    return (st === "hold" ? '<div class="mt-16">' + N.hold("sys.blocked.b") + "</div>" : "") +
+      '<section class="who"><span class="avatar" aria-hidden="true">' + u.name.charAt(0).toUpperCase() + "</span><div><h2>" + N.esc(u.name) + '</h2><p class="fine">' + t("p.login", { email: u.email }) + "</p></div></section>" +
+      N.cells([{ k: t("p.rank"), v: N.fig(t("k.rankth", { n: M.me.rank })) }, { k: t("r.week"), v: N.fig(N.num(M.week.pts), "P") }, { k: t("p.pts"), v: N.fig(N.num(u.points), "P") }]) +
+      N.row({ k: t("inv.entry"), s: t("inv.entry.sub", { r: M.invite.rate }), v: '<span class="lbl">' + t("inv.entry.n", { n: M.invite.joined }) + "</span>", href: N.href("invite.html") }) +
+      '<section class="sec"><div class="sec-h"><h2>' + t("p.account") + "</h2></div>" +
+        '<div class="row"><span class="row-l"><span class="row-s">' + t("p.wallet") + '</span><span class="addr-full">' + N.group(u.address) + '</span></span><button type="button" class="icon-b" id="cp" aria-label="' + N.esc(t("w.copy")) + '">' + ic.copy + "</button></div>" +
+        N.row({ k: t("p.device"), s: t("p.device.ready") }) +
+        '<a class="lnk" href="https://kaiascan.io/address/' + u.address + '" rel="noopener">' + t("w.scan") + ic.ext + "</a></section>" +
+      '<section class="sec"><div class="field"><div class="field-top"><label for="nm">' + t("p.name") + '</label></div><div class="field-box" id="nmbox"><input id="nm" name="display-name" spellcheck="false" value="' + N.esc(u.name) + '" maxlength="20" autocomplete="off" aria-describedby="nmmsg"><button type="button" class="field-act" id="save">' + t("p.name.save.short") + '</button></div><p class="field-msg" id="nmmsg">' + t("p.name.help") + "</p></div></section>" +
+      '<section class="sec"><div class="sec-h"><h2>' + t("p.prefs") + "</h2></div>" +
+        '<div class="row"><span class="row-l"><span class="row-k">' + t("lang.label") + "</span></span>" + N.seg(I.langs.map(function (l) { return { id: l, label: l === "en" ? "EN" : I.names[l] }; }), N.lang, t("lang.label")) + "</div>" +
+        '<div class="row"><span class="row-l"><span class="row-k">' + t("p.view") + "</span></span>" + N.seg([{ id: "card", label: t("h.view.card") }, { id: "term", label: t("h.view.term") }], "card", t("p.view")) + "</div></section>" +
+      '<section class="sec"><div class="sec-h"><h2>' + t("p.help") + "</h2></div>" + N.details(t("p.answers.q"), "<p>" + t("p.answers.a") + "</p>") +
+        '<a class="row row-link" href="https://cojam.app/" rel="noopener"><span class="row-l"><span class="row-k">' + t("p.swap") + "</span></span>" + ic.ext + '</a><a class="row row-link" href="https://cojam.app/" rel="noopener"><span class="row-l"><span class="row-k">' + t("p.site") + "</span></span>" + ic.ext + "</a></section>" +
+      '<section class="sec"><button type="button" class="lnk is-danger" id="out">' + ic.out + t("p.logout") + '</button><p class="fine">' + t("p.version", { v: M.version }) + "</p></section>";
+  }
+  N.page({
+    back: N.href("home.html"), title: t("p.title"), body: body,
+    after: function (app) {
+      app.querySelector("#cp").addEventListener("click", function () { N.copy(u.address, t("w.copied", { a: N.short(u.address) })); });
+      app.querySelector("#save").addEventListener("click", function () {
+        var v = app.querySelector("#nm").value.trim(), msg = app.querySelector("#nmmsg"), err = v && (v.length < 2 || v.length > 20) ? t("p.name.e.len") : v && !/^[\p{L}\p{N} _.]+$/u.test(v) ? t("p.name.e.chars") : "";
+        msg.textContent = err || t("p.name.help"); msg.classList.toggle("is-bad", !!err); app.querySelector("#nmbox").classList.toggle("is-bad", !!err);
+        if (!err) N.toast(t("p.name.saved"));
+      });
+      app.querySelectorAll(".seg")[0].addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) I.setLang(b.getAttribute("data-id")); });
+      app.querySelectorAll(".seg")[1].addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; this.querySelectorAll("button").forEach(function (x) { x.setAttribute("aria-pressed", x === b); }); });
+      app.querySelector("#out").addEventListener("click", function () {
+        var sh = N.sheet(t("p.logout.h"), '<p class="muted">' + t("p.logout.b") + '</p><a class="btn btn-1" href="' + N.href("login.html") + '">' + t("p.logout") + '</a><p class="center"><button type="button" class="lnk" data-close>' + t("common.cancel") + "</button></p>");
+      });
+      if (st === "saved") N.toast(t("p.name.saved"));
+    }
+  });
+})();
+</script>
+</body>
+</html>
