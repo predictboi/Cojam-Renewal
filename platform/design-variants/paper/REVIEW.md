@@ -1,6 +1,6 @@
 # Review: Concept A, Daily Paper
 
-Self review by the designer who built it (no independent reviewer was run for this variant). Method: capture every screen with Playwright, run `tools/design/audit.js` on every screen, look at every capture at full size, score, fix, capture again. Two full rounds, plus a first build pass.
+Self review by the designer who built it (no independent reviewer was run for this variant). Method: capture every screen with Playwright, run `tools/design/audit.js` on every screen, look at every capture at full size, score, fix, capture again. Two full rounds, plus a first build pass, then a focused motion round (last section; the motion spec is `MOTION.md`).
 
 ## How it was checked
 
@@ -14,7 +14,7 @@ Self review by the designer who built it (no independent reviewer was run for th
 | Check | Result |
 | --- | --- |
 | Horizontal overflow | 0 on every screen, at 390 and at 360 |
-| Text contrast under 4.5:1 | 0, with one known exception: on a player's very first visit the teaching nudge shows the answer stamp at 40% opacity for 1.5 seconds (`span.qstamp`, `aria-hidden`). It is the "honest preview" of the drag, carried over from the current design, and never appears again. With the nudge already seen (`home.html?state=partial`) the screen reports 0 |
+| Text contrast under 4.5:1 | 0 on every screen, including the first visit nudge on home (fixed in the motion round: the hint is now a full strength proof stamp, ink on the sheet, that steps in and out) |
 | Touch targets under 44 px | 0 |
 | Accent use | Every blue fill, text and border listed by the audit is one of the four jobs: primary action, text link, reward (the "+100P" figure, HIT stamp and mark, the success figure in a sheet), the player's own row |
 | Monospace | Flagged only on full addresses (hex groups that contain letters), the invite code and the invite link. These are the three places the data face is meant for |
@@ -30,10 +30,10 @@ Self review by the designer who built it (no independent reviewer was run for th
 | Component consistency | 8 | One masthead, one dateline, one tab bar, three button looks, one segmented pattern, one row pattern for both ranking lists, one notice between rules, one hold notice, one sheet. The list view "Pick" buttons are heavier than the rest of that screen |
 | Brand character | 9 | Recognisable from any crop: thick and thin rule, dateline with the issue, slab figures, halftone pictures, stamps, numbered boxes. No screen falls back to a generic app look, including wallet and profile |
 | Affordance | 8 | Everything pressable has a frame or an underline; the two answers are the only coloured blocks on home; a control that is off says why beside it. The question meta line (source and settle time) is a button whose only cue is the small info icon |
-| Motion | 7 | The throw and Undo of the deck, the stamp landing a size up at the commit threshold, the "+100P" thunk and the boxes inking in, press feedback, the sheet. Transform and opacity only, reduced motion handled. No page entrance and no stamp animation on results: restrained, but less delight than the current design's reward burst |
+| Motion | 9 (was 7) | After the motion round: the sheet lifts, turns about the hand and is thrown; the answer stamp is a proof, presses in with a recoil and an ink ring, and comes down on the pick; Undo pulls the sheet back; the fuse is a printer's rule; day done is an extra edition; stamps land in results; the ranking sets like type; sections turn like pages. Transform, opacity and clip-path only, everything interruptible, reduced motion handled. Not a 10 because nothing has been felt on a real phone yet |
 | Density | 8 | Ranking shows the pool and six ranks above the own bar at 390 x 844 (five at 360 x 780); results shows the summary, the filter and four rows; wallet shows both balances and Convert on the first screen |
 | Polish | 8 | Rules align to the 16 px gutter, figures share baselines in the three figure rows, ticking digits do not shake, long names truncate, KO and JA wrap by phrase. Remaining roughness is listed below |
-| **Total** | **83 / 100** | |
+| **Total** | **85 / 100** (83 before the motion round) | |
 
 ## Round 1: what was found and fixed
 
@@ -69,8 +69,45 @@ Self review by the designer who built it (no independent reviewer was run for th
 1. **Japanese display face.** Noto Serif JP at 900 reads lighter and more formal than Besley and Hahmlet. A heavier Japanese slab or antique face (for example Kaisei Tokumin ExtraBold or Zen Antique) should be tested on real question lengths.
 2. **Halftone cost.** The screen is three CSS filters on a live element. It is fine on the one front card, but on older phones the drag could drop frames. In production the server should print the halftone once per picture (the look is deterministic) and ship a 1 bit PNG.
 3. **List view thumbnails** are the weakest pictures: at 56 px the screen turns to texture on two of five pictures. A dedicated square crop per question would fix it.
-4. **Reward moment.** The thunk and the inking boxes are quiet. A stamp sound, a haptic pattern and a one time "extra edition" flash of the masthead rule would add delight without leaving the concept.
+4. **Reward moment.** Rebuilt in the motion round as the extra edition (see below). Still missing: sound. A short press and stamp sound, off by default, would complete it.
 5. **Question meta affordance.** The source and settle line is a button with only an info icon as its cue; a short underlined "How answers are set" would be clearer at the cost of one line.
 6. **Results rows on a long day** are tall (60 px and more). A denser table mode for players with weeks of history would help.
 7. **Screens not rebuilt in this variant:** deposit and withdraw are sheets on the wallet (not full pages with every error state), the install gate, the maintenance, update and not found system screens, and the invite code sheet on profile. The admin is out of scope.
 8. **An independent review** (a second reviewer using the pages by touch and keyboard, as the handoff method asks) has not been run. The scores above are my own.
+
+## Motion round
+
+Asked for by the founder after choosing this concept: stronger effects and motion, inside the newspaper language. Spec: `MOTION.md` (purpose, trigger, duration, curve and the reduced motion answer for every moment). Skills used: `animate` (the gate, the property and curve rules) and `motion-design` (choreography: one lead action, causes before effects, action and rest).
+
+### What changed
+
+- **Swipe and pick.** The sheet scales to 1.012 and casts a flat ink shadow while held; it turns up to 7 degrees about the hand (held low, it leans the other way); the throw keeps the release speed. The answer stamp is now three states: a dashed proof under the threshold, pressed in at the threshold (fill, 1.36 to 1.05 to 1.12 recoil, a ring of ink, haptic tick), and brought down on the pick. A tap or an arrow key holds the sheet 130 ms so the stamp is seen landing before the throw. The next sheet rises in 420 ms; a release under the threshold flicks back with an overshoot; the numbered boxes ink in from the bottom, 70 ms apart.
+- **Undo.** The sheet is pulled back in low from the side it left and settles with the same overshoot. The 3 seconds are a 3 px printer's rule along the bottom of the pick bar, used up from the right (also inside the list view's Undo buttons and under "Finishing in 3"). The ring is gone.
+- **Day done.** An extra edition in about 2.2 seconds: the press runs while the last pick is saved, the headline is set letter by letter, the band inks in as "Extra" (호외, 号外) with the issue, "+100P" prints with three rolling reels, a "Paid" stamp lands, the fifth box inks in, the dateline turns from "Closes in" to "Next set in", the points in the masthead count up. A tap or a key skips to the settled page, which is the same layout with nothing moving. It plays once.
+- **Results.** Stamps land in list order with a ring of ink, each at its own fixed angle; waiting rows carry a small "going to press" mark instead of the clock; the day totals count up; a row opens like a clipping under a dashed cut line.
+- **Ranking.** Rows set from the top 34 ms apart, the prizes of the first three roll, the own bar slides up like a ticker strip, and This week and Last week turn like a page (120 ms out, 200 ms in), with the control switching at once.
+- **Staking, wallet, convert.** The result figure rolls and retargets while typing; sheets rise on the drawer curve; a "Done" stamp lands on success; countdowns tick like a date stamp (only the changed digit moves). Nothing plays on errors.
+- **Chrome.** A page turn of the content between sections (180 ms, direction by tab order, chrome still), the current tab's bar growing in, pressed states on every control (rows and chips darken, framed controls go down 1 px, links thicken), the browser's tap highlight switched off, the toast as a slip of paper pushed up from under the tab bar.
+- **First visit nudge.** No more text at 40% opacity: each lean shows a full strength proof stamp and lights the answer button on that side.
+- **Wording added** (`assets/paper-i18n.js`, three languages): "Extra", "Paid", "Going to press" (screen reader label of the mark).
+- **Hub.** The language switch in the hub masthead clipped and stacked at phone widths. It now uses short labels (EN, 한, 日) in fixed 48 px cells and never shrinks; segment labels never wrap anywhere. `node tools/lang-switch-check.js` checks the language control on the hub, login, first run and profile at 360, 390 and 440 px in three languages: 36 checks, 0 failures.
+
+### Verification of the motion round
+
+- **Scripted runs** (`node tools/flow-test.js`, `node tools/motion-run.js all`): touch swipe, Undo, a release under the threshold, tap, arrow key, five picks, "Finish now", the extra edition, results with rows opened, ranking with two page turns, staking from typing to success, tab changes. **No page errors.**
+- **Frame intervals during a drag** (a 2 second scripted drag across both thresholds, driven from `requestAnimationFrame`, device scale 2): 121 frames, average 16.67 ms, p95 16.7 to 16.8 ms, maximum 16.8 ms, 0 frames over 20 ms, at CPU throttle 1x and at 4x. One earlier run at 4x showed 4 frames at 33 ms. This measures the main thread only.
+- **Paint and raster cost of the same drag** (`node tools/motion-trace.js`, Chromium trace): with the layer promotion, raster tasks took 37.7 ms in total over the 2 seconds (186 tasks); without it 90.8 ms (327 tasks). A second pair of runs gave 40.1 and 112 ms. Layout 4.5 ms in 18 events, style 41 ms, paint 25 ms. So the halftone is no longer re-rastered when a stamp arms or the wash changes: raster work during a drag fell by about 60%.
+- **Honest limits of these numbers:** headless Chromium on a server rasters in software and has no real display, so absolute times do not predict a phone, and compositor frame drops are not visible to `requestAnimationFrame`. The comparison between the two variants is the meaningful part. Nothing was measured on a device.
+- **Audit:** rerun on every screen after the round; the result is in the table at the top of this file.
+- **Recordings:** `captures/video/` holds five flows as mp4 and webm (390 x 844, KO, and the done moment also in EN) and 18 still frames taken mid animation.
+
+### What I would tune on a real phone
+
+1. The throw: release speed to duration mapping (190 to 380 ms) and the 18 degree exit angle, with real thumbs at both screen edges.
+2. The 130 ms hold before the throw on a tap: it must feel like a stamp, not like lag. If it reads as lag, drop it to 90 ms.
+3. The overshoot of the flick back and of Undo (ease out back at 440 ms): on a high refresh screen it may want less.
+4. The lift shadow: 16% ink, 5 and 9 px. On an OLED phone in sunlight it may need to be stronger or closer.
+5. Haptics: the 5 ms tick at the threshold and the 12 ms hit on the pick are guesses; iOS Safari ignores `navigator.vibrate`, so the installed app needs its own haptic path.
+6. The extra edition's length. 2.2 seconds is right once; if players finish daily, a shorter cut after the first week (band, figure, stamp, about 1.2 seconds) would respect them.
+7. Halftone on low end Android: if the first raster of a new front card shows up as a hitch when the stack advances, ship server rendered 1 bit pictures.
+8. The page turn between tabs is a cross document entrance only. With the View Transitions API (or a single page shell) the old page could leave as well.
