@@ -20,7 +20,7 @@
       '<button type="button" class="field-max" id="code-apply">' + t("o.code.apply") + '</button></div><div class="onb-code-msg" id="code-msg" aria-live="polite"></div></div></div>';
   }
   var raw = '<div class="auth auth--onb"><div class="gate-bar"><div class="dots" role="img" aria-label="' + t("o.step", { n: n }) + '" id="dots">' + [1, 2, 3].map(function (i) { return "<i" + (i === n ? ' class="is-on"' : "") + "></i>"; }).join("") + "</div>" +
-    '<a class="linkish" href="' + exit + '">' + t("o.skip") + '</a></div><div class="oxford" aria-hidden="true"></div><div class="onb-wrap"><ol id="panels">' + [1, 2, 3].map(panel).join("") + "</ol>" +
+    '<a class="linkish" href="' + exit + '">' + t("o.skip") + '</a></div><div class="onb-wrap"><ol id="panels">' + [1, 2, 3].map(panel).join("") + "</ol>" +
     '<div class="onb-foot">' + codeBox() + '<div id="langrow"' + (n === 1 ? "" : " hidden") + ">" + C.seg(I.langs.map(function (l) { return { label: I.names[l], value: l, on: l === App.lang }; }), { name: "lang", label: t("lang.label") }) + "</div>" +
     C.btn(t(n === 3 ? "o.start" : "o.next"), { kind: "primary", block: true, id: "next", iconEnd: "right" }) +
     '<p class="row setup-line" id="setup-line" role="status"><span class="spin"></span><span>' + t("a.setup.h") + "</span></p></div></div></div>";

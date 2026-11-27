@@ -49,7 +49,7 @@
   function keep() { if (!live) return; sess.data.picks = {}; Q.forEach(function (q) { var p = picks[q.n]; if (p && p.sync !== "fail") sess.data.picks[q.id] = p.dir; }); sess.save(); }
   function body() {
     if (S === "loading") return '<ol class="term" aria-busy="true">' + [1, 2, 3, 4, 5].map(function (n) { return '<li class="trow"><span class="trow-n" aria-hidden="true">' + n + "</span><div>" + C.skel("94%", "16px") + '<div class="trow-foot">' + C.skel("64px", "12px") + "</div></div>" + C.skel("56px", "68px") + "</li>"; }).join("") + '</ol><p class="sr-only" role="status">' + t("common.loading") + "</p>";
-    if (S === "empty") return C.empty({ icon: "clock", title: t("h.empty.h"), body: t("h.empty.b", { time: t("time.kst9") }), extra: '<p class="fig" data-dg data-cd="' + M.untilNextSet() + '"></p>' });
+    if (S === "empty") return C.empty({ jam: "sleep", title: t("h.empty.h"), body: t("h.empty.b", { time: t("time.kst9") }), extra: '<p class="fig" data-dg data-cd="' + M.untilNextSet() + '"></p>' });
     if (S === "error") return C.error();
     if (S === "hold") return C.empty({ icon: "pause", title: t("hold.home.h"), body: t("hold.home.b"), action: C.btn(t("hold.home.btn"), { href: "hold.html", iconEnd: "right", id: "hold-more" }) });
     return (App.offline ? C.note("warn", t("h.offline")) : "") + '<div class="term-wrap" style="display:grid"><ol class="term" id="term">' + list() + '</ol><div class="term-end" id="term-end" hidden></div></div>';

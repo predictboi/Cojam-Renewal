@@ -4,7 +4,7 @@
   var t = App.t, $ = App.$;
   var MAIL = "help@cojam.app";
   function li(icon, keys) { return "<ul>" + keys.map(function (k) { return "<li>" + C.icon(icon, 18) + "<span>" + t(k) + "</span></li>"; }).join("") + "</ul>"; }
-  var raw = '<div class="auth"><div class="gate-bar"><a class="mast-home" href="wallet.html?state=hold" aria-label="' + App.esc(t("hd.home")) + '">' + C.logo() + "</a>" + C.tag(t("hold.tag"), "ink", "pause") + '</div><div class="oxford" aria-hidden="true"></div>' +
+  var raw = '<div class="auth"><div class="gate-bar"><a class="mast-home" href="wallet.html?state=hold" aria-label="' + App.esc(t("hd.home")) + '">' + C.logo() + "</a>" + C.tag(t("hold.tag"), "ink", "pause") + '</div>' +
     '<div class="sys"><h1>' + t("sys.blocked.h") + "</h1><p>" + t("sys.blocked.b") + "</p>" +
     '<section class="sys-box" aria-labelledby="works-h"><h2 id="works-h">' + t("sys.blocked.works.h") + "</h2>" + li("check", [1, 2, 3, 4].map(function (i) { return "sys.blocked.works." + i; })) + '<p class="sys-fee">' + t("sys.blocked.fee") + "</p></section>" +
     '<section class="sys-box" aria-labelledby="stops-h"><h2 id="stops-h">' + t("sys.blocked.stops.h") + "</h2>" + li("x", [1, 2, 3, 4, 5].map(function (i) { return "sys.blocked.stops." + i; })) + "</section>" +

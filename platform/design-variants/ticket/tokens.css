@@ -1,0 +1,53 @@
+/* Hallmark · v2.0.0 · theme: custom · deal: manual · idea: "every prediction is a ticket you punch" · vibe: "transit pass, counter stock, three inks" · posture: light/grotesk-heavy/chromatic-blue · hero: the perforated question ticket with its tear-off answer stub · signature: the stub tears at the perforation and drops into a tray of five */
+/* critique: one paper tone, ink black, two answer inks (vermilion left, Cojam blue right) and one highlighter yellow that only ever means points. */
+/* waive 64: the mono face is the material of a ticket serial; it is used for serials and amounts only, never for labels. automated sloplint sweep not run (scripts not packaged). */
+
+:root {
+  /* paper */
+  --ground: #E2E7E1;          /* the counter: cool grey green, app background */
+  --ground-2: #D5DCD4;        /* tray wells, pressed ground */
+  --stock: #FBFCF8;           /* ticket stock */
+  --stock-2: #EFF3EC;         /* printed tint panel on stock */
+  /* inks */
+  --ink: #14181C;             /* 16.6:1 on stock, 13.9:1 on ground */
+  --ink-2: #49525A;           /* secondary text: 7.6:1 on stock, 6.3:1 on ground */
+  --ink-3: #6A737B;           /* 4.7:1 on stock only: dates, serial captions */
+  --line: #C3CBC3;            /* hairlines on stock and ground */
+  --line-strong: #8D978F;
+  --blue: #124CC4;            /* right answer, primary action, links: 7.2:1 on stock, 6.0:1 on ground */
+  --blue-press: #0D3A99;
+  --blue-tint: #E1E9F9;
+  --red: #B82A14;             /* left answer, errors: 6.1:1 on stock, 5.1:1 on ground */
+  --red-press: #8F1F0E;
+  --red-tint: #F7E4DF;
+  --mark: #FFCB2E;            /* highlighter: points earned, hits. Ink text on it 11.4:1 */
+  --mark-tint: #FFF0BF;
+  --on-ink: #FBFCF8;
+  --focus: #124CC4;
+
+  /* type */
+  --font-ui: "Archivo", "Pretendard Variable", "Pretendard", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-num: "Martian Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --fs-11: 0.6875rem; --fs-12: 0.75rem; --fs-13: 0.8125rem; --fs-15: 0.9375rem; --fs-16: 1rem; --fs-18: 1.125rem;
+  --fs-22: 1.375rem; --fs-28: 1.75rem; --fs-36: 2.25rem; --fs-56: 3.5rem;
+  --w-head: 88;               /* Archivo width axis for heads and figures */
+
+  /* space: 4 px base */
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px;
+  --gutter: 16px;
+  --r-ticket: 10px;           /* ticket corner */
+  --r-ctl: 8px;               /* controls */
+  --notch: 9px;               /* radius of the perforation bite */
+  --hd: 56px; --tabbar: 64px;
+
+  /* motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-snap: cubic-bezier(0.34, 1.4, 0.64, 1);   /* easings.co easeOutBack, softened: the perforation snap and the stamp */
+  --t-press: 120ms; --t-fast: 180ms; --t-base: 260ms; --t-slow: 420ms;
+
+  --shadow-ticket: drop-shadow(0 1px 0 rgba(20, 24, 28, 0.22)) drop-shadow(0 8px 14px rgba(20, 24, 28, 0.10));
+  --shadow-slip: 0 1px 0 rgba(20, 24, 28, 0.18);
+}
+:lang(ja) { --font-ui: "Archivo", "Pretendard JP Variable", "Pretendard JP", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif; }

@@ -1,4 +1,4 @@
-/* Home, card view: the front page. Each pick can be undone for 3 seconds (the bar under the deck), then it is sent.
+/* Home, card view: the deck of five collectible cards. Each pick can be undone for 3 seconds (the bar under the deck), then it is sent.
    The behaviour is the one of platform/design/home-cards.html; the page is drawn new. */
 (function () {
   var t = App.t, S = App.state, M = MOCK, $ = App.$;
@@ -24,12 +24,12 @@
   }
   function liveCell() { return S === "empty" || S === "closed" || S === "hold" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet()); }
   /* the wait before the day is sent is a printer's rule that is used up from the right: the same fuse as under the pick bar */
-  function endRing(id) { return '<div class="end-mark" aria-hidden="true">' + C.icon("check", 30) + '</div><span class="fuse fuse--end" aria-hidden="true"' + (id ? ' id="' + id + '"' : "") + "></span>"; }
+  function endRing(id) { return '<div class="end-mark" aria-hidden="true">' + C.jam("cheer", 92) + '</div><span class="fuse fuse--end" aria-hidden="true"' + (id ? ' id="' + id + '"' : "") + "></span>"; }
   function body() {
-    if (S === "loading") return '<div class="deck" aria-busy="true"><div class="qcard" data-pos="0"><div class="qcard-top">' + C.skel("64px", "12px") + C.skel("72px", "12px") + '</div><div class="qimg"></div><div class="qcard-body">' + C.skel("92%", "24px") + C.skel("60%", "24px") +
-      C.skel("100%", "40px") + '<div class="choices">' + C.skel("100%", "54px") + C.skel("100%", "54px") + '</div></div></div></div><div class="pickbar"></div><p class="sr-only" role="status">' + t("common.loading") + "</p>";
-    if (S === "empty") return C.empty({ icon: "clock", title: t("h.empty.h"), body: t("h.empty.b", { time: t("time.kst9") }), extra: '<p class="fig" data-dg data-cd="' + M.untilNextSet() + '"></p>' });
-    if (S === "closed") return C.empty({ icon: "refresh", title: t("h.closed"), action: C.btn(t("h.closed.btn"), { kind: "primary", href: "home.html" }) });
+    if (S === "loading") return '<div class="deck" aria-busy="true"><div class="qcard" data-pos="0"><div class="qcard-in"><div class="qart" data-bg="well"></div><div class="qcard-body">' + C.skel("92%", "26px") + C.skel("60%", "26px") +
+      C.skel("100%", "44px") + '<div class="choices">' + C.skel("100%", "60px") + C.skel("100%", "60px") + '</div></div></div></div></div><div class="pickbar"></div><p class="sr-only" role="status">' + t("common.loading") + "</p>";
+    if (S === "empty") return C.empty({ jam: "sleep", title: t("h.empty.h"), body: t("h.empty.b", { time: t("time.kst9") }), extra: '<p class="fig" data-dg data-cd="' + M.untilNextSet() + '"></p>' });
+    if (S === "closed") return C.empty({ jam: "", title: t("h.closed"), action: C.btn(t("h.closed.btn"), { kind: "primary", href: "home.html" }) });
     if (S === "error") return C.error();
     /* account on hold: no deck and no answer buttons, so nothing on the screen is dead */
     if (S === "hold") return C.empty({ icon: "pause", title: t("hold.home.h"), body: t("hold.home.b"), action: C.btn(t("hold.home.btn"), { href: "hold.html", iconEnd: "right", id: "hold-more" }) });
@@ -137,14 +137,14 @@
       e.preventDefault(); undo();
     });
     /* the very first card a player ever sees leans right, then left, once: it teaches the throw. Never under reduced motion, never again. */
-    var nudge = [], nudgeT = [], STEP = "steps(1, end)", PR = "rotate(-7deg) scale(0.86)", PL = "rotate(7deg) scale(0.86)";
+    var nudge = [], nudgeT = [], STEP = "steps(1, end)", PR = "rotate(-10deg) scale(0.9)", PL = "rotate(10deg) scale(0.9)";
     function stopNudge() { nudge.forEach(function (a) { try { a.cancel(); } catch (e) {} }); nudge = []; nudgeT.forEach(clearTimeout); nudgeT = []; App.$$(".choice.is-hot", deckEl).forEach(function (b) { b.classList.remove("is-hot"); }); deckEl.removeAttribute("data-nudge"); }
     if (live && count === 0 && !App.reduce && !App.offline && App.store.get("nudged", "") !== "1") {
       setTimeout(function () {
         var card = $('.qcard[data-pos="0"]', deckEl); if (!card || count || card.classList.contains("is-drag") || !card.animate) return;
         App.store.set("nudged", "1"); deckEl.setAttribute("data-nudge", "1");
         var o = { duration: 1500, easing: "cubic-bezier(0.45, 0, 0.25, 1)" };
-        nudge = [card.animate([{ transform: "none" }, { transform: "translateX(34px) rotate(2.6deg)", offset: 0.24 }, { transform: "translateX(34px) rotate(2.6deg)", offset: 0.4 }, { transform: "translateX(-34px) rotate(-2.6deg)", offset: 0.68 }, { transform: "translateX(-34px) rotate(-2.6deg)", offset: 0.82 }, { transform: "none" }], o),
+        nudge = [card.animate([{ transform: "none" }, { transform: "translateX(38px) rotate(4deg)", offset: 0.24 }, { transform: "translateX(38px) rotate(4deg)", offset: 0.4 }, { transform: "translateX(-38px) rotate(-4deg)", offset: 0.68 }, { transform: "translateX(-38px) rotate(-4deg)", offset: 0.82 }, { transform: "none" }], o),
           /* each lean shows the answer of that side as a proof stamp at full strength (ink on the sheet, no faint text). It steps in and out, never half visible,
              and the answer button on that side lights for the same moment. */
           $(".qstamp--r", card).animate([{ opacity: 0, transform: PR, easing: STEP }, { opacity: 1, transform: PR, offset: 0.12, easing: STEP }, { opacity: 0, transform: PR, offset: 0.46, easing: STEP }, { opacity: 0, transform: PR }], { duration: 1500 }),

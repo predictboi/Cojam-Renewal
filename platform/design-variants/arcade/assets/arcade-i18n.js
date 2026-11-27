@@ -1,15 +1,15 @@
-/* Labels that exist only in the "Daily Paper" concept: [en, ko, ja], added to the shared dictionary (assets/i18n.js is copied unchanged). */
+/* Labels that exist only in the "Pocket Arcade" concept: [en, ko, ja], added to the shared dictionary (assets/i18n.js is copied unchanged). */
 (function () {
   "use strict";
   var S = {
-    "pp.issue": ["Day {d}, week {w}", "{w}주차 {d}일째", "第{w}週 {d}日目"],
-    "pp.no": ["No. {n} of 5", "5문제 중 {n}번", "全5問の第{n}問"],
-    "pp.rank.col": ["Rank", "순위", "順位"],
-    "pp.pts.col": ["Points", "포인트", "ポイント"],
-    "pp.player.col": ["Player", "참가자", "プレイヤー"],
-    "pp.extra": ["Extra", "호외", "号外"],
-    "pp.paid": ["Paid", "지급 완료", "支払済"],
-    "pp.press": ["Going to press", "인쇄 대기", "印刷待ち"]
+    "ar.rank.col": ["Rank", "순위", "順位"],
+    "ar.pts.col": ["Points", "포인트", "ポイント"],
+    "ar.player.col": ["Player", "참가자", "プレイヤー"],
+    "ar.paid": ["Paid", "지급 완료", "支払済"],
+    "ar.press": ["Waiting for the answer", "정답 대기 중", "結果待ち"],
+    "ar.podium": ["Top 3", "상위 3명", "トップ3"],
+    "ar.sheet": ["Today's sticker sheet", "오늘의 스티커판", "今日のステッカーシート"],
+    "ar.skip": ["Tap to skip", "탭해서 건너뛰기", "タップでスキップ"]
   };
   var d = window.CJ_I18N.dict;
   Object.keys(S).forEach(function (k) { ["en", "ko", "ja"].forEach(function (l, i) { d[l][k] = S[k][i]; }); });

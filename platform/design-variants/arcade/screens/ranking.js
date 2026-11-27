@@ -1,5 +1,5 @@
-/* Weekly ranking: the league table. The pool and the time left lead; ranks 1 to 3 are set larger, the leader largest, in one table with ranks 4 to 10.
-   The player's own rank is pinned above the tab bar in ink. */
+/* Weekly ranking: the league. The prize pool leads; ranks 1 to 3 stand on a podium, ranks 4 to 10 follow in one table.
+   The player's own rank is pinned above the dock. */
 (function () {
   var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$;
   var week = S === "lastweek" || S === "sent" ? "last" : "this";
@@ -49,15 +49,22 @@
   function around(w) {
     if (!hasAround(w)) return "";
     var rows = aroundRows(w);
-    return '<section class="sec sec-rule" id="around" tabindex="-1"><div class="sh"><h2>' + t("k.around") + '</h2><span class="muted tiny">' + t("k.around.sub", { a: rows[0].rank, b: rows[rows.length - 1].rank }) + "</span></div>" +
-      '<ol class="klist klist--gap" aria-label="' + App.esc(t("k.col.gap")) + '">' + rows.map(row).join("") + "</ol></section>";
+    return '<section class="sec" id="around" tabindex="-1"><div class="sh"><h2>' + t("k.around") + '</h2><span class="muted tiny">' + t("k.around.sub", { a: rows[0].rank, b: rows[rows.length - 1].rank }) + "</span></div>" +
+      '<div class="ktable"><ol class="klist klist--gap" aria-label="' + App.esc(t("k.col.gap")) + '">' + rows.map(row).join("") + "</ol></div></section>";
+  }
+  /* ranks 1 to 3 stand on a league podium (second, first, third from left to right; the list order for a screen reader stays 1, 2, 3) */
+  function pod(r) {
+    var ini = /^0x/.test(r.name) ? "0x" : Array.from(r.name)[0].toUpperCase();
+    return '<li class="pod' + (r.me ? " is-me" : "") + '" data-rank="' + r.rank + '"><span class="pod-top"><span class="pod-av" aria-hidden="true">' + App.esc(ini) + '</span><span class="pod-name">' + name(r) + (r.me ? C.tag(t("k.you"), "ink") : "") + '</span><span class="pod-pts">' + F.pts(r.pts) + "</span></span>" +
+      '<span class="pod-clip"><span class="pod-block"><span class="pod-rank">' + rankNo(r.rank) + '</span><span class="pod-prize"><span data-prize="' + r.prize + '">' + prize(r.prize) + "</span><small>CT</small></span></span></span></li>";
   }
   function list(w) {
-    var colsHead = '<p class="cols" aria-hidden="true"><span>' + t("pp.rank.col") + "</span><span>" + t("pp.player.col") + "</span><span>" + t("pp.pts.col") + "</span><span>" + t("k.col.prize") + "</span></p>";
-    if (S === "loading") return colsHead + '<ul class="klist" id="top10" aria-busy="true">' + [1, 2, 3, 4, 5, 6, 7, 8].map(function () { return '<li class="krow">' + C.skel("20px", "20px") + C.skel("120px", "14px") + C.skel("48px", "12px") + C.skel("64px", "14px") + "</li>"; }).join("") + "</ul>";
+    var colsHead = '<p class="cols" aria-hidden="true"><span>' + t("ar.rank.col") + "</span><span>" + t("ar.player.col") + "</span><span>" + t("ar.pts.col") + "</span><span>" + t("k.col.prize") + "</span></p>";
+    if (S === "loading") return '<div class="podium podium--skel" aria-busy="true">' + C.skel("100%", "150px") + "</div>" + '<ul class="klist" id="top10" aria-busy="true">' + [1, 2, 3, 4, 5].map(function () { return '<li class="krow">' + C.skel("20px", "20px") + C.skel("120px", "14px") + C.skel("48px", "12px") + C.skel("64px", "14px") + "</li>"; }).join("") + "</ul>";
     var rows = rowsFor(w), voids = "";
     for (var i = rows.length + 1; i <= 10; i++) voids += '<li class="krow is-void"><span class="krow-rank" aria-hidden="true">' + i + '</span><p class="krow-name">' + t("k.void") + "</p></li>";
-    return colsHead + '<ol class="klist" id="top10">' + rows.map(row).join("") + voids + "</ol>";
+    return '<ol class="podium" id="podium" aria-label="' + App.esc(t("ar.podium")) + '">' + rows.slice(0, 3).map(pod).join("") + "</ol>" +
+      '<div class="ktable">' + colsHead + '<ol class="klist" id="top10" start="4">' + rows.slice(3).map(row).join("") + voids + "</ol></div>";
   }
   function pin(w) {
     if (S === "loading" || S === "error") return "";
@@ -72,7 +79,7 @@
     return bar(me.rank, t("k.you"), t("k.gap", { gap: F.int(me.gap) }), me.pts, t("r.week"));
   }
   /* the prizes of the first three roll up as their rows set; the rest are still (ten rolling figures would be noise) */
-  function roll() { App.$$("#top10 .krow--lead [data-prize]").forEach(function (el, i) { var to = +el.getAttribute("data-prize"); el.textContent = prize(0); setTimeout(function () { App.countTo(el, 0, to, prize, null, 560); }, 120 + i * 90); }); }
+  function roll() { App.$$("#podium [data-prize]").forEach(function (el, i) { var to = +el.getAttribute("data-prize"); el.textContent = prize(0); setTimeout(function () { App.countTo(el, 0, to, prize, null, 620); }, [520, 360, 680][i] || 400); }); }
   function toAround() {
     var a = $("#around"); if (!a) return;
     a.scrollIntoView({ behavior: App.reduce ? "auto" : "smooth", block: "center" }); a.focus({ preventScroll: true });
@@ -83,8 +90,8 @@
     if (S === "hold") note = C.hold(t("hold.rank"));
     else if (w === "last") note = S === "sent" ? C.note("ok", t("k.sent") + ' <a href="https://kaiascan.io/" target="_blank" rel="noopener">' + t("w.scan") + "</a>") : C.note("", t("k.closed", { time: t("k.final.time") }));
     else if (S === "winner") note = C.note("ok", t("k.last", { rank: 4, amount: "119.60" }));
-    return note + pool(w) + '<section class="sec sec-rule"><div class="sh"><h2>' + t("k.top") + "</h2>" + (S === "loading" || w === "last" ? "" : C.stamp(12)) + "</div>" +
-      '<div class="ktable">' + list(w) + '</div><p class="tie-line">' + C.icon("info", 16) + "<span>" + t("k.tie") + "</span></p></section>" + around(w);
+    return note + pool(w) + '<section class="sec"><div class="sh"><h2>' + t("k.top") + "</h2>" + (S === "loading" || w === "last" ? "" : C.stamp(12)) + "</div>" +
+      list(w) + '<p class="tie-line">' + C.icon("info", 16) + "<span>" + t("k.tie") + "</span></p></section>" + around(w);
   }
   function body() {
     if (S === "error") return C.error();

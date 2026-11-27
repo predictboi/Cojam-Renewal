@@ -1,6 +1,6 @@
-/* Day done: an extra edition. While the last pick is saved the press runs (a moving hatch in the band under the dateline and the headline set letter by letter);
-   when the points are paid the band inks in as "Extra", "+100P" prints with its figures rolling, a "Paid" stamp lands, the fifth box inks in,
-   the dateline turns from "Closes in" to "Next set in" and the points in the masthead count up. About 2.2 seconds, and a tap skips to the settled page.
+/* Day done: the capsule machine. While the last pick is saved a closed capsule drops in and wobbles; when the points are paid it pops open:
+   the lid flies off, Jam jumps out, the "+100P" coin sticker is slapped on, a few flat bits burst, the fifth sticker lands on the sheet,
+   the live chip turns from "Closes in" to "Next set in" and the points in the header count up. About 2.2 seconds, and a tap skips to the settled page.
    The settled page is the same layout with nothing moving. */
 (function () {
   var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$;
@@ -20,29 +20,20 @@
     if (p === "saving") return '<p class="done-st" id="reward"><span class="spin"></span>' + t("d.saving.st") + "</p>";
     return '<p class="done-st" id="reward">' + C.icon("check", 16) + (wel ? t("d.wel.st", { n: 100 + W }) : t("d.paid.st")) + "</p>";
   }
-  /* the headline as letters, so it can be set one by one; words stay whole for line breaks, and a screen reader gets the plain sentence */
-  function letters(text) {
-    var i = 0;
-    return '<span class="sr-only">' + App.esc(text) + '</span><span aria-hidden="true">' + text.split(" ").map(function (w) {
-      return '<span class="wd">' + Array.from(w).map(function (c) { return '<span class="ltr" style="--i:' + (i++) + '">' + App.esc(c) + "</span>"; }).join("") + "</span>";
-    }).join(" ") + "</span>";
-  }
-  /* "+100P" as three reels: each column runs through a few figures and stops on its own, the last one last */
-  function reels(n) {
-    return "+" + String(n).split("").map(function (d, k) {
-      var seq = []; for (var j = 0; j < 6 + k * 3; j++) seq.push((+d + 10 - (6 + k * 3 - 1 - j) % 10) % 10);
-      return '<span class="reel"><span class="reel-in" style="--n:' + (seq.length - 1) + ";--k:" + k + '">' + seq.map(function (x) { return "<i>" + x + "</i>"; }).join("") + "</span></span>";
-    }).join("") + "P";
-  }
+  var BITS = [["sun", -112, -58, 40], ["accent", 118, -70, -60], ["pick-l", -86, 44, 90], ["pick-r", 96, 52, -30], ["sun", 30, -96, 120], ["accent", -34, -92, -90], ["pick-r", -132, 6, 60], ["pick-l", 136, -8, -120]];
   function hero() {
     var segs = phase === "saving" ? ["done", "done", "done", "done", "pend"] : ["done", "done", "done", "done", "done"];
     return '<section class="done-hero' + (moment ? " is-moment" : "") + (phase === "saving" ? " is-saving" : "") + '" id="hero">' +
-      '<div class="extra" id="extra"><span class="extra-run" aria-hidden="true"></span><p class="extra-ink"><b>' + t("pp.extra") + "</b><span>" + t("pp.issue", { d: App.issue.day, w: App.issue.week }) + "</span></p></div>" +
-      "<h1>" + letters(t("d.h1")) + '</h1><div class="done-figs"><p class="done-fig' + (phase === "saving" ? " is-wait" : "") + '" id="done-fig" aria-hidden="true">' + reels(100) + "</p>" +
-      '<span class="seal" id="seal" aria-hidden="true">' + C.rstamp("hit", t("pp.paid")) + "</span>" +
-      (wel ? '<p class="done-wel" id="done-wel" aria-hidden="true"><b>+' + W + "P</b><span>" + t("d.wel.tag") + "</span></p>" : "") + "</div>" +
+      '<div class="cap-stage" aria-hidden="true"><div class="cap-drop"><div class="cap" id="cap">' +
+      '<span class="cap-jam">' + C.jam("cheer", 108) + '</span><span class="cap-bot"></span><span class="cap-top"><i></i></span></div></div>' +
+      BITS.map(function (b, i) { return '<i class="bit bit--' + (i % 3) + '" style="--c:var(--' + b[0] + ");--x:" + b[1] + "px;--y:" + b[2] + "px;--r:" + b[3] + 'deg"></i>'; }).join("") +
+      '<p class="cap-coin' + (phase === "saving" ? " is-wait" : "") + '" id="done-fig"><span>+100<small>P</small></span></p>' +
+      '<span class="seal" id="seal">' + C.rstamp("hit", C.icon("check", 14) + t("ar.paid")) + "</span>" +
+      (wel ? '<p class="done-wel" id="done-wel"><b>+' + W + "P</b><span>" + t("d.wel.tag") + "</span></p>" : "") + "</div>" +
+      "<h1>" + t("d.h1") + "</h1>" +
       '<div aria-live="polite" id="reward-wrap">' + status(phase) + "</div>" +
-      '<div class="ph-line"><span class="ph-count">5<small>/5</small></span>' + C.day5(segs, { id: "day5", label: "5/5" }) + "</div></section>";
+      '<div class="ph-line ph-line--sheet"><span class="ph-count">5<small>/5</small></span>' + C.day5(segs, { id: "day5", label: "5/5", size: "lg" }) + "</div>" +
+      (moment ? '<p class="done-skip" aria-hidden="true">' + t("ar.skip") + "</p>" : "") + "</section>";
   }
   function pickRow(p, i) {
     var o = outcome[i], q = App.q(p[0]);
@@ -52,11 +43,11 @@
   function body() {
     return C.btn(t("d.rank"), { kind: "primary", block: true, href: "ranking.html", iconEnd: "right" }) +
       (wel ? '<p class="done-welnote">' + t("d.wel.note", { name: '<b translate="no">' + App.esc(M.invite.by) + "</b>", w: W }) + "</p>" : "") +
-      '<section class="sec sec-rule"><div class="sh"><h2>' + t("d.picks") + '</h2><a class="linkish" href="results.html">' + t("d.results") + "</a></div>" +
+      '<section class="sec box"><div class="sh"><h2>' + t("d.picks") + '</h2><a class="linkish" href="results.html">' + t("d.results") + "</a></div>" +
       '<div class="done-wait">' + (waiting ? '<p class="done-wait-n">' + t("d.waitn", { n: waiting }) + "</p>" : "") + '<div class="plain-note"><p>' + t("d.hit.1") + "</p><p>" + t("d.hit.2") + "</p></div></div>" +
       '<ul class="list">' + picks.map(pickRow).join("") + "</ul></section>";
   }
-  /* the dateline: while the last pick is saved it still reads "Closes in" (this edition is on the press); once paid it turns to the next set */
+  /* the live chip: while the last pick is saved it still reads "Closes in"; once paid it turns to the next set */
   var secs = S === "zero" ? 0 : M.untilNextSet();
   function cell(key) { return '<span class="flip" id="dl-flip"><span>' + t(key) + '</span> <b id="clock" data-cd="' + secs + '" aria-hidden="true"></b></span><span class="sr-only" data-cd-sr></span>'; }
   var liveCell = S === "zero" ? '<span class="spin"></span> ' + t("d.loading") : cell(moment ? "h.closes" : "d.next");
@@ -71,15 +62,15 @@
       if (paid) return; paid = true;
       var sp = App.$("#pts .spin"); if (sp) sp.remove();
       sess.data.paid = true; sess.save();
-      hero.classList.remove("is-saving"); hero.classList.add("is-paid");   /* the band inks in, the reels run, the stamp lands (CSS, each with its own delay) */
+      hero.classList.remove("is-saving"); hero.classList.add("is-paid");   /* the capsule pops, Jam jumps, the coin sticker lands (CSS, each with its own delay) */
       fig.classList.remove("is-wait");
       wrap.innerHTML = status("paid");
       day5.children[4].className = "is-done";
       try { if (navigator.vibrate) navigator.vibrate([12, 40, 18]); } catch (e) {}
       App.addPoints(100); App.live(t("toast.paid", { n: 100 }));
-      /* the dateline turns to the next set as the stamp lands */
-      at(760, function () { var f = $("#dl-flip"); if (!f) return; f.firstChild.textContent = t("d.next"); if (!App.reduce && !settled) { f.classList.remove("is-flip"); void f.offsetWidth; f.classList.add("is-flip"); } });
-      at(1500, settle);
+      /* the live chip turns to the next set as the coin sticker lands */
+      at(700, function () { var f = $("#dl-flip"); if (!f) return; f.firstChild.textContent = t("d.next"); if (!App.reduce && !settled) { f.classList.remove("is-flip"); void f.offsetWidth; f.classList.add("is-flip"); } });
+      at(1400, settle);
     }
     /* settle: the page is exactly the settled done page, nothing left to run */
     function settle() {
@@ -93,6 +84,6 @@
     /* a tap or a key anywhere skips the show; the tap is not swallowed, so a tap on a button still works */
     function skip() { settle(); }
     document.addEventListener("pointerdown", skip, true); document.addEventListener("keydown", skip, true);
-    at(900, pay);
+    at(850, pay);
   } });
 })();

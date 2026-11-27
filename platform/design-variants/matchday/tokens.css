@@ -1,0 +1,67 @@
+/* Hallmark · custom direction (by request: "Matchday") · deal: manual · genre: app screens · signature: the face-off, two answers as two kits split by one slanted cut · sweep: manual, scripts not available */
+/* critique: one slant angle, two kit colours, one scoreboard yellow that lives only on the dark board; money screens drop the slant and keep the table. */
+/* waive 9 (capital labels): broadcast graphics set short English display lines in condensed capitals; they are display lines at 18px and up, never tracked, and Korean and Japanese are unaffected. */
+/* Matchday tokens. Every colour and every font in the variant is declared here. */
+:root {
+  /* ground: the light kit */
+  --chalk: #F3F1EA;        /* page ground */
+  --kit: #FFFFFF;          /* cards, panels */
+  --chalk-2: #E9E6DC;      /* wells, skeletons, quiet fills */
+  --rule: #D5D1C4;         /* hairlines */
+  --rule-2: #A39E8F;       /* field borders: 3:1 on kit is not required for text, used with labels */
+
+  /* ink */
+  --ink: #0E1420;          /* text, the scoreboard, the bars. 16.4:1 on chalk */
+  --ink-2: #47505F;        /* secondary text. 7.3:1 on chalk, 8.2:1 on kit */
+  --board: #0E1420;        /* scoreboard panel */
+  --board-2: #1D2638;      /* digit tiles on the board */
+  --board-rule: #364157;   /* hairlines on the board */
+  --on-board: #FFFFFF;
+  --on-board-2: #B4BCCB;   /* secondary text on the board. 9.5:1 */
+  --bulb: #FFD23F;         /* scoreboard numerals and the live state. Only ever on the board. 12.5:1 */
+
+  /* the two sides */
+  --home: #124CC4;         /* right answer, primary action. White on it 7.35:1 */
+  --home-deep: #0D3A99;    /* pressed */
+  --home-tint: #E3EAFA;    /* prize places band. Ink on it 14.3:1, home on it 6.1:1 */
+  --away: #C7380F;         /* left answer. White on it 5.2:1 */
+  --away-deep: #A32C0A;    /* pressed, and away as text on chalk: 6.4:1 */
+  --away-tint: #FBE7DF;
+  --on-side: #FFFFFF;
+
+  /* outcomes and cards */
+  --win: #0B6E3D;          /* W mark fill. White on it 6.3:1 */
+  --win-tint: #DDF0E5;
+  --caution: #FFD23F;      /* the yellow card */
+  --caution-tint: #FFF3C4; /* ink on it 15:1 */
+  --sendoff: #B3261E;      /* the red card: errors. 6.0:1 on kit */
+  --sendoff-tint: #FBE4E1;
+
+  /* type */
+  --f-disp: "Barlow Condensed", "Do Hyeon", "M PLUS 1p", "Pretendard Variable", "Pretendard JP Variable", system-ui, sans-serif;
+  --f-body: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", sans-serif;
+  --f-addr: ui-monospace, "SF Mono", Menlo, Consolas, monospace; /* wallet addresses only */
+  --w-disp: 700;
+  --ds: 1;                 /* display scale: Hangul and kana are wider than the condensed Latin */
+  --lh-disp: 1.02;
+
+  /* shape */
+  --slant: 12px;           /* horizontal run of the one slanted cut, per 44px of height the angle is about 15 degrees */
+  --r: 3px;
+  --pad: 16px;
+  --tap: 44px;
+  --hd: 56px;
+  --tab: 64px;
+
+  /* motion */
+  --e-out: cubic-bezier(.2, .8, .2, 1);      /* arrivals */
+  --e-in: cubic-bezier(.5, 0, .9, .3);       /* exits */
+  --e-snap: cubic-bezier(.3, 1.4, .5, 1);    /* the whistle: one small overshoot */
+  --t-press: 90ms;
+  --t-fast: 160ms;
+  --t-mid: 260ms;
+  --t-slow: 420ms;
+}
+:root:lang(ko) { --ds: .82; --lh-disp: 1.18; --w-disp: 400; }
+:root:lang(ja) { --ds: .74; --lh-disp: 1.25; --w-disp: 800;
+  --f-body: "Pretendard JP Variable", "Pretendard Variable", Pretendard, -apple-system, system-ui, sans-serif; }

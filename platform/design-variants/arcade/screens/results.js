@@ -31,7 +31,7 @@
   function side(r) {
     var chip, pts;
     switch (r.out) {
-      case "wait": chip = '<span class="rchip rchip--wait"><i class="press" role="img" aria-label="' + esc(t("pp.press")) + '"></i>' + t("r.o.waitat", { time: r.exp }) + "</span>"; pts = '<span class="rs-pts is-if">' + t("r.o.ifhit") + "</span>"; break;
+      case "wait": chip = '<span class="rchip rchip--wait"><i class="press" role="img" aria-label="' + esc(t("ar.press")) + '"></i>' + t("r.o.waitat", { time: r.exp }) + "</span>"; pts = '<span class="rs-pts is-if">' + t("r.o.ifhit") + "</span>"; break;
       case "hit": chip = stamp("hit", t("r.o.hit")); pts = '<span class="rs-pts">+50P</span>'; break;
       case "pend": chip = stamp("hit", t("r.o.hit")); pts = '<span class="rs-pts">+50P<small>' + t("r.at", { time: r.at }) + "</small></span>"; break;
       case "corr": chip = stamp("corr", t("r.o.corr")); pts = '<span class="rs-pts">+50P</span>'; break;
@@ -77,7 +77,7 @@
   }
   function body() {
     if (S === "error") return C.error();
-    if (S === "empty") return C.empty({ icon: "list", title: t("r.empty.h"), body: t("r.empty.b"), action: C.btn(t("r.empty.btn"), { kind: "primary", href: "home.html" }) });
+    if (S === "empty") return C.empty({ jam: "", title: t("r.empty.h"), body: t("r.empty.b"), action: C.btn(t("r.empty.btn"), { kind: "primary", href: "home.html" }) });
     var seg = C.seg([{ label: t("r.f.all"), value: "all", on: filter === "all" }, { label: t("r.f.wait"), value: "wait", on: filter === "wait" }, { label: t("r.f.set"), value: "set", on: filter === "set" }], { name: "filter", label: t("r.filter") });
     if (S === "loading") return summary() + seg + [1, 2].map(function () { return '<section class="sec rs-day" aria-busy="true"><div class="rs-dayh">' + C.skel("90px", "20px") + C.skel("64px", "26px") + "</div>" + [1, 2, 3].map(function () { return '<div class="rrow"><span class="rs-main">' + C.skel("90%", "16px") + C.skel("50%", "12px") + "</span>" + C.skel("64px", "24px") + "</div>"; }).join("") + "</section>"; }).join("") + '<p class="sr-only" role="status">' + t("common.loading") + "</p>";
     return summary() + seg + legend() + '<div class="pg-groups" id="groups">' + days.map(group).join("") + '</div><div id="fempty" hidden></div>' +

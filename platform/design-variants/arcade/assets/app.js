@@ -1,7 +1,7 @@
-/* Cojam Daily Prediction, variant "Daily Paper": behaviour and the shared app shell.
-   Screens call App.mount({...}) with HTML built from the C.* helpers, so every screen uses the same masthead, dateline, tab bar,
-   buttons, sheets and toasts. The behaviour (deck, undo, sheets, transactions, countdowns, QR) is carried over from platform/design/assets/components.js;
-   the builders and the shell are drawn new for this concept. Mock only: nothing here talks to a chain or a server. */
+/* Cojam Daily Prediction, variant "Pocket Arcade": behaviour and the shared app shell.
+   Screens call App.mount({...}) with HTML built from the C.* helpers, so every screen uses the same header, dock, buttons, cards, sheets and toasts.
+   The behaviour (deck, undo, sheets, transactions, countdowns, QR) is carried over from platform/design/assets/components.js;
+   the builders, the illustrations, the mascot and the shell are drawn new for this concept. Mock only: nothing here talks to a chain or a server. */
 (function () {
   "use strict";
   var I = window.CJ_I18N, t = I.t, M = window.MOCK;
@@ -114,17 +114,17 @@
     film: '<rect x="4" y="5" width="16" height="14" rx="2.500"/><path d="M8 5v14M16 5v14M4 9.500h4M4 14.500h4M16 9.500h4M16 14.500h4"/>',
     /* the current tab: the same shapes, filled (details cut out in the page colour) */
     cardsOn: '<rect x="5" y="7" width="14" height="13" rx="3" fill="currentColor"/><path d="M8 3.5h8"/>',
-    listOn: '<rect x="3" y="3" width="18" height="18" rx="4.500" fill="currentColor"/><g stroke="var(--paper)"><path d="M6.500 8.200l1.300 1.300 2.200-2.500"/><path d="M6.500 15.200l1.300 1.300 2.200-2.500"/><path d="M13.500 8.500h4M13.500 15.500h4"/></g>',
+    listOn: '<rect x="3" y="3" width="18" height="18" rx="4.500" fill="currentColor"/><g stroke="var(--card)"><path d="M6.500 8.200l1.300 1.300 2.200-2.500"/><path d="M6.500 15.200l1.300 1.300 2.200-2.500"/><path d="M13.500 8.500h4M13.500 15.500h4"/></g>',
     podiumOn: '<path d="M9 20V9h6v11z" fill="currentColor"/><path d="M3 20v-6h6v6z" fill="currentColor"/><path d="M15 20v-8h6v8z" fill="currentColor"/><path d="M2 20h20"/>',
-    lockOn: '<rect x="5" y="11" width="14" height="9" rx="2.500" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><path d="M12 14.500v2" stroke="var(--paper)"/>',
-    walletOn: '<path d="M4 7.500A2.500 2.500 0 0 1 6.500 5H17v3"/><rect x="4" y="8" width="16" height="11" rx="2.500" fill="currentColor"/><path d="M15.500 13.500h1.500" stroke="var(--paper)"/>',
+    lockOn: '<rect x="5" y="11" width="14" height="9" rx="2.500" fill="currentColor"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/><path d="M12 14.500v2" stroke="var(--card)"/>',
+    walletOn: '<path d="M4 7.500A2.500 2.500 0 0 1 6.500 5H17v3"/><rect x="4" y="8" width="16" height="11" rx="2.500" fill="currentColor"/><path d="M15.500 13.500h1.500" stroke="var(--card)"/>',
     pause: '<circle cx="12" cy="12" r="8.500"/><path d="M10 9v6M14 9v6"/>',
     undo: '<path d="M9 7L4.500 11.500 9 16"/><path d="M4.500 11.500H14a5 5 0 0 1 0 10h-2"/>',
     spark: '<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.500 2.500M15.500 15.500L18 18M18 6l-2.500 2.500M8.500 15.500L6 18"/>'
   };
   C.icon = function (name, size, cls) {
     size = size || 20;
-    return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"' + (cls ? ' class="' + cls + '"' : "") + ">" + (IC[name] || "") + "</svg>";
+    return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"' + (cls ? ' class="' + cls + '"' : "") + ">" + (IC[name] || "") + "</svg>";
   };
   var ic = C.icon;
 
@@ -154,7 +154,7 @@
       return '<button type="button" class="seg-btn" data-value="' + esc(it.value) + '" aria-pressed="' + (it.on ? "true" : "false") + '"' + (o.disabled ? " disabled" : "") + ">" + it.label + "</button>";
     }).join("") + "</div>";
   };
-  /* the day in five numbered boxes, like the squares of a puzzle page: empty, hatched while a pick is being saved, inked when it is in.
+  /* the day as a sticker sheet of five numbered slots: an empty well, a sticker half pressed while a pick is being saved, a full sticker when it is in.
      states is an array of 5 from "", done, pend, fail */
   C.day5 = function (states, o) {
     o = o || {};
@@ -162,10 +162,10 @@
     return '<div class="day5' + (o.size ? " day5--" + o.size : "") + (o.cls ? " " + o.cls : "") + '" role="img" aria-label="' + esc(o.label || t("h.prog.sr", { n: n })) + '"' + (o.id ? ' id="' + o.id + '"' : "") + ">" +
       states.map(function (s, i) { return "<i" + (s ? ' class="is-' + s + '"' : "") + "><b>" + (i + 1) + "</b></i>"; }).join("") + "</div>";
   };
-  /* a made pick, wherever it is shown, carries the ink of its answer (persimmon left, teal right) as a small printed block */
-  C.pick = function (dir, text) { return '<span class="pk pk--' + dir + '"><i aria-hidden="true"></i>' + text + "</span>"; };
+  /* a made pick, wherever it is shown, carries the colour of its answer (coral left, mint right) as a small token with the side it was thrown to */
+  C.pick = function (dir, text) { return '<span class="pk pk--' + dir + '"><i aria-hidden="true">' + ic(dir === "l" ? "left" : "right", 12) + "</i>" + text + "</span>"; };
   C.tag = function (text, kind, icon) { return '<span class="tag' + (kind ? " tag-" + kind : "") + '">' + (icon ? ic(icon, 14) : "") + text + "</span>"; };
-  /* a result as a rubber stamp: hit (blue, the reward), miss (hollow ink), corr (blue outline) */
+  /* a result as a sticker: hit (yellow, the reward), miss (a peeled off outline), corr (blue, corrected) */
   C.rstamp = function (kind, text) { return '<span class="rstamp rstamp--' + kind + '">' + text + "</span>"; };
   C.rows = function (rows) {
     return '<dl class="rows">' + rows.filter(Boolean).map(function (r) { return "<div" + (r[2] ? ' class="is-em"' : "") + "><dt>" + r[0] + "</dt><dd>" + r[1] + "</dd></div>"; }).join("") + "</dl>";
@@ -191,7 +191,7 @@
       '<div class="field-msg' + (o.error ? " is-error" : "") + '" id="' + o.id + '-msg" aria-live="polite">' + (o.msg || "") + "</div></div>";
   };
   C.empty = function (o) {
-    return '<div class="empty"><div class="empty-ic">' + ic(o.icon || "inbox", 28) + "</div><h2>" + o.title + "</h2>" + (o.body ? "<p>" + o.body + "</p>" : "") + (o.extra || "") + (o.action || "") + "</div>";
+    return '<div class="empty">' + (o.jam !== undefined ? '<div class="empty-jam">' + C.jam(o.jam, 104) + "</div>" : '<div class="empty-ic">' + ic(o.icon || "inbox", 28) + "</div>") + "<h2>" + o.title + "</h2>" + (o.body ? "<p>" + o.body + "</p>" : "") + (o.extra || "") + (o.action || "") + "</div>";
   };
   C.error = function (key) {
     return C.note("error", t(key || "e.load"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" }));
@@ -205,8 +205,8 @@
     return '<label class="select">' + ic("globe", 18) + '<span class="sr-only">' + t("lang.label") + '</span><select data-lang aria-label="' + esc(t("lang.label")) + '">' +
       I.langs.map(function (l) { return '<option value="' + l + '"' + (l === App.lang ? " selected" : "") + ">" + I.names[l] + "</option>"; }).join("") + "</select>" + ic("down", 16) + "</label>";
   };
-  /* the nameplate: the Cojam mark and the paper's name. It is a logo, so it is the same in every language. */
-  C.logo = function (big) { return '<span class="plate' + (big ? " plate--big" : "") + '" translate="no"><img src="assets/cojam-mark.svg" alt="" width="' + (big ? 40 : 28) + '" height="' + (big ? 40 : 28) + '"><span>Cojam Daily</span></span>'; };
+  /* the wordmark: the Cojam mark and the name. It is a logo, so it is the same in every language. */
+  C.logo = function (big) { return '<span class="plate' + (big ? " plate--big" : "") + '" translate="no"><img src="assets/cojam-mark.svg" alt="" width="' + (big ? 44 : 32) + '" height="' + (big ? 44 : 32) + '"><span>Cojam</span></span>'; };
   C.qr = function (text, label, mark) {
     return '<div class="qr" role="img" aria-label="' + esc(label) + '" data-qr="' + esc(text) + '">' + C.skel("100%", "auto") + (mark === false ? "" : '<span class="qr-mark"><img src="assets/cojam-mark.svg" alt="" width="32" height="32"></span>') + "</div>";
   };
@@ -226,43 +226,83 @@
     if (state === "slow") return C.banner(t("h.slow", { n: 1 }), { spin: true, btn: t("h.retrynow"), attrs: "data-retry-now" });
     return "";
   };
-  var CAT_ICON = { crypto: "coin", markets: "chart", weather: "sun", sports: "ball", culture: "film" };
-  /* the picture of a question, printed: one ink through a halftone screen on the paper. With no picture, the category icon on the same ground. */
-  C.halftone = function (q, w, h, lazy) {
-    return q.img ? '<span class="ht"><img src="' + q.img + '" alt="" width="' + w + '" height="' + h + '" decoding="async" draggable="false"' + (lazy ? ' loading="lazy"' : "") + "></span>" : ic(CAT_ICON[q.cat] || "spark", Math.min(w, 56));
+  /* ---------- illustration: one bold picture per category, drawn from four flat shapes or fewer ----------
+     Blue, yellow, white and ink only: coral and mint are never used here, because they only ever mean the left and the right answer.
+     Every picture keeps its subject inside the middle square of a 320 x 200 field, so the same drawing crops to a square thumb. */
+  var D = 'font-family="var(--font-display)" text-anchor="middle"';
+  function coin(cx, cy, r, face, side, glyph, ink) {
+    return '<circle cx="' + cx + '" cy="' + (cy + 9) + '" r="' + r + '" fill="var(' + side + ')"/><circle cx="' + cx + '" cy="' + cy + '" r="' + r + '" fill="var(' + face + ')"/>' +
+      '<circle cx="' + cx + '" cy="' + cy + '" r="' + (r - 11) + '" fill="none" stroke="var(' + side + ')" stroke-width="4"/>' +
+      '<text x="' + cx + '" y="' + (cy + r * 0.36) + '" font-size="' + Math.round(r * 1.05) + '" fill="var(' + (ink || "--ink") + ')" ' + D + ">" + glyph + "</text>";
+  }
+  function spark(x, y, s, c) { return '<path transform="translate(' + x + " " + y + ") scale(" + s + ')" d="M0-10C1-3 3-1 10 0 3 1 1 3 0 10-1 3-3 1-10 0-3-1-1-3 0-10z" fill="var(' + (c || "--white") + ')"/>'; }
+  var ART = {
+    crypto: { bg: "accent-tint", d: coin(160, 96, 62, "--sun", "--sun-deep", "B") + spark(66, 52, 1.5) + spark(262, 142, 1.1) + spark(250, 40, 0.8, "--accent") },
+    kaia: { bg: "accent-tint", d: coin(140, 104, 56, "--white", "--edge-deep", "K", "--accent") +
+      '<path d="M216 150V74" stroke="var(--accent-deep)" stroke-width="22" stroke-linecap="round" transform="translate(0 7)"/><path d="M190 96l26-28 26 28" fill="none" stroke="var(--accent-deep)" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" transform="translate(0 7)"/>' +
+      '<path d="M216 150V74" stroke="var(--sun)" stroke-width="22" stroke-linecap="round"/><path d="M190 96l26-28 26 28" fill="none" stroke="var(--sun)" stroke-width="22" stroke-linecap="round" stroke-linejoin="round"/>' + spark(74, 44, 1.2) },
+    markets: { bg: "sun-tint", d: '<g transform="translate(0 8)" fill="var(--accent-deep)"><rect x="88" y="112" width="40" height="52" rx="12"/><rect x="140" y="84" width="40" height="80" rx="12"/><rect x="192" y="48" width="40" height="116" rx="12"/></g>' +
+      '<g fill="var(--accent)"><rect x="88" y="112" width="40" height="52" rx="12"/><rect x="140" y="84" width="40" height="80" rx="12"/><rect x="192" y="48" width="40" height="116" rx="12"/></g>' +
+      '<path d="M84 84l42-30 32 14 44-38" fill="none" stroke="var(--ink)" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><circle cx="204" cy="29" r="11" fill="var(--sun)" stroke="var(--ink)" stroke-width="7"/>' + spark(262, 96, 1.1) },
+    weather: { bg: "sky", d: '<g stroke="var(--sun)" stroke-width="13" stroke-linecap="round"><path d="M190 18v14M246 42l-10 10M134 42l10 10M262 96h-14"/></g><circle cx="190" cy="96" r="44" fill="var(--sun)"/>' +
+      '<path d="M96 168a30 30 0 0 1 4-60 42 42 0 0 1 78 10 26 26 0 0 1 2 50z" fill="var(--edge-deep)" transform="translate(0 8)"/><path d="M96 168a30 30 0 0 1 4-60 42 42 0 0 1 78 10 26 26 0 0 1 2 50z" fill="var(--white)"/>' },
+    sports: { bg: "accent", d: '<circle cx="160" cy="109" r="62" fill="var(--accent-deep)"/><circle cx="160" cy="100" r="62" fill="var(--white)"/>' +
+      '<g fill="var(--ink)"><path d="M160 76l23 17-9 27h-28l-9-27z"/><path d="M160 38l20 8-20 14-20-14zM222 92l-3 22-22-13 5-20zM98 92l3 22 22-13-5-20zM196 150l-19 11-3-22 16-9zM124 150l19 11 3-22-16-9z"/></g>' + spark(62, 48, 1.4, "--sun") + spark(264, 150, 1, "--sun") },
+    culture: { bg: "sun", d: '<g transform="translate(0 8)" fill="var(--sun-deep)"><rect x="92" y="84" width="136" height="84" rx="16"/></g><rect x="92" y="84" width="136" height="84" rx="16" fill="var(--ink)"/>' +
+      '<g transform="rotate(-12 96 80)"><rect x="90" y="48" width="140" height="30" rx="10" fill="var(--ink)"/><path d="M108 48h18l-12 30H96zM148 48h18l-12 30h-18zM188 48h18l-12 30h-18z" fill="var(--white)"/></g>' +
+      '<path d="M146 108v38l34-19z" fill="var(--white)"/>' }
   };
-  /* the question card: the lead story of the front page. Kicker and number over a rule, the picture, the headline, how it is answered, the two answers. */
+  App.artKey = function (q) { return q.id === "q5" ? "kaia" : ART[q.cat] ? q.cat : "crypto"; };
+  C.art = function (q) {
+    var a = ART[App.artKey(q)];
+    return '<svg class="art" viewBox="0 0 320 200" preserveAspectRatio="xMidYMid slice" aria-hidden="true" focusable="false">' + a.d + "</svg>";
+  };
+  C.artBg = function (q) { return ART[App.artKey(q)].bg; };
+  /* ---------- the mascot: Jam, a small blue blob that lives in the capsules. Used sparingly: sign in, empty states, the reward.
+     moods: "" (smile), "cheer" (arms up, mouth open), "sleep" (eyes shut) */
+  C.jam = function (mood, size) {
+    size = size || 96;
+    var eyes = mood === "sleep" ? '<path d="M35 55q7 6 14 0M63 55q7 6 14 0" fill="none" stroke="var(--white)" stroke-width="5" stroke-linecap="round"/>' :
+      '<ellipse cx="42" cy="52" rx="9" ry="11" fill="var(--white)"/><ellipse cx="70" cy="52" rx="9" ry="11" fill="var(--white)"/><circle cx="44" cy="54" r="4.5" fill="var(--ink)"/><circle cx="72" cy="54" r="4.5" fill="var(--ink)"/>';
+    var mouth = mood === "cheer" ? '<path d="M47 71h18a9 9 0 0 1-18 0z" fill="var(--ink)"/>' : mood === "sleep" ? '<circle cx="56" cy="74" r="3.5" fill="var(--ink)"/>' : '<path d="M48 71q8 8 16 0" fill="none" stroke="var(--ink)" stroke-width="4.5" stroke-linecap="round"/>';
+    var arms = mood === "cheer" ? '<path d="M18 52L6 30M94 52l12-22" stroke="var(--accent)" stroke-width="11" stroke-linecap="round"/>' : "";
+    return '<svg class="jam' + (mood ? " jam--" + mood : "") + '" viewBox="0 0 112 112" width="' + size + '" height="' + size + '" aria-hidden="true" focusable="false">' + arms +
+      '<path d="M38 100v6M74 100v6" stroke="var(--accent-deep)" stroke-width="12" stroke-linecap="round"/>' +
+      '<path d="M56 16c26 0 42 18 42 46 0 26-14 40-42 40S14 88 14 62c0-28 16-46 42-46z" fill="var(--accent)"/>' +
+      '<path d="M30 38q8-12 22-13" fill="none" stroke="var(--accent-tint)" stroke-width="5" stroke-linecap="round" opacity=".55"/>' + eyes + mouth + "</svg>";
+  };
+  /* the question card: a collectible card. The picture on its flat ground with the number and the category, the question, how it is answered,
+     and the two answers as two chunky keys. The two stickers (one per answer) wait above the picture and are slapped on by a pick. */
   C.qcard = function (id, o) {
     o = o || {};
-    var q = App.q(id); if (o.noimg) q.img = "";
+    var q = App.q(id);
     var long = /[　-鿿가-힯]/.test(q.title) ? q.title.length > 22 : q.title.length > 44;
     function choice(d) {
       return '<button type="button" class="choice" data-dir="' + d + '"' + (o.disabled ? ' aria-disabled="true"' : "") + (o.static ? ' tabindex="-1"' : "") + ' aria-label="' + esc(t("h.pick.aria", { choice: q[d], q: q.title })) + '">' +
-        (d === "l" ? ic("left", 18) : "") + "<span>" + esc(q[d]) + "</span>" + (d === "r" ? ic("right", 18) : "") + "</button>";
+        '<span class="choice-in">' + (d === "l" ? ic("left", 20) : "") + "<span>" + esc(q[d]) + "</span>" + (d === "r" ? ic("right", 20) : "") + "</span></button>";
     }
+    function sticker(d) { return '<span class="qstamp qstamp--' + d + '" aria-hidden="true"><span class="qstamp-in">' + ic(d === "l" ? "left" : "right", 18) + "<b>" + esc(q[d]) + "</b></span></span>"; }
     return '<article class="qcard" data-q="' + q.n + '" data-id="' + id + '" data-pos="' + (o.pos || 0) + '" role="group" aria-label="' + esc(t("h.qn.sr", { n: q.n }) + ": " + q.title) + '">' +
-      '<div class="qcard-top"><span class="qkick">' + t("cat." + q.cat) + '</span><span class="qno" aria-hidden="true">' + t("pp.no", { n: q.n }) + "</span></div>" +
-      '<div class="qimg' + (q.img ? "" : " qimg--none") + '">' + C.halftone(q, 800, 1000) + "</div>" +
-      '<span class="qtint" aria-hidden="true"></span>' +
-      '<span class="qstamp qstamp--l" aria-hidden="true">' + esc(q.l) + '</span><span class="qstamp qstamp--r" aria-hidden="true">' + esc(q.r) + "</span>" +
+      '<div class="qcard-in"><div class="qart' + (o.noimg ? " qart--none" : "") + '" data-bg="' + (o.noimg ? "well" : C.artBg(q)) + '">' + (o.noimg ? "" : C.art(q)) +
+      '<span class="qno" aria-hidden="true"><b>' + q.n + "</b>/5</span><span class=\"qkick\">" + t("cat." + q.cat) + "</span></div>" +
+      '<span class="qtint" aria-hidden="true"></span>' + sticker("l") + sticker("r") +
       '<div class="qcard-body"><h2' + (long ? ' class="is-long"' : "") + ">" + esc(q.title) + "</h2>" +
       (o.failed ? '<p class="qcard-note">' + ic("warn", 16) + t("h.notsaved") + "</p>" : "") +
-      (o.static ? '<div class="qmeta">' : '<button type="button" class="qmeta" data-ai-info="' + id + '" aria-haspopup="dialog">') + '<span class="qmeta-t"><span>' + t("h.answer", { rule: esc(q.rule) }) + "</span><span>" + t("h.ai", { time: q.settle }) + "</span></span>" + (o.static ? "</div>" : ic("info", 16) + "</button>") +
+      (o.static ? '<div class="qmeta">' : '<button type="button" class="qmeta" data-ai-info="' + id + '" aria-haspopup="dialog">') + '<span class="qmeta-t"><span>' + t("h.answer", { rule: esc(q.rule) }) + "</span><span>" + t("h.ai", { time: q.settle }) + "</span></span>" + (o.static ? "</div>" : ic("info", 18) + "</button>") +
       '<div class="choices">' + choice("l") + choice("r") + "</div>" +
       (o.final ? '<p class="qcard-final">' + t("h.final") + "</p>" : "") +
-      "</div></article>";
+      "</div></div></article>";
   };
-  /* the view switch on the home head: two words, the current one underlined in ink */
+  /* the view switch on the home head: a two position slider key */
   C.viewSwitch = function (cur, state) {
     function a(id, file) { var on = id === cur; return '<a href="' + file + (on || !state ? "" : "?state=" + state) + '"' + (on ? ' aria-current="page"' : "") + ">" + t("h.view." + id) + "</a>"; }
     return '<div class="viewsw" role="group" aria-label="' + esc(t("h.view.label")) + '">' + a("card", "home.html") + a("term", "home-list.html") + "</div>";
   };
   C.closes = function (secs) { return "<span>" + t("h.closes") + '</span> <b data-cd="' + secs + '"></b>'; };
-  C.thumb = function (q) { if (typeof q === "string") q = App.q(q); return '<span class="thumb' + (q.img ? "" : " thumb--none") + '" aria-hidden="true">' + C.halftone(q, 56, 70, true) + "</span>"; };
-  /* the dateline: the date, the issue (day of the week and week number) and one live fact of the screen, divided by column rules */
+  C.thumb = function (q) { if (typeof q === "string") q = App.q(q); return '<span class="thumb" data-bg="' + C.artBg(q) + '" aria-hidden="true">' + C.art(q) + "</span>"; };
+  /* the live chip under the header: the one live fact of the screen (time until the set closes, time until the week ends) */
   C.dateline = function (liveHtml) {
-    var is = App.issue;
-    return '<div class="dateline"><span>' + F.weekday(is.date) + "</span><span>" + t("pp.issue", { d: is.day, w: is.week }) + "</span>" + (liveHtml ? '<span class="dateline-live">' + liveHtml + "</span>" : "") + "</div>";
+    return liveHtml ? '<div class="livebar"><span class="livechip">' + ic("clock", 16) + '<span class="livechip-t">' + liveHtml + "</span></span></div>" : "";
   };
 
   /* ---------- shell ---------- */
@@ -276,26 +316,26 @@
   App.homeHref = function () { return TABS[0].href(); };
   C.tabbar = function (current, badges) {
     badges = badges || { home: "dot", results: 2 };
-    return '<nav class="tb" aria-label="' + esc(t("nav.tabs")) + '">' + TABS.map(function (tb) {
+    return '<nav class="tb" aria-label="' + esc(t("nav.tabs")) + '"><div class="tb-in">' + TABS.map(function (tb) {
       var b = badges[tb.id], badge = "";
       if (b === "dot") badge = '<span class="tb-dot"></span><span class="sr-only">' + t("tab.badge." + tb.id) + "</span>";
       else if (b) badge = '<span class="tb-n" aria-hidden="true">' + (b > 9 ? "9+" : b) + '</span><span class="sr-only">' + t("tab.badge.results", { n: b }) + "</span>";
-      return '<a href="' + tb.href() + '"' + (tb.id === current ? ' aria-current="page"' : "") + '><span class="tb-ic">' + ic(tb.id === current ? tb.icon + "On" : tb.icon, 22) + badge + "</span><span>" + t("tab." + tb.id) + "</span></a>";
-    }).join("") + "</nav>";
+      return '<a href="' + tb.href() + '"' + (tb.id === current ? ' aria-current="page"' : "") + '><span class="tb-key"><span class="tb-ic">' + ic(tb.icon, 24) + badge + '</span><span class="tb-l">' + t("tab." + tb.id) + "</span></span></a>";
+    }).join("") + "</div></nav>";
   };
-  /* the masthead: the nameplate (or, on a sub page, the back arrow and the page title), the points as a boxed figure, the profile. A thick and thin rule closes it. */
+  /* the header: the wordmark (or, on a sub page, the back key and the page title), the points as a coin chip, the profile. */
   C.header = function (o) {
     o = o || {};
     var pts = o.points === undefined ? M.user.points : o.points, st = o.pts || "";
     var pill = st === "loading" ? C.skel("44px", "12px") :
       (st === "pending" ? '<span class="spin"></span>' : "") + '<span id="pts-val">' + F.pts(pts) + "</span>" + (st === "hits" ? '<span class="pts-tag">+' + M.user.pendingHit + "</span>" : "");
     var label = st === "loading" ? t("hd.points.loading") : t("hd.points", { p: F.int(pts) }) + (st === "pending" ? " " + t("hd.points.pending") : st === "hits" ? " " + t("hd.points.hits", { n: M.user.pendingHit, time: "22:10" }) : st === "stale" ? " " + t("hd.points.stale") : "");
-    var left = o.back ? '<a class="mast-back" href="' + o.back + '" aria-label="' + esc(t("hd.back")) + '">' + ic("back", 22) + '</a><h1 class="mast-title">' + (o.title || "") + "</h1>" :
+    var left = o.back ? '<a class="mast-back" href="' + o.back + '" aria-label="' + esc(t("hd.back")) + '">' + ic("back", 24) + '</a><h1 class="mast-title">' + (o.title || "") + "</h1>" :
       '<a class="mast-home" href="' + TABS[0].href() + '" aria-label="' + esc(t("hd.home")) + '">' + C.logo() + "</a>";
     return '<header class="mast' + (o.back ? " mast--sub" : "") + '"><div class="mast-in">' + left + '<div class="mast-end">' +
-      '<a class="pts" id="pts" href="wallet.html" aria-label="' + esc(label) + '"><span class="pts-in">' + pill + "</span></a>" +
+      '<a class="pts" id="pts" href="wallet.html" aria-label="' + esc(label) + '"><span class="pts-in"><i class="pcoin" aria-hidden="true">P</i>' + pill + "</span></a>" +
       '<a class="me" href="profile.html" aria-label="' + esc(t("hd.profile")) + '"' + (o.me ? ' aria-current="page"' : "") + '><span class="me-in" aria-hidden="true">' + esc(M.user.name.charAt(0).toUpperCase()) + "</span></a>" +
-      '</div></div><div class="oxford" aria-hidden="true"></div></header>';
+      '</div></div></header>';
   };
   C.offbar = function () { return '<div class="offbar" role="status">' + ic("offline", 16) + "<div>" + t("off.bar") + "<small>" + t("off.last", { time: F.date(new Date(Date.now() - 23 * 60000), true) }) + "</small></div></div>"; };
 
@@ -491,7 +531,7 @@
       var fig = ok.fig, m;
       if (!fig) { var txt = String(ok.title).replace(/<[^>]+>/g, ""), re = /([+\-]?\d[\d,]*(?:\.\d+)?)\s?(CT|P)(?![A-Za-z])/g, hit = null; while ((m = re.exec(txt))) { if (!hit || (m[2] === "CT" && hit[2] !== "CT") || m[2] === hit[2]) hit = m; } if (hit) fig = hit[1] + " " + hit[2]; }
       var parts = fig ? /^(.*?)(?:\s(CT|P))?$/.exec(fig) : null;
-      return '<div class="sheet-done" aria-hidden="true">' + C.rstamp("hit", t("common.done")) + (parts ? '<span class="sheet-done-fig">' + parts[1] + (parts[2] ? "<small>" + parts[2] + "</small>" : "") + "</span>" : "") + "</div>";
+      return '<div class="sheet-done" aria-hidden="true">' + C.rstamp("hit", ic("check", 16) + t("common.done")) + (parts ? '<span class="sheet-done-fig">' + parts[1] + (parts[2] ? "<small>" + parts[2] + "</small>" : "") + "</span>" : "") + "</div>";
     },
     show: function (state, cfg) {
       App.tx.cfg = cfg; App.tx.state = state;
@@ -659,7 +699,7 @@
       [["l", 7], ["r", -7]].forEach(function (x) {
         var el = $(".qstamp--" + x[0], card), on = dir === x[0];
         el.style.opacity = on ? (armed ? 1 : Math.min(1, a * 12)) : 0;
-        el.style.transform = on && !armed ? "rotate(" + x[1] + "deg) scale(" + (0.8 + Math.min(0.2, a * 0.58)).toFixed(3) + ")" : "";
+        el.style.transform = on && !armed ? "rotate(" + x[1] * 2 + "deg) scale(" + (0.55 + Math.min(0.3, a * 0.86)).toFixed(3) + ")" : "";
         el.classList.toggle("is-armed", !!armed && on);
       });
     }
@@ -669,16 +709,16 @@
     function feedback(card, dx, dy) {
       var w = card.offsetWidth, k = Math.max(-1, Math.min(1, dx / w));
       /* paper turns about the hand: held by its upper half it leans with the drag, held by its lower half it leans the other way */
-      var rot = reduce ? "" : " rotate(" + (k * 7 * (card._low ? -1 : 1)).toFixed(2) + "deg)", pos = "translate(" + dx + "px," + (dy * 0.18).toFixed(1) + "px)";
-      card.style.transform = pos + rot + (reduce ? "" : " scale(1.012)");
-      if (!reduce) setLift("translate(" + (dx + 5) + "px," + (dy * 0.18 + 9).toFixed(1) + "px)" + rot);
+      var rot = reduce ? "" : " rotate(" + (k * 11 * (card._low ? -1 : 1)).toFixed(2) + "deg)", pos = "translate(" + dx + "px," + (dy * 0.18).toFixed(1) + "px)";
+      card.style.transform = pos + rot + (reduce ? "" : " scale(1.02)");
+      if (!reduce) setLift("translate(" + (dx * 0.86).toFixed(1) + "px," + (dy * 0.12 + 14).toFixed(1) + "px)" + rot);
       paint(card, k, Math.abs(k) >= ARM);
       return k;
     }
     /* let go under the threshold: the sheet flicks back onto the stack with a small overshoot */
     function back(card) { card.classList.add("is-back"); clearTimeout(card._bk); card._bk = setTimeout(function () { card.classList.remove("is-back"); }, 460); }
     function reset(card) { card.classList.remove("is-drag"); setLift(""); back(card); card.style.transform = ""; paint(card, 0, false); }
-    function off(sign, w, dy) { return "translate(" + sign * (innerWidth * 0.5 + w) + "px," + ((dy || 0) * 0.4 + 30).toFixed(0) + "px) rotate(" + sign * 18 + "deg)"; }
+    function off(sign, w, dy) { return "translate(" + sign * (innerWidth * 0.5 + w) + "px," + ((dy || 0) * 0.4 + 30).toFixed(0) + "px) rotate(" + sign * 24 + "deg)"; }
     /* throw: the card leaves on its side with the speed of the release; the deck advances with a spring (CSS, on data-pos) */
     function commit(card, dir, v, dx, dy, src) {
       if (card.classList.contains("is-out")) return;
@@ -691,14 +731,14 @@
       paint(card, sign * 0.5, true);
       var st = $(".qstamp--" + dir, card); st.classList.add("is-thunk");   /* the stamp comes down for good */
       /* a tap or a key has no drag to show the stamp, so the sheet holds for 130 ms while the stamp lands, then it is thrown. The pick itself is taken at once. */
-      var hold = src === "swipe" || reduce ? 0 : 130;
+      var hold = src === "swipe" || reduce ? 0 : 170;
       function fly() {
         card.style.transition = reduce ? "" : "transform " + ms + "ms cubic-bezier(0.3, 0.55, 0.4, 1), opacity " + ms + "ms cubic-bezier(0.6, 0, 0.9, 0.4)";
         void card.offsetWidth;
         if (!reduce) card.style.transform = off(sign, w, dy);
         card.style.opacity = 0;
       }
-      if (hold) { card.style.transition = "transform 130ms cubic-bezier(0.23, 1, 0.32, 1)"; card.style.transform = "translateY(-3px) scale(1.012)"; card._fly = setTimeout(fly, hold); } else fly();
+      if (hold) { card.style.transition = "transform 170ms cubic-bezier(0.34, 1.56, 0.64, 1)"; card.style.transform = "translateY(-4px) scale(1.02) rotate(" + sign * 1.5 + "deg)"; card._fly = setTimeout(fly, hold); } else fly();
       buzz(12);
       layout();
       if (card.contains(document.activeElement)) root.focus({ preventScroll: true });
