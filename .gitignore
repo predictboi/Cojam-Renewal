@@ -13,3 +13,4 @@ __pycache__/
 dist/
 dist/ui-ux-kit-guide.md
 dist/ui-ux-kit-skills.zip
+tools/design-kit/dist/
