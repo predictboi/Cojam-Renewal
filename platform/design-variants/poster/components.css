@@ -447,7 +447,7 @@ details.disc .disc-b p + p { margin-top: 6px; }
 .facts li b { font-family: var(--f-display); font-weight: 900; font-size: var(--t-h2); letter-spacing: -0.04em; }
 .fine { font-size: var(--t-label); color: var(--ink-2); }
 .fine { line-height: 2; }
-.fine .lnk { display: inline; padding: 14px 0; font-weight: 700; color: var(--ink); }
+.fine .lnk { display: inline; padding: 15px 0; font-weight: 700; color: var(--ink); }
 .ob { flex: 1; display: flex; flex-direction: column; }
 .ob-art { height: 44dvh; min-height: 260px; max-height: 380px; position: relative; overflow: hidden; container-type: size; }
 .ob-art .card-num { font-size: 88cqh; bottom: -0.1em; }
@@ -506,3 +506,4 @@ details.disc .disc-b p + p { margin-top: 6px; }
   .sk { animation: none !important; }
 }
 .pin.is-flush { padding: 0; border-top: 0; }
+:lang(ja) .cover h1 { font-size: clamp(2.5rem, 13vw, 3.5rem); max-width: none; line-height: 1.08; }

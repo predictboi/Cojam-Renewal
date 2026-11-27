@@ -4,7 +4,7 @@
 
 | Check | How | Result |
 | --- | --- | --- |
-| Audit | `bash tools/audit-all.sh en`, `ko`, `ja`: `tools/design/audit.js` at 390 x 844 mobile, `AUDIT_ACCENT=#124CC4`, on 45 screens and states per language | 0 px overflow, 0 contrast failures, 0 targets under 44 px on every screen and state, in all three languages |
+| Audit | `bash tools/audit-all.sh en`, `ko`, `ja`: `tools/design/audit.js` at 390 x 844 mobile, `AUDIT_ACCENT=#124CC4`, on 43 screens and states per language | 0 px overflow, 0 contrast failures, 0 targets under 44 px on every screen and state, in all three languages |
 | Audit, monospace note | same run | 2 advisory notes remain by decision: the full wallet address in the deposit sheet and the invite code `MINJI7Q` are set in the serial face (an address and a code are what that face is for). Every other mono string is digits and symbols only |
 | Touch flow | `node tools/flow-test.js` (real touch events through CDP) | 14 of 14 pass: slow swipe past 35% picks, Undo returns the ticket with tape, a short drag springs back, a vertical drag never picks, a fling picks, Undo closes after 3 s, a double tap answers one ticket only, tap and arrow key pick, the fifth pick shows the finishing panel, Undo on the fifth pick cancels it, "Finish now" prints, the reward ends on Day done with 1,350P, the reward is skippable, the list view reaches finishing |
 | Language switch | `node tools/lang-switch-check.js`: 360, 375, 390, 414, 440 px, three languages, four screens | 60 of 60: one line, nothing clipped |

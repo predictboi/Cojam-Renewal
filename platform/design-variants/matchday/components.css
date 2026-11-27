@@ -499,3 +499,19 @@ details.q .q-b { padding: 0 14px 14px; font-size: 14px; color: var(--ink-2); dis
 .cb input:checked + i svg { opacity: 1; }
 .cb input:focus-visible + i { outline: 3px solid var(--home); outline-offset: 2px; }
 .sheet:focus { outline: none; }
+/* web interface guidelines pass */
+.sheet { overscroll-behavior: contain; }
+.disp, .fx-title, .pt h1, .ob-h { text-wrap: balance; }
+@media (hover: hover) {
+  .btn:hover { background: var(--home-deep); }
+  .btn.alt:hover { background: var(--chalk-2); }
+  .btn.ink:hover { background: var(--board-2); }
+  .btn[disabled]:hover, .btn[aria-disabled="true"]:hover { background: var(--chalk-2); }
+  .endp .btn:hover, .board .btn:hover { background: var(--kit); }
+  .menu > a:hover, .menu > button:hover, .hub-l a.main-l:hover { background: var(--chalk-2); }
+  .link:hover { color: var(--home); }
+  .board .link:hover { color: var(--bulb); }
+  .tab:hover { color: var(--on-board); }
+  .tab[aria-current="page"]:hover { color: var(--bulb); }
+  .side:hover { transform: scale(1.01); }
+}
