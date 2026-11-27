@@ -44,4 +44,3 @@ invite.html  overflow_ok=1 contrast=0 targets=0 mono=0
 invite.html?state=empty  overflow_ok=1 contrast=0 targets=0 mono=0
 hold.html  overflow_ok=1 contrast=0 targets=0 mono=0
 index.html  overflow_ok=1 contrast=0 targets=0 mono=0
-done
