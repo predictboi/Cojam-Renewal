@@ -33,7 +33,7 @@
       box.classList.toggle("is-error", !!err); inp.setAttribute("aria-invalid", err ? "true" : "false");
       msg.className = "field-msg" + (err ? " is-error" : ""); msg.innerHTML = err ? "<span>" + err + "</span>" + fix : "<span>" + t("c.step") + "</span>";
       var valid = !err && !p.empty && !blocked, n = valid ? v / 1000 : 0;
-      get.innerHTML = F.dec(n) + "<small>CT</small>";
+      App.countTo(get, get._val === undefined ? n : get._val, n, function (v) { return F.dec(Math.round(v)) + "<small>CT</small>"; }, null, 260);
       go.disabled = !valid; go.querySelector("span").textContent = valid ? t("c.btn", { p: F.int(v), n: n }) : t(S === "hold" ? "hold.convert.btn" : "c.btn.empty");
       return valid ? v : 0;
     }

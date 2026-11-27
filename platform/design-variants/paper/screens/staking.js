@@ -71,7 +71,10 @@
       var r = M.rates[period][ti], interest = a * r / 100 * period / 365;
       var shown = !err && !p.empty;
       $("#sum-l").textContent = t("s.interest", { d: period });
-      $("#sum-v").innerHTML = S === "loading" ? C.skel("170px", "40px") : shown ? F.dec(interest) + "<small>CT</small>" : "–";
+      var sv = $("#sum-v");
+      if (S === "loading") sv.innerHTML = C.skel("170px", "40px");
+      else if (!shown) { sv._val = 0; sv.innerHTML = "–"; }
+      else App.countTo(sv, sv._val === undefined ? interest : sv._val, interest, function (v) { return F.dec(v) + "<small>CT</small>"; }, null, 260);
       var kr = $("#sum-k"); kr.hidden = !(App.isKo && shown); kr.textContent = shown ? F.krw(interest) : "";
       $("#rules").innerHTML = C.icon("lock", 18) + "<span>" + t("s.rules", { date: F.dateLong(M.ahead(period)) }) + "</span>";
       go.disabled = !valid || !!pending; go.classList.toggle("is-busy", !!pending);

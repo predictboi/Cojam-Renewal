@@ -23,7 +23,7 @@ const SMALL = ['home', 'home-partial', 'done', 'ranking'];
     await pg.addInitScript(() => { try { localStorage.setItem('cjp.nudged', '1'); } catch (e) {} });
     await pg.goto('http://localhost:8851/' + url + (url.includes('?') ? '&' : '?') + 'lang=' + lang, { waitUntil: 'networkidle' });
     await pg.evaluate(() => document.fonts.ready);
-    await pg.waitForTimeout(700);
+    await pg.waitForTimeout(1500);   // stamps have landed, rows have set, figures have stopped rolling
     if (act === 'drag') {   // the card held past the commit threshold: the stamp is solid, the answer button hot
       const box = await pg.locator('.qcard[data-pos="0"]').boundingBox();
       await pg.evaluate(([x, y, w]) => { const c = document.querySelector('.qcard[data-pos="0"]'); const ev = (t, dx) => c.dispatchEvent(new PointerEvent(t, { bubbles: true, pointerId: 7, clientX: x + dx, clientY: y, pointerType: 'touch', isPrimary: true })); ev('pointerdown', 0); ev('pointermove', 20); ev('pointermove', w * 0.42); }, [box.x + box.width / 2, box.y + box.height / 2, box.width]);

@@ -313,6 +313,14 @@
       '<div class="sr-only" id="live" aria-live="polite"></div>' +
       '<div class="sheet-root" id="sheet-root"><div class="sheet-scrim" data-sheet-scrim></div><div class="sheet" id="sheet" role="dialog" aria-modal="true" tabindex="-1"></div></div>';
     document.body.innerHTML = html;
+    /* a section change is a quick page turn (under 200 ms, on the content only, never on the chrome): a tab further right comes from the right,
+       a sub page comes from the right, going back comes from the left. The same section again only settles. Input is live from the first frame. */
+    (function () {
+      var order = { home: 0, results: 1, rank: 2, stake: 3, wallet: 4 }, now = { i: order[cfg.tab] === undefined ? 5 : order[cfg.tab], sub: !!cfg.back || !!cfg.bare }, was = null;
+      try { was = JSON.parse(sessionStorage.getItem("cjp.nav") || "null"); sessionStorage.setItem("cjp.nav", JSON.stringify(now)); } catch (e) {}
+      var dir = !was ? "same" : now.sub && !was.sub ? "fwd" : !now.sub && was.sub ? "back" : now.i > was.i ? "fwd" : now.i < was.i ? "back" : "same";
+      var m = $("#main"); if (m && !reduce) m.setAttribute("data-in", dir);
+    })();
     document.title = (cfg.docTitle || cfg.title || "Cojam") + " | Cojam Daily";
     App.enhance(document.body);
     App.pinFit();
@@ -339,7 +347,7 @@
         var sr = el.parentNode.querySelector("[data-cd-sr]"); if (sr && +p[1] !== lastMin) { lastMin = +p[1]; sr.textContent = t("d.next.sr", { h: +p[0], m: +p[1] }); }
         if (fmt === "clock") { var sp = $$("span", el); sp[0].textContent = p[0]; sp[1].textContent = p[1]; sp[2].textContent = p[2]; }
         else if (fmt === "dh") el.textContent = t("k.dh", { d: Math.floor(s / 86400), h: Math.floor(s % 86400 / 3600) });
-        else if (el.hasAttribute("data-dg")) el.innerHTML = p.join(":").replace(/\d/g, '<i class="dg">$&</i>'); else el.textContent = p.join(":");
+        else App.digits(el, p.join(":"));
         if (s === 0 && !el._zero) { el._zero = true; el.dispatchEvent(new CustomEvent("cd:zero", { bubbles: true })); }
       }
       tick(); timers.push(setInterval(tick, 1000));
@@ -357,18 +365,38 @@
       put(); timers.push(setInterval(put, reduce ? 10000 : 1000));
     });
   };
+  /* a countdown ticks like a date stamp: only the digit that changed is replaced, and it drops into place (one short step, never under reduced motion) */
+  App.digits = function (el, str) {
+    if (!el._dg || el._s.length !== str.length) {
+      el.innerHTML = str.replace(/./g, function (c) { return '<i class="' + (/\d/.test(c) ? "dg" : "dgs") + '">' + c + "</i>"; });
+      el._dg = Array.prototype.slice.call(el.children); el._s = str; return;
+    }
+    for (var i = 0; i < str.length; i++) if (str[i] !== el._s[i]) {
+      var n = el._dg[i]; n.textContent = str[i];
+      if (!reduce && !document.hidden) { n.classList.remove("tk"); void n.offsetWidth; n.classList.add("tk"); }
+    }
+    el._s = str;
+  };
   document.addEventListener("visibilitychange", function () { document.documentElement.classList.toggle("is-hidden", document.hidden); });
 
   /* ---------- count up ---------- */
-  App.countTo = function (el, from, to, fmt, done) {
+  /* a figure rolls to its new value. A second call retargets from where the figure is now (it never restarts from zero), so typing stays fluid. */
+  App.countTo = function (el, from, to, fmt, done, dur) {
     if (!el) return; fmt = fmt || F.pts;
-    if (reduce) { el.textContent = fmt(to); if (done) done(); return; }
-    var t0 = performance.now(), dur = 400;
+    if (el._roll) cancelAnimationFrame(el._roll);
+    if (from === null || from === undefined) from = el._val === undefined ? to : el._val;
+    if (reduce || from === to) { el._val = to; el.innerHTML = fmt(to); if (done) done(); return; }
+    var t0 = performance.now(); dur = dur || 400;
     (function step(now) {
-      var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 3);
-      el.textContent = fmt(from + (to - from) * e);
-      if (k < 1) requestAnimationFrame(step); else if (done) done();
+      var k = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - k, 4);
+      el._val = from + (to - from) * e; el.innerHTML = fmt(el._val);
+      if (k < 1) el._roll = requestAnimationFrame(step); else { el._roll = 0; el._val = to; if (done) done(); }
     })(t0);
+  };
+  /* a stamp lands: the class restarts its one keyframe. order staggers a sequence. */
+  App.stampLand = function (el, order) {
+    if (!el || reduce) return;
+    el.style.setProperty("--d", Math.min(order || 0, 9) * 70 + "ms"); el.classList.remove("is-land"); void el.offsetWidth; el.classList.add("is-land");
   };
   App.addPoints = function (n) {
     var el = $("#pts-val"), pill = $("#pts"); if (!el) return;
@@ -392,7 +420,7 @@
     el.innerHTML = "<span>" + it.msg + "</span>" + (it.o.btn ? '<button type="button">' + it.o.btn + "</button>" : "");
     box.appendChild(el);
     var gone = false;
-    function out() { if (gone) return; gone = true; el.classList.add("is-out"); setTimeout(function () { el.remove(); nextToast(); }, 180); }
+    function out() { if (gone) return; gone = true; el.classList.add("is-out"); setTimeout(function () { el.remove(); nextToast(); }, 200); }
     var b = $("button", el); if (b) b.addEventListener("click", function () { if (it.o.fn) it.o.fn(); out(); });
     setTimeout(out, it.o.ms || (it.o.btn ? 8000 : 4000));
   }
@@ -463,12 +491,13 @@
       var fig = ok.fig, m;
       if (!fig) { var txt = String(ok.title).replace(/<[^>]+>/g, ""), re = /([+\-]?\d[\d,]*(?:\.\d+)?)\s?(CT|P)(?![A-Za-z])/g, hit = null; while ((m = re.exec(txt))) { if (!hit || (m[2] === "CT" && hit[2] !== "CT") || m[2] === hit[2]) hit = m; } if (hit) fig = hit[1] + " " + hit[2]; }
       var parts = fig ? /^(.*?)(?:\s(CT|P))?$/.exec(fig) : null;
-      return '<div class="sheet-done" aria-hidden="true"><span class="sheet-done-ck">' + ic("check", 22) + "</span>" + (parts ? '<span class="sheet-done-fig">' + parts[1] + (parts[2] ? "<small>" + parts[2] + "</small>" : "") + "</span>" : "") + "</div>";
+      return '<div class="sheet-done" aria-hidden="true">' + C.rstamp("hit", t("common.done")) + (parts ? '<span class="sheet-done-fig">' + parts[1] + (parts[2] ? "<small>" + parts[2] + "</small>" : "") + "</span>" : "") + "</div>";
     },
     show: function (state, cfg) {
       App.tx.cfg = cfg; App.tx.state = state;
       App.sheet.open(App.tx.view(state, cfg), { closable: state === "review" || state === "success" || state === "failed", label: cfg.label, onClose: function () { txClear(); if (state === "success" && cfg.onDone) cfg.onDone(); } });
       App.live($("#sheet h2") ? $("#sheet h2").textContent : "");
+      if (state === "success") App.stampLand($("#sheet .sheet-done .rstamp"), 3);   /* the filed stamp lands once the sheet is up; nothing plays on a failure */
     },
     /* While a transaction runs, the button that started it is disabled and carries the status ("Staking 500 CT: sending").
        Nothing floats over the page, and the same action cannot be started twice. A screen can take this over with cfg.busy(on, label). */
@@ -621,23 +650,35 @@
     function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
     /* k: travel as a share of the card width, -1 to 1. Below the commit threshold the stamp only hints (0.4 at most) and no button lights:
        the card never shows a pick it would not make on release. */
+    /* Under the threshold the stamp is a proof: an unfilled outline (ink on the sheet, so it is readable at once) that grows with the travel.
+       At the threshold it presses in: filled with the answer's ink, one size up, with a short recoil. The card never shows a pick it would not make on release. */
     function paint(card, k, armed) {
       var dir = k > 0 ? "r" : k < 0 ? "l" : "", a = Math.abs(k);
       $$(".choice", card).forEach(function (b) { b.classList.toggle("is-hot", !!armed && b.getAttribute("data-dir") === dir); });
       var tint = $(".qtint", card); if (dir) tint.setAttribute("data-dir", dir); tint.style.opacity = armed ? 0.2 : 0;
-      var hint = armed ? 1 : Math.min(0.4, a * 1.6);
-      var sl = $(".qstamp--l", card), sr = $(".qstamp--r", card);
-      sl.style.opacity = dir === "l" ? hint : 0; sr.style.opacity = dir === "r" ? hint : 0;
-      sl.classList.toggle("is-armed", !!armed && dir === "l"); sr.classList.toggle("is-armed", !!armed && dir === "r");
+      [["l", 7], ["r", -7]].forEach(function (x) {
+        var el = $(".qstamp--" + x[0], card), on = dir === x[0];
+        el.style.opacity = on ? (armed ? 1 : Math.min(1, a * 12)) : 0;
+        el.style.transform = on && !armed ? "rotate(" + x[1] + "deg) scale(" + (0.8 + Math.min(0.2, a * 0.58)).toFixed(3) + ")" : "";
+        el.classList.toggle("is-armed", !!armed && on);
+      });
     }
+    /* the sheet lifts off the stack while it is held: a flat shadow of ink follows it, a few pixels down and to the right */
+    var lift = document.createElement("div"); lift.className = "deck-lift"; lift.setAttribute("aria-hidden", "true"); root.appendChild(lift);
+    function setLift(tf) { root.classList.toggle("is-lift", !!tf); lift.style.transform = tf || ""; }
     function feedback(card, dx, dy) {
       var w = card.offsetWidth, k = Math.max(-1, Math.min(1, dx / w));
-      card.style.transform = "translate(" + dx + "px," + (dy * 0.18).toFixed(1) + "px)" + (reduce ? "" : " rotate(" + (k * 8).toFixed(2) + "deg)");
+      /* paper turns about the hand: held by its upper half it leans with the drag, held by its lower half it leans the other way */
+      var rot = reduce ? "" : " rotate(" + (k * 7 * (card._low ? -1 : 1)).toFixed(2) + "deg)", pos = "translate(" + dx + "px," + (dy * 0.18).toFixed(1) + "px)";
+      card.style.transform = pos + rot + (reduce ? "" : " scale(1.012)");
+      if (!reduce) setLift("translate(" + (dx + 5) + "px," + (dy * 0.18 + 9).toFixed(1) + "px)" + rot);
       paint(card, k, Math.abs(k) >= ARM);
       return k;
     }
-    function reset(card) { card.classList.remove("is-drag"); card.style.transform = ""; paint(card, 0, false); }
-    function off(sign, w, dy) { return "translate(" + sign * (innerWidth * 0.5 + w) + "px," + ((dy || 0) * 0.4 + 30).toFixed(0) + "px) rotate(" + sign * 22 + "deg)"; }
+    /* let go under the threshold: the sheet flicks back onto the stack with a small overshoot */
+    function back(card) { card.classList.add("is-back"); clearTimeout(card._bk); card._bk = setTimeout(function () { card.classList.remove("is-back"); }, 460); }
+    function reset(card) { card.classList.remove("is-drag"); setLift(""); back(card); card.style.transform = ""; paint(card, 0, false); }
+    function off(sign, w, dy) { return "translate(" + sign * (innerWidth * 0.5 + w) + "px," + ((dy || 0) * 0.4 + 30).toFixed(0) + "px) rotate(" + sign * 18 + "deg)"; }
     /* throw: the card leaves on its side with the speed of the release; the deck advances with a spring (CSS, on data-pos) */
     function commit(card, dir, v, dx, dy, src) {
       if (card.classList.contains("is-out")) return;
@@ -646,25 +687,32 @@
       guardUntil = Date.now() + GUARD; tapUntil = Date.now() + TAP_GUARD;
       var w = card.offsetWidth, sign = dir === "r" ? 1 : -1, dist = innerWidth * 0.5 + w - Math.abs(dx || 0);
       var ms = reduce ? 200 : Math.round(Math.max(190, Math.min(380, dist / Math.max(v || 0, 1.6))));
-      card.classList.remove("is-drag"); card.classList.add("is-out"); card.setAttribute("data-pos", "out");
+      card.classList.remove("is-drag", "is-back"); card.classList.add("is-out"); card.setAttribute("data-pos", "out"); setLift("");
       paint(card, sign * 0.5, true);
-      card.style.transition = reduce ? "" : "transform " + ms + "ms cubic-bezier(0.3, 0.55, 0.4, 1), opacity " + ms + "ms cubic-bezier(0.6, 0, 0.9, 0.4)";
-      void card.offsetWidth;
-      if (!reduce) card.style.transform = off(sign, w, dy);
-      card.style.opacity = 0;
+      var st = $(".qstamp--" + dir, card); st.classList.add("is-thunk");   /* the stamp comes down for good */
+      /* a tap or a key has no drag to show the stamp, so the sheet holds for 130 ms while the stamp lands, then it is thrown. The pick itself is taken at once. */
+      var hold = src === "swipe" || reduce ? 0 : 130;
+      function fly() {
+        card.style.transition = reduce ? "" : "transform " + ms + "ms cubic-bezier(0.3, 0.55, 0.4, 1), opacity " + ms + "ms cubic-bezier(0.6, 0, 0.9, 0.4)";
+        void card.offsetWidth;
+        if (!reduce) card.style.transform = off(sign, w, dy);
+        card.style.opacity = 0;
+      }
+      if (hold) { card.style.transition = "transform 130ms cubic-bezier(0.23, 1, 0.32, 1)"; card.style.transform = "translateY(-3px) scale(1.012)"; card._fly = setTimeout(fly, hold); } else fly();
       buzz(12);
       layout();
       if (card.contains(document.activeElement)) root.focus({ preventScroll: true });
-      card._rm = setTimeout(function () { card.remove(); }, ms + 40);
+      card._rm = setTimeout(function () { card.remove(); }, ms + 40 + hold);
       if (o.onCommit) o.onCommit(+card.getAttribute("data-q"), dir, live().length, card);
     }
     /* Undo: the thrown card flies back in from the side it left and takes the front; the card that had advanced drops back behind it */
     function restore(card, dir) {
-      clearTimeout(card._rm);
+      clearTimeout(card._rm); clearTimeout(card._fly);
       var first = live()[0] || null, sign = dir === "r" ? 1 : -1;
       card.style.transition = "none"; card.style.opacity = 0;
-      if (!reduce) card.style.transform = off(sign, root.offsetWidth, 0);
-      card.classList.remove("is-out", "is-drag"); paint(card, 0, false);
+      /* pulled back out of the tray: it comes in low from the side it left, still turned, and settles on the stack with the same small overshoot */
+      if (!reduce) card.style.transform = "translate(" + sign * root.offsetWidth * 0.92 + "px,26px) rotate(" + sign * 11 + "deg)";
+      card.classList.remove("is-out", "is-drag"); paint(card, 0, false); $$(".qstamp", card).forEach(function (q) { q.classList.remove("is-thunk"); }); back(card);
       root.insertBefore(card, first);
       card.setAttribute("data-pos", "0");
       void card.offsetWidth;
@@ -675,6 +723,7 @@
     var drag = null, swallow = 0;
     root.addEventListener("pointerdown", function (e) {
       var card = e.target.closest('.qcard[data-pos="0"]'); if (!card || card.classList.contains("is-out") || (e.pointerType === "mouse" && e.button !== 0)) return;
+      var cr = card.getBoundingClientRect(); card._low = e.clientY > cr.top + cr.height * 0.6;
       drag = { card: card, x: e.clientX, y: e.clientY, id: e.pointerId, lock: false, armed: false, pts: [{ x: e.clientX, t: e.timeStamp }] };
     });
     root.addEventListener("pointermove", function (e) {
@@ -683,7 +732,7 @@
       if (!drag.lock) {
         if (Math.abs(dy) > 10 && Math.abs(dy) >= Math.abs(dx)) { drag = null; return; }       /* vertical first: hand over to page scroll */
         if (Math.abs(dx) < 10) return;
-        drag.lock = true; drag.card.classList.add("is-drag"); try { drag.card.setPointerCapture(e.pointerId); } catch (err) {}
+        drag.lock = true; drag.card.classList.remove("is-back"); drag.card.classList.add("is-drag"); try { drag.card.setPointerCapture(e.pointerId); } catch (err) {}
       }
       e.preventDefault();
       drag.pts.push({ x: e.clientX, t: e.timeStamp }); if (drag.pts.length > 8) drag.pts.shift();

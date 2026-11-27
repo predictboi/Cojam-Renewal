@@ -25,14 +25,17 @@
     return '<ul class="rs-legend" aria-label="' + esc(t("r.legend")) + '"><li>' + mark("hit") + t("r.o.hit") + "</li><li>" + mark("miss") + t("r.o.miss") + "</li><li>" + mark("wait") + t("r.f.wait") + "</li></ul>";
   }
   /* the right column of every row: the stamp or the state, then the points, always in the same place */
+  /* every stamp sits at its own small angle, fixed by its place in the list (stable between visits), and lands in the order of the list */
+  var ANG = [-5, 3, -2, 4, -4, 2, -3, 5], stampN = 0;
+  function stamp(kind, text) { var k = stampN++; return '<span class="rstamp rstamp--' + kind + ' is-land" style="--rot:' + ANG[k % ANG.length] + "deg;--d:" + Math.min(k, 9) * 70 + 'ms">' + text + "</span>"; }
   function side(r) {
     var chip, pts;
     switch (r.out) {
-      case "wait": chip = '<span class="rchip rchip--wait">' + C.icon("clock", 14) + t("r.o.waitat", { time: r.exp }) + "</span>"; pts = '<span class="rs-pts is-if">' + t("r.o.ifhit") + "</span>"; break;
-      case "hit": chip = C.rstamp("hit", t("r.o.hit")); pts = '<span class="rs-pts">+50P</span>'; break;
-      case "pend": chip = C.rstamp("hit", t("r.o.hit")); pts = '<span class="rs-pts">+50P<small>' + t("r.at", { time: r.at }) + "</small></span>"; break;
-      case "corr": chip = C.rstamp("corr", t("r.o.corr")); pts = '<span class="rs-pts">+50P</span>'; break;
-      case "miss": chip = C.rstamp("miss", t("r.o.miss")); pts = '<span class="rs-pts is-zero">0P</span>'; break;
+      case "wait": chip = '<span class="rchip rchip--wait"><i class="press" role="img" aria-label="' + esc(t("pp.press")) + '"></i>' + t("r.o.waitat", { time: r.exp }) + "</span>"; pts = '<span class="rs-pts is-if">' + t("r.o.ifhit") + "</span>"; break;
+      case "hit": chip = stamp("hit", t("r.o.hit")); pts = '<span class="rs-pts">+50P</span>'; break;
+      case "pend": chip = stamp("hit", t("r.o.hit")); pts = '<span class="rs-pts">+50P<small>' + t("r.at", { time: r.at }) + "</small></span>"; break;
+      case "corr": chip = stamp("corr", t("r.o.corr")); pts = '<span class="rs-pts">+50P</span>'; break;
+      case "miss": chip = stamp("miss", t("r.o.miss")); pts = '<span class="rs-pts is-zero">0P</span>'; break;
       case "none": chip = '<span class="rchip">' + t("r.o.none") + "</span>"; pts = '<span class="rs-pts is-zero">0P</span>'; break;
       default: chip = '<span class="rchip">' + t("r.o.void") + "</span>"; pts = '<span class="rs-pts is-zero">0P</span>';
     }
@@ -51,14 +54,14 @@
     var li = '<li data-out="' + (r.out === "wait" ? "wait" : "set") + '">';
     if (!more) return li + '<div class="rrow">' + inner + "</div></li>";
     return li + '<button type="button" class="rrow" aria-expanded="false" aria-controls="' + id + '">' + inner + "</button>" +
-      '<div class="rrow-more" id="' + id + '" hidden>' + more + (r.out === "void" ? "" : '<button type="button" class="linkish" data-how="' + id + '">' + t("h.ai.h") + C.icon("chev", 16) + "</button>") + "</div></li>";
+      '<div class="rrow-more" id="' + id + '" inert><div class="rrow-clip">' + more + (r.out === "void" ? "" : '<button type="button" class="linkish" data-how="' + id + '">' + t("h.ai.h") + C.icon("chev", 16) + "</button>") + "</div></div></li>";
   }
   function group(g, gi) {
     var d = M.ago(g.day), label = g.day === 0 ? t("common.today") : g.day === 1 ? t("common.yesterday") : F.weekday(d);
     var inv = S === "noset" ? null : M.invite.days[g.day];
     var n = { hit: 0, miss: 0, wait: 0, off: 0 }; g.rows.forEach(function (r) { n[MARK[r.out]]++; });
     return '<section class="sec rs-day" data-group><div class="rs-dayh"><div class="rs-dayh-t"><h2>' + label + '</h2><span class="rmarks" role="img" aria-label="' + esc(t("r.marks.sr", { h: n.hit, m: n.miss, w: n.wait })) + '">' + g.rows.map(function (r) { return mark(MARK[r.out]); }).join("") + "</span></div>" +
-      '<p class="rs-dayh-sub">' + (g.done ? t("r.g.done") : t("r.g.part", { k: g.answered })) + (g.pending ? (LI === 2 ? "、" : ", ") + t("r.g.pending", { q: g.pending }) : "") + '</p><p class="rs-count">+' + F.pts(g.total) + "</p></div>" +
+      '<p class="rs-dayh-sub">' + (g.done ? t("r.g.done") : t("r.g.part", { k: g.answered })) + (g.pending ? (LI === 2 ? "、" : ", ") + t("r.g.pending", { q: g.pending }) : "") + '</p><p class="rs-count" data-roll="' + g.total + '">+' + F.pts(g.total) + "</p></div>" +
       (inv ? '<a class="rs-inv" href="invite.html"><b>' + t("r.inv") + "</b><small>" + t("r.inv.sub", { r: M.invite.rate }) + '</small><span class="rs-inv-p">+' + F.pts(inv.pts) + "</span>" + C.icon("chev", 16) + "</a>" : "") +
       '<ul class="list">' + g.rows.map(function (r, ri) { return row(r, gi, ri, d); }).join("") + "</ul></section>";
   }
@@ -93,11 +96,14 @@
     }
     var moreDone = false, current = filter;
     apply(filter);
+    /* the points of each day count up once, after its stamps have started to land (the first two days are on screen) */
+    App.$$("[data-roll]", groups).slice(0, 2).forEach(function (el, i) { var to = +el.getAttribute("data-roll"); el.textContent = "+0P"; setTimeout(function () { App.countTo(el, 0, to, function (v) { return "+" + F.pts(v); }, null, 520); }, 180 + i * 260); });
     document.addEventListener("seg", function (e) { if (e.detail.name === "filter") { current = e.detail.value; apply(current); } });
     groups.addEventListener("click", function (e) {
       var h = e.target.closest("[data-how]"); if (h) { howSheet(h.getAttribute("data-how")); return; }
       var b = e.target.closest("button.rrow"); if (!b) return;
-      var open = b.getAttribute("aria-expanded") !== "true"; b.setAttribute("aria-expanded", open); var m = document.getElementById(b.getAttribute("aria-controls")); if (m) m.hidden = !open;
+      /* the detail unfolds under its row like a clipping (an accordion: the one place a height is animated, through grid rows) */
+      var open = b.getAttribute("aria-expanded") !== "true"; b.setAttribute("aria-expanded", open); var m = document.getElementById(b.getAttribute("aria-controls")); if (m) { m.classList.toggle("is-open", open); if (open) m.removeAttribute("inert"); else m.setAttribute("inert", ""); }
     });
     $("#more").addEventListener("click", function () {
       var extra = { day: 3, done: true, total: 200, rows: [

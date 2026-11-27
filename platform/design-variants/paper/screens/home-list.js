@@ -28,7 +28,7 @@
   function row(q) {
     var n = q.n, p = picks[n], num = '<span class="trow-n" aria-hidden="true">' + n + "</span>", cat = "<span>" + t("cat." + q.cat) + "</span>";
     if (p && p.sync !== "fail") {
-      var undo = p.sync === "held" ? '<button type="button" class="undo" data-undo="' + n + '" aria-label="' + App.esc(t("h.undo.aria", { n: n, choice: q[p.dir] })) + '"><svg class="undo-ring" viewBox="0 0 22 22" aria-hidden="true"><circle class="trk" cx="11" cy="11" r="8"/><circle class="run" cx="11" cy="11" r="8" style="animation-duration:' + UNDO_MS + "ms;animation-delay:-" + (Date.now() - p.t0) + 'ms"/></svg><span>' + t("h.undo") + "</span></button>" : "";
+      var undo = p.sync === "held" ? '<button type="button" class="undo" data-undo="' + n + '" aria-label="' + App.esc(t("h.undo.aria", { n: n, choice: q[p.dir] })) + '"><span class="fuse fuse--btn" aria-hidden="true"><i style="--gone:-' + (Date.now() - p.t0) + 'ms"></i></span>' + C.icon("undo", 18) + "<span>" + t("h.undo") + "</span></button>" : "";
       return '<li class="trow is-done">' + num + '<div><p class="trow-q">' + App.esc(q.title) + '</p><div class="trow-foot"><span class="trow-state">' +
         (p.sync === "saving" ? '<span class="spin"></span><span class="sr-only">' + t("common.saving") + "</span>" : undo ? "" : C.icon("check", 16)) + t("h.t.chose", { choice: C.pick(p.dir, App.esc(q[p.dir])) }) + "</span>" + undo + "</div></div>" + C.thumb(q) + "</li>";
     }
@@ -90,7 +90,7 @@
       $("#cnt").textContent = count();
       if (focus) { var h = $("#open-q"); if (h) h.focus({ preventScroll: true }); }
     }
-    function confirm(n) { setTimeout(function () { if (picks[n]) { picks[n].sync = "ok"; paint(false); var seg = $("#day5").children[n - 1]; seg.classList.add("is-fill"); } }, 1300 + Math.random() * 800); }
+    function confirm(n) { setTimeout(function () { if (picks[n]) { picks[n].sync = "ok"; paint(false); } }, 1300 + Math.random() * 800); }
     if (S === "syncing") confirm(2);
     term.addEventListener("click", function (e) {
       var o = e.target.closest("[data-open]"); if (o) { current = +o.getAttribute("data-open"); paint(true); return; }

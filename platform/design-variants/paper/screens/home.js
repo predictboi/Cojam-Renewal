@@ -23,7 +23,8 @@
       '<div class="ph-line"><span class="ph-count"><span id="cnt">' + (S === "loading" ? "0" : count) + "</span><small>/5</small></span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs, { id: "day5" }) + "</div>";
   }
   function liveCell() { return S === "empty" || S === "closed" || S === "hold" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet()); }
-  function endRing(id) { return '<div class="end-ring" aria-hidden="true"><svg class="ring" viewBox="0 0 92 92"><circle class="trk" cx="46" cy="46" r="40"/><circle class="run"' + (id ? ' id="' + id + '"' : "") + ' cx="46" cy="46" r="40"/></svg>' + C.icon("check", 32) + "</div>"; }
+  /* the wait before the day is sent is a printer's rule that is used up from the right: the same fuse as under the pick bar */
+  function endRing(id) { return '<div class="end-mark" aria-hidden="true">' + C.icon("check", 30) + '</div><span class="fuse fuse--end" aria-hidden="true"' + (id ? ' id="' + id + '"' : "") + "></span>"; }
   function body() {
     if (S === "loading") return '<div class="deck" aria-busy="true"><div class="qcard" data-pos="0"><div class="qcard-top">' + C.skel("64px", "12px") + C.skel("72px", "12px") + '</div><div class="qimg"></div><div class="qcard-body">' + C.skel("92%", "24px") + C.skel("60%", "24px") +
       C.skel("100%", "40px") + '<div class="choices">' + C.skel("100%", "54px") + C.skel("100%", "54px") + '</div></div></div></div><div class="pickbar"></div><p class="sr-only" role="status">' + t("common.loading") + "</p>";
@@ -65,9 +66,9 @@
       endEl.setAttribute("aria-hidden", on ? "false" : "true");
       clearInterval(endT);
       if (!on) { endFor = null; finishBtn(false); return; }
-      if (!p) { endP.textContent = t("h.end.b"); endRun.style.animation = "none"; endRun.style.strokeDashoffset = 251.4; finishBtn(false); endFor = null; return; }
+      if (!p) { endP.textContent = t("h.end.b"); endRun.innerHTML = ""; finishBtn(false); endFor = null; return; }
       finishBtn(true);
-      if (endFor !== p) { endFor = p; endRun.style.strokeDashoffset = ""; endRun.style.animation = "none"; void endRun.getBoundingClientRect(); endRun.style.animation = ""; endRun.style.animationDuration = UNDO_MS + "ms"; endRun.style.animationDelay = "-" + (Date.now() - p.t0) + "ms"; }
+      if (endFor !== p) { endFor = p; endRun.innerHTML = '<i style="--gone:-' + (Date.now() - p.t0) + 'ms"></i>'; }   /* a new rule for the newest pick, already used up by the time that has passed */
       function tick() { endP.innerHTML = t("h.end.in", { n: "<b>" + Math.max(1, Math.ceil((UNDO_MS - (Date.now() - p.t0)) / 1000)) + "</b>" }); }
       tick(); endT = setInterval(tick, 100);
     }
@@ -80,9 +81,10 @@
         if (bar._held === p && $("#undo", bar)) return;
         bar._held = p;
         var gone = Date.now() - p.t0;
-        bar.innerHTML = '<span class="pickbar-msg" id="pick-msg">' + C.icon("check", 16) + "<span>" + label(p) + "</span></span>" +
-          '<button type="button" class="undo" id="undo" aria-label="' + App.esc(t("h.undo.aria", { n: p.n, choice: App.q(p.id)[p.dir] })) + '">' +
-          '<svg class="undo-ring" viewBox="0 0 22 22" aria-hidden="true"><circle class="trk" cx="11" cy="11" r="8"/><circle class="run" cx="11" cy="11" r="8" style="animation-duration:' + UNDO_MS + "ms;animation-delay:-" + gone + 'ms"/></svg><span>' + t("h.undo") + '</span><kbd aria-hidden="true">Z</kbd></button>';
+        /* the 3 seconds are a rule across the top of the bar, used up from the right; when it is gone the pick goes to press */
+        bar.innerHTML = '<span class="fuse" aria-hidden="true"><i style="--gone:-' + gone + 'ms"></i></span>' +
+          '<span class="pickbar-msg" id="pick-msg">' + C.icon("check", 16) + "<span>" + label(p) + "</span></span>" +
+          '<button type="button" class="undo" id="undo" aria-label="' + App.esc(t("h.undo.aria", { n: p.n, choice: App.q(p.id)[p.dir] })) + '">' + C.icon("undo", 18) + "<span>" + t("h.undo") + '</span><kbd aria-hidden="true">Z</kbd></button>';
         return;
       }
       bar._held = null;
@@ -101,7 +103,7 @@
     function send(p) {
       held.splice(held.indexOf(p), 1);
       p.state = "saving"; shown = p; render();
-      setTimeout(function () { p.state = "saved"; seg(p.n, "is-done is-fill"); if (shown === p) render(); }, 900 + Math.random() * 500);
+      setTimeout(function () { p.state = "saved"; seg(p.n, "is-done"); if (shown === p) render(); }, 900 + Math.random() * 500);
       finishDay();
     }
     var deck = App.deck(deckEl, {
@@ -135,16 +137,20 @@
       e.preventDefault(); undo();
     });
     /* the very first card a player ever sees leans right, then left, once: it teaches the throw. Never under reduced motion, never again. */
-    var nudge = [];
-    function stopNudge() { nudge.forEach(function (a) { try { a.cancel(); } catch (e) {} }); nudge = []; deckEl.removeAttribute("data-nudge"); }
+    var nudge = [], nudgeT = [], STEP = "steps(1, end)", PR = "rotate(-7deg) scale(0.86)", PL = "rotate(7deg) scale(0.86)";
+    function stopNudge() { nudge.forEach(function (a) { try { a.cancel(); } catch (e) {} }); nudge = []; nudgeT.forEach(clearTimeout); nudgeT = []; App.$$(".choice.is-hot", deckEl).forEach(function (b) { b.classList.remove("is-hot"); }); deckEl.removeAttribute("data-nudge"); }
     if (live && count === 0 && !App.reduce && !App.offline && App.store.get("nudged", "") !== "1") {
       setTimeout(function () {
         var card = $('.qcard[data-pos="0"]', deckEl); if (!card || count || card.classList.contains("is-drag") || !card.animate) return;
         App.store.set("nudged", "1"); deckEl.setAttribute("data-nudge", "1");
         var o = { duration: 1500, easing: "cubic-bezier(0.45, 0, 0.25, 1)" };
         nudge = [card.animate([{ transform: "none" }, { transform: "translateX(34px) rotate(2.6deg)", offset: 0.24 }, { transform: "translateX(34px) rotate(2.6deg)", offset: 0.4 }, { transform: "translateX(-34px) rotate(-2.6deg)", offset: 0.68 }, { transform: "translateX(-34px) rotate(-2.6deg)", offset: 0.82 }, { transform: "none" }], o),
-          $(".qstamp--r", card).animate([{ opacity: 0 }, { opacity: 0.4, offset: 0.24 }, { opacity: 0.4, offset: 0.4 }, { opacity: 0, offset: 0.52 }, { opacity: 0 }], o),
-          $(".qstamp--l", card).animate([{ opacity: 0 }, { opacity: 0, offset: 0.54 }, { opacity: 0.4, offset: 0.68 }, { opacity: 0.4, offset: 0.82 }, { opacity: 0 }], o)];
+          /* each lean shows the answer of that side as a proof stamp at full strength (ink on the sheet, no faint text). It steps in and out, never half visible,
+             and the answer button on that side lights for the same moment. */
+          $(".qstamp--r", card).animate([{ opacity: 0, transform: PR, easing: STEP }, { opacity: 1, transform: PR, offset: 0.12, easing: STEP }, { opacity: 0, transform: PR, offset: 0.46, easing: STEP }, { opacity: 0, transform: PR }], { duration: 1500 }),
+          $(".qstamp--l", card).animate([{ opacity: 0, transform: PL, easing: STEP }, { opacity: 1, transform: PL, offset: 0.58, easing: STEP }, { opacity: 0, transform: PL, offset: 0.9, easing: STEP }, { opacity: 0, transform: PL }], { duration: 1500 })];
+        var cr = $('.choice[data-dir="r"]', card), cl = $('.choice[data-dir="l"]', card);
+        nudgeT = [setTimeout(function () { cr.classList.add("is-hot"); }, 180), setTimeout(function () { cr.classList.remove("is-hot"); }, 690), setTimeout(function () { cl.classList.add("is-hot"); }, 870), setTimeout(function () { cl.classList.remove("is-hot"); }, 1350)];
         nudge[0].onfinish = stopNudge;
       }, 700);
     }
@@ -155,9 +161,9 @@
 
     document.addEventListener("click", function (e) {
       if (!e.target.closest("[data-retry-now]")) return;
-      setTimeout(function () { seg(2, "is-done is-fill"); var b = $(".banner"); if (b) b.remove(); }, 900);
+      setTimeout(function () { seg(2, "is-done"); var b = $(".banner"); if (b) b.remove(); }, 900);
     });
     if (sending.length) { shown = { n: sending[sending.length - 1], id: "q" + sending[sending.length - 1], dir: "r", state: "saving" }; render(); }
-    if (S !== "slow") sending.forEach(function (n, i) { setTimeout(function () { seg(n, "is-done is-fill"); if (shown && shown.n === n) { shown.state = "saved"; render(); } }, 2600 + i * 1400); });
+    if (S !== "slow") sending.forEach(function (n, i) { setTimeout(function () { seg(n, "is-done"); if (shown && shown.n === n) { shown.state = "saved"; render(); } }, 2600 + i * 1400); });
   } });
 })();

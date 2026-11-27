@@ -31,11 +31,12 @@
   function rankNo(n) { return '<span class="sr-only">' + t("k.rank.sr", { n: n }) + '</span><span aria-hidden="true">' + n + "</span>"; }
   function gap(g) { return t(g > 0 ? "k.gap.up" : g < 0 ? "k.gap.down" : "k.gap.same", { n: F.int(Math.abs(g)) }); }
   /* one row pattern for the whole table: rank, player, points, prize. Ranks 1 to 3 take the larger setting. */
+  var rowN = 0;
   function row(r) {
     var lead = r.prize !== undefined && r.rank <= 3;
-    return '<li class="krow' + (lead ? " krow--lead" : "") + (lead && r.rank === 1 ? " krow--first" : "") + (r.me ? " is-me" : "") + '" data-rank="' + r.rank + '"><span class="krow-rank">' + rankNo(r.rank) + "</span>" +
+    return '<li style="--i:' + (rowN++) + '" class="krow' + (lead ? " krow--lead" : "") + (lead && r.rank === 1 ? " krow--first" : "") + (r.me ? " is-me" : "") + '" data-rank="' + r.rank + '"><span class="krow-rank">' + rankNo(r.rank) + "</span>" +
       '<p class="krow-name">' + name(r) + (r.me ? C.tag(t("k.you"), "ink") : "") + '</p><p class="krow-pts">' + F.pts(r.pts) + "</p>" +
-      (r.prize === undefined ? "" : '<p class="krow-prize">' + prize(r.prize) + "<small>CT</small></p>") +
+      (r.prize === undefined ? "" : '<p class="krow-prize"><span data-prize="' + r.prize + '">' + prize(r.prize) + "</span><small>CT</small></p>") +
       (r.gap === undefined ? "" : '<p class="krow-gap krow-gap--one">' + (r.me ? "" : gap(r.gap)) + "</p>") + "</li>";
   }
   function aroundRows(w) {
@@ -70,13 +71,15 @@
     if (S === "top10") return bar(7, t("k.in"), t("k.prize", { c: "51.36" }), 1150, t("r.week"));
     return bar(me.rank, t("k.you"), t("k.gap", { gap: F.int(me.gap) }), me.pts, t("r.week"));
   }
+  /* the prizes of the first three roll up as their rows set; the rest are still (ten rolling figures would be noise) */
+  function roll() { App.$$("#top10 .krow--lead [data-prize]").forEach(function (el, i) { var to = +el.getAttribute("data-prize"); el.textContent = prize(0); setTimeout(function () { App.countTo(el, 0, to, prize, null, 560); }, 120 + i * 90); }); }
   function toAround() {
     var a = $("#around"); if (!a) return;
     a.scrollIntoView({ behavior: App.reduce ? "auto" : "smooth", block: "center" }); a.focus({ preventScroll: true });
     a.classList.remove("is-flash"); void a.offsetWidth; a.classList.add("is-flash");
   }
   function view(w) {
-    var note = "";
+    var note = ""; rowN = 0;
     if (S === "hold") note = C.hold(t("hold.rank"));
     else if (w === "last") note = S === "sent" ? C.note("ok", t("k.sent") + ' <a href="https://kaiascan.io/" target="_blank" rel="noopener">' + t("w.scan") + "</a>") : C.note("", t("k.closed", { time: t("k.final.time") }));
     else if (S === "winner") note = C.note("ok", t("k.last", { rank: 4, amount: "119.60" }));
@@ -89,14 +92,23 @@
   }
   App.mount({ tab: "rank", cls: "sc-rank", docTitle: t("k.title"), live: "<span>" + t("k.ends") + '</span> <b data-cd="' + M.untilWeekEnd() + '" data-cd-fmt="dh"></b>', head: head(), body: body(), pin: pin(week), badges: { home: "dot", results: 2 }, after: function () {
     document.addEventListener("seg", function (e) {
-      if (e.detail.name !== "week") return; week = e.detail.value;
-      $("#view").innerHTML = view(week);
-      var p = $("#pin"); if (p) p.outerHTML = pin(week); App.enhance(document.body); App.pinFit();
+      if (e.detail.name !== "week" || e.detail.value === week) return; week = e.detail.value;
+      /* the week turns like a page: the old table leaves towards the side it belongs to (120 ms), the new one comes in from the other side and sets again.
+         The control has already switched, and a second tap during the turn simply wins. */
+      var v = $("#view"), dir = week === "last" ? -1 : 1;
+      function swap() {
+        v.innerHTML = view(week); var p = $("#pin"); if (p) p.outerHTML = pin(week); App.enhance(document.body); App.pinFit(); roll();
+        if (!App.reduce && v.animate) v.animate([{ opacity: 0, transform: "translateX(" + dir * -18 + "px)" }, { opacity: 1, transform: "none" }], { duration: 200, easing: "cubic-bezier(0.23, 1, 0.32, 1)" });
+      }
+      clearTimeout(v._turn);
+      if (App.reduce || !v.animate) swap();
+      else { v.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateX(" + dir * 18 + "px)" }], { duration: 120, easing: "cubic-bezier(0.23, 1, 0.32, 1)", fill: "forwards" }); v._turn = setTimeout(function () { v.getAnimations().forEach(function (a) { a.cancel(); }); swap(); }, 120); }
     });
     document.addEventListener("click", function (e) {
       if (e.target.closest("#how")) howSheet();
       else if (e.target.closest("button#pin")) toAround();
     });
     if (S === "how") howSheet();
+    roll();
   } });
 })();

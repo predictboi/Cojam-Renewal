@@ -12,7 +12,7 @@ h1, h2, h3, p, ul, ol, dl, dd, figure { margin: 0; }
 ul, ol { padding: 0; list-style: none; }
 button, input, select { font: inherit; color: inherit; }
 button { cursor: pointer; }
-a, button, summary, input, select, label { touch-action: manipulation; }
+a, button, summary, input, select, label { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }   /* press feedback is drawn by the pressed states, not by the browser */
 a { color: var(--accent); }
 img, svg { display: block; flex: none; }
 b, strong { font-weight: var(--fw-bold); }
@@ -23,7 +23,7 @@ small { font-size: inherit; }
 .tnum, .dateline, .krow-pts, .rows dd, .mbar-meta, .pickbar, .rs-meta, .split, .ratetable { font-variant-numeric: tabular-nums; }
 .rows .is-em dd, .ratetable td:not(:first-child) { font-variant-numeric: normal; }
 /* a ticking figure in the slab: every digit sits in a cell of one width, so the line does not shake */
-.dg { display: inline-block; width: 0.66em; font-style: normal; text-align: center; }
+.dg { display: inline-block; font-style: normal; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .skip { position: absolute; left: var(--s-8); top: -60px; z-index: 99; padding: var(--s-10) var(--s-12); background: var(--ink); color: var(--on-ink); font-weight: var(--fw-bold); }
 .skip:focus { top: var(--s-8); }
@@ -730,4 +730,162 @@ button.pin:focus-visible { outline-color: var(--on-ink); outline-offset: -4px; }
   .undo-ring .run { animation: undo-run linear both !important; }
   .end-ring .run { animation: end-run linear both !important; }
   .home-fin .ring .run { animation: none !important; }
+}
+
+/* =====================================================================================================================
+   MOTION (see MOTION.md). Print, ink, paper, stamps and type. Transform, opacity and clip-path only; one accordion animates grid rows.
+   Everything here has a reduced motion answer at the end of this block.
+   ===================================================================================================================== */
+
+/* ---------- layers: the halftone is rasterised once and then only moved ----------
+   The picture, the colour wash and the stamps each get their own compositor layer, so arming a stamp or washing the card
+   during a drag never re-runs the halftone filters. */
+.qimg .ht, .qtint, .qstamp, .deck-lift { will-change: transform, opacity; }
+.qcard { contain: layout style; }
+
+/* ---------- the sheet ---------- */
+.qcard { transition: transform var(--dur-deck) var(--ease-out); }                    /* the next sheet comes up off the stack */
+.qcard.is-back { transition: transform 440ms var(--ease-thunk); }                    /* let go, or pulled back by Undo: a small overshoot */
+.deck-lift { position: absolute; inset: 0; z-index: 2; background: var(--ink); opacity: 0; pointer-events: none; transition: opacity var(--dur-fast) var(--ease-out); }
+.deck.is-lift .deck-lift { opacity: 0.16; }                                          /* a flat shadow of ink while the sheet is held */
+
+/* ---------- the answer stamp: a proof under the threshold, pressed in at the threshold, brought down on the pick ---------- */
+.qstamp { position: absolute; border-style: dashed; outline: 0; background: var(--sheet); transition: none; }
+.qstamp--r { background: var(--sheet); }
+.qstamp--l { --rot: 7deg; }
+.qstamp--r { --rot: -7deg; }
+.qstamp.is-armed { border-style: solid; outline: 1.5px solid var(--ink); outline-offset: 3px; background: var(--pick-l); animation: stamp-press 210ms var(--ease-out) both; }
+.qstamp--r.is-armed { background: var(--pick-r); }
+.qstamp--l.is-armed, .qstamp--r.is-armed { transform: rotate(var(--rot)) scale(1.12); }
+.qstamp.is-armed::after { content: ""; position: absolute; inset: -4px; border: 2px solid var(--ink); opacity: 0; animation: ink-bleed 380ms var(--ease-out) forwards; }
+.qstamp.is-thunk { animation: stamp-thunk 160ms var(--ease-out) both; }
+@keyframes stamp-press { 0% { transform: rotate(var(--rot)) scale(1.36); } 55% { transform: rotate(var(--rot)) scale(1.05); } 100% { transform: rotate(var(--rot)) scale(1.12); } }
+@keyframes stamp-thunk { 0% { transform: rotate(var(--rot)) scale(1.3); } 60% { transform: rotate(var(--rot)) scale(0.98); } 100% { transform: rotate(var(--rot)) scale(1.06); } }
+@keyframes ink-bleed { from { opacity: 0.5; transform: scale(1); } to { opacity: 0; transform: scale(1.24); } }
+
+/* ---------- the five boxes ink in from the bottom, one after the other ---------- */
+.day5 i { position: relative; overflow: hidden; }
+.day5 b { position: relative; }
+.day5 .is-done::before { content: ""; position: absolute; inset: 0; background: var(--sheet); transform: scaleY(0); transform-origin: 50% 0; animation: ink-rise 300ms var(--ease-out) backwards; }
+.day5 .is-done b { animation: ink-num 300ms steps(1, end) backwards; }
+.day5 i:nth-child(2)::before, .day5 i:nth-child(2) b { animation-delay: 70ms; } .day5 i:nth-child(3)::before, .day5 i:nth-child(3) b { animation-delay: 140ms; }
+.day5 i:nth-child(4)::before, .day5 i:nth-child(4) b { animation-delay: 210ms; } .day5 i:nth-child(5)::before, .day5 i:nth-child(5) b { animation-delay: 280ms; }
+.day5 .is-fill, .day5.is-wave i { animation: none; }
+@keyframes ink-rise { from { transform: scaleY(1); } to { transform: scaleY(0); } }
+@keyframes ink-num { 0% { color: var(--ink-2); } 45%, 100% { color: var(--on-ink); } }
+
+/* ---------- the fuse: 3 seconds as a printer's rule, used up from the right ---------- */
+.pickbar { position: relative; }
+.fuse { position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--line); pointer-events: none; }
+.fuse i { display: block; height: 100%; background: var(--ink); transform-origin: 0 50%; animation: fuse 3000ms linear both; animation-delay: var(--gone, 0ms); }
+@keyframes fuse { to { transform: scaleX(0); } }
+.undo { position: relative; padding: 0 var(--s-12); overflow: hidden; }
+.fuse--btn { bottom: 0; }
+.fuse--end { position: relative; display: block; width: 132px; }
+.end-mark { display: grid; place-items: center; width: 56px; height: 56px; border: var(--edge); background: var(--sheet); }
+
+/* ---------- stamps land ---------- */
+.rstamp { position: relative; transform: rotate(var(--rot, -4deg)); }
+.rstamp--miss { --rot: 3deg; }
+.rstamp.is-land { animation: stamp-land 230ms var(--ease-thunk) backwards; animation-delay: var(--d, 0ms); }
+.rstamp.is-land::after { content: ""; position: absolute; inset: -5px; border: 1.5px solid currentColor; opacity: 0; animation: ink-bleed 400ms var(--ease-out); animation-delay: calc(var(--d, 0ms) + 150ms); }
+@keyframes stamp-land { from { opacity: 0; transform: rotate(var(--rot, -4deg)) scale(1.6); } 55% { opacity: 1; } to { opacity: 1; transform: rotate(var(--rot, -4deg)) scale(1); } }
+
+/* ---------- day done: the extra edition ---------- */
+.extra { position: relative; height: 30px; overflow: hidden; }
+.extra-ink { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; gap: var(--s-12); padding: 0 var(--s-10); background: var(--ink); color: var(--on-ink); font-size: var(--fs-13); line-height: 1; }
+.extra-ink b { font-family: var(--font-display); font-weight: var(--fw-fig); font-size: var(--fs-18); }
+.extra-ink span { color: var(--on-ink-2); }
+.extra-run { position: absolute; inset: 0; display: none; border: var(--edge); overflow: hidden; }
+.extra-run::before { content: ""; position: absolute; inset: 0 -12px 0 0; background: repeating-linear-gradient(90deg, var(--ink) 0 3px, transparent 3px 12px); animation: press-run 420ms linear infinite; }
+@keyframes press-run { to { transform: translateX(-12px); } }
+.is-saving .extra-run { display: block; }
+.is-saving .extra-ink { clip-path: inset(0 100% 0 0); }
+.is-paid .extra-ink { clip-path: inset(0); transition: clip-path 280ms var(--ease-out); }
+.wd { display: inline-block; white-space: nowrap; }
+.ltr { display: inline-block; }
+.is-moment .ltr { animation: letter-set 240ms var(--ease-out) backwards; animation-delay: calc(80ms + var(--i) * 30ms); }
+@keyframes letter-set { from { opacity: 0; transform: translateY(-0.55em) scale(1.12); } }
+.done-figs { position: relative; align-items: center; }
+.done-fig { display: flex; align-items: flex-start; font-size: min(5rem, 20.5vw); line-height: 1; }
+.reel { display: block; height: 1em; overflow: hidden; }
+.reel-in { display: block; transform: translateY(calc(var(--n) * -1em)); }
+.reel-in i { display: block; height: 1em; font-style: normal; }
+.is-moment.is-saving .done-fig { opacity: 0; }
+.is-paid .done-fig { animation: print-in 140ms var(--ease-out) backwards; }
+.is-paid .reel-in { animation: reel-run calc(520ms + var(--k) * 150ms) var(--ease-out) backwards; animation-delay: 80ms; }
+@keyframes print-in { from { opacity: 0; } }
+@keyframes reel-run { from { transform: translateY(0); } }
+.seal { position: absolute; right: 0; top: 50%; transform: translateY(-58%); }
+.seal .rstamp { --rot: -9deg; margin: 0; padding: 7px 10px 5px; font-size: var(--fs-16); }
+.is-saving .seal { opacity: 0; }
+.is-paid .seal .rstamp { animation: stamp-land 240ms var(--ease-thunk) backwards; animation-delay: 760ms; }
+.is-paid .seal .rstamp::after { content: ""; position: absolute; inset: -5px; border: 1.5px solid currentColor; opacity: 0; animation: ink-bleed 420ms var(--ease-out); animation-delay: 910ms; }
+.flip { display: inline-block; }
+.flip.is-flip { animation: date-flip 220ms var(--ease-out); }
+@keyframes date-flip { from { opacity: 0; transform: translateY(-70%); } }
+
+/* ---------- results: going to press, and the clipping ---------- */
+.press { position: relative; display: inline-block; width: 18px; height: 10px; overflow: hidden; border: 1px solid var(--ink-2); }
+.press::before { content: ""; position: absolute; inset: 0 -4px 0 0; background: repeating-linear-gradient(90deg, var(--ink-2) 0 2px, transparent 2px 4px); animation: press-run-s 1100ms linear infinite; }
+@keyframes press-run-s { to { transform: translateX(-4px); } }
+.rrow-more { display: grid; grid-template-rows: 0fr; gap: 0; padding: 0; border-bottom: 0; transition: grid-template-rows 240ms var(--ease-out); }
+.rrow-more.is-open { grid-template-rows: 1fr; }
+.rrow-clip { display: grid; gap: var(--s-4); justify-items: start; min-height: 0; overflow: hidden; }
+.rrow-clip::before { content: ""; width: 100%; margin-bottom: var(--s-4); border-top: 1px dashed var(--ink-3); }      /* the cut line of the clipping */
+.rrow-clip::after { content: ""; width: 100%; margin-top: var(--s-4); border-top: var(--hair); }
+.rrow-clip .linkish { margin: calc(var(--s-8) * -1) 0; }
+
+/* ---------- ranking: the table sets like type, the own bar comes up like a ticker strip ---------- */
+.sc-rank .klist .krow { animation: type-set 240ms var(--ease-out) backwards; animation-delay: calc(var(--i, 0) * 34ms); }
+@keyframes type-set { from { opacity: 0; transform: translateY(-10px); } }
+.sc-rank > .pin { animation: ticker-up 320ms var(--ease-drawer) backwards; animation-delay: 240ms; }
+@keyframes ticker-up { from { transform: translateY(100%); } }
+
+/* ---------- sections: a page turn on the content only, under 200 ms, input live from the first frame ---------- */
+main[data-in="fwd"] { animation: page-fwd 180ms var(--ease-out) backwards; }
+main[data-in="back"] { animation: page-back 180ms var(--ease-out) backwards; }
+main[data-in="same"] { animation: page-same 160ms var(--ease-out) backwards; }
+@keyframes page-fwd { from { opacity: 0; transform: translateX(16px); } }
+@keyframes page-back { from { opacity: 0; transform: translateX(-16px); } }
+@keyframes page-same { from { opacity: 0; } }
+.tb a[aria-current]::before { transform-origin: 50% 0; animation: tab-in 180ms var(--ease-out) backwards; }
+@keyframes tab-in { from { opacity: 0; transform: scaleX(0.3); } }
+
+/* ---------- a countdown ticks like a date stamp ---------- */
+.dg { width: auto; }
+.dg, .dgs { display: inline-block; font-style: normal; }
+[data-dg] .dg, [data-tick] .dg { width: 0.66em; text-align: center; }
+.dg.tk { animation: date-tick 150ms var(--ease-out); }
+@keyframes date-tick { from { opacity: 0.25; transform: translateY(-40%); } }
+
+/* ---------- pressed: the ink darkens and framed controls go down 1 px ---------- */
+.rowlink, .wrow, .inv-row, .rs-inv, .rrow, .help summary, .qmeta, .seg-btn, .period button, .addr-chip, .code-block, .pts-in, .me-in, .undo, .field-max { transition: background-color var(--dur-press) var(--ease), transform var(--dur-press) var(--ease), color var(--dur-press) var(--ease); }
+.rowlink:active, a.wrow:active, .inv-row:active, .rs-inv:active, button.rrow:active, .help summary:active, button.qmeta:active, .field-max:active,
+.seg-btn:not([aria-pressed="true"]):not([aria-current]):active, .period button:not([aria-pressed="true"]):not(:disabled):active { background-color: var(--paper-2); }
+.addr-chip:active, .code-block:active, .pts:active .pts-in, .me:active .me-in, .undo:active { background-color: var(--paper-2); transform: translateY(1px); }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.choice:active { transform: translateY(1px); }
+.linkish:active, .btn-ghost:active, .hold-more:active, .sys-link:active, .viewsw a:active, .mtabs a:active, .onb-code-open:active { color: var(--accent-press); text-decoration-thickness: 2px; }
+.viewsw a:active, .mtabs a:active { color: var(--ink); }
+button.pin:active { background: var(--ink-2); }
+.tb a:active { color: var(--ink); }
+
+/* ---------- toast: a slip of paper pushed up from under the section index ---------- */
+.toast { border: var(--edge); border-top: var(--rule-heavy); outline: 0; background: var(--sheet); color: var(--ink); transform-origin: 50% 100%; animation: none; transition: transform 240ms var(--ease-out), opacity 200ms var(--ease-out); }
+.toast button { color: var(--accent); }
+@starting-style { .toast { opacity: 0; transform: translateY(120%) rotate(-1.5deg); } }
+.toast.is-out { opacity: 0; transform: translateY(120%); transition: transform 200ms var(--ease-out), opacity 200ms var(--ease-out); }
+
+/* ---------- sheets rise like a proof sheet pulled onto the desk ---------- */
+.sheet { animation: sheet-in var(--dur-sheet) var(--ease-drawer) both; }
+
+/* ---------- reduced motion ----------
+   Nothing travels, lands, rolls or runs. States still change (a short opacity change at most). The fuse keeps running because it is the time left, not decoration. */
+@media (prefers-reduced-motion: reduce) {
+  .fuse i { animation-name: fuse !important; animation-duration: 3000ms !important; animation-timing-function: linear !important; animation-fill-mode: both !important; animation-delay: var(--gone, 0ms) !important; }
+  .extra-run::before, .press::before { animation: none !important; }
+  .rrow-more { transition: none; }
+  .btn:active:not(:disabled), .choice:active, .addr-chip:active, .code-block:active, .undo:active { transform: none; }
+  .toast, .toast.is-out { transform: none; }
 }
