@@ -12,7 +12,7 @@
   var PERIODS = [30, 90, 180, 365], HQ = S === "hold" ? "?state=hold" : "";
   function tier(a) { return a >= 10000 ? 2 : a >= 1000 ? 1 : 0; }
 
-  function head() { return '<div class="ph-top"><h1 class="h-q">' + t("s.title") + C.q("staking", t("s.title")) + "</h1></div>"; }
+  function head() { return '<div class="ph-top ph-top--q"><h1>' + t("s.title") + "</h1>" + C.q("staking", t("s.title")) + "</div>"; }
   function sw() { return '<nav class="mtabs" id="sw" aria-label="' + App.esc(t("s.switch")) + '"><a href="staking.html' + HQ + '" aria-current="page">' + t("s.new") + '</a><a href="stakes.html' + HQ + '">' + t("s.tab.mine") + '<span class="mtabs-n" id="sw-n">' + (M.stakes.length + (S === "hold" ? 1 : 0)) + "</span></a></nav>"; }
   function avail() { return t("s.avail") + ' <b id="avail">' + F.ct(bal) + "</b>"; }
   function body() {

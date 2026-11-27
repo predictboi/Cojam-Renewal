@@ -49,6 +49,14 @@
     "pp.none": ["None", "없음", "なし"],
     "pp.filed": ["Filed", "접수 완료", "受付済"],
     "pp.balance": ["Balance left", "남은 잔액", "残高"],
+    /* review B */
+    "pp.live.picked": ["Picked {choice}. Undo, 3 seconds.", "{choice} 선택. 3초 안에 되돌릴 수 있어요.", "{choice}を選択。3秒以内なら取り消せます。"],
+    "pp.final": ["Final", "변경 불가", "変更不可"],
+    "pp.c.wait": ["Available {date}", "{date}부터 전환 가능", "{date}から交換できます"],
+    "pp.c.cap": ["Limit reached until 09:00 KST", "한도 소진, 오전 9시에 다시 열려요", "上限に達しました。午前9時に再開"],
+    "pp.x.fix": ["Fix the address", "주소를 확인하세요", "アドレスを確認してください"],
+    "pp.name.removed": ["Name removed. Your address is shown.", "이름을 지웠어요. 지갑 주소가 표시돼요.", "名前を削除しました。アドレスが表示されます。"],
+    "pp.name.taken": ["This name is taken.", "이미 쓰이고 있는 이름이에요.", "この名前はすでに使われています。"],
     "pp.lede": ["We email you a code.", "이메일로 코드를 보내 드려요.", "メールでコードをお送りします。"]
   };
   var d = window.CJ_I18N.dict;

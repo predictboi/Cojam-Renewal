@@ -10,12 +10,12 @@
   var LI = { en: 0, ko: 1, ja: 2 }[App.lang] || 0;
   var rowsById = {};
 
-  function head() { return '<div class="ph-top"><h1 class="h-q">' + t("r.title") + C.q("hits", t("h.ai.h")) + "</h1></div>"; }
+  function head() { return '<div class="ph-top ph-top--q"><h1>' + t("r.title") + "</h1>" + C.q("hits", t("h.ai.h")) + "</div>"; }
   function mark(k) { return '<i class="rmark rmark--' + k + '" aria-hidden="true"></i>'; }
   function summary() {
     if (S === "loading") return '<section class="sec" aria-busy="true"><div class="tri">' + [1, 2, 3].map(function () { return '<div class="tri-c">' + C.skel("72px", "24px") + C.skel("60px", "12px", "margin-top:6px") + "</div>"; }).join("") + "</div></section>";
     var pend = null; M.results.forEach(function (g) { g.rows.forEach(function (r) { if (r.out === "pend" && !pend) pend = r; }); });
-    function col(fig, label, sub) { return '<div class="tri-c"><p class="tri-fig">' + fig + '</p><h2 class="tri-lbl">' + label + "</h2>" + (sub ? '<p class="tri-sub">' + sub + "</p>" : "") + "</div>"; }
+    function col(fig, label, sub) { return '<div class="tri-c"><h2 class="tri-lbl">' + label + '</h2><p class="tri-fig">' + fig + "</p>" + (sub ? '<p class="tri-sub tnum">' + sub + "</p>" : "") + "</div>"; }
     return '<section class="sec" aria-label="' + esc(t("r.sum.sr")) + '"><div class="tri">' +
       col(F.pts(M.week.pts), t("r.week"), t("r.sum.hits", { a: M.week.hits, b: M.week.answered })) +
       col(F.pts(M.all.pts), t("r.all"), t("r.sum.rate", { n: M.all.rate })) +
@@ -54,7 +54,7 @@
     var li = '<li data-out="' + (r.out === "wait" ? "wait" : "set") + '">';
     if (!more) return li + '<div class="rrow">' + inner + "</div></li>";
     return li + '<button type="button" class="rrow" aria-expanded="false" aria-controls="' + id + '">' + inner + "</button>" +
-      '<div class="rrow-more" id="' + id + '" inert><div class="rrow-clip">' + more + (r.out === "void" ? "" : '<button type="button" class="linkish" data-how="' + id + '">' + t("h.ai.h") + C.icon("chev", 16) + "</button>") + "</div></div></li>";
+      '<div class="rrow-more" id="' + id + '" hidden><div class="rrow-clip">' + more + (r.out === "void" ? "" : '<button type="button" class="linkish" data-how="' + id + '">' + t("h.ai.h") + C.icon("chev", 16) + "</button>") + "</div></div></li>";
   }
   function group(g, gi) {
     var d = M.ago(g.day), label = g.day === 0 ? t("common.today") : g.day === 1 ? t("common.yesterday") : F.weekday(d);
@@ -103,7 +103,7 @@
       var h = e.target.closest("[data-how]"); if (h) { howSheet(h.getAttribute("data-how")); return; }
       var b = e.target.closest("button.rrow"); if (!b) return;
       /* the detail unfolds under its row like a clipping (an accordion: the one place a height is animated, through grid rows) */
-      var open = b.getAttribute("aria-expanded") !== "true"; b.setAttribute("aria-expanded", open); var m = document.getElementById(b.getAttribute("aria-controls")); if (m) { m.classList.toggle("is-open", open); if (open) m.removeAttribute("inert"); else m.setAttribute("inert", ""); }
+      var open = b.getAttribute("aria-expanded") !== "true"; b.setAttribute("aria-expanded", open); var m = document.getElementById(b.getAttribute("aria-controls")); if (m) { clearTimeout(m._h); if (open) { m.hidden = false; void m.offsetHeight; m.classList.add("is-open"); } else { m.classList.remove("is-open"); m._h = setTimeout(function () { m.hidden = true; }, App.reduce ? 0 : 250); } }
     });
     $("#more").addEventListener("click", function () {
       var extra = { day: 4, done: true, total: 200, rows: [

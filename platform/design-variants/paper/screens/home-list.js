@@ -31,7 +31,7 @@
     if (p && p.sync !== "fail") {
       var undo = p.sync === "held" ? '<button type="button" class="undo" data-undo="' + n + '" aria-label="' + App.esc(t("h.undo.aria", { n: n, choice: q[p.dir] })) + '"><span class="fuse fuse--btn" aria-hidden="true"><i style="--gone:-' + (Date.now() - p.t0) + 'ms"></i></span>' + C.icon("undo", 18) + "<span>" + t("h.undo") + "</span></button>" : "";
       return '<li class="trow is-done">' + num + '<div><p class="trow-q">' + App.esc(q.title) + '</p><div class="trow-foot"><span class="trow-state">' +
-        (p.sync === "saving" ? '<span class="spin"></span><span class="sr-only">' + t("common.saving") + "</span>" : undo ? "" : C.icon("check", 16)) + t("h.t.chose", { choice: C.pick(p.dir, App.esc(q[p.dir])) }) + "</span>" + undo + "</div></div>" + C.thumb(q) + "</li>";
+        (p.sync === "saving" ? '<span class="spin"></span><span class="sr-only">' + t("common.saving") + "</span>" : undo ? "" : C.icon("check", 16)) + t("h.t.chose", { choice: C.pick(p.dir, App.esc(q[p.dir])) }) + "</span>" + (undo || (p.sync === "ok" ? C.tag(t("pp.final"), "", "lock") : "")) + "</div></div>" + C.thumb(q) + "</li>";
     }
     var failed = p && p.sync === "fail";
     if (n === current) {
@@ -115,8 +115,9 @@
         if (count() === 5 && !open && !leaving) goDone(App.reduce ? 0 : 500);
       }, UNDO_MS);
       try { if (navigator.vibrate) navigator.vibrate(10); } catch (err) {}
-      App.live(t("h.live.picked", { choice: Q[n - 1][dir], k: 5 - count() }));
+      App.live(t("pp.live.picked", { choice: Q[n - 1][dir] }));
       paint(true);
+      var ub = $('[data-undo="' + n + '"]', term); if (ub && b.matches(":focus-visible")) ub.focus({ preventScroll: true });   /* keyboard: Undo is the next stop */
     });
     endPaint();
     document.addEventListener("keydown", function (e) {

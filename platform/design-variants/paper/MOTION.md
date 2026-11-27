@@ -33,9 +33,28 @@ The motion language is the print shop: sheets of paper, ink, stamps, type being 
 | Thunk and throw | Feedback: the pick is made (the fifth one opens day done, see 2) | Release past the threshold, a fling, a tap or an arrow key | The stamp hits once more (1.3 to 0.98 to 1.06). On a swipe the sheet leaves at once with the speed of the release, turned 18 degrees. On a tap or a key the sheet rises 3 px for 130 ms while the stamp lands, then is thrown. 12 ms haptic | Thunk 160 ms `--ease-out`; throw 190 to 380 ms from the release speed, `cubic-bezier(0.3, 0.55, 0.4, 1)` | The card fades out in 200 ms |
 | Next sheet | Spatial: the next page comes off the stack | Any pick | The card below rises 7 px and grows from 0.972 to 1; the third takes its place | 420 ms `--ease-out` | Instant |
 | Flick back | Feedback: nothing was picked | Release under the threshold | The sheet returns with a small overshoot | 440 ms `--ease-thunk` | Instant |
-| Boxes ink in | State: which of the five are in | A pick is saved; also when a page with finished boxes opens | A box fills with ink from the bottom; its number turns to paper at 45% of the way; boxes follow each other 70 ms apart | 300 ms `--ease-out` | Instant |
+| Boxes ink in | State: which of the five are in | A pick is saved; also when a page with finished boxes opens | A box fills with ink from the bottom (its number is already paper, so it shows as the ink reaches it); boxes follow each other 70 ms apart | 300 ms `--ease-out` | Instant |
 | Undo: pulled back | Spatial: the same sheet returns from where it went | Tap Undo, or Z or Backspace | The thrown sheet comes in low from the side it left, turned 11 degrees, and settles on the stack with the same overshoot; the sheet that had risen goes back under it | 440 ms `--ease-thunk` | Instant |
 | Fuse | State: how long Undo is open | A pick | A 3 px printer's rule along the bottom of the pick bar is used up from the right; when it is gone the pick goes to press. The same rule runs inside each Undo button of the list view and under "Finishing in 3" | 3000 ms linear | Keeps running: it is information |
+
+### Gesture thresholds (the numbers the deck decides with)
+
+| Rule | Value | Why |
+| --- | --- | --- |
+| Direction lock | After 10 px: a drag that is more vertical than horizontal hands over to scrolling | A scroll is never a pick |
+| Commit by distance | 35% of the card width, however slowly | The stamp presses in exactly there |
+| Commit by flick | At least 48 px of travel and a peak speed of 0.6 px/ms between two touch samples of the last 100 ms, in the direction of the drag | A normal one hand thumb flick is 60 to 90 px. Measured: 80 px in 96 ms picks, 80 px in 400 ms springs back. Earlier values (96 px at 0.5 px/ms or 56 px at 1.1 px/ms, average speed) refused that flick |
+| Slope | Horizontal travel must be at least 1.3 times the vertical travel, for arming and for the release | A mostly downward drag (160 px across, 150 px down) no longer picks |
+| Guards | A tap within 400 ms of a pick is dropped; a swipe or key within 200 ms is queued | A double tap never answers two cards |
+
+### Undo and time (the rule stays: 3 seconds, then the pick is sent and is final)
+
+| Aid | What it does |
+| --- | --- |
+| Next focus stop | After a pick made with the keyboard or a screen reader (the focus was in the card or on Undo), the focus moves to Undo. Arrow keys keep picking from there |
+| Short announcement | The live region says "Picked Yes. Undo, 3 seconds." so it can be heard inside the window |
+| The fuse waits on focus | While Undo has keyboard focus (`:focus-visible`, never hover or touch) the fuse is paused and the pick is held; it runs on when the focus leaves or the next pick is made |
+| Final, said plainly | In the list view a sent answer carries the tag "Final" with a lock |
 
 ## 2. The fifth pick and day done: the extra edition
 

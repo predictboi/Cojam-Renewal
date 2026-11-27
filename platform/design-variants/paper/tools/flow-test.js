@@ -13,6 +13,19 @@ const { chromium } = require('playwright');
     await pg.evaluate(([x, y, d]) => { const c = document.querySelector('.qcard[data-pos="0"]'); const ev = (t, dx) => c.dispatchEvent(new PointerEvent(t, { bubbles: true, cancelable: true, pointerId: 3, clientX: x + dx, clientY: y, pointerType: 'touch', isPrimary: true })); ev('pointerdown', 0); ev('pointermove', 14 * d); ev('pointermove', 90 * d); ev('pointermove', 170 * d); ev('pointerup', 170 * d); }, [x, y, dir]);
     await pg.waitForTimeout(500);
   }
+  // flick thresholds (review B): a short quick flick counts, a slow short drag springs back, a mostly downward drag never picks
+  async function gesture(dx, dy, ms) { const box = await pg.locator('.qcard[data-pos="0"]').boundingBox(); const x = box.x + box.width / 2, y = box.y + 120, steps = Math.max(2, Math.round(ms / 16));
+    await pg.evaluate(([x, y]) => { window.__g = document.querySelector('.qcard[data-pos="0"]'); window.__g.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, cancelable: true, pointerId: 4, clientX: x, clientY: y, pointerType: 'touch', isPrimary: true })); }, [x, y]);
+    for (let i = 1; i <= steps; i++) { await pg.evaluate(([x, y]) => window.__g.dispatchEvent(new PointerEvent('pointermove', { bubbles: true, cancelable: true, pointerId: 4, clientX: x, clientY: y, pointerType: 'touch', isPrimary: true })), [x + dx * i / steps, y + dy * i / steps]); await pg.waitForTimeout(16); }
+    await pg.evaluate(([x, y]) => window.__g.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, cancelable: true, pointerId: 4, clientX: x, clientY: y, pointerType: 'touch', isPrimary: true })), [x + dx, y + dy]); await pg.waitForTimeout(500); }
+  await gesture(80, 0, 400); log.push('slow short drag (80 px in 400 ms): count ' + await count() + ' (expected 0, it springs back)');
+  await gesture(160, 150, 300); log.push('mostly downward drag (160 across, 150 down): count ' + await count() + ' (expected 0)');
+  await gesture(80, 4, 96); log.push('short quick flick (80 px in 96 ms): count ' + await count() + ' (expected 1)');
+  await pg.locator('#undo').click(); await pg.waitForTimeout(500);
+  // keyboard: after an arrow key pick, Undo has the focus and its fuse waits; the pick is still held after 3.6 s
+  await pg.keyboard.press('ArrowRight'); await pg.waitForTimeout(3600);
+  log.push('arrow key pick: focus on ' + await pg.evaluate(() => document.activeElement && document.activeElement.id) + ', Undo still offered after 3.6 s: ' + (await pg.locator('#undo').count() === 1));
+  await pg.keyboard.press('Enter'); await pg.waitForTimeout(500); log.push('Enter on Undo: count ' + await count());
   await swipe(1); log.push('after swipe right: ' + await count());
   await pg.locator('#undo').click(); await pg.waitForTimeout(500); log.push('after undo: ' + await count() + ', front card q' + await pg.locator('.qcard[data-pos="0"]').getAttribute('data-q'));
   await swipe(-1); log.push('after swipe left: ' + await count());

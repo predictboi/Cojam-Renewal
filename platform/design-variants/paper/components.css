@@ -1103,3 +1103,94 @@ small.fact { display: flex; grid-column: 1 / -1; font-size: var(--fs-13); }
 /* ---------- Japanese display: the antique face is set tighter, with proportional kana ---------- */
 :lang(ja) :is(h1, h2, .plate, .qcard h2, .trow-q, .choice, .mast-title, .inv-line, .rstamp, .deck-end h2, .extra-ink b) { font-feature-settings: "palt"; letter-spacing: -0.03em; }
 :lang(ja) .qmeta-t span, :lang(ja) .fact, :lang(ja) .rows dd { word-break: auto-phrase; }
+
+/* =====================================================================================================================
+   REVIEW B: the two answers are never cut, small widths and large text reflow, focus is never hidden.
+   ===================================================================================================================== */
+
+/* ---------- home: the picture is the part that gives way ----------
+   The card is a column: kicker row, picture (flexible, down to nothing), then the headline, the source line and the two answers, which never shrink.
+   When even without the picture the card needs more room than the screen has, the deck grows to what the card needs (App.deck fit) and the page scrolls
+   inside main. So on a short phone, in landscape, with a banner, or with large text the answers stay whole. */
+.is-home main { overflow-y: auto; overscroll-behavior: contain; }
+.is-home .pg { flex: 1 0 auto; }
+.deck { flex: 1 0 auto; min-height: 0; }
+.qimg { flex: 1 1 0; min-height: 0; }
+.qcard-top, .qcard-body { flex: none; }
+.qcard.is-tight .qimg { display: none; }
+/* the question is never cut: no clamp, long titles step down twice */
+.qcard h2, .is-home .qcard h2 { display: block; -webkit-line-clamp: none; overflow: visible; }
+.qcard h2.is-xlong { font-size: var(--fs-18); line-height: 1.22; }
+/* long answers wrap inside a taller button instead of being sliced */
+.choice { min-height: 54px; height: auto; padding-top: var(--s-6); padding-bottom: var(--s-6); }
+.choices.is-wordy .choice { font-size: var(--fs-15); line-height: 1.2; }
+.choice span { overflow-wrap: anywhere; }
+@media (max-height: 640px) { .is-home .ph { padding-top: var(--s-4); } .is-home .pg { padding-top: var(--s-6); } .qcard-final { display: none; } .pickbar { min-height: 44px; } }
+
+/* ---------- the masthead gives way in a fixed order: the nameplate text first, then nothing else; the two buttons never leave the screen ---------- */
+.mast-in { min-width: 0; }
+.mast-home { flex: 1 1 auto; min-width: 0; overflow: hidden; }
+.plate { min-width: 0; max-width: 100%; }
+.plate > span { min-width: 0; overflow: hidden; white-space: nowrap; }
+.plate img { flex: none; }
+.mast-end { flex: none; }
+.pts-in { max-width: 46vw; overflow: hidden; white-space: nowrap; font-size: min(var(--fs-15), 4.2vw); }
+.pts-tag { font-size: min(var(--fs-12), 3.4vw); }
+.me-in { font-size: min(var(--fs-14), 4vw); }
+.mast-title { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-size: min(var(--fs-21), 5.6vw); line-height: 1.15; }
+.gate-bar { min-width: 0; }
+.gate-bar .plate--big { flex: 1 1 auto; font-size: min(var(--fs-26), 6.2vw); }
+.gate-bar .select { flex: none; max-width: 52vw; }
+.gate-bar .select select { max-width: 30vw; font-size: min(var(--fs-14), 4vw); text-overflow: ellipsis; }
+/* tab labels stay on one line and never outgrow their cell, whatever the text size */
+.tb a { font-size: min(var(--fs-12), 3.3vw); white-space: nowrap; min-width: 0; }
+.tb a > span:nth-child(2) { max-width: 100%; overflow: hidden; }
+/* the dateline wraps instead of running off */
+.dateline { flex-wrap: wrap; row-gap: 2px; padding: var(--s-4) 0; white-space: normal; }
+.dateline > span { white-space: nowrap; }
+.dateline-live { white-space: normal !important; }
+/* figures side by side wrap to rows when they no longer fit (large text, long numbers) */
+.tri, .stats--3, .facts3 { grid-template-columns: repeat(auto-fit, minmax(min(100%, 5.6rem), 1fr)); row-gap: var(--s-10); }
+.tri-fig, .stat b { overflow-wrap: anywhere; }
+.stats { grid-template-columns: repeat(auto-fit, minmax(min(100%, 7rem), 1fr)); row-gap: var(--s-10); }
+.addr-v span { flex-wrap: wrap; }
+.fig { overflow-wrap: anywhere; }
+.fig small, .wrow b small { font-size: max(0.36em, 12px); }
+.wrow b small { font-size: var(--fs-12); }
+.period b { font-size: min(var(--fs-21), 5.6vw); }
+.per-d { font-size: min(var(--fs-13), 3.5vw); }
+.seg-btn { font-size: min(var(--fs-14), 3.8vw); }
+.krow-rank { font-size: min(var(--fs-18), 5vw); }
+.krow--lead .krow-rank { font-size: min(var(--fs-32), 8.5vw); }
+.krow--first .krow-rank { font-size: min(var(--fs-44), 11.5vw); }
+.krow--first .krow-name { font-size: min(var(--fs-26), 6.6vw); }
+.krow-prize, .krow--lead .krow-prize { font-size: min(var(--fs-15), 4vw); }
+.krow-pts { font-size: min(var(--fs-14), 3.6vw); }
+.cols { font-size: min(var(--fs-12), 3.2vw); }
+/* at 320 px the name keeps the room: the points column goes first */
+@media (max-width: 340px) { .krow, .cols { grid-template-columns: 30px minmax(0, 1fr) 84px; } .krow-pts, .cols span:nth-child(3) { display: none; } .klist--gap .krow { grid-template-columns: 30px minmax(0, 1fr) 92px; } }
+.pin-main, .pin-pts { min-width: 0; }
+.btn { white-space: normal; padding-top: var(--s-6); padding-bottom: var(--s-6); }
+.choice svg { flex: none; }
+
+/* ---------- focus is never left behind a bar ---------- */
+html { scroll-padding-top: calc(var(--mast-h) + 12px); scroll-padding-bottom: calc(var(--tab-h) + var(--pin-h, 0px) + 24px); }
+.note a, .fine a { display: inline-flex; align-items: center; min-height: var(--target); }
+.check input { width: 24px; height: 24px; }
+.ph-top--q { justify-content: flex-start; gap: var(--s-8); }
+.ph-top--q .qbtn { margin: 0 0 0 -4px; }
+.gate-bar .mast-back { margin-left: -11px; }
+.trow.is-done .tag { margin-left: auto; }
+.qcard-body { grid-template-columns: minmax(0, 1fr); }
+.qcard-body > * { min-width: 0; }
+.qcard h2 { overflow-wrap: anywhere; }
+.choice { font-size: min(var(--fs-18), 6.4vw); }
+.plate.is-mark > span { display: none; }
+.qcard-body { margin-top: auto; }
+/* the number of a box turns to paper at once (no colour step): for the 150 ms the ink is still rising it is paper on paper, never grey on ink */
+.day5 .is-done b { animation: none; }
+/* the required check: a 24 px box drawn inside a 44 px target (the whole row is tappable too) */
+.check { align-items: center; }
+.check input { appearance: none; -webkit-appearance: none; display: grid; place-items: center; width: var(--target); height: var(--target); margin: -10px -6px -10px -10px; border: 0; background: none; accent-color: auto; }
+.check input::before { content: ""; width: 24px; height: 24px; border: var(--edge); background: var(--sheet); }
+.check input:checked::before { background: var(--ink); box-shadow: inset 0 0 0 4px var(--sheet); }

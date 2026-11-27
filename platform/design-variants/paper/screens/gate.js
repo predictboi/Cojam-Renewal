@@ -42,7 +42,7 @@
   /* the headline of the reference is "Predict daily. <em>Earn CT.</em>": one voice here, the second sentence on its own line, no italic word */
   var h1 = t("g.h1").replace(/<em>(.*?)<\/em>/, '<span class="gate-h1-2">$1</span>');
   var raw = '<div class="auth gate"><p class="gate-top" role="note">' + C.icon("shield", 16) + "<span>" + t("g.top") + "</span></p>" +
-    '<div class="gate-bar">' + C.logo(true) + C.lang() + '</div><div class="oxford" aria-hidden="true"></div>' + C.dateline("<span>" + t("d.next.at") + "</span>").replace('class="dateline"', 'class="dateline dateline--cover"') +
+    '<header class="gate-bar">' + C.logo(true) + C.lang() + '</header><div class="oxford" aria-hidden="true"></div>' + C.dateline("<span>" + t("d.next.at") + "</span>").replace('class="dateline"', 'class="dateline dateline--cover"') +
     '<div class="gate-cols"><div class="gate-col"><div class="stack-12"><h1>' + h1 + '</h1><p class="auth-lede">' + t("g.lede") + "</p></div>" +
     (inv ? "" : demo) + "</div>" +
     '<div class="gate-col"><section class="panel" aria-live="polite" id="panel">' + panel() + "</section>" + (inv ? demo : "") +

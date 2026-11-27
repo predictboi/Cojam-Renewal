@@ -21,30 +21,37 @@ Counted by `node tools/word-count.js` with `Intl.Segmenter` (word-like segments)
 
 | Screen | EN before | EN after | EN cut | KO before | KO after | KO cut | JA before | JA after | JA cut |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Wallet | 63 | 33 | 48% | 66 | 39 | 41% | 77 | 37 | 52% |
-| Convert | 50 | 27 | 46% | 48 | 27 | 44% | 61 | 27 | 56% |
-| Profile | 93 | 41 | 56% | 87 | 43 | 51% | 112 | 43 | 62% |
+| Wallet | 63 | 35 | 44% | 66 | 41 | 38% | 77 | 40 | 48% |
+| Convert | 50 | 31 | 38% | 48 | 33 | 31% | 61 | 33 | 46% |
+| Profile | 93 | 43 | 54% | 87 | 46 | 47% | 112 | 47 | 58% |
 | Invite | 170 | 68 | 60% | 148 | 63 | 57% | 225 | 76 | 66% |
-| Staking, new stake | 59 | 39 | 34% | 65 | 53 | 18% | 74 | 48 | 35% |
-| Staking, my stakes | 92 | 61 | 34% | 107 | 78 | 27% | 111 | 81 | 27% |
-| Results | 405 | 281 | 31% | 410 | 264 | 36% | 506 | 345 | 32% |
+| Staking, new stake | 59 | 54 | 8% | 65 | 61 | 6% | 74 | 63 | 15% |
+| Staking, my stakes | 92 | 75 | 18% | 107 | 90 | 16% | 111 | 96 | 14% |
+| Results | 405 | 328 | 19% | 410 | 311 | 24% | 506 | 410 | 19% |
 | Ranking | 116 | 104 | 10% | 116 | 103 | 11% | 125 | 109 | 13% |
-| Day done | 130 | 110 | 15% | 130 | 113 | 13% | 156 | 129 | 17% |
-| Log in | 72 | 30 | 58% | 62 | 23 | 63% | 88 | 36 | 59% |
-| First run, page 1 | 40 | 31 | 22% | 34 | 29 | 15% | 50 | 40 | 20% |
-| First run, page 2 | 39 | 28 | 28% | 37 | 24 | 35% | 50 | 37 | 26% |
-| First run, page 3 | 40 | 17 | 58% | 34 | 18 | 47% | 47 | 24 | 49% |
-| Wallet, on hold | 97 | 60 | 38% | 96 | 64 | 33% | 113 | 69 | 39% |
-| Staking, on hold | 72 | 62 | 14% | 69 | 66 | 4% | 91 | 79 | 13% |
-| My stakes, on hold | 174 | 124 | 29% | 192 | 146 | 24% | 208 | 160 | 23% |
-| Convert, on hold | 63 | 45 | 29% | 58 | 40 | 31% | 74 | 48 | 35% |
+| Day done | 130 | 80 | 38% | 130 | 83 | 36% | 156 | 97 | 38% |
+| Log in | 72 | 49 | 32% | 62 | 41 | 34% | 88 | 60 | 32% |
+| First run, page 1 | 40 | 33 | 18% | 34 | 31 | 9% | 50 | 42 | 16% |
+| First run, page 2 | 39 | 30 | 23% | 37 | 26 | 30% | 50 | 39 | 22% |
+| First run, page 3 | 40 | 19 | 53% | 34 | 20 | 41% | 47 | 26 | 45% |
+| Wallet, on hold | 97 | 62 | 36% | 96 | 66 | 31% | 113 | 72 | 36% |
+| Staking, on hold | 72 | 77 | -7% | 69 | 74 | -7% | 91 | 94 | -3% |
+| My stakes, on hold | 174 | 144 | 17% | 192 | 163 | 15% | 208 | 181 | 13% |
+| Convert, on hold | 63 | 50 | 21% | 58 | 47 | 19% | 74 | 56 | 24% |
 | Invite, on hold | 164 | 101 | 38% | 131 | 81 | 38% | 202 | 112 | 45% |
-| Home, card view (unchanged) | 51 | 52 | | 56 | 58 | | 78 | 81 | |
-| Home, list view (unchanged) | 90 | 91 | | 94 | 96 | | 128 | 131 | |
+| Home, card view (not part of the pass) | 51 | 50 | 2% | 56 | 56 | 0% | 78 | 79 | -1% |
+| Home, list view (not part of the pass) | 90 | 91 | -1% | 94 | 98 | -4% | 128 | 133 | -4% |
 
 New in this round, so there is no "before": Deposit 36 / 37 / 52, Withdraw 30 / 29 / 36, Gate (Android) 81 / 72 / 110, Account on hold explanation 118 / 108 / 155 (EN / KO / JA).
 
-Target check: the aim was a cut of at least 40% on the money, profile and invite screens. Wallet, convert, profile and invite reach it in all three languages. **Staking (34%, 18%, 35%) and my stakes (34%, 27%, 27%) do not.** After review A the cut is deliberately smaller there: shorthand such as "90d" or "≥ 10 CT" was replaced by labelled facts, and the lock sentence is back in full. What is left is the required facts: the amount, the four periods with their yearly rates, the lock date and "No early exit", who pays the fee, and per stake the amount, lock, rate, state, the two dates, the day count and the interest. The Korean count is higher because the segmenter counts particles and counters as separate words. Results is long because it lists four days of five questions; the question texts are most of the words. Home went up by one word: the source line now ends with the word "Rules".
+Target check: the aim was a cut of at least 40% on the money, profile and invite screens.
+
+- **Reached:** profile (54%, 47%, 58%), invite (60%, 57%, 66%), wallet in EN and JA (44%, 48%; KO 38%).
+- **Not reached:** convert (38%, 31%, 46%), staking (8%, 6%, 15%) and my stakes (18%, 16%, 14%). An earlier state of this pass did reach 34% to 56% there by turning sentences into chips ("90d", "13%", "≥ 10 CT", "= 1 CT"). The independent review found those cryptic, and the ruling was: no bare shorthand, every value carries a plain word label, and the critical facts (no early exit, yearly rate, who pays the fee, the lock end date) stay prominent. So the labels and the lock sentence came back. What is on those screens now is the required facts in the shortest labelled form; the explanations are still behind "?".
+- The Korean and Japanese counts run higher than English because the segmenter counts particles and counters as separate words.
+- "Staking, on hold" grew by a few words: the hold notice was already the only sentence there, and the lock line is now always shown.
+- Results is long because it lists four days of five questions; the question texts are most of the words. A waiting row says "Answer at 21:00" and "+50P if hit" again (review A).
+- Home was not part of the pass (the founder asked to keep it). The source line now ends with the word "Rules", and the "0/5" figure is gone.
 
 ## Where each explanation went
 

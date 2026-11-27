@@ -75,7 +75,7 @@
       App.countTo(fig, 0, 100, num, null, 620);   /* the figure only ever shows amounts on the way to 100 */
       day5.children[4].className = "is-done";
       try { if (navigator.vibrate) navigator.vibrate([12, 40, 18]); } catch (e) {}
-      App.addPoints(100); App.live(t("toast.paid", { n: 100 }));
+      App.addPoints(100);   /* the row under the figure is the one live region that says it */
       at(640, function () { if (settled) return; wrap.innerHTML = row("paid"); App.stampLand($("#seal .rstamp"), 0);
         var f = $("#dl-flip"); if (f) { f.firstChild.textContent = t("d.next"); if (!App.reduce) { f.classList.remove("is-flip"); void f.offsetWidth; f.classList.add("is-flip"); } } });
       at(1400, settle);

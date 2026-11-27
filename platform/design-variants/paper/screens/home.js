@@ -83,11 +83,13 @@
         /* the Undo of the same pick stays in place, so a finger already on Undo never loses its tap */
         if (bar._held === p && $("#undo", bar)) return;
         bar._held = p;
-        var gone = Date.now() - p.t0;
+        var gone = Date.now() - p.t0, wasOnUndo = document.activeElement && document.activeElement.id === "undo";
         /* the 3 seconds are a rule across the top of the bar, used up from the right; when it is gone the pick goes to press */
         bar.innerHTML = '<span class="fuse" aria-hidden="true"><i style="--gone:-' + gone + 'ms"></i></span>' +
           '<span class="pickbar-msg" id="pick-msg">' + C.icon("check", 16) + "<span>" + label(p) + "</span></span>" +
           '<button type="button" class="undo" id="undo" aria-label="' + App.esc(t("h.undo.aria", { n: p.n, choice: App.q(p.id)[p.dir] })) + '">' + C.icon("undo", 18) + "<span>" + t("h.undo") + '</span><kbd aria-hidden="true">Z</kbd></button>';
+        /* after a pick made with the keyboard or a screen reader (the focus was in the card or on Undo), Undo is where the focus goes next */
+        if (p.focusUndo || wasOnUndo) { p.focusUndo = false; var ub = $("#undo", bar); if (ub) ub.focus({ preventScroll: true }); }
         return;
       }
       bar._held = null;
@@ -112,18 +114,28 @@
       disabled: function () { return App.offline; },
       onBlocked: function () { App.toast(t("h.offline"), { key: "offline" }); },
       onCommit: function (n, dir, remaining, card) {
-        var p = { n: n, id: card.getAttribute("data-id"), dir: dir, card: card, t0: Date.now(), state: "held" };
+        var ae = document.activeElement, p = { n: n, id: card.getAttribute("data-id"), dir: dir, card: card, t0: Date.now(), state: "held", focusUndo: !!ae && (ae.id === "undo" || card.contains(ae) || keyPick) };
+        keyPick = false;
+        held.forEach(resume);   /* an earlier pick whose fuse was waiting on a focused Undo runs on: only the newest pick can be held */
         p.timer = setTimeout(function () { send(p); }, UNDO_MS);
         held.push(p);
         if (live) { sess.data.picks[p.id] = dir; sess.save(); }
         stopNudge();
         seg(n, "is-pend"); count++; cnt.textContent = count;
         render();
-        App.live(t("h.live.picked", { choice: App.q(p.id)[dir], k: remaining }));
+        App.live(t("pp.live.picked", { choice: App.q(p.id)[dir] }));   /* short enough to be heard inside the 3 seconds */
         /* the fifth pick: the day done page opens at once (the throw is still on screen for a moment). Its Undo stays open there for what is left of the 3 seconds. */
         if (count === 5 && !leaving) { leaving = true; setTimeout(function () { location.href = "done.html?state=moment&undo=" + Math.max(0, UNDO_MS - (Date.now() - p.t0)) + "&q=" + p.id; }, App.reduce ? 0 : 320); }
       }
     });
+    /* The fuse waits while Undo has keyboard focus (a screen reader or keyboard user is on it), never on hover or touch. It runs on when the focus leaves.
+       The rule itself stays: once the fuse is out the pick is sent and is final. */
+    var keyPick = false;
+    function pause(p) { if (!p || p.paused || p.state !== "held") return; p.paused = true; clearTimeout(p.timer); p.left = Math.max(300, UNDO_MS - (Date.now() - p.t0)); var f = $(".fuse i", bar); if (f) f.style.animationPlayState = "paused"; }
+    function resume(p) { if (!p || !p.paused) return; p.paused = false; p.t0 = Date.now() - (UNDO_MS - p.left); p.timer = setTimeout(function () { send(p); }, p.left); var f = $(".fuse i", bar); if (f) f.style.animationPlayState = ""; }
+    bar.addEventListener("focusin", function (e) { var u = e.target.closest && e.target.closest("#undo"); if (u && u.matches(":focus-visible")) pause(held[held.length - 1]); });
+    bar.addEventListener("focusout", function (e) { if (e.target.closest && e.target.closest("#undo")) setTimeout(function () { if (!document.activeElement || document.activeElement.id !== "undo") held.forEach(resume); }, 0); });
+    document.addEventListener("keydown", function (e) { if (e.key === "ArrowLeft" || e.key === "ArrowRight") keyPick = true; }, true);
     function undo() {
       var p = held.pop(); if (!p) return;
       clearTimeout(p.timer);

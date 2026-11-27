@@ -67,7 +67,7 @@
   function view() { return step === "email" ? emailView() : step === "code" ? codeView() : setupView(); }
   function headline() { return step === "email" ? t("a.h1") : step === "code" ? t("a.code.h1") : t("a.setup.h1"); }
   var facts = '<ul class="facts" id="facts"><li>' + C.icon("bolt", 18) + t("a.fact.1") + "</li><li>" + C.icon("shield", 18) + t("a.fact.2") + "</li><li>" + C.icon("swap", 18) + t("a.fact.3") + "</li></ul>";
-  var raw = '<div class="auth"><div class="gate-bar">' + C.logo(true) + C.lang() + '</div><div class="oxford" aria-hidden="true"></div>' + C.dateline("<span>" + t("d.next.at") + "</span>").replace('class="dateline"', 'class="dateline dateline--cover"') +
+  var raw = '<div class="auth"><header class="gate-bar">' + C.logo(true) + C.lang() + '</header><div class="oxford" aria-hidden="true"></div>' + C.dateline("<span>" + t("d.next.at") + "</span>").replace('class="dateline"', 'class="dateline dateline--cover"') +
     '<div class="auth-main"><div class="stack-12"><h1 id="h1">' + headline() + '</h1><p class="auth-lede" id="lede"' + (step === "email" ? "" : " hidden") + ">" + t("pp.lede") + '</p></div><section class="panel" id="panel">' + view() + "</section>" + facts + "</div></div>";
 
   function runSetup() {

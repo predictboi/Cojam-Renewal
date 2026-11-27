@@ -56,6 +56,7 @@
     if (v.length < 2 || v.length > 20 || v !== v.trim()) return "p.name.e.len";
     if (!/^[\p{L}\p{N} _.]+$/u.test(v)) return "p.name.e.chars";
     if (/^0x[0-9a-f]+$/i.test(v) || /cojam|admin/i.test(v)) return "p.name.e.staff";
+    if (v !== M.user.name && M.ranking.concat(M.around).some(function (r) { return r.name.toLowerCase() === v.toLowerCase(); })) return "pp.name.taken";
     return "";
   }
   App.mount({ tab: "", me: true, back: "wallet.html", title: t("p.title"), body: body(), badges: { home: "dot", results: 2 }, after: function () {
@@ -65,7 +66,7 @@
     function sync() { var ok = check(); save.disabled = !ok || name.value === (M.user.name || ""); }
     name.addEventListener("input", sync); sync();
     name.addEventListener("keydown", function (e) { if (e.key === "Enter" && !save.disabled) save.click(); });
-    save.addEventListener("click", function () { if (check()) { M.user.name = name.value; $("#pid-name").textContent = name.value || F.short(M.user.address); App.toast(t("p.name.saved")); save.disabled = true; } else name.focus(); });
+    save.addEventListener("click", function () { if (check()) { M.user.name = name.value; $("#pid-name").textContent = name.value || F.short(M.user.address); App.toast(t(name.value ? "p.name.saved" : "pp.name.removed")); save.disabled = true; } else name.focus(); });
     document.addEventListener("seg", function (e) { if (e.detail.name === "lang") App.setLang(e.detail.value); if (e.detail.name === "view") App.store.set("view", e.detail.value); });
     function logout() { App.sheet.open("<h2>" + t("p.logout.h") + '</h2><p class="sheet-lead">' + t("p.logout.b") + '</p><div class="sheet-acts">' + C.btn(t("p.logout"), { block: true, href: "login.html" }) + C.btn(t("common.cancel"), { kind: "ghost", block: true, attrs: "data-sheet-close" }) + "</div>"); }
     $("#logout").addEventListener("click", logout);

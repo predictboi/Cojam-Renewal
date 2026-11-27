@@ -111,3 +111,75 @@ Asked for by the founder after choosing this concept: stronger effects and motio
 6. The extra edition's length. 2.2 seconds is right once; if players finish daily, a shorter cut after the first week (band, figure, stamp, about 1.2 seconds) would respect them.
 7. Halftone on low end Android: if the first raster of a new front card shows up as a hitch when the stack advances, ship server rendered 1 bit pictures.
 8. The page turn between tabs is a cross document entrance only. With the View Transitions API (or a single page shell) the old page could leave as well.
+
+## Production coverage round (state parity, copy reduction, two independent reviews)
+
+This section replaces the audit table and the "Screens not rebuilt" note at the top where they differ. Independent reviews are in `reviews/review-A.md` (design 77, usability 33) and `reviews/review-B.md` (design 82, usability 31); both scored earlier states of the folder. A second independent scoring has not been run yet, so there is no new score here: my own scores above are not updated on purpose.
+
+### What was added
+
+- **State parity with `platform/design/index.html`:** 17 screens, 215 states, under the same `?state=` names (`STATES.md`, `assets/states.js`). New here: the install Gate (16 states), deposit and withdraw as full pages (5 and 14 states), the system screens (maintenance, update, offline, not found, account on hold), and every state that had been left out of login, first run, home (slow, reconnect, other device, closed, no image), list view, staking (full, max 20, signing, steps, slow, hidden), my stakes (claim, on hold with and without KAIA), convert (minimum, global cap), profile (name errors, the invite code within 24 hours with all code states, session, update, other device) and invite (shared).
+- **Example questions** that follow the decided rule (the outcome becomes known only after the day ends at 09:00 KST): the sets of `platform/shared/src/devQuestions.ts` in EN, KO and JA. The results mock follows the same rule: today's five all wait.
+- **Copy reduction** by the founder's rule (`COPY.md`: the rule, the word counts before and after, where each sentence went, the twelve sheets behind "?").
+- **Japanese display face:** Shippori Antique B1, with proportional kana and tighter tracking, and phrase based line breaks.
+
+### Review A: what was fixed
+
+| Finding | Fix |
+| --- | --- |
+| Cryptic chips ("90d", "13%", "22 / 90", "≥ 10 CT", "= 1 CT", "+50P 22:10") | Labelled facts in the text face: "Lock 90 days", "13% a year", "Day 22 of 90", "Min. claim 10 CT", "1,000P = 1 CT", "+50P at 22:10" |
+| "No early exit" was a small chip; rates not marked as yearly | The lock is its own line in ink and bold with the date; "Rate a year" over the options; "No fee: Cojam pays" under the action |
+| Withdraw success showed neither address nor balance | Both rows added |
+| A frame should mean pressable | Tags, counts, the day boxes, step numbers and icon tiles lost their frame (second paper tone instead); only controls are framed |
+| Hairline zero in the prizes sheet | `tabular-nums` removed from every element set in the slab |
+| Addresses in two faces, "0x" turned into "0×" | Every short address is set in the data face (`App.name`), contextual alternates off |
+| Day done: the stamp overlapped "+100P" in Korean and left the gutter | The stamp has its own row under the figure, inside the gutter in every language |
+| Day done: the reels showed unrelated amounts | The figure counts up from 0 to 100 and never shows anything else (checked in `flow-test.js`) |
+| Day done: a 22 px layout jump when paid | The row under the figure has one height in every phase: 0 px shift, measured |
+| Home after the day still said "Closes in" | "Next set in" |
+| A 3.5 s wait between the fifth swipe and the reward | The day done page opens at once; the Undo of the fifth pick lives there with its fuse; a tap means "finish now" |
+| Progress shown three times on home | The "0/5" figure is gone (kept for screen readers); the boxes and the card number stay |
+| The answer wash tinted the other button | The two answers sit above the wash |
+| List view below the card view | Thumbnails are the card's own halftone, cropped on the subject; "Pick" sits on the row's right edge; answered rows stay in ink |
+| Convert, first run and login half empty | Convert: the result is an 88 px figure on a sheet band with "Points left" and three labelled facts. First run: the nameplate over the rule, a larger figure panel, a card that leans to show the gesture, page marks above the action. Login: the three facts are back |
+| Results waiting rows were an icon and a time | "Answer at 21:00" with the same dashed mark as the legend and the day header, and "+50P if hit"; the clipping spans the row |
+| The own row showed twice under the pinned bar | The pinned bar steps aside while the own row is on screen |
+| A blank frame in the ranking page turn | The new page is in place at once and slides in; never blank |
+| The language switch scrolled to the top | The scroll position is kept across the reload |
+| Narrow targets ("List", "Skip", "Cards", "Terms") | 44 px wide as well as tall |
+| Disabled primary was a pale blue slab | Second paper tone with a grey edge; the label says why |
+| Empty staking amount showed a dash | "0 CT" in grey |
+| "Updated 9s ago" on staking and wallet said nothing | Removed (shown only when a balance could not be refreshed) |
+| "Day 5, week 48" twice on the done page | The band says only "Extra" |
+| Success stamp and the link under it both said "Done" in Korean | The stamp says "Filed" (접수 완료, 受付済) |
+
+Not done from review A: page 1 of first run is not yet a card the player really swipes (it shows the gesture with a leaning card); the home tab icon and the profile avatar were left as they are; the weather picture still prints lighter than the others.
+
+### Review B: what was fixed
+
+| Finding | Fix | Check |
+| --- | --- | --- |
+| B1 (blocker): the answer buttons were cut on short screens | The picture gives way first (down to nothing); if the card still does not fit, the deck grows to what the card needs and the page scrolls. Nothing in the card is clipped | `tools/small-check.js`: 6 viewports (320 x 568, 360 x 560, 360 x 640, 375 x 667, 390 x 844, 844 x 390) x 8 card states x 3 languages = 144 checks, 0 failed |
+| M1: masthead, language control and tab labels left the screen at 320 px and at 130% and 200% text | The nameplate's words give way first (then only the mark), the two buttons never shrink off screen; tab labels stay on one line; figures side by side wrap to rows; the dateline wraps; addresses wrap | Same tool: 5 width and text size settings x 17 screens x 3 languages = 255 checks, 0 failed |
+| M2: Undo for 3 seconds only | The rule stays (decided). Undo is the next focus stop after a keyboard or screen reader pick; the announcement is "Picked Yes. Undo, 3 seconds."; the fuse waits while Undo has keyboard focus; the list view marks a sent answer "Final" | `flow-test.js`: after an arrow key pick the focus is on Undo and the pick is still held after 3.6 s |
+| M3: focus hidden under the tab bar | A focused control is scrolled clear of the bars; scroll padding on the page | `tools/focus-check.js`: 201 focus stops on 12 screens, 0 hidden |
+| M4: long questions and answers | The question is never truncated (two type steps, then the picture gives room); long answers step down and wrap | In `small-check.js` (no clamp, no clipped headline) |
+| M5: the disabled action gave the wrong reason | Convert says "Available Dec 1, 10:35", "Limit reached until 09:00 KST", "Converting is paused"; withdraw says "Fix the address" or "Deposit KAIA" | State check |
+| M6: short flicks sprang back | 48 px at a peak of 0.6 px/ms commits; across must be 1.3 times down | `flow-test.js`: 80 px in 96 ms picks, 80 px in 400 ms and a 160 by 150 px diagonal do not |
+| Minors | Full width digits are read as digits; an empty name says "Name removed. Your address is shown."; a name already on the board is refused; one announcement on the reward; the tab link reads "Home, predictions left today"; countdowns are one spoken sentence a minute; the "?" is beside the heading, not in it; closed result details are `hidden`; the summary reads label, then figure; a banner landmark on the cover screens; a back arrow on the hold page; the retry toast stays 60 s; the checkbox is 24 px; no text under 12 px; at 320 px the ranking drops its points column so names keep their room | |
+
+Not done from review B: a static masthead and skeleton in the HTML for slow lines (the shell is still built by script), one language per file and self hosted fonts (smaller issue 23); the manifest orientation lock (the card now reflows and scrolls in landscape instead); eligibility in the ranking's own bar (it is in the "How prizes work" sheet).
+
+### Verification of this round
+
+| Check | Result |
+| --- | --- |
+| `node tools/state-check.js` (every state, EN, KO, JA: page errors, missing copy keys, overflow, empty pages) | 215 states x 3 languages = 645 pages, 0 problems |
+| `sh tools/audit-all.sh en 390 844 all` (the repository audit on every state) | 215 URLs. 212 came back with 0 overflow, 0 contrast failures, 0 small targets. Two had one finding each and were fixed and audited again at 0: the number of the fifth box was grey on ink for a moment while it inked in (`done.html?state=moment`), and the required checkbox was 24 px (`withdraw.html?state=review`). One URL returns no result: `login.html?state=returning` finishes its setup and moves on to home while the audit runs (the same screen is covered by `setup` and `busy`) |
+| `sh tools/audit-all.sh` on the 17 screens and the hub in KO and JA at 390 x 844, EN at 360 x 780, KO at 320 x 568 | 72 URLs, 0 overflow, 0 contrast failures, 0 small targets |
+| `node tools/small-check.js` | 399 checks, 0 failed |
+| `node tools/focus-check.js` | 201 focus stops, 0 hidden |
+| `node tools/lang-switch-check.js` (hub, gate, login, first run, profile at 360, 390, 440 px, three languages) | 45 checks, 0 failed |
+| `node tools/flow-test.js` | All steps as expected (flick rules, keyboard Undo, five picks, Undo on the done page, finish now, the figure only ever counts up to 100, 0 px layout shift, dateline "Next set in") |
+| `node tools/motion-run.js all` | Five flows recorded, 19 stills, no page errors. Drag frame intervals: 121 frames, average 16.67 ms, maximum 16.8 ms at CPU 1x and 4x |
+| `node tools/motion-trace.js` | Raster during a 2 s drag: 20.6 ms with layers, 62.6 ms without |

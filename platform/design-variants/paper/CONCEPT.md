@@ -74,8 +74,19 @@ Labels are sentence case and untracked everywhere. The only capitals are the res
 - **In production the halftone is rendered once per picture on the server.** When a question's picture is approved in the admin, a job prints it through the screen (grey, lift, dot screen, threshold) and stores a 1 bit PNG at two sizes (card and 2x), plus the square block for the list. The app shows plain images: no filters, nothing to compute on the phone, identical on every device.
 - **The CSS version in this prototype is the stand in.** `.ht` builds the same look live (blur, multiply with a dot gradient, hard contrast) so that any picture dropped into the mock works without a build step. Its parameters are the specification for the server job: `--ht-cell` 5 px dot pitch at 1x, `--ht-lift` 2.9, `--ht-contrast` 9.
 - **Drags stay cheap either way.** In the prototype the picture, the colour wash and the stamps each have their own compositor layer, so the filters run once per picture and never while the card moves (measured in `REVIEW.md`: raster work during a drag fell by about 60%).
-- **The list thumbnail is a different cut.** At 60 px a dot screen turns to texture, so the list uses a square block: the picture is cropped on its focal point (`focus` on each question, enlarged 1.5 times), pushed to two tones and reversed, so the subject stands in paper on a block of ink, like a small printer's cut. In production it is the third file of the same server job.
+- **The list thumbnail is the same print, cropped.** A 64 px square of the card's own picture, cropped on its focal point (`focus` on each question, enlarged 1.55 times) through a finer screen (3 px pitch), so the list and the card show one picture in one treatment. (A reversed block cut was tried and dropped after review: it was the heaviest thing on the screen and looked like another product.) In production it is the third file of the same server job.
 - **The source line on the card is a worded control.** The answer source and the settle time are one button that ends in an underlined "Rules" with a chevron, in place of the earlier small info icon.
+
+## A frame means a control
+
+Only things that can be pressed carry the ink frame: buttons, fields, the "?" box, the address chip, Undo, Pick, the lock period options, the question card. Everything static has another skin: a tag is a word on the second paper tone, a count is a bold number on the same tone, the five day boxes, step numbers and icon tiles have no edge, and a fact is a short label with its value in the text face ("Lock 90 days", "13% a year", "Min. claim 10 CT").
+
+## Small screens, large text, long content
+
+- The two answers are never cut. The card is a column in which the picture is the part that gives way (down to nothing); if the card still needs more room than the screen has (a short phone, landscape, a banner, large text), the deck grows to what the card needs and the page scrolls. Checked at 320 x 568, 360 x 560, 360 x 640, 375 x 667 and 844 x 390 in every card state and three languages (`tools/small-check.js`).
+- A question is never truncated: long titles step down twice (26, 23, 18 px) and then take room from the picture. Long answers step down and wrap inside a taller button.
+- The masthead gives way in a fixed order: the words of the nameplate go first (the mark stays), the points and the profile never leave the screen. Tab labels stay on one line. Figures that sit side by side wrap to rows when they no longer fit. Checked at 320 px and with the root font at 130% and 200%.
+- A focused control is never left behind the tab bar or a pinned bar (`tools/focus-check.js`).
 
 ## Copy on the surface
 
@@ -106,7 +117,7 @@ Wording added for the concept, in three languages (`assets/paper-i18n.js`): the 
 | `tokens.css`, `components.css` | Tokens and every component and screen style |
 | `assets/app.js` | Shell and builders (new), behaviour carried over from `platform/design/assets/components.js` (deck, Undo, sheets, transactions, countdowns, QR) |
 | `screens/*.js` | One script per screen; the HTML files are thin shells |
-| `tools/` | `state-check.js`, `capture-all.js`, `shot.js`, `sheet.py`, `flow-test.js`, `audit-all.sh`, `word-count.js`, `lang-switch-check.js`, `motion-run.js`, `motion-trace.js`, `motion-mp4.sh` |
+| `tools/` | `small-check.js`, `focus-check.js`, `state-check.js`, `capture-all.js`, `shot.js`, `sheet.py`, `flow-test.js`, `audit-all.sh`, `word-count.js`, `lang-switch-check.js`, `motion-run.js`, `motion-trace.js`, `motion-mp4.sh` |
 | `captures/` | `<screen>-<lang>-<width>.png` |
 | `REVIEW.md` | The quality loop: scores of the last round and what was fixed |
 | `STATES.md` | Every screen and state, the names that differ from the reference, what was added and what behaves differently |

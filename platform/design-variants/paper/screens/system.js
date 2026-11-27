@@ -13,7 +13,7 @@
   }[S] || { icon: "search", h: "sys.404.h", b: "sys.404.b", btn: "sys.404.btn", href: "home.html" };
   var MAIL = "help@cojam.app";
   function li(icon, keys) { return "<ul>" + keys.map(function (k) { return "<li>" + C.icon(icon, 18) + "<span>" + t(k) + "</span></li>"; }).join("") + "</ul>"; }
-  var top = '<div class="gate-bar"><a class="mast-home" href="' + (S === "blocked" ? "wallet.html?state=hold" : "home.html") + '" aria-label="' + App.esc(t("hd.home")) + '">' + C.logo() + "</a>" + (S === "blocked" ? C.tag(t("hold.tag"), "ink", "pause") : "") + '</div><div class="oxford" aria-hidden="true"></div>';
+  var top = '<header class="gate-bar">' + (S === "blocked" || S === "notfound" ? '<a class="mast-back" href="' + (S === "blocked" ? "wallet.html?state=hold" : "home.html") + '" aria-label="' + App.esc(t("hd.back")) + '">' + C.icon("back", 22) + "</a>" : "") + '<a class="mast-home" href="' + (S === "blocked" ? "wallet.html?state=hold" : "home.html") + '" aria-label="' + App.esc(t("hd.home")) + '">' + C.logo() + "</a>" + (S === "blocked" ? C.tag(t("hold.tag"), "ink", "pause") : "") + '</header><div class="oxford" aria-hidden="true"></div>';
   /* account on hold. Calm and complete: what it means, what still works (with the fee the player now pays), what is paused, and how to reach us.
      The address is a mail link and also a copy chip, so it can be carried to another app. */
   var hold = '<div class="sys"><h1>' + t("sys.blocked.h") + "</h1><p>" + t("sys.blocked.b") + "</p>" +

@@ -18,7 +18,7 @@
   function fix4(n) { return Number(n).toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 }); }
   function dg(s) { return String(s).replace(/\d/g, '<i class="dg">$&</i>'); }
 
-  function head() { return '<div class="ph-top"><h1 class="h-q">' + t("s.title") + C.q("staking", t("s.title")) + "</h1></div>"; }
+  function head() { return '<div class="ph-top ph-top--q"><h1>' + t("s.title") + "</h1>" + C.q("staking", t("s.title")) + "</div>"; }
   function sw() { return '<nav class="mtabs" id="sw" aria-label="' + App.esc(t("s.switch")) + '"><a href="staking.html' + HQ + '">' + t("s.new") + '</a><a href="stakes.html' + (hold ? "?state=" + S : "") + '" aria-current="page">' + t("s.tab.mine") + '<span class="mtabs-n">' + (S === "empty" ? 0 : stakes.length) + "</span></a></nav>"; }
   function out(s) { return Math.round((s.amount + calc(s).interest) * 1e4) / 1e4; }
   /* on hold the player pays the network fee: a tag under each action, and with too little KAIA the action is off */

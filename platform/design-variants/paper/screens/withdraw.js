@@ -42,7 +42,7 @@
       var noKaia = kaia < fee;
       $("#kaia-note").innerHTML = noKaia ? C.note("error", t("x.e.kaia", { f: fee, k: F.dec(kaia) }), C.btn(t("x.fix.kaia"), { sm: true, href: "deposit.html" })) : "";
       var valid = v && !e1 && !e2 && !p.empty && !noKaia && !blocked;
-      go.disabled = !valid; go.querySelector("span").textContent = !p.empty && !e2 && a ? t("x.btn", { a: F.dec(a) }) : t("x.btn.empty");
+      go.disabled = !valid; go.querySelector("span").textContent = e1 ? t("pp.x.fix") : noKaia ? t("x.fix.kaia") : !p.empty && !e2 && a ? t("x.btn", { a: F.dec(a) }) : t("x.btn.empty");
       return valid ? { to: v, a: a } : null;
     }
     to.addEventListener("input", function () { touched = true; update(); }); to.addEventListener("blur", function () { touched = true; update(); }); inp.addEventListener("input", update);

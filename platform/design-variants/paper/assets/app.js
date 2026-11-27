@@ -275,7 +275,8 @@
   C.qcard = function (id, o) {
     o = o || {};
     var q = App.q(id); if (o.noimg) q.img = "";
-    var long = /[　-鿿가-힯]/.test(q.title) ? q.title.length > 22 : q.title.length > 44;
+    var cjk = /[　-鿿가-힯]/.test(q.title), long = cjk ? q.title.length > 22 : q.title.length > 44, xlong = cjk ? q.title.length > 40 : q.title.length > 80;
+    var wordy = Math.max(q.l.length, q.r.length) > (cjk ? 6 : 10);
     function choice(d) {
       return '<button type="button" class="choice" data-dir="' + d + '"' + (o.disabled ? ' aria-disabled="true"' : "") + (o.static ? ' tabindex="-1"' : "") + ' aria-label="' + esc(t("h.pick.aria", { choice: q[d], q: q.title })) + '">' +
         (d === "l" ? ic("left", 18) : "") + "<span>" + esc(q[d]) + "</span>" + (d === "r" ? ic("right", 18) : "") + "</button>";
@@ -285,10 +286,10 @@
       '<div class="qimg' + (q.img ? "" : " qimg--none") + '">' + C.halftone(q, 800, 1000) + "</div>" +
       '<span class="qtint" aria-hidden="true"></span>' +
       '<span class="qstamp qstamp--l" aria-hidden="true">' + esc(q.l) + '</span><span class="qstamp qstamp--r" aria-hidden="true">' + esc(q.r) + "</span>" +
-      '<div class="qcard-body"><h2' + (long ? ' class="is-long"' : "") + ">" + esc(q.title) + "</h2>" +
+      '<div class="qcard-body"><h2' + (xlong ? ' class="is-xlong"' : long ? ' class="is-long"' : "") + ">" + esc(q.title) + "</h2>" +
       (o.failed ? '<p class="qcard-note">' + ic("warn", 16) + t("h.notsaved") + "</p>" : "") +
       (o.static ? '<div class="qmeta">' : '<button type="button" class="qmeta" data-ai-info="' + id + '" aria-haspopup="dialog">') + '<span class="qmeta-t"><span>' + t("h.answer", { rule: esc(q.rule) }) + "</span><span>" + t("h.ai", { time: q.settle }) + "</span></span>" + (o.static ? "</div>" : '<span class="qmeta-go">' + t("pp.rule") + ic("chev", 14) + "</span></button>") +
-      '<div class="choices">' + choice("l") + choice("r") + "</div>" +
+      '<div class="choices' + (wordy ? " is-wordy" : "") + '">' + choice("l") + choice("r") + "</div>" +
       (o.final ? '<p class="qcard-final">' + t("h.final") + "</p>" : "") +
       "</div></article>";
   };
@@ -297,7 +298,7 @@
     function a(id, file) { var on = id === cur; return '<a href="' + file + (on || !state ? "" : "?state=" + state) + '"' + (on ? ' aria-current="page"' : "") + ">" + t("h.view." + id) + "</a>"; }
     return '<div class="viewsw" role="group" aria-label="' + esc(t("h.view.label")) + '">' + a("card", "home.html") + a("term", "home-list.html") + "</div>";
   };
-  C.closes = function (secs) { return "<span>" + t("h.closes") + '</span> <b data-cd="' + secs + '"></b>'; };
+  C.closes = function (secs) { return "<span>" + t("h.closes") + '</span> <b data-cd="' + secs + '" aria-hidden="true"></b><span class="sr-only" data-cd-sr></span>'; };
   C.thumb = function (q) {
     if (typeof q === "string") q = App.q(q);
     return '<span class="thumb' + (q.img ? "" : " thumb--none") + '" aria-hidden="true">' + (q.img ? '<span class="ht"><img src="' + q.img + '" alt="" width="64" height="64" loading="lazy" decoding="async" draggable="false" style="--f:' + (q.focus || "50% 15%") + '"></span>' : ic(CAT_ICON[q.cat] || "spark", 28)) + "</span>";
@@ -323,7 +324,8 @@
       var b = badges[tb.id], badge = "";
       if (b === "dot") badge = '<span class="tb-dot"></span><span class="sr-only">' + t("tab.badge." + tb.id) + "</span>";
       else if (b) badge = '<span class="tb-n" aria-hidden="true">' + (b > 9 ? "9+" : b) + '</span><span class="sr-only">' + t("tab.badge.results", { n: b }) + "</span>";
-      return '<a href="' + tb.href() + '"' + (tb.id === current ? ' aria-current="page"' : "") + '><span class="tb-ic">' + ic(tb.id === current ? tb.icon + "On" : tb.icon, 22) + badge + "</span><span>" + t("tab." + tb.id) + "</span></a>";
+      var vis = b === "dot" ? '<span class="tb-dot"></span>' : b ? '<span class="tb-n" aria-hidden="true">' + (b > 9 ? "9+" : b) + "</span>" : "", said = b === "dot" ? t("tab.badge." + tb.id) : b ? t("tab.badge.results", { n: b }) : "";
+      return '<a href="' + tb.href() + '"' + (tb.id === current ? ' aria-current="page"' : "") + '><span class="tb-ic">' + ic(tb.id === current ? tb.icon + "On" : tb.icon, 22) + vis + "</span><span>" + t("tab." + tb.id) + "</span>" + (said ? '<span class="sr-only">, ' + said + "</span>" : "") + "</a>";
     }).join("") + "</nav>";
   };
   /* the masthead: the nameplate (or, on a sub page, the back arrow and the page title), the points as a boxed figure, the profile. A thick and thin rule closes it. */
@@ -369,6 +371,9 @@
     try { var keep = JSON.parse(sessionStorage.getItem("cjp.scroll") || "null"); sessionStorage.removeItem("cjp.scroll"); if (keep && keep.p === location.pathname) setTimeout(function () { window.scrollTo(0, keep.y); }, 0); } catch (e) {}
     App.enhance(document.body);
     App.pinFit();
+    /* the masthead gives way in a fixed order: when the nameplate's words no longer fit beside the points and the profile, only the mark stays (never a cut word) */
+    (function () { var pl = $(".mast .plate"); if (!pl) return; function fitPlate() { pl.classList.remove("is-mark"); var sp = $("span", pl); if (sp && sp.scrollWidth > sp.clientWidth + 1) pl.classList.add("is-mark"); }
+      fitPlate(); window.addEventListener("resize", fitPlate); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitPlate); })();
     if (cfg.after) cfg.after();
     App.pinFit();
   };
@@ -381,6 +386,12 @@
   App.setLang = function (l) { try { sessionStorage.setItem("cjp.scroll", JSON.stringify({ p: location.pathname, y: window.scrollY })); } catch (e) {} I.setLang(l); };
   /* a short wallet address is always set in the data face (one face for every address, no "0x" turned into a multiplication sign) */
   App.name = function (n) { return /^0x/i.test(n) ? '<span class="mono" translate="no">' + esc(n) + "</span>" : '<span translate="no">' + esc(n) + "</span>"; };
+  document.addEventListener("focusin", function (e) {
+    var el = e.target; if (!el || !el.getBoundingClientRect || el.id === "main" || el.closest("#sheet, .tb, .pin, .mast") || el.getBoundingClientRect().height > innerHeight * 0.5) return;
+    var tb = $(".tb"), pin = $(".app > .pin"), mast = $(".mast"), low = innerHeight - (tb ? tb.offsetHeight : 0) - (pin && !pin.classList.contains("is-away") ? pin.offsetHeight : 0) - 12, high = (mast ? mast.offsetHeight : 0) + 8, r = el.getBoundingClientRect();
+    var sc = $(".is-home main") || null;
+    if (r.bottom > low) (sc || window).scrollBy(0, r.bottom - low); else if (r.top < high) (sc || window).scrollBy(0, r.top - high);
+  });
   App.live = function (msg) { var l = $("#live"); if (l) { l.textContent = ""; setTimeout(function () { l.textContent = msg; }, 30); } };
 
   /* ---------- enhance: countdowns, QR, stamps, tickers ---------- */
@@ -470,7 +481,7 @@
     var gone = false;
     function out() { if (gone) return; gone = true; el.classList.add("is-out"); setTimeout(function () { el.remove(); nextToast(); }, 200); }
     var b = $("button", el); if (b) b.addEventListener("click", function () { if (it.o.fn) it.o.fn(); out(); });
-    setTimeout(out, it.o.ms || (it.o.btn ? 8000 : 4000));
+    setTimeout(out, it.o.ms || (it.o.btn ? 60000 : 4000));
   }
 
   /* ---------- sheet ---------- */
@@ -662,7 +673,7 @@
 
   /* ---------- forgiving amount parser ---------- */
   App.parseAmount = function (s) {
-    s = String(s).trim().replace(/\s*(ct|p|kaia)$/i, "").replace(/,/g, "");
+    s = String(s).replace(/[\uFF10-\uFF19\uFF0E\uFF0C]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0xFEE0); }).trim().replace(/\s*(ct|p|kaia)$/i, "").replace(/,/g, "");
     if (s === "") return { empty: true };
     if (!/^\d*\.?\d+$|^\d+\.$/.test(s)) return { bad: true };
     var dec = (s.split(".")[1] || "").length;
@@ -679,7 +690,7 @@
      A thrown card is kept so restore() can fly it back in (Undo). */
   App.deck = function (root, o) {
     o = o || {};
-    var ARM = 0.35, GUARD = 200, TAP_GUARD = 400, FLING = { far: 96, v: 0.5, near: 56, fast: 1.1 }, guardUntil = 0, tapUntil = 0, queued = null, qTimer = null;
+    var ARM = 0.35, GUARD = 200, TAP_GUARD = 400, FLING = { far: 48, v: 0.6 }, SLOPE = 1.3, guardUntil = 0, tapUntil = 0, queued = null, qTimer = null;
     function live() { return $$(".qcard:not(.is-out)", root); }
     function guarded() { return Date.now() < guardUntil; }
     function queue(dir) {
@@ -694,7 +705,17 @@
         if (i === 1 || i === 2) { var im = $("img", c); if (im && im.decode) im.decode().catch(function () {}); }   /* decoded before it reaches the front */
       });
       root.classList.toggle("is-empty", !cards.length);
+      fit();
     }
+    function fit() {
+      root.style.minHeight = "";
+      var c = live()[0]; if (!c) return;
+      var body = $(".qcard-body", c), top = $(".qcard-top", c), need = (top ? top.offsetHeight : 0) + (body ? body.offsetHeight : 0) + 4;
+      c.classList.toggle("is-tight", root.clientHeight < need + 56);   /* under 56 px of room the picture is dropped rather than shown as a sliver */
+      if (root.clientHeight < need) root.style.minHeight = need + "px";
+    }
+    window.addEventListener("resize", fit);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);
     function buzz(ms) { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) {} }
     /* k: travel as a share of the card width, -1 to 1. Below the commit threshold the stamp only hints (0.4 at most) and no button lights:
        the card never shows a pick it would not make on release. */
@@ -784,7 +805,7 @@
       }
       e.preventDefault();
       drag.pts.push({ x: e.clientX, t: e.timeStamp }); if (drag.pts.length > 8) drag.pts.shift();
-      var k = feedback(drag.card, dx, dy), armed = Math.abs(k) >= ARM && Math.abs(dx) > Math.abs(dy);
+      var k = feedback(drag.card, dx, dy), armed = Math.abs(k) >= ARM && Math.abs(dx) > SLOPE * Math.abs(dy);
       if (armed !== drag.armed) { drag.armed = armed; if (armed) buzz(5); }   /* a light tick when the release would commit */
     });
     function end(e) {
@@ -795,8 +816,11 @@
       /* release speed: the samples of the last 100 ms only, signed, so a pause before the release or a flick back is not a fling */
       var pts = d.pts.filter(function (p) { return e.timeStamp - p.t <= 100; }), a = pts[0], b = pts[pts.length - 1];
       var v = a && b.t > a.t ? Math.max(0, sign * (b.x - a.x) / (b.t - a.t)) : 0;
-      var fling = (ax >= FLING.far && v >= FLING.v) || (ax >= FLING.near && v >= FLING.fast);
-      if (e.type !== "pointercancel" && ax > Math.abs(dy) && (ax / w >= ARM || fling)) commit(d.card, sign > 0 ? "r" : "l", v, dx, dy, "swipe"); else reset(d.card);
+      /* peak speed between two samples of the last 100 ms, in the direction of the drag: a flick that slows in its last frame is still a flick */
+      for (var pi = 1; pi < pts.length; pi++) { var dt = pts[pi].t - pts[pi - 1].t; if (dt > 0) v = Math.max(v, sign * (pts[pi].x - pts[pi - 1].x) / dt); }
+      var fling = ax >= FLING.far && v >= FLING.v;
+      /* a drag that is more down than across is a scroll or a slip, never a pick: across must be 1.3 times the vertical travel */
+      if (e.type !== "pointercancel" && ax > SLOPE * Math.abs(dy) && (ax / w >= ARM || fling)) commit(d.card, sign > 0 ? "r" : "l", v, dx, dy, "swipe"); else reset(d.card);
     }
     root.addEventListener("pointerup", end); root.addEventListener("pointercancel", end);
     root.addEventListener("click", function (e) {
@@ -810,13 +834,13 @@
       if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
       if (e.repeat || e.altKey || e.ctrlKey || e.metaKey || $("#sheet-root.is-open")) return;
       var a = document.activeElement;
-      if (a && a !== document.body && a !== root && !root.contains(a) && /^(INPUT|TEXTAREA|SELECT|BUTTON|A|SUMMARY)$/.test(a.tagName)) return;
+      if (a && a !== document.body && a !== root && !root.contains(a) && a.id !== "undo" && /^(INPUT|TEXTAREA|SELECT|BUTTON|A|SUMMARY)$/.test(a.tagName)) return;
       var card = live()[0]; if (!card) return;
       e.preventDefault(); commit(card, e.key === "ArrowRight" ? "r" : "l", 0, 0, 0, "key");
     });
     root.setAttribute("tabindex", "-1");
     layout();
-    return { layout: layout, live: live, restore: restore };
+    return { layout: layout, live: live, restore: restore, fit: fit };
   };
 
   /* ---------- QR code: byte mode, error correction Q, versions 1 to 6 (enough for a URL or an address) ---------- */

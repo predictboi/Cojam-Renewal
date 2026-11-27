@@ -37,7 +37,8 @@
       var valid = !err && !p.empty && !blocked, n = valid ? v / 1000 : 0;
       App.countTo(get, get._val === undefined ? n : get._val, n, function (v) { return F.dec(Math.round(v)) + "<small>CT</small>"; }, null, 260);
       var lf = $("#left"); if (lf) lf.innerHTML = valid ? t("c.ok.left") + " <b>" + F.pts(bal - v) + "</b>" : "";
-      go.disabled = !valid; go.querySelector("span").textContent = valid ? t("c.btn", { p: F.int(v), n: n }) : t(S === "hold" ? "hold.convert.btn" : "c.btn.empty");
+      var why = S === "hold" || S === "paused" ? t("hold.convert.btn") : S === "wait" ? t("pp.c.wait", { date: F.date(M.user.firstConvert, true) }) : S === "cap" || S === "capglobal" ? t("pp.c.cap") : App.offline ? t("off.bar").split(".")[0] : err ? err : t("c.btn.empty");
+      go.disabled = !valid; go.querySelector("span").textContent = valid ? t("c.btn", { p: F.int(v), n: n }) : why;
       return valid ? v : 0;
     }
     inp.addEventListener("input", update);

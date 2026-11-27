@@ -44,5 +44,12 @@ const SMALL = ['home', 'home-partial', 'done', 'ranking', 'wallet', 'staking', '
   for (const [name, url, act] of SCREENS) for (const lang of ['en', 'ko']) await shot(name, url, lang, 390, 844, act);
   for (const [name, url, act] of SCREENS) if (SMALL.includes(name)) for (const lang of ['en', 'ko']) await shot(name, url, lang, 360, 780, act);
   for (const [name, url] of [['home', 'home.html?state=fresh'], ['home-list', 'home-list.html?state=fresh'], ['done', 'done.html'], ['ranking', 'ranking.html'], ['results', 'results.html'], ['wallet', 'wallet.html'], ['staking', 'staking.html'], ['stakes', 'stakes.html'], ['invite', 'invite.html'], ['profile', 'profile.html'], ['login', 'login.html'], ['first-run', 'first-run.html'], ['gate', 'gate.html?state=ios']]) await shot(name, url, 'ja', 390, 844);
+  // short and narrow phones: the two answers must stay whole (review B). Named <screen>-<lang>-<width>x<height>.png
+  for (const [w, h] of [[320, 568], [360, 640], [375, 667]]) for (const [name, url] of [['home-partial', 'home.html?state=partial'], ['home-offline', 'home.html?state=offline'], ['home-slow', 'home.html?state=slow']]) for (const lang of ['en', 'ko', 'ja']) {
+    const ctx = await b.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: 2, isMobile: true, hasTouch: true }); const pg = await ctx.newPage();
+    await pg.addInitScript(() => { try { localStorage.setItem('cjp.nudged', '1'); } catch (e) {} });
+    await pg.goto('http://localhost:8851/' + url + '&lang=' + lang, { waitUntil: 'networkidle' }); await pg.evaluate(() => document.fonts.ready); await pg.waitForTimeout(900);
+    await pg.screenshot({ path: path.join(out, name + '-' + lang + '-' + w + 'x' + h + '.png') }); await ctx.close();
+  }
   await b.close();
 })();
