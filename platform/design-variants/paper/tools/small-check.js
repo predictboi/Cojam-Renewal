@@ -85,7 +85,24 @@ const { chromium } = require('playwright');
     const r = await pg.evaluate(() => { const u = document.querySelector('#undo'), tb = document.querySelector('.tb'); if (!u) return 'no Undo'; const q = u.getBoundingClientRect(), t = tb.getBoundingClientRect().top;
       if (q.top < 0 || q.left < 0 || q.right > innerWidth + 0.5 || q.bottom > t + 0.5) return 'Undo not fully visible: ' + Math.round(q.top) + '-' + Math.round(q.bottom) + ', tab bar at ' + Math.round(t);
       const hit = document.elementFromPoint(q.left + q.width / 2, q.top + q.height / 2); return hit && (hit === u || u.contains(hit)) ? '' : 'hit test returns ' + (hit ? hit.className || hit.tagName : 'nothing'); });
-    n++; if (r) bad.push('undo ' + w + 'x' + h + ' ' + lang + ': ' + r); await pg.close(); }
+    n++; if (r) bad.push('undo ' + w + 'x' + h + ' ' + lang + ': ' + r);
+    // spot check after round 4: with the pick bar shown, the next card's two answers are whole above it without scrolling, on every card of the day;
+    // an answer label never breaks inside a word (more than one line only when the label has a space) and never overflows its button
+    for (let i = 1; i < 5; i++) { await pg.waitForTimeout(350);
+      const c = await pg.evaluate(() => { const card = document.querySelector('.qcard:not(.is-out)'); if (!card) return 'no card'; const pin = document.querySelector('.pin.pickbar').getBoundingClientRect(), out = [];
+        for (const bt of card.querySelectorAll('.choice')) { const q = bt.getBoundingClientRect(), sp = bt.querySelector('span'), rg = document.createRange(); rg.selectNodeContents(sp); const lines = new Set([...rg.getClientRects()].map(x => Math.round(x.top))).size;
+          if (q.bottom > pin.top + 0.5 || q.top < 0) out.push('answer covered by the pick bar: ' + Math.round(q.top) + '-' + Math.round(q.bottom) + ', bar at ' + Math.round(pin.top));
+          if (lines > 1 && !/\s/.test(sp.textContent.trim())) out.push('label broken inside a word: ' + sp.textContent); if (sp.scrollWidth > sp.clientWidth + 1) out.push('label overflows: ' + sp.textContent); }
+        return out.join('; '); });
+      n++; if (c) bad.push('card ' + (i + 1) + ' ' + w + 'x' + h + ' ' + lang + ': ' + c);
+      if (i < 4) await pg.evaluate(() => document.querySelector('.qcard:not(.is-out) .choice[data-dir="r"]').click()); }
+    await pg.close();
+    // a toast on home never covers the answers or the pick bar
+    const tp = await b.newPage({ viewport: { width: w, height: h }, isMobile: true, hasTouch: true }); await tp.addInitScript(() => { try { localStorage.setItem('cjp.nudged', '1'); } catch (e) {} });
+    await tp.goto('http://localhost:8851/home.html?state=failed&lang=' + lang); await tp.waitForTimeout(900);
+    const tr = await tp.evaluate(() => { const to = document.querySelector('.toast'); if (!to) return 'no toast'; const a = to.getBoundingClientRect(); function hit(el) { if (!el) return false; const q = el.getBoundingClientRect(); return !(q.bottom <= a.top || q.top >= a.bottom || q.right <= a.left || q.left >= a.right); }
+      return [...document.querySelectorAll('.qcard:not(.is-out) .choice')].slice(0, 2).some(hit) ? 'toast over the answers' : hit(document.querySelector('.pin.pickbar')) ? 'toast over the pick bar' : ''; });
+    n++; if (tr) bad.push('toast ' + w + 'x' + h + ' ' + lang + ': ' + tr); await tp.close(); }
   console.log(n + ' checks, ' + bad.length + ' failed'); bad.slice(0, 60).forEach(x => console.log('  ' + x));
   await b.close(); process.exit(bad.length ? 1 : 0);
 })();

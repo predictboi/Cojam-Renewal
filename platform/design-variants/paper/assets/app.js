@@ -426,6 +426,23 @@
     if (window.MutationObserver) new MutationObserver(function (ms) { ms.forEach(function (m) { if (m.type === "characterData") glue(m.target); else for (var i = 0; i < m.addedNodes.length; i++) glue(m.addedNodes[i]); }); })
       .observe(document.documentElement, { childList: true, subtree: true, characterData: true });
   })();
+  /* An answer label never breaks inside a word, in any language: it wraps only at a space or a phrase boundary (CSS), and a label that still does not fit
+     steps its size down (both answers of a pair together) until it does. */
+  App.fitChoices = function (root) {
+    $$(".choices", root || document).forEach(function (pair) {
+      var bs = $$(".choice", pair); if (!bs.length || !bs[0].getClientRects().length) return;
+      bs.forEach(function (b) { b.style.fontSize = ""; });
+      var base = parseFloat(getComputedStyle(bs[0]).fontSize), size = base;
+      function over() { return bs.some(function (b) { var sp = $("span", b); return sp && sp.scrollWidth > sp.clientWidth + 1; }); }
+      while (over() && size > 12) { size -= 1; bs.forEach(function (b) { b.style.fontSize = size + "px"; }); }
+    });
+  };
+  (function () {
+    var raf = 0; function run() { if (raf) return; raf = requestAnimationFrame(function () { raf = 0; App.fitChoices(); }); }
+    document.addEventListener("DOMContentLoaded", run); window.addEventListener("resize", run);
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(run);
+    if (window.MutationObserver) new MutationObserver(function (ms) { for (var i = 0; i < ms.length; i++) if (ms[i].addedNodes.length) { run(); return; } }).observe(document.documentElement, { childList: true, subtree: true });
+  })();
   App.pinFit = function () {
     var app = $(".app--pin"); if (!app) return;
     function fit() { var p = $(".app--pin > .pin"); if (!p) return; p.classList.remove("is-flow"); var big = p.offsetHeight > innerHeight * 0.25; p.classList.toggle("is-flow", big); app.style.setProperty("--pin-h", (big ? 0 : p.offsetHeight) + "px"); }

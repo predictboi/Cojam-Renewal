@@ -1494,3 +1494,18 @@ button.pin .tag, aside.pin .tag { background: var(--ink-2); color: var(--on-ink)
 .sheet h2:focus { outline: 0; }
 /* short phones: the interest figure lives in the pinned bar, so the copy in the page is kept for screen readers only (never half a line above the bar) */
 @media (max-height: 600px) { .sc-stake .stk-sum .mhero, .stk-sum .mhero { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } .stk-sum { position: relative; } }
+
+/* =====================================================================
+   SPOT CHECK after round 4
+   ===================================================================== */
+/* an answer label wraps only at a space or a phrase boundary, never inside a word; App.fitChoices steps the size down when a word does not fit */
+.choice span { overflow-wrap: normal; word-break: keep-all; }
+:lang(ja) .choice span { word-break: auto-phrase; }
+/* short phones: with the pick bar pinned, the card must show both answers whole without scrolling. The second sentence of the source line (when the AI settles it)
+   is in the Rules sheet, one tap away, so it gives way first. */
+@media (max-height: 600px) { .is-home .qmeta-t span:nth-child(2) { display: none; } }
+/* home: a toast never covers the answers or the pick bar; it comes in under the dateline */
+.is-home ~ .toasts { top: calc(var(--mast-h) + 40px + env(safe-area-inset-top)); bottom: auto; align-content: start; }
+.is-home ~ .toasts .toast { transform-origin: 50% 0; }
+@starting-style { .is-home ~ .toasts .toast { transform: translateY(-120%) rotate(-1.5deg); } }
+.is-home ~ .toasts .toast.is-out { transform: translateY(-120%); }

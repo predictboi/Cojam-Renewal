@@ -79,6 +79,20 @@ function enhance(root: ParentNode) {
   });
 }
 
+/* An answer label never breaks inside a word, in any language: it wraps only at a space or a phrase boundary (CSS), and a
+   label that still does not fit steps its size down (both answers of a pair together) until it does. */
+export function fitChoices(root: ParentNode = document) {
+  $$('.choices', root).forEach((pair) => {
+    const bs = $$<HTMLElement>('.choice', pair); if (!bs.length || !bs[0].getClientRects().length) return;
+    bs.forEach((b) => { b.style.fontSize = ''; });
+    let size = parseFloat(getComputedStyle(bs[0]).fontSize);
+    const over = () => bs.some((b) => { const sp = b.querySelector('span'); return !!sp && sp.scrollWidth > sp.clientWidth + 1; });
+    while (over() && size > 12) { size -= 1; bs.forEach((b) => { b.style.fontSize = size + 'px'; }); }
+  });
+}
+let fitRaf = 0;
+const runFit = () => { if (fitRaf) return; fitRaf = requestAnimationFrame(() => { fitRaf = 0; fitChoices(); }); };
+
 /* Korean and Japanese: a figure never parts from the particle or the unit that follows it ("10%를", "5問", "3秒間").
    A word joiner (U+2060) is set between them in every text node, also in text that arrives later. English is left alone. */
 const WJ = String.fromCharCode(0x2060), CJK = '぀-ヿ㐀-鿿가-힣';
@@ -105,10 +119,12 @@ export function installBehaviours() {
   installed = true;
   enhance(document);
   glue(document.body);
+  runFit(); window.addEventListener('resize', runFit); void document.fonts?.ready.then(runFit);
   new MutationObserver((list) => {
     for (const m of list) {
       if (m.type === 'characterData') { glue(m.target); continue; }
       m.addedNodes.forEach((n) => { if (n.nodeType === 1) enhance(n as Element); glue(n); });
+      if (m.addedNodes.length) runFit();
     }
   }).observe(document.body, { childList: true, subtree: true, characterData: true });
 
