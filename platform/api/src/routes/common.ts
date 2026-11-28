@@ -118,16 +118,23 @@ export function popcount(n: number): number {
   return c;
 }
 
+/** The effective draft timing for the API: the stored parameters, the LONG_QUESTIONS_ON_CHAIN switch, the chain cap. */
+export async function draftTimingNow(deps: RouteKit["deps"]) {
+  const params = (await predictParams(deps.db, deps.chain, deps.now())) ?? DEFAULT_PARAMS;
+  return effectiveTiming(await storedTiming(deps.db), Boolean(deps.config.env.LONG_QUESTIONS_ON_CHAIN), params.maxResolveAfterClose ?? DEFAULT_PARAMS.maxResolveAfterClose);
+}
+
 /**
  * Answer window of a question placed by hand (DECISIONS "Longer questions mixed in"): due between the day's end and
  * 24 hours after it, or a long question up to the admin's longMaxDays after it while the day has room for one more long
- * question. Long questions need LONG_QUESTIONS_ON_CHAIN (the contract with a per market answer deadline).
+ * question. Long questions need LONG_QUESTIONS_ON_CHAIN (the contract with a per market answer deadline), and
+ * longMaxDays is capped by the on chain maxResolveAfterClose (the default 30 days when the chain cannot be read).
  */
 export async function checkAnswerWindow(deps: RouteKit["deps"], dayId: number, resolvesAt: number, replacing?: number): Promise<void> {
   const end = dayEnd(dayId);
   if (!Number.isFinite(resolvesAt) || resolvesAt < end) throw new ApiError("BAD_REQUEST", "The answer must be due after the day's end");
   if (!isLongQuestion(dayId, resolvesAt)) return;
-  const t = effectiveTiming(await storedTiming(deps.db), Boolean(deps.config.env.LONG_QUESTIONS_ON_CHAIN));
+  const t = await draftTimingNow(deps);
   if (t.maxLong === 0) throw new ApiError("BAD_REQUEST", "The answer must be due between the day's end and 24 hours after it (long questions are off)");
   if (resolvesAt > end + t.longMaxDays * SECONDS_PER_DAY) throw new ApiError("BAD_REQUEST", `A long question must be answered at most ${t.longMaxDays} days after the day's end`);
   const others = await deps.db

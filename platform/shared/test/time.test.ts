@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   dayIdOf, dayOpensAt, dayEnd, weekOf, weekEnd, weekStart, weekFirstDay, marketId, marketIdsOfDay, dayOfMarket,
-  slotOfMarket, isDayOpen, canCreateDay, isLateCreation, resolveDeadline, airdropOpensAt, kstDate, kstDateTime, dayLabelKst,
+  slotOfMarket, isDayOpen, canCreateDay, isLateCreation, resolveDeadline, answerDeadline, isLongQuestion, latestResolvesAt, RESOLVE_DEADLINE_SECONDS, MAX_RESOLVE_AFTER_OPEN_SECONDS, airdropOpensAt, kstDate, kstDateTime, dayLabelKst,
   dayIdFromKstDate, kstParts,
 } from "../src/time.ts";
 
@@ -30,7 +30,6 @@ test("dayId and day boundaries are 00:00 UTC = 09:00 KST", () => {
   assert.equal(kstDateTime(dayOpensAt(d)), "2026-11-26 09:00");
   assert.equal(dayLabelKst(d), "2026-11-26");
   assert.equal(dayIdFromKstDate("2026-11-26"), d);
-  assert.equal(resolveDeadline(d), t + 3 * 86400);
   assert.equal(dayIdOf(10n ** 9n), Math.floor(1e9 / 86400));
 });
 
@@ -78,4 +77,23 @@ test("KST formatting", () => {
   assert.equal(kstDateTime(15 * 3600), "1970-01-02 00:00");
   assert.throws(() => dayIdOf(-1), RangeError);
   assert.throws(() => dayIdFromKstDate("2026/11/26"), RangeError);
+});
+
+test("each market has its own answer deadline: resolvesAt + 48 h, short or long", () => {
+  const d = dayIdOf(Date.UTC(2026, 10, 26, 0, 0, 0) / 1000);
+  const close = dayEnd(d);
+  assert.equal(RESOLVE_DEADLINE_SECONDS, 48 * 3600);
+  // A short question answered 1 h after the close: 1 h + 48 h (no longer the day's close + 48 h).
+  assert.equal(resolveDeadline(close + 3600), close + 3600 + 48 * 3600);
+  assert.equal(answerDeadline(d, close + 3600), close + 49 * 3600);
+  assert.equal(isLongQuestion(d, close + 3600), false);
+  // The last short moment (24 h after the close, open + 2 days) is still short.
+  assert.equal(isLongQuestion(d, dayOpensAt(d) + MAX_RESOLVE_AFTER_OPEN_SECONDS), false);
+  assert.equal(isLongQuestion(d, dayOpensAt(d) + MAX_RESOLVE_AFTER_OPEN_SECONDS + 1), true);
+  // A long question 20 days out: its own deadline, weeks after the short ones of the same day.
+  assert.equal(answerDeadline(d, close + 20 * 86400), close + 20 * 86400 + 48 * 3600);
+  assert.equal(resolveDeadline(10n ** 9n), 1e9 + 48 * 3600);
+  // The on chain limit: closesAt + maxResolveAfterClose (default 30 days).
+  assert.equal(latestResolvesAt(d), close + 30 * 86400);
+  assert.equal(latestResolvesAt(d, 7 * 86400), close + 7 * 86400);
 });

@@ -3,6 +3,8 @@
 // Live: the contract values from GET /admin/v1/params and /admin/v1/staking. A proposal is one proposeParams
 // transaction (48 hour delay) plus the staking setters (at once, new stakes only), each built unsigned by the API and
 // signed by the owner wallet in this browser. Server settings live in the server environment and are read only here.
+// Question timing (GET|POST /admin/v1/draft-timing) and the data room minimum (GET|POST /admin/v1/data-room) are admin
+// settings stored by the API: the owner changes them here at once, with a reason for the audit log.
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { CONFIG } from '../config';
 import { X, begin, is, n, ic, esc, cd, addr, tx, btn, kv, note, table, errorBlock, short, T } from '../lib/x';
@@ -33,6 +35,8 @@ const PMAP: Record<string, { get: (p: any) => number; put: (p: any, v: number) =
   ref: { get: (p) => p.referralBps / 100, put: (p, v) => (p.referralBps = Math.round(v * 100)), ok: (v) => /^\d+(\.\d{1,2})?$/.test(strip(v)) && num(v) <= 20 },
   welcome: { get: (p) => p.welcomePoints, put: (p, v) => (p.welcomePoints = v), ok: (v) => isInt(v) && num(v) <= 1000 },
   poolcap: { get: (p) => p.maxWeeklyPool, put: (p, v) => (p.maxWeeklyPool = v), ok: (v) => isInt(v) && num(v) <= 1000000 },
+  // CojamPredict parameter 15: the latest answer time after the close (long questions); 1 to 90 days, at least minResolveGap.
+  resolvemax: { get: (p) => (p.maxResolveAfterClose ?? 30 * 86400) / 86400, put: (p, v) => (p.maxResolveAfterClose = Math.round(v * 86400)), ok: (v, _all, p) => isInt(v) && num(v) >= 1 && num(v) <= 90 && num(v) * 86400 >= (p.minResolveGap ?? 0) },
   airdelay: { get: (p) => p.airdropDelay / 3600, put: (p, v) => (p.airdropDelay = Math.round(v * 3600)), ok: (v, all, p) => { const s = all.settle ? num(all.settle) : p.settleDelay / 3600; return isInt(v) && num(v) >= 48 + s && num(v) <= 168; } },
 };
 const MOCK_BAD: Record<string, (v: string, all: Record<string, string>) => boolean> = {
@@ -120,11 +124,37 @@ function render(D: any, EDIT: Record<string, string>): string {
     ]) + (CONFIG.mock ? '' : '<div class="acts" style="margin-top:16px">' + btn('Withdraw from the prediction reserve', { act: 'withdraw', arg: 'reserve', write: 1, disabled: X.role !== 'owner', title: X.role !== 'owner' ? 'Only the Owner role can build owner transactions' : '' }) + btn('Withdraw free staking rewards', { act: 'withdraw', arg: 'rewards', write: 1, disabled: X.role !== 'owner' || !D.contracts.staking, title: X.role !== 'owner' ? 'Only the Owner role can build owner transactions' : '' }) + '</div><p class="hint" style="margin-top:8px">Only what is not owed can leave: the prediction reserve keeps paying conversions and the airdrop from what stays; staking principal and reserved interest are never withdrawable.</p>');
   }
 
+  /** Question timing and the data room: admin settings kept by the API (live only; the design has no such rows). */
+  function questionsSec() {
+    if (CONFIG.mock) return '';
+    const t = D.timing, r = D.room, owner = X.role === 'owner';
+    const title = owner ? '' : 'Only the Owner role can change these settings';
+    const eff = t?.effective;
+    const longRow = !t ? '<span class="dim">Not read</span>' : !t.longQuestionsOnChain
+      ? '<span class="dim">Off: the server switch LONG_QUESTIONS_ON_CHAIN is not set, so every question is answered within 24 hours of the close.</span>'
+      : eff.maxLong === 0 ? '<span class="dim">Off with these values.</span>'
+      : 'Up to ' + eff.maxLong + ' a day, answered up to ' + eff.longMaxDays + ' days after the close' + (eff.chainMaxDays != null && t.longMaxDays > eff.longMaxDays ? ' <span class="dim">(' + t.longMaxDays + ' set here, capped by the longest answer wait on chain)</span>' : '');
+    return '<section class="sec"><div class="sec-head"><h2>Questions and data room</h2><span class="sec-note">Stored by the server, effective at once. Changes need a reason and are written to the audit log.</span></div><div class="cols cols-2 split"><div>' +
+      '<h3 class="sub">Question timing</h3>' + (t ? kv([
+        ['Short questions a day, at least', n(t.minShort) + ' <span class="dim">of 5, answered within 24 hours of the close. Default ' + t.defaults.minShort + '.</span>'],
+        ['Long questions a day, at most', n(t.maxLong) + ' <span class="dim">Default ' + t.defaults.maxLong + '.</span>'],
+        ['Long answer wait, at most', n(t.longMaxDays) + ' days <span class="dim">after the close, never more than the longest answer wait above. Default ' + t.defaults.longMaxDays + '.</span>'],
+        ['Applied now', longRow],
+      ]) : note('', 'The question timing could not be read.')) +
+      '<div class="acts" style="margin-top:12px">' + btn('Change question timing', { act: 'timing', write: 1, disabled: !owner || !t, title }) + '</div></div><div>' +
+      '<h3 class="sub">Data room</h3>' + (r ? kv([
+        ['Minimum players for a share', n(r.minPlayers) + ' <span class="dim">Below it a question shows Counting. Default ' + n(r.defaultMinPlayers) + '.</span>'],
+        ['Top players share', '<span class="dim">Shown from ' + n(r.minTopPlayers) + ' top players (fixed).</span>'],
+      ]) : note('', 'The data room settings could not be read.')) +
+      '<div class="acts" style="margin-top:12px">' + btn('Change the minimum', { act: 'room', write: 1, disabled: !owner || !r, title }) + '</div></div></div></section>';
+  }
+
   if (is('loading')) return '<section class="sec"><div class="sec-head"><h2>Prediction and conversion</h2></div>' + table({ loading: 1, cols: [{ h: 'Parameter', cell: () => '' }, { h: 'Current', cell: () => '' }, { h: 'New value', cell: () => '' }, { h: 'Bounds', cell: () => '' }, { h: 'Stored in, takes effect', cell: () => '' }] }) + '</section>';
   if (is('error')) return '<section class="sec">' + errorBlock('The current values') + '<p class="hint">The form stays closed until the values are read from the contracts, so that nothing is proposed against a stale number.</p></section>';
   return (is('proposed') ? note('up', '<b>Proposed.</b> 2 values are announced on chain and can be applied Sat 28 Nov, 14:32 KST. The staking rate applies to new stakes from now. The server setting is saved.') + '<div style="height:16px"></div>' : '') +
     (hasPending ? banner() : '') +
     '<section class="sec"><div class="sec-head"><h2>Prediction and conversion</h2><span class="sec-note">Type a new value to add it to the proposal. Empty means no change.</span></div>' + D.params.map(group).join('') + split() + '</section>' +
+    questionsSec() +
     '<section class="sec"><div class="sec-head"><h2>Staking</h2><span class="sec-note">' + n(D.staking.total) + ' CT staked in ' + D.staking.stakes + ' open stakes</span></div>' + staking() + '</section>' +
     '<section class="sec"><div class="sec-head"><h2>Wallets and contracts</h2></div>' + treasury() + '</section><div id="savebar-slot" style="display:contents"></div>';
 }
@@ -141,7 +171,8 @@ const DEFS = [
   { group: 'Daily play', store: 'Prediction contract', rows: [
     { key: 'completion', name: 'Completion points', help: 'Paid once when a player answers all 5 of the day', unit: 'P', bounds: '0 to 1,000, whole number', err: 'Enter a whole number from 0 to 1,000.' },
     { key: 'hit', name: 'Points per hit', help: 'Paid for each right answer after the correction window', unit: 'P', bounds: '0 to 1,000, whole number', err: 'Enter a whole number from 0 to 1,000.' },
-    { key: 'settle', name: 'Correction window (settle delay)', help: 'Time between an answer being set and hit points being paid', unit: 'hours', bounds: '0 to 48 hours', err: 'Enter 0 to 48 hours.' }] },
+    { key: 'settle', name: 'Correction window (settle delay)', help: 'Time between an answer being set and hit points being paid', unit: 'hours', bounds: '0 to 48 hours', err: 'Enter 0 to 48 hours.' },
+    { key: 'resolvemax', name: 'Longest answer wait', help: 'Latest a question may be answered after its day closes (long questions)', unit: 'days', bounds: '1 to 90 days, whole number', err: 'Enter a whole number of days from 1 to 90.' }] },
   { group: 'Conversion to CT', store: 'Prediction contract', rows: [
     { key: 'rate', name: 'Points per CT', help: '', unit: 'P per CT', bounds: '100 to 100,000, whole number', err: 'Enter how many points make 1 CT, from 100 to 100,000.' },
     { key: 'minconv', name: 'Minimum conversion', help: 'Smallest amount a player can convert at once', unit: 'P', bounds: 'A multiple of the rate, up to 1,000,000', err: 'The minimum must be a multiple of the rate.' },
@@ -164,14 +195,15 @@ const LABEL: Record<string, (p: any) => string> = {
   completion: (p) => n(p.completionPoints) + ' P', hit: (p) => n(p.hitPoints) + ' P', settle: (p) => +(p.settleDelay / 3600).toFixed(2) + ' hours', rate: (p) => n(p.pointsPerCT) + ' P per CT', minconv: (p) => n(p.minConvertPoints) + ' P',
   capuser: (p) => n(p.maxConvertCtPerUserPerDay) + ' CT', capday: (p) => n(p.maxConvertCtPerDay) + ' CT', age: (p) => +(p.minAccountAge / 86400).toFixed(2) + ' days', ref: (p) => +(p.referralBps / 100).toFixed(2) + '%',
   welcome: (p) => n(p.welcomePoints) + ' P', poolcap: (p) => n(p.maxWeeklyPool) + ' CT', airdelay: (p) => +(p.airdropDelay / 3600).toFixed(2) + ' hours',
+  resolvemax: (p) => +((p.maxResolveAfterClose ?? 30 * 86400) / 86400).toFixed(2) + ' days',
 };
 const PNAME: Record<string, string> = Object.fromEntries(DEFS.flatMap((g) => g.rows.map((r) => [r.key, r.name])));
 
 async function liveRewards() {
-  const [pr, stk, app, rk] = await Promise.all([api('/admin/v1/params'), api('/admin/v1/staking').catch(() => null), api('/admin/v1/app').catch(() => null), api('/admin/v1/ranking/current').catch(() => null)]);
+  const [pr, stk, app, rk, timing, room] = await Promise.all([api('/admin/v1/params'), api('/admin/v1/staking').catch(() => null), api('/admin/v1/app').catch(() => null), api('/admin/v1/ranking/current').catch(() => null), api('/admin/v1/draft-timing').catch(() => null), api('/admin/v1/data-room').catch(() => null)]);
   const p = pr.current, srv = app?.server || {};
   const fmtCur = (key: string): string => {
-    if (PMAP[key]) { const v = PMAP[key].get(p); return key === 'ref' || key === 'settle' || key === 'age' || key === 'airdelay' ? String(+v.toFixed(2)) : n(v); }
+    if (PMAP[key]) { const v = PMAP[key].get(p); return key === 'ref' || key === 'settle' || key === 'age' || key === 'airdelay' || key === 'resolvemax' ? String(+v.toFixed(2)) : n(v); }
     return key === 'invday' ? n(srv.inviteLinksPerDay ?? 30) : key === 'poolper' ? n(srv.weeklyPoolPerPlayerCt ?? 1) : key === 'blockat' ? String(srv.riskBlockScore ?? 80) : key === 'reviewat' ? String(srv.riskReviewScore ?? 50) : '';
   };
   const params = DEFS.map((g) => ({ ...g, rows: g.rows.map((r) => ({ ...r, cur: fmtCur(r.key), help: r.key === 'rate' ? n(p.pointsPerCT) + ' P convert to 1 CT' : r.help })) }));
@@ -200,7 +232,7 @@ async function liveRewards() {
   ] : [];
   const poolCt = ctWei(rk?.poolWei) ?? 0, split = p.splitBps.map((b: number) => b / 100);
   return {
-    raw: p, params, pending, split,
+    raw: p, params, pending, split, timing, room,
     stakingRates: { tiers, periods }, stakingParams, stk,
     staking: { total: Math.round(ctWei(stk?.totalPrincipalWei) ?? 0), stakes: stk?.openStakes ?? 0 },
     week: { pool: poolCt }, rank: split.map((s: number) => ({ prize: (poolCt * s) / 100 })),
@@ -331,7 +363,41 @@ export default function Rewards() {
       action: btn('Continue to the owner wallet', { primary: 1, act: 'withdraw-go', arg: kind }) });
   }
 
+  const field = (id: string, label: string, hint: string, value: number) => '<div class="fl"><label for="' + id + '">' + label + ' <span class="cnt">' + hint + '</span></label><input class="inp num" id="' + id + '" inputmode="numeric" autocomplete="off" value="' + value + '"></div>';
+  const intOf = (id: string) => { const v = strip((document.getElementById(id) as HTMLInputElement)?.value || ''); return /^\d+$/.test(v) ? Number(v) : NaN; };
+  function timingSheet() {
+    const t = VM.timing; if (!t) return;
+    const chain = t.effective?.chainMaxDays;
+    confirm({ title: 'Change question timing?', wide: 1,
+      body: '<p>The drafter applies the new values from its next run; questions already scheduled stay as they are. Picking still closes for all five at the day\'s end.</p><div class="cols cols-2" style="gap:12px">' +
+        field('t-short', 'Short questions a day, at least', '0 to 5', t.minShort) + field('t-long', 'Long questions a day, at most', '0 to 5, with the short ones at most 5', t.maxLong) + '</div>' +
+        field('t-days', 'Long answer wait, at most, in days', '1 to 90' + (chain != null ? '; applied up to ' + chain + ', the longest answer wait on chain' : ''), t.longMaxDays),
+      placeholder: 'Why do the timing rules change?', action: 'Save question timing', done: 'Question timing saved.',
+      run: async (why) => {
+        const minShort = intOf('t-short'), maxLong = intOf('t-long'), longMaxDays = intOf('t-days');
+        if (!(minShort >= 0 && minShort <= 5) || !(maxLong >= 0 && maxLong <= 5)) throw new Error('Enter whole numbers from 0 to 5.');
+        if (minShort + maxLong > 5) throw new Error('Short and long questions together can be at most 5.');
+        if (!(longMaxDays >= 1 && longMaxDays <= 90)) throw new Error('Enter a long answer wait of 1 to 90 days.');
+        const r = await api('/admin/v1/draft-timing', { body: { minShort, maxLong, longMaxDays, reason: why } }); void inval();
+        return 'Question timing saved. Long questions applied: ' + (r.effective?.maxLong ? 'up to ' + r.effective.maxLong + ' a day, ' + r.effective.longMaxDays + ' days.' : 'none.');
+      } });
+  }
+  function roomSheet() {
+    const r = VM.room; if (!r) return;
+    confirm({ title: 'Change the data room minimum?',
+      body: '<p>A question shows its share of players only from this many players; below it, the app and the public data page show Counting. It applies to every day at once, past days included.</p>' + field('r-min', 'Minimum players', '1 to 10,000; default ' + n(r.defaultMinPlayers), r.minPlayers),
+      placeholder: 'Why does the minimum change?', action: 'Save the minimum', done: 'Data room minimum saved.',
+      run: async (why) => {
+        const minPlayers = intOf('r-min');
+        if (!(minPlayers >= 1 && minPlayers <= 10000)) throw new Error('Enter a whole number from 1 to 10,000.');
+        await api('/admin/v1/data-room', { body: { minPlayers, reason: why } }); void inval();
+        return 'Data room minimum saved: ' + n(minPlayers) + ' players.';
+      } });
+  }
+
   useActs({
+    timing: timingSheet,
+    room: roomSheet,
     review: () => (CONFIG.mock ? go('review') : reviewSheet()),
     go: (s) => go(s || ''),
     discard: () => { if (CONFIG.mock) go('none'); else { setEdits({}); document.querySelectorAll<HTMLInputElement>('[data-param]').forEach((i) => { i.value = ''; i.classList.remove('changed'); }); document.querySelectorAll<HTMLInputElement>('[data-rate]').forEach((i) => { i.value = i.dataset.rate!; i.classList.remove('changed'); }); document.querySelectorAll<HTMLInputElement>('[data-split]').forEach((i, k) => { i.value = String(VM.split[k]); }); } },

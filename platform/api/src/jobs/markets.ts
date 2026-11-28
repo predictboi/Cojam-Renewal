@@ -2,10 +2,12 @@
 //   publishDay       createDay(D+1) from the 5 scheduled markets (retries every 15 min from 12:00 UTC,
 //                    reserve fill at 22:00 UTC, alert from 18:00 UTC)
 //   resolutionSweep  every 5 min: markets past resolvesAt without an outcome -> AI runs -> setOutcome
-//                    or voidMarket (retry hourly, void 40 h after the day's end)
+//                    or voidMarket (retry hourly, void 40 h after the market's own resolvesAt)
 //   correctionCheck  every 15 min: one re-check inside the settle window -> correctOutcome or alert
-//   settleSweep      every 10 min: settleMany for every player with a ready, unsettled slot
-//   expirySweep      every 10 min: voidExpired for anything past dayEnd + 48 h (should never happen)
+//   settleSweep      every 10 min: settleMany for every player with a ready, unsettled slot, on any day (markets
+//                    of one day may resolve weeks apart, so a long question settles alone, long after its day;
+//                    its hits count in the current week once the day's week was airdropped)
+//   expirySweep      every 10 min: voidExpired for anything past its own resolvesAt + 48 h (should never happen)
 
 import { sql } from 'kysely';
 import { stringToHex, type Hex } from 'viem';
@@ -15,7 +17,7 @@ import { draftDay, fillFromReserve, type AiDeps } from '../ai/draft.ts';
 import { prepareImage } from '../ai/images.ts';
 import { recheckMarket, resolveMarket, RETRY_EVERY_SEC, type ResolveDeps } from '../ai/resolve.ts';
 import { audit } from '../db/index.ts';
-import { cojamPredictAbi, readPredictParams, type Address } from '../worker/chain.ts';
+import { cojamPredictAbi, readPredictParams, type Address, type PredictParams } from '../worker/chain.ts';
 import { SimulationRevert } from '../worker/sender.ts';
 import type { JobContext } from './context.ts';
 
@@ -25,8 +27,18 @@ export const LATE_CREATE_MARGIN_SEC = LATE_CREATE_MARGIN_SECONDS;
 const b32 = (s: string): Hex => stringToHex(s.slice(0, 31), { size: 32 });
 const unix = (d: Date | string | null) => (d ? Math.floor(new Date(d).getTime() / 1000) : 0);
 
-export function aiDeps(ctx: JobContext, minResolveGapSec: number): AiDeps {
-  return { db: ctx.db, provider: ctx.ai, log: ctx.log, now: ctx.now, minResolveGapSec, candidates: ctx.settings.draftCandidates, longOnChain: ctx.settings.longQuestionsOnChain };
+/** Drafter dependencies; `params` are the live CojamPredict parameters (minResolveGap, maxResolveAfterClose). */
+export function aiDeps(ctx: JobContext, params: Pick<PredictParams, 'minResolveGap' | 'maxResolveAfterClose'>): AiDeps {
+  return {
+    db: ctx.db,
+    provider: ctx.ai,
+    log: ctx.log,
+    now: ctx.now,
+    minResolveGapSec: params.minResolveGap,
+    maxResolveAfterCloseSec: params.maxResolveAfterClose,
+    candidates: ctx.settings.draftCandidates,
+    longOnChain: ctx.settings.longQuestionsOnChain,
+  };
 }
 
 export function resolveDeps(ctx: JobContext): ResolveDeps {
@@ -60,8 +72,8 @@ export async function publishDay(ctx: JobContext, dayId: number): Promise<Publis
   const late = now >= dayOpensAt(dayId);
   if (rows.length < 5 && (late || hourUtc >= ctx.settings.publishReserveHourUtc)) {
     const params = await readPredictParams(ctx.client, ctx.contracts.predict);
-    await fillFromReserve(aiDeps(ctx, params.minResolveGap), dayId);
-    if (ctx.settings.aiEnabled && (await load()).length < 5) await draftDay(aiDeps(ctx, params.minResolveGap), dayId).catch(() => undefined);
+    await fillFromReserve(aiDeps(ctx, params), dayId);
+    if (ctx.settings.aiEnabled && (await load()).length < 5) await draftDay(aiDeps(ctx, params), dayId).catch(() => undefined);
     rows = await load();
   }
   if (rows.length < 5 || rows.map((r) => r.slot).join() !== '0,1,2,3,4') {
@@ -198,15 +210,25 @@ export async function correctionCheck(ctx: JobContext): Promise<{ checked: numbe
 
 // ---------------------------------------------------------------- settle and expiry
 
-export async function settleSweep(ctx: JobContext): Promise<{ batches: number; users: number }> {
+/**
+ * settleMany for every (player, day) with a pick on a market that is final and past its settlesAt but not yet in the
+ * player's settledMask. Works per slot, so a day whose markets resolve weeks apart is settled once per ready market:
+ * the short ones the day after, a long one alone when it becomes final (anyone may call settle; the contract counts
+ * the hits in the day's week until that week's airdrop, then in the current week). `days` limits the sweep to a
+ * range of days (the airdrop settles its own week first).
+ */
+export async function settleSweep(ctx: JobContext, days?: { from: number; to: number }): Promise<{ batches: number; users: number }> {
   const out = { batches: 0, users: 0 };
   const now = new Date(ctx.now() * 1000);
+  const from = days?.from ?? 0;
+  const to = days?.to ?? 2_147_483_647;
   const rows = await sql<{ wallet: string; day_id: number }>`
     SELECT DISTINCT p.wallet, p.day_id
     FROM predictions p
     JOIN markets m ON m.market_id = p.market_id
     LEFT JOIN user_days u ON u.wallet = p.wallet AND u.day_id = p.day_id
     WHERE m.outcome IS NOT NULL AND m.settles_at IS NOT NULL AND m.settles_at <= ${now}
+      AND p.day_id BETWEEN ${from} AND ${to}
       AND ((coalesce(u.settled_mask, 0) >> (p.market_id % 5)::int) & 1) = 0
     ORDER BY p.day_id, p.wallet`.execute(ctx.db);
   const byDay = new Map<number, string[]>();
@@ -232,7 +254,7 @@ export async function expirySweep(ctx: JobContext): Promise<number> {
   const rows = await ctx.db.selectFrom('markets').select(['market_id', 'day_id', 'resolves_at']).where('status', 'in', ['published', 'closed']).where('outcome', 'is', null).execute();
   let n = 0;
   for (const m of rows) {
-    // Short questions: dayEnd + 48 h (deployed contract). Long ones: their own deadline (placeholder until the new ABI).
+    // Every market has its own deadline: resolvesAt + 48 h (contract RESOLVE_DEADLINE), short or long.
     if (now < answerDeadline(m.day_id, unix(m.resolves_at))) continue;
     if ((await chainMarket(ctx, m.market_id)).outcome !== 0) continue;
     await ctx.alerts.raise(`expired:${m.market_id}`, 'critical', `Market ${m.market_id} passed its answer deadline without an answer`, 'voidExpired is being sent.');

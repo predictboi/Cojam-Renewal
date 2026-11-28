@@ -43,7 +43,7 @@ function render(D: any, qs: URLSearchParams, fixOpen: string | null): string {
       table<any>({
         caption: 'Answers', rows, loading: is('loading'), error: is('error'), what: 'The answer list', cls: 'tight', sort: [4, 'desc'],
         selected: (r) => !!sel && r.id === sel.id,
-        empty: empty('No answer is near its deadline', 'A question is cancelled 48 hours after its set closes if it still has no answer. Anything with less than 8 hours left shows here.' + (CONFIG.mock ? ' The closest now is Q-1124-1, with 18 hours left.' : closest ? ' The closest now is ' + closest.id + ', with ' + dur(closest.deadlineIn) + ' left.' : ''), link('Show all answers', '?tab=all')),
+        empty: empty('No answer is near its deadline', 'A question is cancelled 48 hours after its answer was due if it still has no answer. Anything with less than 8 hours left shows here.' + (CONFIG.mock ? ' The closest now is Q-1124-1, with 18 hours left.' : closest ? ' The closest now is ' + closest.id + ', with ' + dur(closest.deadlineIn) + ' left.' : ''), link('Show all answers', '?tab=all')),
         cols: [
           { h: 'Question', val: (r) => r.sortKey ?? r.id, cell: (r) => '<a class="t1" style="color:inherit" href="?q=' + r.id + '">' + esc(r.title) + '</a><span class="t2">' + r.id + ' · set of ' + r.set + ' · closed ' + r.closed + '</span>' },
           { h: 'AI answer', cell: (r) => ansOf(r, r.ai) + (r.corrected ? '<span class="t2">was ' + esc(r[r.corrected.from]) + '</span>' : '') },
@@ -67,7 +67,7 @@ function render(D: any, qs: URLSearchParams, fixOpen: string | null): string {
       ['Set on chain', a.tx ? a.setAt + ' KST by the operator key ' + tx(a.tx) : a.setAt ? a.setAt + ' KST' : 'Not yet'],
       ['Picks', '<div class="splitcell" style="max-width:320px"><span><span class="pk" data-d="l">' + esc(a.l) + ' ' + n(p[0]) + '</span><span class="pk" data-d="r">' + n(p[1]) + ' ' + esc(a.r) + '</span></span><div class="splitbar" role="img" aria-label="' + n(p[0]) + ' picked ' + esc(a.l) + ', ' + n(p[1]) + ' picked ' + esc(a.r) + '"><i style="width:' + pc + '%"></i><u></u></div></div>'],
       ['Hits', a.hits ? n(a.hits) + ' × ' + HP + ' P = ' + n(a.hits * HP) + ' P, ' + (a.paid ? 'paid ' + a.winEnds + ' KST' : 'pays ' + a.winEnds + ' KST when the window ends') : 'None'],
-      ['Deadline', a.deadline + ' KST (set close plus 48 hours)'],
+      ['Deadline', a.deadline + ' KST (answer due time plus 48 hours)'],
     ]);
   }
 
@@ -90,7 +90,7 @@ function render(D: any, qs: URLSearchParams, fixOpen: string | null): string {
     if (st === 'Cancelled') return '<h3 class="sub">Voided</h3>' + kv([['By', a.voided ? esc(a.voided.by) + ', ' + a.voided.at + ' KST' : 'The worker'], ['Reason', esc(a.voided?.why || 'Both answer runs found the question could not be settled, or the 48 hour deadline passed.')], ['Effect', "No hit points. Picks on it counted toward the day's 5."]]);
     if (st === 'Waiting') return '<h3 class="sub">Waiting for the answer</h3><div class="fig"><span class="fig-l">The AI runs in</span><span class="fig-v">' + cd(a.dueIn) + '</span><span class="fig-s">Due ' + a.due + ' KST. Nothing to do until then.</span></div>' + '<div class="acts" style="margin-top:16px">' + (!CONFIG.mock && !a.dueIn ? btn(a.rerunning ? 'Running' : 'Run AI now', { act: 'rerun', write: 1, disabled: !!a.rerunning }) : '') + btn('Void this question', { link: 1, danger: 1, act: 'void', write: 1 }) + '</div>';
     if (st === 'Late') return '<h3 class="sub">The answer is late</h3>' + (is('rerun') || a.rerunning ? note('sky', '<b>The AI is running again.</b> ' + (CONFIG.mock ? 'Fetching indexes.nikkei.co.jp, attempt 5. ' : 'Request ' + a.rerunning + ' is with the worker. ') + 'This usually takes under a minute.', '<span class="spin"></span>') : note('warn', '<b>' + a.late + '.</b> ' + esc(a.err || ''))) +
-      '<div class="fig" style="margin-top:16px"><span class="fig-l">Cancelled automatically in</span><span class="fig-v">' + cd(a.deadlineIn) + '</span><span class="fig-s">At ' + a.deadline + ' KST, 48 hours after the set closed. Players then see Cancelled and no hit points are paid.</span></div>' +
+      '<div class="fig" style="margin-top:16px"><span class="fig-l">Cancelled automatically in</span><span class="fig-v">' + cd(a.deadlineIn) + '</span><span class="fig-s">At ' + a.deadline + ' KST, 48 hours after the answer was due. Players then see Cancelled and no hit points are paid.</span></div>' +
       '<div class="acts" style="margin-top:16px">' + btn(is('rerun') || a.rerunning ? 'Running' : 'Run AI again', { primary: 1, act: 'rerun', write: 1, disabled: is('rerun') || !!a.rerunning }) + btn('Set the answer by hand', { act: 'correct', write: 1, disabled: !CONFIG.mock, title: CONFIG.mock ? '' : 'The API sets answers through the AI runs only: run it again, or void the question' }) + btn('Void this question', { link: 1, danger: 1, act: 'void', write: 1 }) + '</div>' +
       '<p class="hint" style="margin-top:8px">Setting by hand uses the operator key and starts the normal 6 hour correction window.</p>';
     if (a.winIn) return '<h3 class="sub">Correction window is open</h3><div class="fig"><span class="fig-l">Hit points are paid in</span><span class="fig-v l">' + cd(a.winIn) + '</span><span class="fig-s">At ' + a.winEnds + ' KST. Until then nobody is paid, so a correction only changes the pending hits.</span></div>' +
@@ -121,7 +121,8 @@ async function liveAnswers() {
   const atOf = (e: any) => Math.floor(new Date(e.created_at).getTime() / 1000);
   const OUT = (o: number | null) => (o === 1 ? 'l' : o === 2 ? 'r' : null);
   const answers = (ar.answers || []).map((m: any) => {
-    const id = qid(m.dayId, m.slot), closes = m.closesAt ?? (m.dayId + 1) * 86400, deadline = closes + 48 * 3600;
+    // Every market has its own answer deadline: resolvesAt + 48 h (CojamPredict RESOLVE_DEADLINE), short or long.
+    const id = qid(m.dayId, m.slot), closes = m.closesAt ?? (m.dayId + 1) * 86400, deadline = (m.resolvesAt ?? closes) + 48 * 3600;
     const lastRuns = (m.runs || []).slice(-3);
     const conf = lastRuns.reduce((x: number | null, r: any) => (r.confidence == null ? x : x == null ? r.confidence : Math.min(x, r.confidence)), null);
     const ev = lastRuns.flatMap((r: any) => (r.evidence || []).map((e: any) => ({ src: String(e.url || '').replace(/^https?:\/\/(www\.)?/, '').split('/')[0] || 'Source', url: e.url, quote: e.quote, value: r.outcome === 'A' ? m.left : r.outcome === 'B' ? m.right : r.outcome, at: e.observedAt ? T.wd(e.observedAt) + ' ' + T.hms(e.observedAt) : T.wd(r.at) + ' ' + T.hms(r.at) })));

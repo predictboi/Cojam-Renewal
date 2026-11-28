@@ -4,7 +4,7 @@
 
 import { sql } from 'kysely';
 import { formatEther } from 'viem';
-import { dayEnd, dayIdOf, dayOpensAt } from '../../../shared/src/time.ts';
+import { dayIdOf, dayOpensAt } from '../../../shared/src/time.ts';
 import { setState, STATE_KEYS } from '../db/index.ts';
 import { cojamPredictAbi, cojamStakingAbi, erc20Abi, readPredictParams } from '../worker/chain.ts';
 import { CURSOR_NAME } from '../indexer/indexer.ts';
@@ -85,7 +85,7 @@ export async function runMonitors(ctx: JobContext): Promise<void> {
     await check(`day-not-on-chain:${today + 1}`, Number(m[0]) === 0 && now < dayOpensAt(today + 1), 'critical', `Day ${today + 1} is not on chain yet`, 'createDay retries every 15 minutes; at 22:00 UTC the reserve fills missing slots.');
   }
 
-  // Outcome missing 6 h after resolvesAt, again from day end + 36 h.
+  // Outcome missing 6 h after resolvesAt, again 36 h after it (12 h before the market's own resolvesAt + 48 h deadline).
   const late = await db
     .selectFrom('markets')
     .select(['market_id', 'day_id', 'resolves_at'])
@@ -94,8 +94,8 @@ export async function runMonitors(ctx: JobContext): Promise<void> {
     .where('resolves_at', '<=', new Date((now - 6 * 3600) * 1000))
     .execute();
   for (const m of late) {
-    const severe = now >= dayEnd(m.day_id) + 36 * 3600;
-    await alerts.raise(`outcome-late:${m.market_id}${severe ? ':36h' : ''}`, severe ? 'critical' : 'warn', `Market ${m.market_id} has no answer ${severe ? '36 hours after the day end' : '6 hours after it was due'}`);
+    const severe = now >= Math.floor(new Date(m.resolves_at).getTime() / 1000) + 36 * 3600;
+    await alerts.raise(`outcome-late:${m.market_id}${severe ? ':36h' : ''}`, severe ? 'critical' : 'warn', `Market ${m.market_id} has no answer ${severe ? '36 hours after it was due' : '6 hours after it was due'}`);
   }
 
   // Settle backlog: final for more than an hour with unsettled players.

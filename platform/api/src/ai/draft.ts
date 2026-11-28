@@ -30,12 +30,14 @@ export interface AiDeps {
   candidates?: number; // per drafting call, default 12
   /** The deployed contract accepts long questions (worker setting LONG_QUESTIONS_ON_CHAIN). */
   longOnChain?: boolean;
+  /** CojamPredict `params().maxResolveAfterClose` (seconds): caps longMaxDays and every answer time. */
+  maxResolveAfterCloseSec?: number;
   /** Outside markets for the Polymarket source step (matchOutsideDay). */
   outside?: OutsideMarkets;
 }
 
 async function timingOf(deps: AiDeps) {
-  return effectiveTiming(await storedTiming(deps.db as never), Boolean(deps.longOnChain));
+  return effectiveTiming(await storedTiming(deps.db as never), Boolean(deps.longOnChain), deps.maxResolveAfterCloseSec);
 }
 
 export interface DraftOutcome {
@@ -191,7 +193,7 @@ export async function fillFromReserve(deps: AiDeps, dayId: number): Promise<numb
     if (!parsed.success) continue;
     const d = parsed.data;
     // Re-run the code checks: the duplicate list and the clock have moved since drafting.
-    const code = checkDraft(d, { dayId, minResolveGapSec: deps.minResolveGapSec, recent, longMaxDays: timing.longMaxDays });
+    const code = checkDraft(d, { dayId, minResolveGapSec: deps.minResolveGapSec, recent, longMaxDays: timing.longMaxDays, maxResolveAfterCloseSec: deps.maxResolveAfterCloseSec });
     if (!code.ok) continue;
     if (d.outsideSlug && linkedSlugs.has(d.outsideSlug)) continue; // one question per outside market
     const q = (r.validator_result as { ai?: { qualityScore?: number } } | null)?.ai?.qualityScore ?? 0.5;
@@ -252,7 +254,7 @@ export async function draftDay(deps: AiDeps, dayId: number): Promise<DraftOutcom
   for (const d0 of drafts) {
     // Our own questions carry no outside link (only the source step may set one, from a listed market).
     const { outsideSlug: _s, outsideRightOutcome: _r, outsideUrl: _u, ...d } = d0;
-    const code = checkDraft(d, { dayId, minResolveGapSec: deps.minResolveGapSec, recent, longMaxDays: timing.longMaxDays });
+    const code = checkDraft(d, { dayId, minResolveGapSec: deps.minResolveGapSec, recent, longMaxDays: timing.longMaxDays, maxResolveAfterCloseSec: deps.maxResolveAfterCloseSec });
     let rejected: string | null = code.ok ? null : `code: ${code.errors.join('; ')}`;
     let ai: unknown = null;
     if (!rejected) {
@@ -393,7 +395,7 @@ export async function matchOutsideDay(deps: AiDeps, dayId: number): Promise<Matc
       if (!fresh) errors.push('the outside market cannot be read again');
       else errors.push(...checkOutsideLink(d, fresh, dayId, timing.longMaxDays));
     }
-    const code = checkDraft(d, { dayId, minResolveGapSec: deps.minResolveGapSec, recent, longMaxDays: timing.longMaxDays });
+    const code = checkDraft(d, { dayId, minResolveGapSec: deps.minResolveGapSec, recent, longMaxDays: timing.longMaxDays, maxResolveAfterCloseSec: deps.maxResolveAfterCloseSec });
     errors = [...code.errors, ...errors];
     let rejected: string | null = errors.length ? `code: ${errors.join('; ')}` : null;
     let ai: unknown = null;
@@ -434,7 +436,7 @@ export async function matchOutsideDay(deps: AiDeps, dayId: number): Promise<Matc
   for (const cand of mirrored) {
     const d = cand.d.data;
     if (usedSlugs.has(d.outsideSlug!)) continue;
-    const code = checkDraft(d, { dayId, minResolveGapSec: deps.minResolveGapSec, recent, longMaxDays: timing.longMaxDays });
+    const code = checkDraft(d, { dayId, minResolveGapSec: deps.minResolveGapSec, recent, longMaxDays: timing.longMaxDays, maxResolveAfterCloseSec: deps.maxResolveAfterCloseSec });
     if (!code.ok) continue;
     const current = await deps.db.selectFrom('markets').select(['market_id', 'slot', 'category', 'status', 'create_tx', 'resolves_at', 'content', 'draft_id']).where('day_id', '=', dayId).where('status', 'in', [...ACTIVE]).execute();
     if (current.some((m) => m.create_tx)) break;

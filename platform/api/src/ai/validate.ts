@@ -42,6 +42,11 @@ export interface CheckContext {
    * 0 or absent: only short questions (answered within 24 h of the close) pass.
    */
   longMaxDays?: number;
+  /**
+   * CojamPredict `maxResolveAfterClose` in seconds: the contract refuses any resolvesAt later than close plus this,
+   * so it bounds every question whatever longMaxDays says. Absent: not checked here (the caller capped longMaxDays).
+   */
+  maxResolveAfterCloseSec?: number;
 }
 
 export interface RecentQuestion {
@@ -397,12 +402,16 @@ export function checkDraft(d: Draft, ctx: CheckContext): CodeCheckResult {
     }
     if (resolvesAt < observesAt) errors.push('resolvesAt is before the observed moment');
     if (resolvesAt < closesAt + ctx.minResolveGapSec) errors.push('resolvesAt is closer to the close than minResolveGap');
-    const longDays = ctx.longMaxDays ?? 0;
-    // MAX_RESOLVE_AFTER_OPEN_SECONDS bounds the short questions; a long one may be answered up to longDays after the close.
+    const chainMax = ctx.maxResolveAfterCloseSec;
+    const chainDays = chainMax === undefined ? Infinity : Math.floor(chainMax / SECONDS_PER_DAY);
+    const longDays = Math.min(ctx.longMaxDays ?? 0, chainDays);
+    // MAX_RESOLVE_AFTER_OPEN_SECONDS is the drafter's short question (within 24 h of the close); a long one may be
+    // answered up to longDays after the close, and never later than the contract's maxResolveAfterClose.
     if (resolvesAt > dayOpensAt(ctx.dayId) + MAX_RESOLVE_AFTER_OPEN_SECONDS) {
       if (longDays <= 0) errors.push('resolvesAt is more than 24 hours after the close');
       else if (resolvesAt > closesAt + longDays * SECONDS_PER_DAY) errors.push(`resolvesAt is more than ${longDays} days after the close`);
     }
+    if (chainMax !== undefined && resolvesAt > closesAt + chainMax) errors.push(`resolvesAt is past the contract limit (maxResolveAfterClose, ${Number((chainMax / SECONDS_PER_DAY).toFixed(2))} days after the close)`);
     if (d.category === 'Markets') {
       const wd = kstIsoWeekday(observesAt);
       if (wd >= 6) errors.push('Markets questions must be observed on a weekday');

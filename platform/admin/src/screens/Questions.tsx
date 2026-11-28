@@ -1,8 +1,9 @@
 // AD3 Questions, ported from platform/design/admin/pages/questions.js. States (mock): scheduled | edit | short |
 // noimage | regen | swap | cancel | void | emptyqueue | loading | error. Also ?day= and ?q= (both modes).
 // Live: GET /admin/v1/questions (14 days) and /admin/v1/drafts (the AI queue); writes: cancel, replace (save),
-// void, image, swap with a draft, schedule a draft, discard a draft, add a question, run the drafter.
-import { useEffect, useMemo } from 'react';
+// void, image, swap with a draft, schedule a draft, discard a draft, add a question, run the drafter, and the
+// question's Polymarket link for the data room (GET|POST|DELETE /admin/v1/questions/:id/outside, operator writes).
+import { useEffect, useMemo, useState } from 'react';
 import { CONFIG } from '../config';
 import { X, begin, is, n, tag, ic, esc, cd, btn, kv, note, table, thumb, empty, T } from '../lib/x';
 import { confirm, sheet, toast, go, closeSheet, busy, unbusy, sheetError, errText } from '../lib/ui';
@@ -32,7 +33,10 @@ function pickState(D: any, qs: URLSearchParams) {
   return { day, selId, rows, sel, dayInfo };
 }
 
-function render(D: any, qs: URLSearchParams): string {
+/** The linked outside market of each selected question: undefined while reading, 'error', null (none) or the record. */
+type OutsideMap = Record<number, any>;
+
+function render(D: any, qs: URLSearchParams, OUT: OutsideMap = {}): string {
   begin();
   const { day, rows, sel, dayInfo } = pickState(D, qs);
   const url = (d: string, q?: string) => '?day=' + d + (q ? '&q=' + q : '');
@@ -130,7 +134,7 @@ function render(D: any, qs: URLSearchParams): string {
     ] : [
       [host ? 'ok' : 'fail', 'Can be decided from a public source', host || 'No source'],
       [q.resolvesAt >= q.closesAt ? 'ok' : 'fail', 'Outcome is not known before the day ends', 'Day ends ' + q.closes + ', answer due ' + q.due],
-      [q.resolvesAt <= q.closesAt + 86400 ? 'ok' : 'fail', 'Answer due within 24 hours after the set closes', ''],
+      q.resolvesAt <= q.closesAt + 86400 ? ['ok', 'Answer due within 24 hours after the set closes', ''] : ['ok', 'Long question: answer due ' + Math.ceil((q.resolvesAt - q.closesAt) / 86400) + ' days after the set closes', 'At most 2 a day'],
       [fits ? 'ok' : 'fail', fits ? 'Text fits the card in all three languages' : 'Text does not fit the card in every language', ''],
       [q.imgState === 'Rejected by check' ? 'fail' : 'ok', q.imgState === 'Rejected by check' ? 'Image rejected by the check' : 'Image: no real people, logos, trademarks or lettering', q.imgState === 'Rejected by check' ? 'Fallback in use' : q.imgState],
     ];
@@ -140,13 +144,30 @@ function render(D: any, qs: URLSearchParams): string {
     const meta = '<div class="cols cols-2 split" style="margin-top:24px"><div>' + kv([
       ['Category', editable ? sel(q.cat) : q.cat],
       ['Closes', q.closes + ' KST <span class="dim">with the whole day' + (q.closesIn ? ', in ' + cd(q.closesIn) : '') + '. A question has no close time of its own.</span>'],
-      ['Answer due', editable ? '<input class="inp" style="width:180px" aria-label="Answer due, KST" data-f="due" value="' + esc(CONFIG.mock ? q.due : q.dueInput) + '"><span class="hint" style="display:block;margin-top:4px">KST' + (CONFIG.mock ? '' : ', as YYYY-MM-DD HH:MM') + '. After the day ends, at most 24 hours later.</span>' : q.due + ' KST'],
+      ['Answer due', editable ? '<input class="inp" style="width:180px" aria-label="Answer due, KST" data-f="due" value="' + esc(CONFIG.mock ? q.due : q.dueInput) + '"><span class="hint" style="display:block;margin-top:4px">KST' + (CONFIG.mock ? '' : ', as YYYY-MM-DD HH:MM') + '. After the day ends: within 24 hours, or later for a long question (at most 2 a day, up to the limit in Reward settings).</span>' : q.due + ' KST'],
       ['Resolve rule', editable ? '<textarea class="inp" rows="3" aria-label="Resolve rule" data-f="crit">' + esc(q.resolve) + '</textarea>' : esc(q.resolve)],
+      ['Polymarket', outsideCell(q)],
       ['Source', q.src.map((s: string, i: number) => (editable ? '<input class="inp" aria-label="Source URL" data-f="src" data-i="' + i + '" value="' + esc(s) + '">' : '<a href="' + esc(s) + '" target="_blank" rel="noopener">' + esc(s) + '</a>')).join('')],
     ]) + '</div><div><div class="sec-head" style="min-height:0"><h3 class="sub" style="margin:0">AI checks</h3><span class="sec-end">Confidence <b class="num-d" style="font-size:16px;margin-left:6px">' + (q.conf == null ? 'n/a' : q.conf.toFixed(2)) + '</b></span></div><ul class="chk">' + checks.map((c) => '<li data-s="' + c[0] + '">' + ic(c[0] === 'ok' ? 'ok' : 'no') + '<span>' + c[1] + '</span><span class="v">' + esc(c[2]) + '</span></li>').join('') + '</ul>' +
       '<p class="hint" style="margin-top:8px">Confidence is the drafter\'s own estimate that the answer can be set from the source without a person. Below 0.90 the question is listed in Answers for a look after it resolves.</p></div></div>';
     return '<section class="sec" id="editor">' + head + (live ? note('', '<b>Live questions cannot be edited.</b> The texts, times and rule are fixed by the content hash on chain. If the question is wrong, void it: it pays no hit points and a pick on it still counts toward the 5.') + '<div style="height:16px"></div>' : '') +
       '<div class="editor">' + imageBlock(q) + '<div><div class="langs">' + ['en', 'ko', 'ja'].map((l) => langCol(q, l, editable)).join('') + '</div>' + meta + '</div></div></section>';
+  }
+
+  /** The question's linked Polymarket market: the data room compares our split with its price, read once at the close. */
+  function outsideCell(q: any): string {
+    const linkBtn = (label: string) => btn(label, { link: 1, act: 'outside', arg: q.id, write: 1 });
+    if (CONFIG.mock) return '<span class="dim">None linked.</span> ' + linkBtn('Link a market');
+    const o = OUT[q.marketId];
+    if (o === undefined) return '<span class="dim">Reading the link</span>';
+    if (o === 'error') return '<span class="dim">The link could not be read.</span>';
+    if (!o) return '<span class="dim">None linked. The data room shows no comparison line for this question.</span> ' + linkBtn('Link a market');
+    const price = o.rightPrice != null && o.takenAt
+      ? 'Price read ' + T.wd(o.takenAt) + ' ' + T.hm(o.takenAt) + ' KST: <b>' + o.rightPrice + '%</b> for “' + esc(o.rightOutcome) + '”. The record is final.'
+      : o.error ? 'The price read failed: ' + esc(o.error) + '.' : 'The price is read once, when the day closes.';
+    return '<a href="' + esc(o.url) + '" target="_blank" rel="noopener">' + esc(o.marketSlug) + '</a>' +
+      '<span class="hint" style="display:block;margin-top:4px">Our right choice (' + esc(q.en.right || 'Right') + ') is “' + esc(o.rightOutcome) + '” there. ' + price + ' Linked by ' + esc(o.linkedBy) + '.</span>' +
+      '<span class="acts" style="margin-top:6px">' + btn('Change link', { link: 1, act: 'outside', arg: q.id, write: 1, disabled: !!o.takenAt, title: o.takenAt ? 'The price was read: the record is final' : '' }) + btn('Remove link', { link: 1, danger: 1, act: 'outside-rm', arg: q.id, write: 1 }) + '</span>';
   }
 
   function queue() {
@@ -214,12 +235,36 @@ export default function Questions() {
   const D = page.D || EMPTY;
   if (CONFIG.mock) { D.todayId = '1126'; }
   const qsKey = qs.toString();
-  const html = useMemo(() => render(D, qs), [D, qsKey, X.role, X.env]);
+  const [outside, setOutside] = useState<OutsideMap>({});
+  const html = useMemo(() => render(D, qs, outside), [D, qsKey, X.role, X.env, outside]);
   const { sel } = pickState(D, qs);
+  const selMarket: number | undefined = CONFIG.mock ? undefined : sel?.marketId;
+  const readOutside = (id: number) =>
+    api('/admin/v1/questions/' + id + '/outside').then((r) => setOutside((o) => ({ ...o, [id]: r.outside ?? null }))).catch(() => setOutside((o) => ({ ...o, [id]: 'error' })));
+  useEffect(() => { if (selMarket != null && !(selMarket in outside)) void readOutside(selMarket); }, [selMarket]);
   const byId = (id?: string) => D.questions.find((x: any) => x.id === id);
   const draftById = (id?: string) => D.queue.find((x: any) => x.id === id);
   const done = (m: string) => { toast(m); void inval(); };
 
+  function outsideSheet(id?: string) {
+    if (CONFIG.mock) { toast('A form for the Polymarket link opens here.'); return; }
+    const qq = byId(id); if (!qq) return;
+    const cur = outside[qq.marketId];
+    const o = cur && cur !== 'error' ? cur : null;
+    sheet({ title: (o ? 'Change the Polymarket link of ' : 'Link ') + id + (o ? '' : ' to a Polymarket market'), wide: 1,
+      body: '<p>' + esc(qq.en.title) + '</p><p class="hint">The data room adds a comparison line where the same question exists on Polymarket. Its price is read once, when our day closes; after that the link is final. The answer is still set by our own answer runs from the question\'s source.</p>' +
+        '<div class="fl"><label for="o-url">Polymarket link <span class="cnt">A market or event page on polymarket.com</span></label><input class="inp" id="o-url" autofocus placeholder="https://polymarket.com/event/…" value="' + esc(o?.url || '') + '"></div>' +
+        '<div class="cols cols-2" style="gap:12px"><div class="fl"><label for="o-slug">Market slug <span class="cnt">Only for an event page with several markets</span></label><input class="inp" id="o-slug" value="' + esc(o && o.marketSlug && !String(o.url).includes(o.marketSlug) ? o.marketSlug : '') + '"></div>' +
+        '<div class="fl"><label for="o-right">Outcome there that matches “' + esc(qq.en.right || 'Right') + '” <span class="cnt">Usually Yes</span></label><input class="inp" id="o-right" value="' + esc(o?.rightOutcome || 'Yes') + '"></div></div>' +
+        WHY('o-why') + '<div data-run-err style="display:contents"></div>',
+      action: btn(o ? 'Save the link' : 'Link the market', { primary: 1, act: 'outside-go', arg: id }) });
+  }
+  function outsideRemove(id?: string) {
+    const qq = byId(id); if (!qq) return;
+    const o = outside[qq.marketId];
+    confirm({ title: 'Remove the Polymarket link of ' + id + '?', reason: false, body: '<p>' + esc(qq.en.title) + '</p><p>The data room stops showing the comparison line for this question' + (o && o !== 'error' && o.rightPrice != null ? ', and the price already read (' + o.rightPrice + '%) is dropped' : '') + '. The removal is written to the audit log.</p>', danger: 1, action: 'Remove the link', cancel: 'Keep it', done: 'The link of ' + id + ' is removed.',
+      run: async () => { await api('/admin/v1/questions/' + qq.marketId + '/outside', { method: 'DELETE' }); setOutside((m) => ({ ...m, [qq.marketId]: null })); return 'The link of ' + id + ' is removed.'; } });
+  }
   function swapSheet(id?: string) {
     const qq = byId(id); if (!qq) return;
     const fits = CONFIG.mock ? D.queue.slice(0, 4) : D.queue.filter((d: any) => d.targetDay === qq.day);
@@ -265,7 +310,7 @@ export default function Questions() {
       '<div class="langs">' + ['en', 'ko', 'ja'].map(lang).join('') + '</div>' +
       '<div class="cols cols-2" style="gap:12px"><div class="fl"><label for="a-due">Answer due, KST <span class="cnt">YYYY-MM-DD HH:MM</span></label><input class="inp" id="a-due" placeholder="2026-12-01 18:00"></div><div class="fl"><label for="a-src">Source URL</label><input class="inp" id="a-src" placeholder="https://"></div></div>' +
       '<div class="fl"><label for="a-crit">Resolve rule <span class="cnt">One sentence with the exact time and time zone</span></label><textarea class="inp" id="a-crit" rows="2"></textarea></div>' + WHY('a-why') +
-      '<p class="hint">The day closes at its end, 09:00 KST the next day; the answer must be due between then and 24 hours later. The text is checked again and hashed when the day goes on chain.</p><div data-run-err style="display:contents"></div>',
+      '<p class="hint">The day closes at its end, 09:00 KST the next day; the answer must be due between then and 24 hours later, or later for a long question (at most 2 a day, up to the limit in Reward settings). The text is checked again and hashed when the day goes on chain.</p><div data-run-err style="display:contents"></div>',
       action: btn('Add question', { primary: 1, act: 'add-go' }) });
   }
   const readText = (pre: string) => Object.fromEntries(['en', 'ko', 'ja'].map((l) => [l, Object.fromEntries(['title', 'left', 'right', 'rule', 'settle'].map((f) => [f, ((document.getElementById(pre + f + '-' + l) as HTMLInputElement)?.value || '').trim()]))]));
@@ -273,6 +318,21 @@ export default function Questions() {
 
   useActs({
     swap: (id) => swapSheet(id), cancelq: (id) => cancelSheet(id), void: (id) => voidSheet(id),
+    outside: (id) => outsideSheet(id), 'outside-rm': (id) => outsideRemove(id),
+    'outside-go': async (id, el) => {
+      const qq = byId(id); if (!qq) return;
+      const url = (document.getElementById('o-url') as HTMLInputElement).value.trim(), slug = (document.getElementById('o-slug') as HTMLInputElement).value.trim(), right = (document.getElementById('o-right') as HTMLInputElement).value.trim(), why = (document.getElementById('o-why') as HTMLTextAreaElement).value.trim();
+      if (!/^https:\/\/(www\.)?polymarket\.com\/\S+/.test(url)) { sheetFail('Give a polymarket.com market or event link.'); return; }
+      if (slug && !/^[a-z0-9-]{3,200}$/i.test(slug)) { sheetFail('The market slug has letters, digits and hyphens only.'); return; }
+      if (!right) { sheetFail('Name the outcome that matches our right choice.'); return; }
+      if (why.length < 8) { sheetFail('Give a reason.'); return; }
+      busy(el as HTMLButtonElement, 'Saving');
+      try {
+        const r = await api('/admin/v1/questions/' + qq.marketId + '/outside', { body: { source: 'polymarket', url, ...(slug ? { marketSlug: slug } : {}), rightOutcome: right, reason: why } });
+        setOutside((m) => ({ ...m, [qq.marketId]: r.outside ?? null }));
+        closeSheet(true); toast(id + ' is linked to ' + (r.outside?.marketSlug || 'the market') + '.');
+      } catch (e) { unbusy(el as HTMLButtonElement); sheetError(errText(e)); }
+    },
     jump: () => document.getElementById('queue')?.scrollIntoView({ behavior: 'smooth' }),
     sched: (a) => schedSheet(a), add: (a) => addSheet(a),
     regen: async (id, el) => {

@@ -12,6 +12,7 @@ import { decide } from '../../src/ai/resolve.ts';
 import type { Draft } from '../../src/ai/schemas.ts';
 import { selectFive, type Candidate } from '../../src/ai/select.ts';
 import { categoryMix, checkDraft, checkOutsideLink } from '../../src/ai/validate.ts';
+import { effectiveTiming, LONG_MAX_DAYS_LIMIT } from '../../src/ai/timing.ts';
 import { FakeOutsideMarkets } from '../../src/dataRoom/polymarket.ts';
 import { silentLogger } from '../../src/worker/log.ts';
 import { createWorkerDb, postgresAvailable, type TestDb } from './helpers/env.ts';
@@ -81,6 +82,26 @@ describe('long questions (no database)', () => {
     const wrong = { ...d, en: { ...d.en, title: d.en.title.replace(kstDateLabels(CLOSE + 10 * 86400).en, 'Mon, Dec 28') } };
     expect(checkDraft(wrong, { dayId: THU, minResolveGapSec: 3600, longMaxDays: 30 }).errors.join()).toContain('Dec 28');
   });
+  it('the on chain maxResolveAfterClose caps every answer time, whatever longMaxDays says', () => {
+    // Stored 30 days, chain 7 days: a question 10 days out is refused, one 6 days out passes.
+    expect(checkDraft(longDraft(10), { dayId: THU, minResolveGapSec: 3600, longMaxDays: 30, maxResolveAfterCloseSec: 7 * 86400 }).errors.join()).toContain('more than 7 days');
+    expect(checkDraft(longDraft(6), { dayId: THU, minResolveGapSec: 3600, longMaxDays: 30, maxResolveAfterCloseSec: 7 * 86400 }).errors).toEqual([]);
+    // Chain 90 days does not widen the drafter's own limit.
+    expect(checkDraft(longDraft(40), { dayId: THU, minResolveGapSec: 3600, longMaxDays: 30, maxResolveAfterCloseSec: 90 * 86400 }).errors.join()).toContain('more than 30 days');
+    // A part day over the chain limit is refused too (the whole day count rounds down).
+    expect(checkDraft(longDraft(6), { dayId: THU, minResolveGapSec: 3600, longMaxDays: 30, maxResolveAfterCloseSec: 6 * 86400 }).errors.join()).toMatch(/more than 6 days|contract limit/);
+  });
+  it('effectiveTiming: long questions need the switch, and longMaxDays is capped by the chain', () => {
+    const t = { minShort: 3, maxLong: 2, longMaxDays: 60 };
+    expect(effectiveTiming(t, false, 30 * 86400)).toEqual({ maxLong: 0, longMaxDays: 0, chainMaxDays: 30 });
+    expect(effectiveTiming(t, true, 30 * 86400)).toEqual({ maxLong: 2, longMaxDays: 30, chainMaxDays: 30 });
+    expect(effectiveTiming(t, true, 90 * 86400)).toEqual({ maxLong: 2, longMaxDays: 60, chainMaxDays: 90 });
+    expect(effectiveTiming(t, true)).toEqual({ maxLong: 2, longMaxDays: 60, chainMaxDays: null });
+    // A chain limit of one day leaves no room for a question answered more than 24 h after the close.
+    expect(effectiveTiming(t, true, 86400)).toEqual({ maxLong: 0, longMaxDays: 0, chainMaxDays: 1 });
+    expect(effectiveTiming({ minShort: 4, maxLong: 2, longMaxDays: 10 }, true, 30 * 86400)).toEqual({ maxLong: 1, longMaxDays: 10, chainMaxDays: 30 });
+    expect(LONG_MAX_DAYS_LIMIT).toBe(90);
+  });
   it('selection takes at most maxLong long questions', () => {
     const long = (id: number, cat: Candidate['category']): Candidate => ({ id, category: cat, titleEn: `long ${id} alpha${id}`, resolvesAt: CLOSE + (5 + id) * 86400, quality: 0.9 });
     const short = (id: number, cat: Candidate['category']): Candidate => ({ id, category: cat, titleEn: `short ${id} beta${id}`, resolvesAt: CLOSE + 12 * 3600, quality: 0.5 });
@@ -93,7 +114,7 @@ describe('long questions (no database)', () => {
     const now = CLOSE + 41 * 3600;
     expect(decide([], undefined, now, THU).action).toBe('void');
     expect(decide([], undefined, now, THU, CLOSE + 10 * 86400).action).toBe('wait');
-    expect(answerDeadline(THU, CLOSE + 3600)).toBe(CLOSE + 48 * 3600);
+    expect(answerDeadline(THU, CLOSE + 3600)).toBe(CLOSE + 3600 + 48 * 3600);
     expect(answerDeadline(THU, CLOSE + 10 * 86400)).toBe(CLOSE + 10 * 86400 + 48 * 3600);
   });
 });

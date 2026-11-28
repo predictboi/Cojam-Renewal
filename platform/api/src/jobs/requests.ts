@@ -137,8 +137,8 @@ export async function handleRequest(ctx: JobContext, r: RequestRow): Promise<{ r
       if (m.status !== 'scheduled' && m.status !== 'cancelled') throw new Error(`cannot replace a ${m.status} question (published questions are on chain)`);
       await ctx.db.updateTable('markets').set({ status: 'cancelled', updated_at: new Date() }).where('market_id', '=', id).execute();
       const params = await readPredictParams(ctx.client, ctx.contracts.predict);
-      let filled = await fillFromReserve(aiDeps(ctx, params.minResolveGap), m.day_id);
-      if (filled.length === 0 && ctx.settings.aiEnabled) filled = (await draftDay(aiDeps(ctx, params.minResolveGap), m.day_id)).scheduled;
+      let filled = await fillFromReserve(aiDeps(ctx, params), m.day_id);
+      if (filled.length === 0 && ctx.settings.aiEnabled) filled = (await draftDay(aiDeps(ctx, params), m.day_id)).scheduled;
       if (filled.length) await prepareImageQuiet(ctx, filled);
       return { result: { replacedBy: filled } };
     }

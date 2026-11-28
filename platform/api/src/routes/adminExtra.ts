@@ -13,7 +13,7 @@ import { cojamPredictAbi, cojamStakingAbi } from "../chain/abi.ts";
 import { DEFAULT_PARAMS, chainTry, checkAnswerWindow, predictParams, toUnix } from "./common.ts";
 import { currentDayId, dayEnd, weekOf, weekFirstDay } from "../../../shared/src/time.ts";
 import type { AuthedAdmin } from "../auth/index.ts";
-import { DEFAULT_TIMING, DRAFT_TIMING_KEY, effectiveTiming, storedTiming } from "../ai/timing.ts";
+import { DEFAULT_TIMING, DRAFT_TIMING_KEY, LONG_MAX_DAYS_LIMIT, effectiveTiming, storedTiming, type DraftTiming } from "../ai/timing.ts";
 
 /** app_state key of the maintenance switch (read by GET /v1/config once the player API exposes it). */
 export const MAINTENANCE_KEY = "app.maintenance";
@@ -163,12 +163,18 @@ export function registerAdminExtraRoutes(app: FastifyInstance, kit: RouteKit, h:
   });
 
   // ------------------------------------------------------------ draft timing (DECISIONS "Longer questions mixed in")
+  // longMaxDays may be stored up to 90 (the contract's upper bound); what applies is capped by the live on chain
+  // maxResolveAfterClose (`effective.longMaxDays`, `effective.chainMaxDays`).
+  const effectiveNow = async (t: DraftTiming) => {
+    const params = (await predictParams(db, deps.chain, deps.now())) ?? DEFAULT_PARAMS;
+    return effectiveTiming(t, Boolean(deps.config.env.LONG_QUESTIONS_ON_CHAIN), params.maxResolveAfterClose ?? DEFAULT_PARAMS.maxResolveAfterClose);
+  };
   get("/admin/v1/draft-timing", "viewer", async () => {
     const t = await storedTiming(db);
-    return { ...t, longQuestionsOnChain: Boolean(deps.config.env.LONG_QUESTIONS_ON_CHAIN), effective: effectiveTiming(t, Boolean(deps.config.env.LONG_QUESTIONS_ON_CHAIN)), defaults: DEFAULT_TIMING };
+    return { ...t, longQuestionsOnChain: Boolean(deps.config.env.LONG_QUESTIONS_ON_CHAIN), effective: await effectiveNow(t), defaults: DEFAULT_TIMING };
   });
   post("/admin/v1/draft-timing", "owner", async (req, admin) => {
-    const b = z.object({ minShort: z.number().int().min(0).max(5), maxLong: z.number().int().min(0).max(5), longMaxDays: z.number().int().min(1).max(60), reason }).parse(req.body);
+    const b = z.object({ minShort: z.number().int().min(0).max(5), maxLong: z.number().int().min(0).max(5), longMaxDays: z.number().int().min(1).max(LONG_MAX_DAYS_LIMIT), reason }).parse(req.body);
     if (b.minShort + b.maxLong > 5) throw new ApiError("BAD_REQUEST", "minShort plus maxLong must be at most 5");
     const prev = await storedTiming(db);
     const next = { minShort: b.minShort, maxLong: b.maxLong, longMaxDays: b.longMaxDays };
@@ -176,7 +182,7 @@ export function registerAdminExtraRoutes(app: FastifyInstance, kit: RouteKit, h:
       await setState(trx as any, DRAFT_TIMING_KEY, next);
       await audit(trx as any, { actor: actor(admin), action: "draft.timing", payload: { reason: b.reason, previous: prev, next } });
     });
-    return { ...next, effective: effectiveTiming(next, Boolean(deps.config.env.LONG_QUESTIONS_ON_CHAIN)) };
+    return { ...next, effective: await effectiveNow(next) };
   });
 
   // ------------------------------------------------------------ app: maintenance switch

@@ -9,9 +9,9 @@
 //     without a verified quote counts as undeterminable.
 //   * Both runs (and the adapter when present) agree with confidence >= 0.9: setOutcome.
 //     Both say the event was cancelled or postponed: void.
-//     Otherwise: retry every hour; 8 hours before the market's answer deadline it is voided (for a short
-//     question 40 hours after the day's end, 8 hours of margin before the contract's 48 hour deadline; for a
-//     long question its own deadline, see answerDeadline in shared/src/time.ts).
+//     Otherwise: retry every hour; 8 hours before the market's answer deadline it is voided. Every market has
+//     its own deadline, `resolvesAt + 48 h` (answerDeadline in shared/src/time.ts), so it is voided 40 hours
+//     after its own answer time, short or long alike.
 //   * Inside the settle window a third run checks the answer again. A disagreement triggers one more
 //     independent run; `correctOutcome` only when the two re-check runs (plus the adapter) agree on
 //     the other answer. Otherwise an alert, and the answer stands.
@@ -27,6 +27,7 @@ import { resolutionJson, resolutionZ, type Resolution } from './schemas.ts';
 import { hostOf } from './validate.ts';
 
 export const MIN_CONFIDENCE = 0.9;
+/** A market without an answer is voided this long after its own resolvesAt (48 h deadline minus 8 h of margin). */
 export const VOID_AFTER_DAY_END_SEC = 40 * 3600;
 /** A market without an answer is voided this long before its answer deadline. */
 export const VOID_BEFORE_DEADLINE_SEC = 8 * 3600;

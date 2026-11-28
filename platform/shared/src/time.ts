@@ -11,14 +11,28 @@ export const SECONDS_PER_DAY = 86_400;
 export const SLOTS = 5;
 /** KST and JST are UTC+9 all year (no daylight saving). */
 export const KST_OFFSET_SECONDS = 9 * 3_600;
-/** `setOutcome` must happen before dayEnd + 48 h, after that anyone may `voidExpired`. */
+/**
+ * `setOutcome` must happen before the market's own `resolvesAt + 48 h`; from that moment anyone may `voidExpired`
+ * (CojamPredict RESOLVE_DEADLINE, counted per market since DECISIONS "Longer questions mixed in").
+ */
 export const RESOLVE_DEADLINE_SECONDS = 48 * 3_600;
-/** `resolvesAt` must be at most open + 2 days (24 h after the common close). */
+/**
+ * The drafter's definition of a short question: answered at most open + 2 days, that is within 24 h of the day's
+ * common close. Not a contract rule: on chain the limit is `closesAt + maxResolveAfterClose` (see below).
+ */
 export const MAX_RESOLVE_AFTER_OPEN_SECONDS = 2 * SECONDS_PER_DAY;
 /**
+ * CojamPredict parameter 15 `maxResolveAfterClose`: `resolvesAt` may be at most this long after the close.
+ * Default 30 days, bounds 1 to 90 days and at least `minResolveGap`. Read the live value from `params()`.
+ */
+export const MAX_RESOLVE_AFTER_CLOSE_DEFAULT_SECONDS = 30 * SECONDS_PER_DAY;
+export const MAX_RESOLVE_AFTER_CLOSE_MIN_SECONDS = SECONDS_PER_DAY;
+export const MAX_RESOLVE_AFTER_CLOSE_MAX_SECONDS = 90 * SECONDS_PER_DAY;
+/**
  * Longer questions (DECISIONS "Longer questions mixed in"): a short question is answered within 24 h of the day's
- * close; a long one up to LONG_MAX_DAYS_AFTER_CLOSE days after it. MAX_RESOLVE_AFTER_OPEN_SECONDS applies to the
- * short ones only. Defaults; the admin may change the counts (at least 3 short, at most 2 long per day).
+ * close; a long one up to LONG_MAX_DAYS_AFTER_CLOSE days after it (an admin parameter of the drafter, never more
+ * than the on chain `maxResolveAfterClose`). Defaults; the admin may change the counts (at least 3 short, at most
+ * 2 long per day).
  */
 export const SHORT_ANSWER_WINDOW_SECONDS = SECONDS_PER_DAY;
 export const LONG_MAX_DAYS_AFTER_CLOSE = 30;
@@ -62,9 +76,12 @@ export function dayEnd(dayId: Int): number {
   return (toInt(dayId, "dayId") + 1) * SECONDS_PER_DAY;
 }
 
-/** Last moment `setOutcome` is accepted is strictly before this; from here `voidExpired` works. */
-export function resolveDeadline(dayId: Int): number {
-  return dayEnd(dayId) + RESOLVE_DEADLINE_SECONDS;
+/**
+ * Answer deadline of a market answered at `resolvesAt`: `setOutcome` is accepted strictly before this, and from
+ * here `voidExpired` works. Every market carries its own deadline, so markets of one day may expire weeks apart.
+ */
+export function resolveDeadline(resolvesAt: Int): number {
+  return toInt(resolvesAt, "resolvesAt") + RESOLVE_DEADLINE_SECONDS;
 }
 
 /** True when a market of `dayId` answered at `resolvesAt` is a long question (answered more than 24 h after the close). */
@@ -73,12 +90,17 @@ export function isLongQuestion(dayId: Int, resolvesAt: Int): boolean {
 }
 
 /**
- * Last moment an answer is accepted for a market: the day's deadline (dayEnd + 48 h, the deployed contract) for a
- * short question; for a long one its own answer time plus the same 48 h. The long rule is a placeholder until the
- * contract with a per market answer deadline is deployed: read that deadline from the new ABI then.
+ * Last moment an answer is accepted for a market of `dayId` answered at `resolvesAt`: `resolvesAt + 48 h`, short
+ * or long alike (the same rule as resolveDeadline; `dayId` is kept so callers read naturally and is checked).
  */
 export function answerDeadline(dayId: Int, resolvesAt: Int): number {
-  return isLongQuestion(dayId, resolvesAt) ? toInt(resolvesAt, "resolvesAt") + RESOLVE_DEADLINE_SECONDS : resolveDeadline(dayId);
+  toInt(dayId, "dayId");
+  return resolveDeadline(resolvesAt);
+}
+
+/** Latest `resolvesAt` the contract accepts for a market of `dayId` (`closesAt + maxResolveAfterClose`). */
+export function latestResolvesAt(dayId: Int, maxResolveAfterCloseSeconds: Int = MAX_RESOLVE_AFTER_CLOSE_DEFAULT_SECONDS): number {
+  return dayEnd(dayId) + toInt(maxResolveAfterCloseSeconds, "maxResolveAfterClose");
 }
 
 /** Week of a day (contract `weekOf`). */
@@ -141,7 +163,6 @@ export function secondsUntilDayEnd(dayId: Int, unix: Int = nowSeconds()): number
   return Math.max(0, dayEnd(dayId) - toInt(unix, "unix"));
 }
 
-/** `createDay` must be mined strictly before the day opens. */
 /** `createDay` refuses a day with less than this left before its end (late creation rule). */
 export const LATE_CREATE_MARGIN_SECONDS = 3_600;
 

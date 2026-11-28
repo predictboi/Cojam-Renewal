@@ -199,12 +199,33 @@ describe("params, ranking, system", () => {
       completionPoints: 100, hitPoints: 50, referralBps: 1000, welcomePoints: 100, settleDelay: 21600, pointsPerCT: 1000, minConvertPoints: 1000,
       maxConvertCtPerUserPerDay: 50, maxConvertCtPerDay: 20000, minAccountAge: 604800, minResolveGap: 3600, maxWeeklyPool: 10000, airdropDelay: 216000,
       treasury: "0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb", splitBps: [3000, 2000, 1500, 1000, 700, 500, 400, 300, 300, 300],
+      maxResolveAfterClose: 45 * 86400,
     };
     const r = await k.app.inject({ method: "POST", url: "/admin/v1/params", headers: auth(owner), payload: { action: "propose", params } });
     expect(r.statusCode).toBe(200);
     expect(decodeFunctionData({ abi: cojamPredictAbi, data: r.json().unsignedTx.data }).functionName).toBe("proposeParams");
     const bad = await k.app.inject({ method: "POST", url: "/admin/v1/params", headers: auth(owner), payload: { action: "propose", params: { ...params, splitBps: [1000, 2000, 1500, 1000, 700, 500, 400, 300, 300, 2300] } } });
     expect(bad.statusCode).toBe(400);
+  });
+  test("maxResolveAfterClose (parameter 15): encoded in the proposal, 1 to 90 days, at least minResolveGap, default 30 days", async () => {
+    const params = {
+      completionPoints: 100, hitPoints: 50, referralBps: 1000, welcomePoints: 100, settleDelay: 21600, pointsPerCT: 1000, minConvertPoints: 1000,
+      maxConvertCtPerUserPerDay: 50, maxConvertCtPerDay: 20000, minAccountAge: 604800, minResolveGap: 3600, maxWeeklyPool: 10000, airdropDelay: 216000,
+      treasury: "0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb", splitBps: [3000, 2000, 1500, 1000, 700, 500, 400, 300, 300, 300],
+    };
+    const propose = (p: Record<string, unknown>) => k.app.inject({ method: "POST", url: "/admin/v1/params", headers: auth(owner), payload: { action: "propose", params: p } });
+    const proposed = async (p: Record<string, unknown>) => {
+      const r = await propose(p);
+      expect(r.statusCode, r.body).toBe(200);
+      const args = decodeFunctionData({ abi: cojamPredictAbi, data: r.json().unsignedTx.data }).args as unknown as [{ maxResolveAfterClose: number | bigint }];
+      return Number(args[0].maxResolveAfterClose);
+    };
+    expect(await proposed({ ...params, maxResolveAfterClose: 45 * 86400 })).toBe(45 * 86400);
+    expect(await proposed(params)).toBe(30 * 86400); // omitted: the contract default
+    expect(await proposed({ ...params, maxResolveAfterClose: 90 * 86400 })).toBe(90 * 86400);
+    expect((await propose({ ...params, maxResolveAfterClose: 91 * 86400 })).statusCode).toBe(400);
+    expect((await propose({ ...params, maxResolveAfterClose: 86399 })).statusCode).toBe(400);
+    expect((await propose({ ...params, minResolveGap: 2 * 86400, maxResolveAfterClose: 86400 })).statusCode).toBe(400);
   });
   test("ranking, airdrop trigger, invites, system, audit", async () => {
     for (const url of ["/admin/v1/ranking/current", "/admin/v1/invites", "/admin/v1/system", "/admin/v1/audit", "/admin/v1/params", "/admin/v1/email-domains", "/admin/v1/operator-requests", "/admin/v1/admins"]) {

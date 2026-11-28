@@ -36,15 +36,15 @@ export const CRON_JOBS: CronJob[] = [
     run: (ctx) => publishDay(ctx, dayIdOf(ctx.now())),
   },
   { name: 'resolution', cron: '*/5 * * * *', what: 'Resolution sweep: markets past resolvesAt without an outcome', run: resolutionSweep },
-  { name: 'settle', cron: '*/10 * * * *', what: 'settleMany for players with ready, unsettled slots', run: settleSweep },
-  { name: 'expiry', cron: '*/10 * * * *', what: 'voidExpired for markets past dayEnd + 48 h', run: expirySweep },
+  { name: 'settle', cron: '*/10 * * * *', what: 'settleMany for players with ready, unsettled slots on any day (late hits of long questions included)', run: settleSweep },
+  { name: 'expiry', cron: '*/10 * * * *', what: 'voidExpired for markets past their own resolvesAt + 48 h', run: expirySweep },
   { name: 'correction', cron: '*/15 * * * *', what: 'Re-check answers inside the settle window', run: correctionCheck },
   { name: 'compensation', cron: '*/10 * * * *', what: 'compensate batches for markets with a corrected outcome', run: (ctx) => compensationSweep(ctx) },
   { name: 'week-close', cron: '5 0 * * 1', what: 'Close the week that just ended in the index', run: (ctx) => closeWeek(ctx, weekOf(dayIdOf(ctx.now())) - 1) },
   {
     name: 'airdrop',
     cron: '*/15 * * * *',
-    what: 'Airdrop of the last ended week once weekEnd + airdropDelay passed (Wed 12:00 UTC) and the backlog is empty',
+    what: 'Airdrop of the last ended week once weekEnd + airdropDelay passed (Wed 12:00 UTC): settles the week first, waits only for markets due before then',
     run: (ctx) => runAirdrop(ctx, weekOf(dayIdOf(ctx.now())) - 1),
   },
   {

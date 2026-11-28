@@ -396,8 +396,8 @@ Roles: `viewer` reads; `operator` performs writes the operator key carries out t
 | `DELETE /admin/v1/questions/:id/outside` | operator | remove the link |
 | `GET /admin/v1/data-room` | viewer | `{ "minPlayers", "defaultMinPlayers", "minTopPlayers" }` |
 | `POST /admin/v1/data-room` | owner | `{ "minPlayers", "reason" }`: minimum players before a share is shown (default 30) |
-| `GET /admin/v1/draft-timing` | viewer | `{ "minShort", "maxLong", "longMaxDays", "longQuestionsOnChain", "effective", "defaults" }` (DECISIONS "Longer questions mixed in") |
-| `POST /admin/v1/draft-timing` | owner | `{ "minShort", "maxLong", "longMaxDays", "reason" }`: defaults 3, 2, 30. Long questions apply only with `LONG_QUESTIONS_ON_CHAIN=1` (API and worker), set once CojamPredict with `maxResolveAfterClose` is deployed |
+| `GET /admin/v1/draft-timing` | viewer | `{ "minShort", "maxLong", "longMaxDays", "longQuestionsOnChain", "effective": { "maxLong", "longMaxDays", "chainMaxDays" }, "defaults" }` (DECISIONS "Longer questions mixed in"); `effective.longMaxDays` is the stored value capped by the on chain `maxResolveAfterClose` (`chainMaxDays`, whole days) |
+| `POST /admin/v1/draft-timing` | owner | `{ "minShort", "maxLong", "longMaxDays", "reason" }`: defaults 3, 2, 30; `longMaxDays` 1 to 90 (the contract bound), `minShort + maxLong` at most 5. Returns the stored values and `effective`. Long questions apply only with `LONG_QUESTIONS_ON_CHAIN=1` (API and worker), set once CojamPredict with `maxResolveAfterClose` is deployed |
 | `GET /admin/v1/answers?status=due|window|final|all` | viewer | resolutions with every run, confidence, evidence, the correction window left, `late` |
 | `POST /admin/v1/answers/:marketId/rerun` | operator | re-run the resolution |
 | `POST /admin/v1/answers/:marketId/correct` | operator | `{ "outcome": 1|2|3, "reason" }`: inside the window `correctOutcome` (worker); after it an unsigned `setCorrectedOutcome` for the owner plus a queued `compensate` request (outcome 1 or 2 only) |
@@ -451,7 +451,7 @@ A separate Claude session the founder uses from a phone (brief: `docs/platform/O
 * **Token.** `npx tsx scripts/make-service-token.ts` prints a new random token once (`cjops_…`) and its SHA-256. Put the hash in Render as `ADMIN_SERVICE_TOKEN_SHA256` on `cojam-app-api`; put the token in the agent's credential form (bearer for the API host). The token itself is never stored by us. Run the script again to rotate. With the variable unset the path is off.
 * **Auth.** `Authorization: Bearer <token>` on `/admin/v1/*`. The hash is compared in constant time. The caller is the actor `ops-agent` with the role `operator`, never `owner`.
 * **Limits and audit.** `ADMIN_SERVICE_PER_MINUTE` requests per minute (default 120, `RATE_LIMITED_USER` above it). Every write is in `audit_log` with actor `ops-agent`.
-* **Allowed.** Every viewer endpoint, and the operator writes: question cancel, replace, void and image actions; answer rerun and correct (inside the window; after it the call only prepares the owner transaction, which the founder signs in the admin); airdrop trigger; player block, unblock and clear; email domain add and edit. **Not allowed** (owner only): `POST /admin/v1/params`, `POST` and `DELETE /admin/v1/admins`.
+* **Allowed.** Every viewer endpoint, and the operator writes: question cancel, replace, void and image actions; answer rerun and correct (inside the window; after it the call only prepares the owner transaction, which the founder signs in the admin); airdrop trigger; player block, unblock and clear; email domain add and edit; a question's Polymarket link (`POST` and `DELETE /admin/v1/questions/:id/outside`). **Not allowed** (owner only): `POST /admin/v1/params`, `POST /admin/v1/draft-timing`, `POST /admin/v1/data-room`, `POST` and `DELETE /admin/v1/admins`.
 
 ### GET /admin/v1/overview
 

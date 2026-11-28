@@ -22,14 +22,14 @@ export async function draftJob(ctx: JobContext): Promise<DraftOutcome[]> {
   const hourUtc = new Date(ctx.now() * 1000).getUTCHours();
   if (ctx.outside && hourUtc >= MATCH_HOURS_UTC.from && hourUtc < MATCH_HOURS_UTC.to) {
     // Never blocks drafting: a failure leaves the set to our own questions.
-    const m = await matchOutsideDay({ ...aiDeps(ctx, params.minResolveGap), outside: ctx.outside }, today + 1).catch((e) => {
+    const m = await matchOutsideDay({ ...aiDeps(ctx, params), outside: ctx.outside }, today + 1).catch((e) => {
       ctx.log.warn('match: failed', { dayId: today + 1, error: (e as Error).message });
       return null;
     });
     if (m?.skipped) ctx.log.info('match: skipped', { dayId: today + 1, reason: m.skipped });
   }
   for (const d of await daysNeedingQuestions(ctx.db, today, ctx.settings.draftHorizonDays)) {
-    const r = await draftDay(aiDeps(ctx, params.minResolveGap), d);
+    const r = await draftDay(aiDeps(ctx, params), d);
     out.push(r);
     if (r.missingSlots.length) await ctx.alerts.raise(`draft-short:${d}`, d === today + 1 ? 'critical' : 'warn', `Day ${d} has ${5 - r.missingSlots.length} of 5 questions after drafting`, `${r.drafted} drafted, ${r.accepted} accepted`);
     else await ctx.alerts.resolve(`draft-short:${d}`);

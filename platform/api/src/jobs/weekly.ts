@@ -1,7 +1,10 @@
 // Week close and the weekly airdrop (DEV-PLAN 3.4 and 6.4, DECISIONS "Ranking ties",
 // "On hold: ranking"). Monday 00:05 UTC the week is closed in the index (K1 shows "Week closed").
-// From weekEnd + airdropDelay (Wednesday 12:00 UTC = 21:00 KST by default) the airdrop runs once the
-// week's settle backlog is empty: the pool is qualified players x 1 CT capped at 10,000 CT (and the
+// From weekEnd + airdropDelay (Wednesday 12:00 UTC = 21:00 KST by default) the airdrop first settles every
+// market of the week that is ready (settleMany, anyone may call it), then runs once the week's backlog is empty.
+// The backlog counts only markets answered before the due time: a long question still open does not hold the
+// airdrop back, and its hits, settled later by the regular settle job, count in the current week (contract week
+// rule for late hits, DECISIONS "Longer questions mixed in"). The pool is qualified players x 1 CT capped at 10,000 CT (and the
 // on chain maxWeeklyPool), the winners are built from the index with the contract's tie break,
 // re-read from the chain before sending, accounts on hold are skipped and the ranks below move up.
 
@@ -10,6 +13,7 @@ import { weekEnd, weekFirstDay } from '../../../shared/src/time.ts';
 import { audit } from '../db/index.ts';
 import { cojamPredictAbi, erc20Abi, readPredictParams, type Address } from '../worker/chain.ts';
 import type { JobContext } from './context.ts';
+import { settleSweep } from './markets.ts';
 import { readPlayer } from './registration.ts';
 import { assertContractOrder, buildWinners, computePool, type QualifyInput, type WeekScoreRow } from './winners.ts';
 
@@ -21,10 +25,15 @@ export async function closeWeek(ctx: JobContext, weekId: number): Promise<void> 
     .execute();
 }
 
-/** Unsettled players on markets of the week that are final (or still unresolved markets). */
-export async function weekBacklog(ctx: JobContext, weekId: number): Promise<{ unresolved: number; unsettled: number }> {
+/**
+ * What the week's airdrop waits for: markets of the week due (resolvesAt) before `dueAt` that have no outcome yet,
+ * and picks on such markets that have an outcome but are not settled (still inside the settle window, or a settle
+ * that failed). Markets due at or after `dueAt` (long questions) are left out: their hits land in a later week.
+ */
+export async function weekBacklog(ctx: JobContext, weekId: number, dueAt: number): Promise<{ unresolved: number; unsettled: number }> {
   const first = weekFirstDay(weekId);
   const last = first + 6;
+  const due = new Date(dueAt * 1000);
   const unresolved = await ctx.db
     .selectFrom('markets')
     .select(sql<number>`count(*)::int`.as('n'))
@@ -32,6 +41,7 @@ export async function weekBacklog(ctx: JobContext, weekId: number): Promise<{ un
     .where('day_id', '<=', last)
     .where('status', 'in', ['published', 'closed'])
     .where('outcome', 'is', null)
+    .where('resolves_at', '<', due)
     .executeTakeFirst();
   const unsettled = await sql<{ n: number }>`
     SELECT count(*)::int AS n
@@ -40,6 +50,7 @@ export async function weekBacklog(ctx: JobContext, weekId: number): Promise<{ un
     LEFT JOIN user_days u ON u.wallet = p.wallet AND u.day_id = p.day_id
     WHERE p.day_id BETWEEN ${first} AND ${last}
       AND m.outcome IS NOT NULL
+      AND m.resolves_at < ${due}
       AND ((coalesce(u.settled_mask, 0) >> (p.market_id % 5)::int) & 1) = 0`.execute(ctx.db);
   return { unresolved: unresolved?.n ?? 0, unsettled: unsettled.rows[0]?.n ?? 0 };
 }
@@ -93,7 +104,10 @@ export async function runAirdrop(ctx: JobContext, weekId: number, opts: { force?
   const due = weekEnd(weekId) + params.airdropDelay;
   const now = ctx.now();
   if (now < due) return 'not_due';
-  const backlog = await weekBacklog(ctx, weekId);
+  // Settle the week's ready markets first, so no ready hit of the week is left to land in a later week.
+  const first = weekFirstDay(weekId);
+  await settleSweep(ctx, { from: first, to: first + 6 }).catch((e) => ctx.log.warn('airdrop: settle before the airdrop failed', { weekId, error: (e as Error).message }));
+  const backlog = await weekBacklog(ctx, weekId, due);
   if ((backlog.unresolved > 0 || backlog.unsettled > 0) && !opts.force) {
     if (now > due + 6 * 3600) await ctx.alerts.raise(`airdrop-backlog:${weekId}`, 'warn', `Week ${weekId} airdrop waits for the settle backlog`, `${backlog.unresolved} unresolved markets, ${backlog.unsettled} unsettled picks`);
     return 'backlog';
