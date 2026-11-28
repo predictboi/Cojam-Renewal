@@ -51,6 +51,8 @@ export interface PredictParams {
   airdropDelay: number;
   treasury: Address;
   splitBps: number[];
+  /** Longest time from the close to resolvesAt, seconds (CojamPredict with long questions; absent on the earlier contract). */
+  maxResolveAfterClose?: number;
 }
 
 export async function readPredictParams(client: PublicClient, predict: Address): Promise<PredictParams> {
@@ -72,6 +74,7 @@ export async function readPredictParams(client: PublicClient, predict: Address):
     airdropDelay: n('airdropDelay'),
     treasury: String(p.treasury).toLowerCase() as Address,
     splitBps: (p.splitBps as readonly (number | bigint)[]).map(Number),
+    ...(p.maxResolveAfterClose !== undefined ? { maxResolveAfterClose: n('maxResolveAfterClose') } : {}),
   };
 }
 

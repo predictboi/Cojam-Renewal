@@ -72,6 +72,10 @@ async function runOne(seed) {
   const UD = (a, d) => M.days.get(`${a}:${d}`) || { choices: [0, 0, 0, 0, 0], answered: 0, completed: false, settled: 0, hits: 0 };
   const add = (map, k, v) => map.set(k, (map.get(k) || 0n) + v);
   const weekOf = (d) => (d + 3n) / 7n;
+  // week that ranks a hit or compensation of day d credited now: the day's week until its airdrop, then the current week
+  const rankWeek = (d) => (M.airdropDone.has(weekOf(d)) ? weekOf(now / DAY) : weekOf(d));
+  // each market's own resolve deadline (DECISIONS "Longer questions mixed in")
+  const deadlineOf = (m) => m.resolvesAt + DEADLINE;
 
   function mint(to, amt) { add(M.bal, to, amt); M.supply += amt; }
   function credit(player, amt, now, w, completion = false) {
@@ -112,6 +116,7 @@ async function runOne(seed) {
       if (!parsed) continue;
       const a = parsed.args;
       if (parsed.name === "PointsCredited") {
+        expect(M.airdropDone.has(a.weekId), "credit into a week whose airdrop was paid").to.equal(false);
         add(ev.weekCredited, a.weekId, a.amount);
         if (a.kind === 1n) {
           const k = `${a.user}:${a.dayId}`;
@@ -161,6 +166,9 @@ async function runOne(seed) {
         const closesAt = open + DAY; // all five close at the day's end
         let resolvesAt = closesAt + H + BigInt(r.int(20 * 3600));
         if (resolvesAt > open + 2n * DAY) resolvesAt = open + 2n * DAY;
+        // up to two longer questions per day, answered days later (at most maxResolveAfterClose, 30 days)
+        if (i >= 3 && r.chance(0.4)) resolvesAt = closesAt + DAY + BigInt(r.int(5 * 86400));
+        if (i === 4 && r.chance(0.05)) resolvesAt = closesAt + 30n * DAY;
         inputs.push({ closesAt, resolvesAt, contentHash: hash(`${seed}:${d}:${i}`) });
       }
       // createDay reads minResolveGap, which stays 1 h in this test
@@ -304,7 +312,7 @@ async function runOne(seed) {
       if (id === null) return;
       const m = M.markets.get(id);
       const o = r.chance(0.95) ? 1 + r.int(3) : 0;
-      const ok = o >= 1 && o <= 3 && m.outcome === 0 && t >= m.resolvesAt && t < (id / 5n + 1n) * DAY + DEADLINE;
+      const ok = o >= 1 && o <= 3 && m.outcome === 0 && t >= m.resolvesAt && t < deadlineOf(m);
       await send(ok, "setOutcome", () => op.setOutcome(id, o), () => { m.outcome = o; m.resolvedAt = now; m.settlesAt = now + M.params.settleDelay; });
     }],
     [1, async function correct() {
@@ -329,10 +337,10 @@ async function runOne(seed) {
     [2, async function voidExp() {
       await tick(); now -= 1n; await time.setNextBlockTimestamp(now + 1n);
       const t = now + 1n;
-      const id = anyMarket((i, m) => m.outcome === 0 && t >= (i / 5n + 1n) * DAY + DEADLINE) ?? anyMarket(() => true);
+      const id = anyMarket((i, m) => m.outcome === 0 && t >= deadlineOf(m)) ?? anyMarket(() => true);
       if (id === null) return;
       const m = M.markets.get(id);
-      const ok = m.outcome === 0 && t >= (id / 5n + 1n) * DAY + DEADLINE;
+      const ok = m.outcome === 0 && t >= deadlineOf(m);
       await send(ok, "voidExpired", () => predict.connect(ctx.stranger).voidExpired(id), () => { m.outcome = 3; m.resolvedAt = now; m.settlesAt = now; });
     }],
     [6, async function settleSome() {
@@ -359,7 +367,7 @@ async function runOne(seed) {
         x.ud.settled |= x.todo; x.ud.hits += x.hits;
         M.days.set(`${u}:${day}`, x.ud);
         const pts = BigInt(x.hits) * M.params.hitPoints;
-        if (pts > 0n) credit(u, pts, now, weekOf(day));
+        if (pts > 0n) credit(u, pts, now, rankWeek(day));
         return 1;
       };
       if (users.length === 1 && r.chance(0.5)) {
@@ -380,7 +388,7 @@ async function runOne(seed) {
       // the AI keeper: resolve every market whose resolve time has come
       for (const [id, m] of M.markets) {
         const t = BigInt(await time.latest()) + 1n;
-        if (m.outcome !== 0 || t < m.resolvesAt || t >= (id / 5n + 1n) * DAY + DEADLINE || r.chance(0.2)) continue;
+        if (m.outcome !== 0 || t < m.resolvesAt || t >= deadlineOf(m) || r.chance(0.2)) continue;
         const o = r.chance(0.1) ? 3 : 1 + r.int(2);
         await send(true, "resolver setOutcome", () => op.setOutcome(id, o), () => { m.outcome = o; m.resolvedAt = now; m.settlesAt = now + M.params.settleDelay; });
       }
@@ -410,7 +418,7 @@ async function runOne(seed) {
         if (!todo) return;
         ud.settled |= todo; ud.hits += hits; M.days.set(`${u}:${day}`, ud);
         const pts = BigInt(hits) * M.params.hitPoints;
-        if (pts > 0n) credit(u, pts, now, weekOf(day));
+        if (pts > 0n) credit(u, pts, now, rankWeek(day));
       };
       await send(true, "keeper settleMany", () => predict.settleMany(users, day), () => { for (const u of users) applyFor(u); });
     }],
@@ -448,8 +456,7 @@ async function runOne(seed) {
         for (const u of users) {
           if (!elig(u, s2)) continue;
           s2.add(u); M.compensated.add(`${id}:${u}`);
-          const qw = M.airdropDone.has(weekOf(day)) ? weekOf(now / DAY) : weekOf(day);
-          if (M.params.hitPoints > 0n) credit(u, M.params.hitPoints, now, qw);
+          if (M.params.hitPoints > 0n) credit(u, M.params.hitPoints, now, rankWeek(day));
         }
       });
     }],
@@ -496,7 +503,7 @@ async function runOne(seed) {
         return;
       }
       const preset = r.pick(PRESETS);
-      const full = { ...preset, pointsPerCT: 100n, minConvertPoints: 100n, maxConvertCtPerUserPerDay: 50n, maxConvertCtPerDay: 20000n, minAccountAge: DAY, minResolveGap: H, maxWeeklyPool: 10000n, treasury: treasury.address, splitBps: M.params.split };
+      const full = { ...preset, pointsPerCT: 100n, minConvertPoints: 100n, maxConvertCtPerUserPerDay: 50n, maxConvertCtPerDay: 20000n, minAccountAge: DAY, minResolveGap: H, maxWeeklyPool: 10000n, treasury: treasury.address, splitBps: M.params.split, maxResolveAfterClose: 30n * DAY };
       await send(true, "proposeParams", () => own.proposeParams(full), () => { M.pending = { p: { ...preset, minAge: DAY, pointsPerCT: 100n, minConvertPoints: 100n }, after: now + 48n * H }; });
     }],
   ];

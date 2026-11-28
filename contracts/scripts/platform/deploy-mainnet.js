@@ -98,6 +98,7 @@ async function main() {
   if (!eq(p.treasury, master)) fail("predict treasury");
   if (p.completionPoints !== 100n || p.hitPoints !== 50n || p.referralBps !== 1000n || p.welcomePoints !== 100n) fail("predict point defaults");
   if (p.pointsPerCT !== 1000n || p.minAccountAge !== 7n * DAY || p.settleDelay !== 6n * 3600n) fail("predict conversion or timing defaults");
+  if (p.maxResolveAfterClose !== 30n * DAY) fail("predict maxResolveAfterClose default (30 days, longer questions)");
   if ((await predict.paused())) fail("predict paused");
   if ((await predict.reserve()) !== 0n) fail("predict reserve should start empty");
   const pending = await predict.pendingParams();

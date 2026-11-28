@@ -141,6 +141,8 @@ export interface PredictParams {
   airdropDelay: number;
   treasury: Address;
   splitBps: number[];
+  /** Longest time from the close to resolvesAt, seconds (CojamPredict with long questions; absent on the earlier contract). */
+  maxResolveAfterClose?: number;
 }
 export interface StakingQuote {
   tier: number;
@@ -231,6 +233,7 @@ export function toParams(p: any): PredictParams {
     airdropDelay: Number(p.airdropDelay),
     treasury: p.treasury,
     splitBps: [...p.splitBps].map(Number),
+    ...(p.maxResolveAfterClose !== undefined ? { maxResolveAfterClose: Number(p.maxResolveAfterClose) } : {}),
   };
 }
 

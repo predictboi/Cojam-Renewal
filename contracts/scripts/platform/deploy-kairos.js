@@ -105,6 +105,7 @@ async function main() {
   if (!(await predict.hasRole(await predict.PAUSER_ROLE(), me))) fail("predict pauser");
   const p = await predict.params();
   if (!eq(p.treasury, me)) fail("predict treasury");
+  if (p.maxResolveAfterClose !== 30n * 86400n) fail("predict maxResolveAfterClose default (30 days)");
   for (const s of [staking, shortLock]) {
     if (!eq(await s.CT(), ctAddr)) fail("staking CT");
     if (!eq(await s.treasury(), me)) fail("staking treasury");

@@ -76,3 +76,4 @@ button.mast-back { padding: 0; border: 0; background: none; }
 /* Results: how the players picked, one small line under the player's pick; the way to the data room in the "?" sheet */
 .rs-split { color: var(--ink-2); font-size: var(--fs-13); font-variant-numeric: tabular-nums; }
 .dr-sheet-link { margin-top: var(--s-4); }
+:lang(ko) .dr-q, :lang(ko) .dr-pm, :lang(ko) .dr-crowd { word-break: keep-all; }

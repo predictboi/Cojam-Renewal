@@ -684,6 +684,11 @@ export const cojamPredictAbi = [
             "internalType": "uint16[10]",
             "name": "splitBps",
             "type": "uint16[10]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxResolveAfterClose",
+            "type": "uint32"
           }
         ],
         "indexed": false,
@@ -780,6 +785,11 @@ export const cojamPredictAbi = [
             "internalType": "uint16[10]",
             "name": "splitBps",
             "type": "uint16[10]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxResolveAfterClose",
+            "type": "uint32"
           }
         ],
         "indexed": false,
@@ -2158,6 +2168,11 @@ export const cojamPredictAbi = [
             "internalType": "uint16[10]",
             "name": "splitBps",
             "type": "uint16[10]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxResolveAfterClose",
+            "type": "uint32"
           }
         ],
         "internalType": "struct Params",
@@ -2346,6 +2361,11 @@ export const cojamPredictAbi = [
             "internalType": "uint16[10]",
             "name": "splitBps",
             "type": "uint16[10]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxResolveAfterClose",
+            "type": "uint32"
           }
         ],
         "internalType": "struct Params",
@@ -2587,6 +2607,11 @@ export const cojamPredictAbi = [
             "internalType": "uint16[10]",
             "name": "splitBps",
             "type": "uint16[10]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxResolveAfterClose",
+            "type": "uint32"
           }
         ],
         "internalType": "struct Params",
@@ -5365,6 +5390,11 @@ export const predictLogicAbi = [
             "internalType": "uint16[10]",
             "name": "splitBps",
             "type": "uint16[10]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxResolveAfterClose",
+            "type": "uint32"
           }
         ],
         "indexed": false,
@@ -5455,6 +5485,11 @@ export const predictLogicAbi = [
             "internalType": "uint16[10]",
             "name": "splitBps",
             "type": "uint16[10]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxResolveAfterClose",
+            "type": "uint32"
           }
         ],
         "indexed": false,
@@ -5550,6 +5585,11 @@ export const predictLogicAbi = [
             "internalType": "uint16[10]",
             "name": "splitBps",
             "type": "uint16[10]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxResolveAfterClose",
+            "type": "uint32"
           }
         ],
         "internalType": "struct Params",

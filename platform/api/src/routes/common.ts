@@ -89,6 +89,7 @@ export const DEFAULT_PARAMS: PredictParams = {
   airdropDelay: 60 * 3600,
   treasury: "0x0000000000000000000000000000000000000000",
   splitBps: [3000, 2000, 1500, 1000, 700, 500, 400, 300, 300, 300],
+  maxResolveAfterClose: 30 * 86400,
 };
 
 /** Statuses of markets that are on chain (visible to players). */

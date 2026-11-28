@@ -274,6 +274,8 @@ export function registerAdminRoutes(app: FastifyInstance, kit: RouteKit): void {
     airdropDelay: z.number().int().min(0).max(7 * 86400),
     treasury: wallet,
     splitBps: z.array(z.number().int().min(0).max(10_000)).length(10),
+    /** CojamPredict parameter 15 (long questions): 1 to 90 days, at least minResolveGap; default 30 days. */
+    maxResolveAfterClose: z.number().int().min(86400).max(90 * 86400).default(30 * 86400),
   });
   post("/admin/v1/params", "owner", async (req, admin) => {
     const body = z
@@ -289,6 +291,7 @@ export function registerAdminRoutes(app: FastifyInstance, kit: RouteKit): void {
       if (p.splitBps.reduce((a, b) => a + b, 0) !== 10_000) throw new ApiError("BAD_REQUEST", "splitBps must sum to 10,000");
       if (p.splitBps.some((v, i) => i > 0 && v > p.splitBps[i - 1])) throw new ApiError("BAD_REQUEST", "splitBps must be non increasing");
       if (p.minConvertPoints < p.pointsPerCT) throw new ApiError("BAD_REQUEST", "minConvertPoints must be at least pointsPerCT");
+      if (p.maxResolveAfterClose < p.minResolveGap) throw new ApiError("BAD_REQUEST", "maxResolveAfterClose must be at least minResolveGap");
       if (p.airdropDelay < 48 * 3600 + p.settleDelay) throw new ApiError("BAD_REQUEST", "airdropDelay must be at least 48 h plus settleDelay");
       const data = encodeFunctionData({ abi: cojamPredictAbi, functionName: "proposeParams", args: [p as any] });
       tx = unsigned(data, "proposeParams: takes effect with applyParams after 48 hours");

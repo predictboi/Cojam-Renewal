@@ -81,6 +81,27 @@ For the Gate and A2. Normalises the code (upper case, letters and digits only). 
 
 Unknown, disabled, unregistered or on hold inviters: `{ "valid": false }`.
 
+### GET /public/data?cursor=
+
+The data room (DECISIONS "Data room"), no sign in, shareable by link. Also served at `/v1/public/data`. Type: `DataRoom` in `platform/shared/src/dataRoom.ts`. Only days whose questions have closed, newest first, 7 days a page; `cursor` is the `nextCursor` of the previous page (a day id: days before it). 600 per network per hour (`PUBLIC_DATA_IP_PER_HOUR`, `RATE_LIMITED_IP`). `Cache-Control: public, max-age=60`; the server keeps a closed day's counts 10 minutes and a page 60 seconds (only the outcome and the outside price change after the close).
+
+```json
+{
+  "crowd": { "rightPercent": 64, "questions": 112 },
+  "days": [
+    { "dayId": 20785, "closedAt": 1795996800, "markets": [
+      { "marketId": "103925", "slot": 0, "category": "crypto", "text": { "en": { "title": "…", "a": "No", "b": "Yes" }, "ko": {}, "ja": {} },
+        "split": { "players": 412, "rightShare": 62, "topRightShare": 71 },
+        "outside": { "source": "polymarket", "url": "https://polymarket.com/event/…", "rightPrice": 55, "takenAt": 1795996860 },
+        "outcome": 2, "crowdRight": true }
+    ] }
+  ],
+  "nextCursor": "20778"
+}
+```
+
+Rules: one indexed pick is one vote; frozen (blocked) accounts are left out. `rightShare` is the whole percent on choice B, `null` below the minimum players (default 30, admin parameter `POST /admin/v1/data-room`). `topRightShare` is the same among the top fifth by hit rate of players with at least 20 answered, resolved questions on earlier days, `null` with fewer than 10 of them on the question. `outcome` is the answer (a corrected answer wins, a void is `null`). `crowdRight`: did the larger share pick the answer (`null` before the answer, on an even split or below the minimum). `crowd` counts every answered question of a closed day that met the minimum, even splits left out. `outside` only when a linked Polymarket price was read at our close.
+
 ---
 
 ## Session and profile (user)
@@ -180,6 +201,8 @@ Days the player took part in, newest first, 7 per page (`limit` up to 14). `curs
   "nextCursor": null
 }
 ```
+
+A row the player picked (pick indexed) also has `split` (`DataSplit`, `platform/shared/src/dataRoom.ts`: `{ "players", "rightShare", "topRightShare" }`, the data room rules): the live figure while the day is open, the final one after the close. A row the player has not picked never has it. `summary.pendingPoints` covers every picked question with an answer and hits still to land, whatever its day (long questions are answered up to 30 days later).
 
 Each row also has `resolvesAt` (when the answer is expected); `evidenceUrl` is the first evidence link of the deciding resolution run, else the primary source. Each day has `inviteFriends`, the number of friends whose points made that day's invite bonus. `result`: `pending`, `hit`, `miss`, `void`, `unanswered`. `hitState`: `credited` (settled), `pending` (resolved, lands at `landsAt`), `none`. Summary points are prediction points only (the invite bonus has its own line per day).
 
@@ -365,9 +388,16 @@ Roles: `viewer` reads; `operator` performs writes the operator key carries out t
 | `POST /admin/v1/params` | owner | `{ "action": "propose", "params": {…} }`, `{ "action": "apply" }`, `{ "action": "cancel" }`: unsigned `proposeParams` / `applyParams` / `cancelParams` |
 | `GET /admin/v1/questions?status=&from=&to=` | viewer | questions by day (default yesterday to 7 days ahead): three language texts with character counts, sources, rule, rationale, image state, picks, `editable` |
 | `POST /admin/v1/questions/:id/cancel` | operator | `{ "reason" }`: before publish only; the worker refills the slot |
-| `POST /admin/v1/questions/:id/replace` | operator | `{ "reason", "question"? }`: with `question` (category, `content` {en, ko, ja}, `resolvesAt` within 24 h of the day's end, `sources`, `criteria`) the text is replaced in place and the image regenerated; without it the worker picks a replacement |
+| `POST /admin/v1/questions/:id/replace` | operator | `{ "reason", "question"? }`: with `question` (category, `content` {en, ko, ja}, `resolvesAt` within 24 h of the day's end, or for a long question up to the timing parameter's days while the day has room for one, `sources`, `criteria`) the text is replaced in place and the image regenerated; without it the worker picks a replacement |
 | `POST /admin/v1/questions/:id/void` | operator | `{ "reason" }`: a live question, unresolved or inside its correction window (`voidMarket`: no hit points for anyone on it) |
 | `POST /admin/v1/questions/:id/image` | operator | `{ "action": "regenerate" }`, `{ "action": "fallback" }`, `{ "action": "upload", "imageKey" }` |
+| `GET /admin/v1/questions/:id/outside` | viewer | the linked outside market: `{ "marketId", "outside": { "source", "url", "marketSlug", "rightOutcome", "rightPrice", "takenAt", "attemptedAt", "error", "linkedBy" } | null }` |
+| `POST /admin/v1/questions/:id/outside` | operator | `{ "source": "polymarket", "url", "marketSlug"?, "rightOutcome"? (default "Yes"), "reason"? }`: link (or relink) a Polymarket market; `rightOutcome` is its outcome that equals our right choice. The slug comes from a `/market/{slug}` or `/event/{event}/{slug}` link (pass `marketSlug` for an event page with several markets). Refused once the price was read (`CONFLICT`) |
+| `DELETE /admin/v1/questions/:id/outside` | operator | remove the link |
+| `GET /admin/v1/data-room` | viewer | `{ "minPlayers", "defaultMinPlayers", "minTopPlayers" }` |
+| `POST /admin/v1/data-room` | owner | `{ "minPlayers", "reason" }`: minimum players before a share is shown (default 30) |
+| `GET /admin/v1/draft-timing` | viewer | `{ "minShort", "maxLong", "longMaxDays", "longQuestionsOnChain", "effective", "defaults" }` (DECISIONS "Longer questions mixed in") |
+| `POST /admin/v1/draft-timing` | owner | `{ "minShort", "maxLong", "longMaxDays", "reason" }`: defaults 3, 2, 30. Long questions apply only with `LONG_QUESTIONS_ON_CHAIN=1` (API and worker), set once CojamPredict with `maxResolveAfterClose` is deployed |
 | `GET /admin/v1/answers?status=due|window|final|all` | viewer | resolutions with every run, confidence, evidence, the correction window left, `late` |
 | `POST /admin/v1/answers/:marketId/rerun` | operator | re-run the resolution |
 | `POST /admin/v1/answers/:marketId/correct` | operator | `{ "outcome": 1|2|3, "reason" }`: inside the window `correctOutcome` (worker); after it an unsigned `setCorrectedOutcome` for the owner plus a queued `compensate` request (outcome 1 or 2 only) |

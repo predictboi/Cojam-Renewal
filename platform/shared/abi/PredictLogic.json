@@ -135,6 +135,11 @@
             "internalType": "uint16[10]",
             "name": "splitBps",
             "type": "uint16[10]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxResolveAfterClose",
+            "type": "uint32"
           }
         ],
         "indexed": false,
@@ -225,6 +230,11 @@
             "internalType": "uint16[10]",
             "name": "splitBps",
             "type": "uint16[10]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxResolveAfterClose",
+            "type": "uint32"
           }
         ],
         "indexed": false,
@@ -320,6 +330,11 @@
             "internalType": "uint16[10]",
             "name": "splitBps",
             "type": "uint16[10]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxResolveAfterClose",
+            "type": "uint32"
           }
         ],
         "internalType": "struct Params",

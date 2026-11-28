@@ -134,7 +134,7 @@ const ok = (name, cond, extra) => { results.push([cond ? 'PASS' : 'FAIL', name, 
     /* ---------- the data room (DECISIONS "Data room") ---------- */
     {
       const X = lang === 'ko'
-        ? { line: '62% 예', gapAbove: '폴리마켓보다 7%p 높아요', gapBelow: '폴리마켓보다 12%p 낮아요', same: '폴리마켓과 같아요', count: '집계 중', says: /Cojam 플레이어 \d+%\u2060?가 .+ 쪽이에요|Cojam 플레이어가 50% : 50%\u2060?로 나뉘었어요|집계 중/ }
+        ? { line: '62% 예', gapAbove: '폴리마켓보다 7%p 높아요', gapBelow: '폴리마켓보다 12%p 낮아요', same: '폴리마켓과 같아요', count: '집계 중', says: /Cojam 플레이어 \d+%\u2060? .+|Cojam 플레이어 50% : 50%|집계 중/ }
         : { line: '62% Yes', gapAbove: '7 points above Polymarket', gapBelow: '12 points below Polymarket', same: 'Same as Polymarket', count: 'Counting', says: /Cojam says \d+% .+|Cojam says 50% : 50%|Counting/ };
       for (const [vw, vh] of [[390, 844], [360, 640], [320, 568]]) {
         for (const mode of ['browser', 'app']) {

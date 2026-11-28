@@ -18,7 +18,7 @@ describe('the split line', () => {
     expect(v).toEqual({ kind: 'side', side: 'r', share: 62 });
     expect(saysText(v, yesNo, EN)).toBe('Cojam says 62% Yes');
     expect(shareText(v, yesNo, EN)).toBe('62% Yes');
-    expect(saysText(v, yeAni, KO)).toBe('Cojam 플레이어 62%가 예 쪽이에요');
+    expect(saysText(v, yeAni, KO)).toBe('Cojam 플레이어 62% 예');
     const l = splitView({ players: 900, rightShare: 42, topRightShare: null });
     expect(saysText(l, yesNo, EN)).toBe('Cojam says 58% No');
     expect(shareText(l, { l: '2 goals or fewer', r: '3 or more' }, EN)).toBe('58% 2 goals or fewer');
