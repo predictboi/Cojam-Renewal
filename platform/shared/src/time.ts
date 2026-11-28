@@ -15,6 +15,15 @@ export const KST_OFFSET_SECONDS = 9 * 3_600;
 export const RESOLVE_DEADLINE_SECONDS = 48 * 3_600;
 /** `resolvesAt` must be at most open + 2 days (24 h after the common close). */
 export const MAX_RESOLVE_AFTER_OPEN_SECONDS = 2 * SECONDS_PER_DAY;
+/**
+ * Longer questions (DECISIONS "Longer questions mixed in"): a short question is answered within 24 h of the day's
+ * close; a long one up to LONG_MAX_DAYS_AFTER_CLOSE days after it. MAX_RESOLVE_AFTER_OPEN_SECONDS applies to the
+ * short ones only. Defaults; the admin may change the counts (at least 3 short, at most 2 long per day).
+ */
+export const SHORT_ANSWER_WINDOW_SECONDS = SECONDS_PER_DAY;
+export const LONG_MAX_DAYS_AFTER_CLOSE = 30;
+export const MIN_SHORT_PER_DAY = 3;
+export const MAX_LONG_PER_DAY = 2;
 /** A play key binding may last at most 90 days. */
 export const MAX_PLAY_KEY_TTL_SECONDS = 90 * SECONDS_PER_DAY;
 /** `setReferrer` works only within 24 h of registration. */
@@ -56,6 +65,20 @@ export function dayEnd(dayId: Int): number {
 /** Last moment `setOutcome` is accepted is strictly before this; from here `voidExpired` works. */
 export function resolveDeadline(dayId: Int): number {
   return dayEnd(dayId) + RESOLVE_DEADLINE_SECONDS;
+}
+
+/** True when a market of `dayId` answered at `resolvesAt` is a long question (answered more than 24 h after the close). */
+export function isLongQuestion(dayId: Int, resolvesAt: Int): boolean {
+  return toInt(resolvesAt, "resolvesAt") > dayEnd(dayId) + SHORT_ANSWER_WINDOW_SECONDS;
+}
+
+/**
+ * Last moment an answer is accepted for a market: the day's deadline (dayEnd + 48 h, the deployed contract) for a
+ * short question; for a long one its own answer time plus the same 48 h. The long rule is a placeholder until the
+ * contract with a per market answer deadline is deployed: read that deadline from the new ABI then.
+ */
+export function answerDeadline(dayId: Int, resolvesAt: Int): number {
+  return isLongQuestion(dayId, resolvesAt) ? toInt(resolvesAt, "resolvesAt") + RESOLVE_DEADLINE_SECONDS : resolveDeadline(dayId);
 }
 
 /** Week of a day (contract `weekOf`). */

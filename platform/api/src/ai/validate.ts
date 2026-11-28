@@ -4,7 +4,7 @@
 // language, the weekend rule, sources, banned topics, matching numbers across languages, the house
 // punctuation rule, absolute dates (no relative day words) and duplicates.
 
-import { dayEnd, dayOpensAt, kstDate, kstDateLabels, kstParts, MAX_RESOLVE_AFTER_OPEN_SECONDS, SECONDS_PER_DAY } from '../../../shared/src/time.ts';
+import { dayEnd, dayOpensAt, kstDate, kstDateLabels, kstParts, MAX_RESOLVE_AFTER_OPEN_SECONDS, SECONDS_PER_DAY, SHORT_ANSWER_WINDOW_SECONDS } from '../../../shared/src/time.ts';
 import { LANGS, type Category, type Draft, type Lang } from './schemas.ts';
 import type { OutsideMarket } from '../dataRoom/polymarket.ts';
 
@@ -37,6 +37,11 @@ export interface CheckContext {
   dayId: number; // the day the question is drafted for
   minResolveGapSec: number; // params.minResolveGap (1 h default)
   recent?: RecentQuestion[]; // published or scheduled questions of the last 30 days
+  /**
+   * Long questions (DECISIONS "Longer questions mixed in"): answered up to this many days after the close.
+   * 0 or absent: only short questions (answered within 24 h of the close) pass.
+   */
+  longMaxDays?: number;
 }
 
 export interface RecentQuestion {
@@ -121,10 +126,16 @@ export function statedDates(lang: Lang, s: string): StatedDate[] {
  * fall) and, when the answer is read only on the following date (a European match that ends after midnight KST),
  * that date too.
  */
-export function allowedDates(dayId: number, resolvesAt: number | null): { month: number; day: number; weekday: number }[] {
+export function allowedDates(dayId: number, resolvesAt: number | null, observesAt: number | null = null): { month: number; day: number; weekday: number }[] {
   const close = dayEnd(dayId);
   const out = [close];
-  if (resolvesAt !== null && resolvesAt > close && kstDate(resolvesAt) !== kstDate(close)) out.push(close + SECONDS_PER_DAY);
+  if (resolvesAt !== null && resolvesAt > close && kstDate(resolvesAt) !== kstDate(close)) {
+    // A long question (answered days later) names its real date: the date it is observed and the date it is answered.
+    if (resolvesAt > close + SHORT_ANSWER_WINDOW_SECONDS) {
+      out.push(resolvesAt);
+      if (observesAt !== null && observesAt > close) out.push(observesAt);
+    } else out.push(close + SECONDS_PER_DAY);
+  }
   return out.map((u) => {
     const p = kstParts(u);
     return { month: p.month, day: p.day, weekday: p.weekday };
@@ -313,7 +324,7 @@ export function checkDraft(d: Draft, ctx: CheckContext): CodeCheckResult {
   if (hasDashBreak(d.criteria)) errors.push('criteria uses a dash as a sentence break');
 
   // Absolute dates: no relative day words, and the date named is the set's settle date (with the right weekday).
-  const allowed = allowedDates(ctx.dayId, parseIsoWithOffset(d.resolvesAt));
+  const allowed = allowedDates(ctx.dayId, parseIsoWithOffset(d.resolvesAt), parseIsoWithOffset(d.observesAt));
   const settleLabel = kstDateLabels(dayEnd(ctx.dayId));
   for (const lang of LANGS) {
     for (const f of ['title', 'settle'] as const) {
@@ -386,7 +397,12 @@ export function checkDraft(d: Draft, ctx: CheckContext): CodeCheckResult {
     }
     if (resolvesAt < observesAt) errors.push('resolvesAt is before the observed moment');
     if (resolvesAt < closesAt + ctx.minResolveGapSec) errors.push('resolvesAt is closer to the close than minResolveGap');
-    if (resolvesAt > dayOpensAt(ctx.dayId) + MAX_RESOLVE_AFTER_OPEN_SECONDS) errors.push('resolvesAt is more than 24 hours after the close');
+    const longDays = ctx.longMaxDays ?? 0;
+    // MAX_RESOLVE_AFTER_OPEN_SECONDS bounds the short questions; a long one may be answered up to longDays after the close.
+    if (resolvesAt > dayOpensAt(ctx.dayId) + MAX_RESOLVE_AFTER_OPEN_SECONDS) {
+      if (longDays <= 0) errors.push('resolvesAt is more than 24 hours after the close');
+      else if (resolvesAt > closesAt + longDays * SECONDS_PER_DAY) errors.push(`resolvesAt is more than ${longDays} days after the close`);
+    }
     if (d.category === 'Markets') {
       const wd = kstIsoWeekday(observesAt);
       if (wd >= 6) errors.push('Markets questions must be observed on a weekday');
@@ -422,7 +438,7 @@ export const OUTSIDE_MAX_END_AFTER_CLOSE_SEC = 24 * 3600;
  * is still open and binary, the outcome named as our right choice is one of its two outcomes, it ends inside our
  * timing window, and our answer time agrees with its end (not before it, at most 6 hours after it).
  */
-export function checkOutsideLink(d: Pick<Draft, 'resolvesAt'> & { outsideRightOutcome?: string }, m: OutsideMarket, dayId: number): string[] {
+export function checkOutsideLink(d: Pick<Draft, 'resolvesAt'> & { outsideRightOutcome?: string }, m: OutsideMarket, dayId: number, longMaxDays?: number): string[] {
   const errors: string[] = [];
   const close = dayEnd(dayId);
   if (m.closed || !m.active) errors.push('the outside market is closed');
@@ -433,7 +449,8 @@ export function checkOutsideLink(d: Pick<Draft, 'resolvesAt'> & { outsideRightOu
   if (m.endsAt === null) errors.push('the outside market has no end time');
   else {
     if (m.endsAt < close + OUTSIDE_MIN_END_AFTER_CLOSE_SEC) errors.push('the outside market ends before our day closes (its outcome could be known before the close)');
-    if (m.endsAt > close + OUTSIDE_MAX_END_AFTER_CLOSE_SEC) errors.push('the outside market ends more than 24 hours after our close');
+    const maxEnd = Math.max(OUTSIDE_MAX_END_AFTER_CLOSE_SEC, (longMaxDays ?? 0) * SECONDS_PER_DAY);
+    if (m.endsAt > close + maxEnd) errors.push(`the outside market ends more than ${maxEnd / 3600} hours after our close`);
     const resolvesAt = parseIsoWithOffset(d.resolvesAt);
     if (resolvesAt !== null && (resolvesAt < m.endsAt || resolvesAt > m.endsAt + OUTSIDE_RESOLVE_AFTER_END_SEC)) {
       errors.push('resolvesAt does not agree with the outside market end time (it must be at or up to 6 hours after it)');
