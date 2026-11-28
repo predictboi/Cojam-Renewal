@@ -76,10 +76,12 @@ export function HomeHead({ view, count, segs, loading }: { view: 'card' | 'term'
     </>
   );
 }
-/** the dateline's live fact on home: the time until the set closes, or, once the day is done, until the next set */
-export function homeLive(o: { loading?: boolean; none?: boolean; fin?: boolean; endsAt: number }): string {
+/** the dateline's live fact on home: the time until the set closes, or, once the day is done, until the next set.
+    Only the real time from today's set is ever counted down: until it is known the cell holds a placeholder (or nothing on an error). */
+export function homeLive(o: { loading?: boolean; none?: boolean; fin?: boolean; endsAt?: number }): string {
   if (o.none) return '';
   if (o.loading) return skel('96px', '12px');
+  if (!o.endsAt) return '';
   return o.fin ? countCell('d.next', o.endsAt) : closes(o.endsAt);
 }
 
@@ -89,14 +91,15 @@ export function playBannerHtml(state: string, slow: number): string {
   if (state === 'reconnectfail') return banner(t('h.reconnect.fail'), { kind: 'warn', icon: 'warn', btn: t('common.retry'), attrs: 'data-reconnect' });
   return '';
 }
-export const holdPanel = () => empty({ icon: 'pause', title: t('hold.home.h'), body: t('hold.home.b'), action: btn(t('hold.home.btn'), { href: '/system/blocked', iconEnd: 'right', id: 'hold-more' }) });
+// the way to what on hold means is the same text link as on every hold notice
+export const holdPanel = () => empty({ icon: 'pause', title: t('hold.home.h'), body: t('hold.home.b'), action: '<a class="hold-more" id="hold-more" href="/system/blocked">' + t('hold.more') + icon('chev', 16) + '</a>' });
 export const otherDevicePanel = () => empty({ icon: 'phone', title: t('h.other.h'), body: t('h.other.b'), action: btn(t('h.other.btn'), { kind: 'primary', attrs: 'data-play-here' }) });
 export const loadingDeck = () => '<div class="deck" aria-busy="true"><div class="qcard" data-pos="0"><div class="qcard-top">' + skel('64px', '12px') + skel('72px', '12px') + '</div><div class="qimg"></div><div class="qcard-body">' + skel('92%', '24px') + skel('60%', '24px') +
   skel('100%', '40px') + '<div class="choices">' + skel('100%', '54px') + skel('100%', '54px') + '</div></div></div></div><p class="sr-only" role="status">' + t('common.loading') + '</p>';
 export const emptySet = (endsAt: number) => empty({ icon: 'clock', title: t('h.empty.h'), body: t('h.empty.b', { time: t('time.kst9') }), extra: '<p class="fig" data-dg data-cd="' + Math.round((endsAt - Date.now()) / 1000) + '" data-cd-end="' + endsAt + '"></p>' });
 export const closedSet = (href: string) => empty({ icon: 'refresh', title: t('h.closed'), action: btn(t('h.closed.btn'), { kind: 'primary', href }) });
 /* the wait before the day is sent is a printer's rule used up from the right, the same fuse as on the pick bar */
-const endRing = (id?: string) => '<div class="end-mark" aria-hidden="true">' + icon('check', 30) + '</div><span class="fuse fuse--end" aria-hidden="true"' + (id ? ' id="' + id + '"' : '') + '></span>';
+const endRing = (id?: string) => '<div class="end-mark" aria-hidden="true">' + icon('check', 28) + '</div><span class="fuse fuse--end" aria-hidden="true"' + (id ? ' id="' + id + '"' : '') + '></span>';
 
 /* ---------- the deck: React renders the cards once, the engine moves them ---------- */
 const Cards = memo(function Cards({ cards, failed, offline, noimgN }: { cards: Q[]; failed: number[]; offline: boolean; noimgN?: number }) {
@@ -128,7 +131,7 @@ export default function HomeCards() {
   const bannerState = st === 'reconnect' || st === 'reconnectfail' ? st : play === 'reconnect' || play === 'reconnectfail' ? play : '';
   const otherDevice = st === 'otherdevice' || play === 'otherdevice';
   const loading = st === 'loading' || today.isPending;
-  const endsAt = today.data?.nextOpenAt ?? Date.now() + 3600_000;
+  const endsAt = today.data?.nextOpenAt;
 
   // the deck is built from the unanswered cards when the set (or the language, or a failed pick) changes
   const failedIds = dayItems.filter((i) => i.state === 'failed').map((i) => i.id).join(',');
@@ -255,7 +258,7 @@ export default function HomeCards() {
   let body: React.ReactNode, hasDeck = false;
   if (loading) body = <Html as="div" style={{ display: 'contents' }} html={loadingDeck()} />;
   else if (today.isError || st === 'error') body = <Html as="div" style={{ display: 'contents' }} html={errorNote()} />;
-  else if (today.data!.state === 'empty') body = <Html as="div" style={{ display: 'contents' }} html={emptySet(endsAt)} />;
+  else if (today.data!.state === 'empty') body = <Html as="div" style={{ display: 'contents' }} html={emptySet(endsAt!)} />;
   else if (today.data!.state === 'closed') body = <Html as="div" style={{ display: 'contents' }} html={closedSet('/')} />;
   else if (otherDevice) body = <Html as="div" style={{ display: 'contents' }} html={otherDevicePanel()} />;
   else if (hold) body = <Html as="div" style={{ display: 'contents' }} html={holdPanel()} />;
@@ -294,7 +297,7 @@ function DeckEnd({ count, held, onFinish }: { count: number; held: OutboxItem[];
   const left = p ? Math.max(1, Math.ceil((p.sendAfter - Date.now()) / 1000)) : 0;
   return (
     <div className="deck-end" id="deck-end" aria-hidden={on ? 'false' : 'true'}>
-      <div className="end-mark" aria-hidden="true"><Icon name="check" size={30} /></div>
+      <div className="end-mark" aria-hidden="true"><Icon name="check" size={28} /></div>
       <span className="fuse fuse--end" aria-hidden="true" id="end-run">{on && p && <i key={p.id} style={{ ['--gone' as string]: '-' + (Date.now() - p.createdAt) + 'ms' }} />}</span>
       <h2>{t('h.end.h')}</h2>
       <p id="end-p" dangerouslySetInnerHTML={{ __html: !on ? '' : p ? t('h.end.in', { n: '<b>' + left + '</b>' }) : t('h.end.b') }} />
@@ -374,7 +377,7 @@ function PickBar({ held, items, slots, count, offline, onUndo, focusUndo, sendin
     content = <span className={'pickbar-msg is-quiet' + (out ? ' is-out' : '')} role="status"><Icon name="check" size={16} /><span dangerouslySetInnerHTML={{ __html: t('h.saved') + ' ' + label(recent) }} /></span>;
   } else if (!offline) {
     const left = 5 - count;
-    if (count === 0) content = <span className="pickbar-hint is-swipe"><Icon name="left" size={14} /><span>{t(canHover ? 'h.hint.keys' : 'h.hint.touch')}</span><Icon name="right" size={14} /></span>;
+    if (count === 0) content = <span className="pickbar-hint is-swipe"><Icon name="left" size={16} /><span>{t(canHover ? 'h.hint.keys' : 'h.hint.touch')}</span><Icon name="right" size={16} /></span>;
     else if (left) content = <span className="pickbar-hint"><span>{t('h.left', { n: left })}</span></span>;
   }
   return <div className="pin pickbar" id="pickbar">{content}</div>;

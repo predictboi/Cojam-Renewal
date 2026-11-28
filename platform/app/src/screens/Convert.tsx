@@ -3,7 +3,7 @@
 // are behind "?". A short review sheet says that points cannot be converted back before the one sponsored transaction.
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useConfig, useWallet } from '../api';
+import { useConfig, useMe, useWallet } from '../api';
 import { t } from '../i18n';
 import { F, parseAmount } from '../lib/fmt';
 import { btn, empty, hold, note, qbtn, skel } from '../ui/h';
@@ -26,6 +26,10 @@ export default function Convert() {
   const rate = d?.convert.pointsPerCT || 1000, min = d?.convert.min || 1000;
   const capLeft = d?.convert.capLeftCt ?? 50;
   const wait = !!d?.convert.firstConvertAt && d.convert.firstConvertAt > Date.now();
+  // the 7 day wait before the first conversion is told before the player meets it: a short labelled fact while it still applies
+  const me = useMe();
+  const young = !!me.data && Date.now() - Date.parse(me.data.signedUpAt) < 7 * 86400000;
+  const firstFact = wait || young ? '<p class="fact" id="first-fact"><b>' + t('c.first') + '</b>' + (wait ? t('c.first.at', { date: F.date(d!.convert.firstConvertAt!) }) : t('c.first.v')) + '</p>' : '';
   const capGlobal = d ? d.convert.globalCapLeft <= 0 : false;
   const paused = !!d?.convert.paused || !!cfg.data?.flags.convertPaused;
   const initial = ({ empty: '', step: '1,250', above: '5,000', min: '500', loading: '', cap: '', capglobal: '', wait: '', paused: '1,000' } as Record<string, string>)[st] ?? '1,000';
@@ -68,7 +72,7 @@ export default function Convert() {
   let body: React.ReactNode;
   const short = !loading && bal < min && !held;
   if (short) {
-    body = <Html as="div" style={{ display: 'contents' }} html={'<section class="msec"><div class="mhero"><h2 class="lbl">' + t('c.avail') + '</h2><p class="fig fig--xl">' + (bal ? F.int(bal) + '<small>P</small>' : '<span class="is-zero">0P</span>') + '</p></div></section>' +
+    body = <Html as="div" style={{ display: 'contents' }} html={'<section class="msec"><div class="mhero"><h2 class="lbl">' + t('c.avail') + '</h2><p class="fig fig--xl">' + (bal ? F.int(bal) + '<small>P</small>' : '<span class="is-zero">0P</span>') + '</p></div>' + firstFact + '</section>' +
       empty({ icon: 'bolt', title: t('c.short.h'), body: t('c.short.b', { p: F.int(bal), g: F.int(min - bal) }), action: btn(t('k.play'), { kind: 'primary', href: '/' }) })} />;
   } else {
     let waitNote = '';
@@ -90,7 +94,8 @@ export default function Convert() {
           </div>
           <dl className="facts3">
             <div><dt>{t('c.rate')}</dt><dd>{F.int(rate)}P = 1 CT</dd></div>
-            <div><dt>{t('c.fee')}</dt><dd>{held ? t('pp.youpay') : t('pp.none')}</dd></div>
+            {/* on hold converting is off, so there is no fee to state */}
+            {!held && <div><dt>{t('c.fee')}</dt><dd>{t('pp.none')}</dd></div>}
             <div><dt>{t('pp.lefttoday')}</dt><dd>{F.dec(capLeft)} CT</dd></div>
           </dl>
         </section>

@@ -51,11 +51,10 @@ export default function HomeList() {
   const slow = st === 'slow' ? 1 : slowCount(dayItems);
   const bannerState = st === 'reconnect' || st === 'reconnectfail' ? st : play === 'reconnect' || play === 'reconnectfail' ? play : '';
   const loading = st === 'loading' || today.isPending;
-  const endsAt = today.data?.nextOpenAt ?? Date.now() + 3600_000;
+  const endsAt = today.data?.nextOpenAt;
   useEffect(() => { try { localStorage.setItem('cjp.view', 'term'); } catch { /* */ } }, []);
   useEffect(() => {
     const n = takeLeft(); if (n) toast(n > 1 ? t('h.left.savedn', { n }) : t('h.left.saved'));
-    if (st === 'failed') toast(t('h.toast.fail', { n: 2 }), { btn: t('common.retry') });
   }, []);
   useEffect(() => {
     const flush = () => { if (!hasOutbox()) return; void outbox().flush().then((n) => { noteLeft(n); kick(); }); };
@@ -97,7 +96,7 @@ export default function HomeList() {
     if (n === cur) {
       return '<li class="trow is-open' + (failed ? ' is-fail' : '') + '">' + num + '<div><div class="trow-qw"><span class="trow-kick">' + t('cat.' + q.cat) + '</span><h2 class="trow-q" tabindex="-1" id="open-q">' + esc(q.title) + '</h2></div>' +
         (failed ? '<div class="trow-foot"><span class="trow-state">' + icon('warn', 16) + t('h.t.notsaved') + '</span></div>' : '') + '</div>' + thumb(q.img, q.cat) +
-        '<div class="trow-body"><button type="button" class="qmeta" data-ai-info="' + esc(q.id) + '" aria-haspopup="dialog"><span class="qmeta-t"><span>' + t('h.answer', { rule: esc(q.rule) }) + '</span><span>' + t('h.ai', { time: esc(q.settle) }) + '</span></span><span class="qmeta-go">' + t('pp.rule') + icon('chev', 14) + '</span></button>' +
+        '<div class="trow-body"><button type="button" class="qmeta" data-ai-info="' + esc(q.id) + '" aria-haspopup="dialog"><span class="qmeta-t"><span>' + t('h.answer', { rule: esc(q.rule) }) + '</span><span>' + t('h.ai', { time: esc(q.settle) }) + '</span></span><span class="qmeta-go">' + t('pp.rule') + icon('chev', 16) + '</span></button>' +
         '<div class="choices">' + (['l', 'r'] as const).map((d) => '<button type="button" class="choice" data-pick="' + n + '" data-dir="' + d + '"' + (offline ? ' aria-disabled="true"' : '') + ' aria-label="' + esc(t('h.pick.aria', { choice: q[d], q: q.title })) + '">' + (d === 'l' ? icon('left', 18) : '') + '<span>' + esc(q[d]) + '</span>' + (d === 'r' ? icon('right', 18) : '') + '</button>').join('') + '</div>' +
         '<p class="qcard-final">' + (offline ? t('h.offline') : t('h.final')) + '</p></div></li>';
     }
@@ -109,7 +108,7 @@ export default function HomeList() {
   // under the list once all five are picked: "Finishing in 3" with "Finish now", then "Saving", on a finished day the link
   const p = held[held.length - 1];
   const mode = count < 5 ? '' : held.length ? 'wait' : fin && !leaving ? 'fin' : 'saving';
-  const endHtml = !mode ? '' : '<div class="stack-8"><h2>' + t('h.end.h') + '</h2><p id="term-end-p">' + (mode === 'fin' ? t('h.fin.b') : mode === 'saving' ? '<span class="spin"></span>' + t('h.end.b') : t('h.end.in', { n: '<b>' + Math.max(1, Math.ceil((UNDO_MS - (Date.now() - p!.createdAt)) / 1000)) + '</b>' })) + '</p></div>' +
+  const endHtml = !mode ? '' : '<div class="stack-8"><h2>' + t('h.end.h') + '</h2><p id="term-end-p">' + (mode === 'fin' ? t('h.fin.b') : mode === 'saving' ? '<span class="spin"></span>' + t('h.end.b') : '<span>' + t('h.end.in', { n: '<b>' + Math.max(1, Math.ceil((UNDO_MS - (Date.now() - p!.createdAt)) / 1000)) + '</b>' }) + '</span>') + '</p></div>' +
     (mode === 'wait' ? btn(t('h.end.now'), { kind: 'primary', block: true, id: 'finish' }) : mode === 'fin' ? btn(t('h.fin.btn'), { kind: 'primary', block: true, href: today.data?.completed ? '/done' : '/done?moment=1', iconEnd: 'right' }) : '');
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => { if (mode === 'wait') endRef.current?.scrollIntoView({ block: 'nearest', behavior: reduceMotion() ? 'auto' : 'smooth' }); }, [mode]);
@@ -148,7 +147,7 @@ export default function HomeList() {
   let body: string;
   if (loading) body = '<ol class="term" aria-busy="true">' + [1, 2, 3, 4, 5].map((n) => '<li class="trow"><span class="trow-n" aria-hidden="true">' + n + '</span><div>' + skel('94%', '16px') + '<div class="trow-foot">' + skel('64px', '12px') + '</div></div>' + skel('56px', '68px') + '</li>').join('') + '</ol><p class="sr-only" role="status">' + t('common.loading') + '</p>';
   else if (today.isError || st === 'error') body = errorNote();
-  else if (today.data!.state === 'empty') body = emptySet(endsAt);
+  else if (today.data!.state === 'empty') body = emptySet(endsAt!);
   else if (today.data!.state === 'closed') body = closedSet('/list');
   else if (st === 'otherdevice' || play === 'otherdevice') body = otherDevicePanel();
   else if (hold) body = holdPanel();

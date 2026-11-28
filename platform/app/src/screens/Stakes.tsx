@@ -37,7 +37,9 @@ export default function Stakes() {
   useEffect(() => { if (st !== 'unlocking') return; const tm = setTimeout(() => { setTick((x) => x + 1); live(t('m.unlocked')); }, 6500); return () => clearTimeout(tm); }, [st]);
   useEffect(() => { if (st === 'claim') showTx('success', { key: 'claim', label: '', success: { stamp: 'pp.st.claimed', title: t('m.ok.claim', { i: '263.01' }) }, exec: async () => '' }); }, [st]);
 
-  const stakes = q.data?.positions || [];
+  // a stake with CT ready to take out comes first, its Withdraw in view; then those with interest to claim; then the rest as listed
+  const rankOf = (x: Position) => { const c = calc(x); return c.unlocked ? 0 : c.interest >= minClaim ? 1 : 2; };
+  const stakes = (q.data?.positions || []).map((x, i) => ({ x, i })).sort((a, b) => rankOf(a.x) - rankOf(b.x) || a.i - b.i).map((o) => o.x);
   const total = stakes.reduce((a, s) => a + s.amount, 0);
   const sofar = stakes.reduce((a, s) => a + calc(s).interest, 0), perAll = stakes.reduce((a, s) => { const c = calc(s); return a + (c.unlocked ? 0 : c.per); }, 0);
   const claimable = stakes.reduce((a, s) => { const c = calc(s); return a + (c.unlocked || c.interest >= minClaim ? c.interest : 0); }, 0);
@@ -78,7 +80,7 @@ export default function Stakes() {
     }
   };
   const hq = held ? '?state=hold' : '';
-  const tabs = <StakeTabs cur="mine" n={st === 'empty' ? 0 : stakes.length} hq={hq} />;
+  const tabs = <StakeTabs cur="mine" n={loading ? undefined : st === 'empty' ? 0 : stakes.length} hq={hq} />;
   let body: string;
   if (st === 'error' || q.isError) body = errorNote();
   else if (loading) body = '<section class="msec" aria-busy="true">' + skel('90px') + skel('170px', '44px') + skel('70%', '22px') + '</section>' + [1, 2].map(() => '<article class="msec" aria-busy="true">' + skel('120px', '30px') + skel('100%', '10px') + skel('100%') + skel('100%', '44px') + '</article>').join('') + '<p class="sr-only" role="status">' + t('common.loading') + '</p>';

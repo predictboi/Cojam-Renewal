@@ -1,11 +1,12 @@
 // SYS full screen states (platform/design-variants/paper/system.html): maintenance, update required, offline, not found,
 // each the one notice under the nameplate, and the full explanation of an account on hold.
+import { useLayoutEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useConfig } from '../api';
 import { currentLang, t } from '../i18n';
 import { esc, F } from '../lib/fmt';
 import { btn, icon, notice, plate, tag } from '../ui/h';
-import { Html, Shell } from '../ui/kit';
+import { Html, Shell, usePlateFit } from '../ui/kit';
 import { CONFIG } from '../config';
 
 export default function System({ kind }: { kind?: string }) {
@@ -42,6 +43,10 @@ export default function System({ kind }: { kind?: string }) {
   }
   raw = '<div class="auth">' + top + raw + '</div>';
   const nav = useNavigate();
+  // the nameplate gives way to the mark when the bar is too narrow (the "On hold" tag beside it at 320 px), as in the masthead
+  const plateRef = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => { plateRef.current = document.querySelector('.auth > .gate-bar .plate'); });
+  usePlateFit(plateRef, '.tag', [S]);
   const onClick = (e: React.MouseEvent) => {
     // Back returns to where the player came from (Home, Wallet, Staking); the fixed parent is the fallback for a direct visit
     if ((e.target as Element).closest('[data-back]') && window.history.length > 1 && (window.history.state?.idx ?? 0) > 0) { e.preventDefault(); nav(-1); return; }

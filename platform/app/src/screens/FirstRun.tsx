@@ -9,6 +9,7 @@ import { ApiError } from '../api/errors';
 import { LANGS, LANG_NAMES, setLang, t, useLang, type Lang } from '../i18n';
 import { esc } from '../lib/fmt';
 import { day5, halftone, icon, plate } from '../ui/h';
+import { live } from '../state/ui';
 import { Html, Icon, Seg, Shell } from '../ui/kit';
 import { useOffline, usePreset } from '../state/app';
 import { loadPlayKey, playKeyValid } from '../chain/playKey';
@@ -30,7 +31,8 @@ export default function FirstRun() {
   const session = useQuery({ queryKey: ['session'], queryFn: api.session, enabled: !CONFIG.mockApi });
   const ownCode = session.data?.invite.code || '';
   const PRESET: Record<string, string> = { 'code-valid': V.code, 'code-unknown': 'KAIA999', 'code-own': V.self, 'code-linked': V.code, 'code-offline': V.code };
-  const [codeOpen, setCodeOpen] = useState(/^code/.test(st) || !!savedInvite());
+  // the invite code is a visible field on the first page (never a link to unfold); a code from the install link is already in it
+  const codeOpen = from !== 'profile';
   const [code, setCode] = useState(PRESET[st] || savedInvite() || '');
   const [cs, setCs] = useState<{ kind: 'help' | 'checking' | 'ok' | 'error' | 'linked'; key?: string; name?: string }>({ kind: st === 'code-linked' ? 'linked' : 'help', name: st === 'code-linked' ? V.known[V.code as keyof typeof V.known] : undefined });
   const [ready, setReady] = useState(from === 'profile');
@@ -82,14 +84,19 @@ export default function FirstRun() {
     }
   };
   const preChecked = useRef(false);
-  useEffect(() => { if (!preChecked.current && PRESET[st] && st !== 'code-linked') { preChecked.current = true; void check(undefined, true); } }, []);
+  useEffect(() => { if (!preChecked.current && (PRESET[st] || (!st && savedInvite())) && st !== 'code-linked') { preChecked.current = true; void check(undefined, true); } }, []);
   const go = (i: number) => { if (i < 1) return; if (i > 3) { void leave(); return; } setN(i); setTimeout(() => (document.querySelector('[data-panel="' + i + '"] h1') as HTMLElement | null)?.focus({ preventScroll: true }), 0); };
   const next = async () => {
-    if (n === 1 && codeOpen && code && cs.kind !== 'ok' && cs.kind !== 'linked') { if (cs.kind === 'error') (document.getElementById('code') as HTMLInputElement | null)?.focus(); else void check(async () => { if (await redeem()) go(2); }); return; }
+    // a code that is not right stops Next and says why (the message under the field, announced, with the field focused)
+    if (n === 1 && codeOpen && code && cs.kind !== 'ok' && cs.kind !== 'linked') {
+      if (cs.kind === 'error') { live(t(cs.key!)); (document.getElementById('code') as HTMLInputElement | null)?.focus(); document.getElementById('code-msg')?.scrollIntoView({ block: 'nearest' }); }
+      else void check(async () => { if (await redeem()) go(2); });
+      return;
+    }
     if (n === 1 && codeOpen && cs.kind === 'ok' && !(await redeem())) return;
     go(n + 1);
   };
-  const closeCode = () => { setCode(''); setCs({ kind: 'help' }); setCodeOpen(false); };
+  const closeCode = () => { setCode(''); setCs({ kind: 'help' }); };
   useEffect(() => {
     const k = (e: KeyboardEvent) => { if ((e.target as HTMLElement)?.tagName === 'INPUT') return; if (e.key === 'ArrowRight') go(n + 1); if (e.key === 'ArrowLeft') go(n - 1); };
     document.addEventListener('keydown', k); return () => document.removeEventListener('keydown', k);
@@ -125,25 +132,28 @@ export default function FirstRun() {
   const raw = (
     <div className={'auth auth--onb' + (n === 1 && codeOpen ? ' is-code' : '')} ref={rootRef}>
       <header className="gate-bar">
-        <Html as="span" style={{ display: 'contents' }} html={plate()} />
-        <a className="linkish linkish--pad" href={exit} onClick={(e) => { e.preventDefault(); void leave(); }}>{t('o.skip')}</a>
+        {/* pages 2 and 3 have a way back to the page before (a swipe to the right does the same) */}
+        {n > 1 && <button type="button" className="mast-back" id="onb-back" aria-label={t('hd.back')} onClick={() => go(n - 1)}><Icon name="back" size={22} /></button>}
+        <Html as="span" className="onb-plate" html={plate()} />
+        <a className="linkish linkish--pad" id="onb-exit" href={exit} onClick={(e) => { e.preventDefault(); void leave(); }}>{t(from === 'profile' ? 'common.close' : 'o.skip')}</a>
       </header>
       <div className="oxford" aria-hidden="true" />
       <div className="onb-wrap">
-        <ol id="panels" onPointerDown={(e) => { x0.current = e.clientX; }} onPointerUp={(e) => { if (x0.current === null) return; const d = e.clientX - x0.current; x0.current = null; if (d < -60) next(); else if (d > 60) go(n - 1); }}>
+        <ol id="panels" style={{ touchAction: 'pan-y' }} onPointerDown={(e) => { x0.current = e.clientX; }} onPointerUp={(e) => { if (x0.current === null) return; const d = e.clientX - x0.current; x0.current = null; if (d < -60) next(); else if (d > 60) go(n - 1); }}>
           {[1, 2, 3].map((i) => (
             <li key={i} className="onb" hidden={i !== n} data-panel={i}>
               <Html className="onb-art" html={art(i)} />
-              <div className="stack-12"><h1 tabIndex={-1}>{t('o.' + i + '.h')}</h1><p className="auth-lede">{t('pp.o' + i)}</p></div>
+              <div className="stack-12"><h1 tabIndex={-1}>{t('o.' + i + '.h')}</h1><p className="auth-lede">{t('pp.o' + i)}</p>
+                {/* the wait before the first conversion is a fact of the reward, told here before the player meets it */}
+                {i === 3 && <p className="fact" id="onb-first"><b>{t('c.first')}</b>{t('c.first.v')}</p>}</div>
             </li>
           ))}
         </ol>
         <div className="onb-foot">
           <div className="dots" role="img" aria-label={t('o.step', { n })} id="dots">{[1, 2, 3].map((i) => <i key={i} className={i === n ? 'is-on' : undefined} />)}</div>
           <div className="onb-code" id="codebox" hidden={!(n === 1 && from !== 'profile')}>
-            <button type="button" className="onb-code-open" id="code-open" hidden={codeOpen} onClick={() => { setCodeOpen(true); setTimeout(() => document.getElementById('code')?.focus(), 0); }}>{t('o.code.q')}<Icon name="down" size={18} /></button>
             <div className="onb-code" id="code-form" hidden={!codeOpen}>
-              <div className="onb-code-top"><label htmlFor="code">{t('o.code.q')}<small>{t('o.code.opt')}</small></label><button type="button" className="onb-code-skip" id="code-skip" hidden={cs.kind === 'linked'} onClick={closeCode}>{t('o.code.skip')}</button></div>
+              <div className="onb-code-top"><label htmlFor="code">{t('o.code.q')}<small>{t('o.code.opt')}</small></label></div>
               <div className={'field-box field-box--text' + (ok ? ' is-ok' : '') + (cs.kind === 'error' ? ' is-error' : '')}>
                 <input id="code" name="invite-code" type="text" inputMode="text" autoComplete="off" autoCapitalize="characters" autoCorrect="off" spellCheck={false} enterKeyHint="done" maxLength={8}
                   placeholder={t('o.code.ph')} value={code} readOnly={ok} aria-describedby="code-msg" aria-invalid={cs.kind === 'error' ? 'true' : undefined}
@@ -154,11 +164,11 @@ export default function FirstRun() {
                 onClick={(e) => { if ((e.target as Element).closest('#code-without')) { closeCode(); go(n + 1); } }} />
             </div>
           </div>
-          <div id="langrow" hidden={n !== 1}>
+          <div id="langrow" hidden={n !== 1 || from === 'profile'}>
             <Seg<Lang> label={t('lang.label')} value={lang} onChange={(l) => { setLang(l); void api.patchMe({ language: l }).catch(() => {}); }} items={LANGS.map((l) => ({ label: LANG_NAMES[l], value: l }))} lang />
           </div>
           <button type="button" className={'btn btn-primary btn-block' + (waiting && !ready ? ' is-loading' : '')} id="next" onClick={next}>
-            {waiting && !ready ? <><span className="spin" /><span>{t('a.setup.h')}</span></> : <><span>{t(n === 3 ? 'o.start' : 'o.next')}</span><Icon name="right" size={18} /></>}
+            {waiting && !ready ? <><span className="spin" /><span>{t('a.setup.h')}</span></> : <><span>{t(n === 3 ? (from === 'profile' ? 'common.done' : 'o.start') : 'o.next')}</span><Icon name="right" size={18} /></>}
           </button>
           <p className="row setup-line" id="setup-line" role="status" hidden={from === 'profile'} dangerouslySetInnerHTML={{ __html: ready ? icon('check', 16) + '<span>' + t('o.3.wait') + '</span>' : '<span class="spin"></span><span>' + t('a.setup.h') + '</span>' }} />
         </div>

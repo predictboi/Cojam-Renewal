@@ -12,21 +12,24 @@ function cached<T>(name: string): T | undefined {
 }
 const lines = (keys: string[], vars?: Record<string, string | number>) =>
   '<div class="stack-8">' + keys.map((k) => '<p class="sheet-lead">' + (k.charAt(0) === '<' ? k : t(k, vars)) + '</p>').join('') + '</div>';
+const capLeft = (p?: AppConfig['params']) => F.dec(cached<WalletInfo>('wallet')?.convert.capLeftCt ?? p?.maxConvertCtPerUserPerDay ?? 50);
 const closeBtn = () => '<div class="sheet-acts">' + btn(t('common.close'), { block: true, attrs: 'data-sheet-close' }) + '</div>';
 const plainSteps = (items: string[]) => '<ol class="txsteps txsteps--plain">' + items.map((x, i) => '<li><span class="n">' + (i + 1) + '</span><span>' + x + '</span></li>').join('') + '</ol>';
 
 export const INFO: Record<string, () => string> = {
   kaia: () => '<h2>' + t('pp.i.kaia') + '</h2>' + lines(['w.kaia.note', 'x.gas']) + closeBtn(),
-  hits: () => '<h2>' + t('h.ai.h') + '</h2>' + lines(['d.hit.1', 'd.hit.2']) + plainSteps(['h.ai.1', 'h.ai.2', 'h.ai.3'].map((k) => t(k))) + closeBtn(),
+  // how answers are set, and what the figure at the top of the screen is (the points balance)
+  hits: () => '<h2>' + t('h.ai.h') + '</h2>' + lines(['d.hit.1', 'd.hit.2']) + plainSteps(['h.ai.1', 'h.ai.2', 'h.ai.3'].map((k) => t(k))) + lines(['r.bal.note']) + closeBtn(),
+  /* the conversion rules, with the 7 day wait before the first conversion and the daily limit, told before the player meets them */
   points: () => {
     const p = cached<AppConfig>('config')?.params;
     const rate = F.int(p?.pointsPerCT ?? 1000) + 'P = 1 CT', min = F.pts(p?.minConvertPoints ?? 1000);
-    return '<h2>' + t('pp.i.points') + '</h2>' + rows([[t('c.rate'), rate], [t('c.minimum'), min], [t('c.fee'), t('c.fee.v')]]) + lines(['c.rank']) + closeBtn();
+    return '<h2>' + t('pp.i.points') + '</h2>' + rows([[t('c.rate'), rate], [t('c.minimum'), min], [t('c.first'), t('c.first.v')], [t('c.capleft'), t('c.capof', { n: capLeft(p) })], [t('c.fee'), t('c.fee.v')]]) + lines(['c.wait.rule', 'c.rank']) + closeBtn();
   },
   convert: () => {
     const p = cached<AppConfig>('config')?.params;
     const rate = F.int(p?.pointsPerCT ?? 1000) + 'P = 1 CT', min = F.pts(p?.minConvertPoints ?? 1000);
-    return '<h2>' + t('pp.i.convert') + '</h2>' + rows([[t('c.rate'), rate], [t('c.minimum'), min], [t('c.capleft'), t('c.capof', { n: F.dec(cached<WalletInfo>('wallet')?.convert.capLeftCt ?? p?.maxConvertCtPerUserPerDay ?? 50) })], [t('c.fee'), t('c.fee.v')]]) + lines(['c.step', 'c.rank']) + closeBtn();
+    return '<h2>' + t('pp.i.convert') + '</h2>' + rows([[t('c.rate'), rate], [t('c.minimum'), min], [t('c.first'), t('c.first.v')], [t('c.capleft'), t('c.capof', { n: capLeft(p) })], [t('c.fee'), t('c.fee.v')]]) + lines(['c.wait.rule', 'c.step', 'c.rank']) + closeBtn();
   },
   staking: () => {
     const p = cached<AppConfig>('config')?.params;
@@ -35,11 +38,8 @@ export const INFO: Record<string, () => string> = {
       locks.map((d) => '<tr><td>' + t('s.days', { d }) + '</td>' + (p?.ratesPct[String(d)] ?? []).map((r) => '<td>' + r + '%</td>').join('') + '</tr>').join('') + '</table></div>' +
       lines(['pp.claimfrom'], { n: p?.minClaim ?? 10 }) + closeBtn();
   },
-  deposit: () => {
-    const token = cached<AppConfig>('config')?.contracts.ct;
-    return '<h2>' + t('pp.i.deposit') + '</h2>' + lines(['dp.lead', 'dp.w1', 'dp.w2', 'dp.w3']) +
-      (token ? '<div class="stack-8"><p class="hold-why">' + icon('warn', 16) + '<span>' + t('w.token') + '</span></p><p class="addr-v" translate="no">' + F.groups(token) + '</p></div>' : '') + closeBtn();
-  },
+  // the token contract is not deposit advice: it lives in Wallet, Token info
+  deposit: () => '<h2>' + t('pp.i.deposit') + '</h2>' + lines(['dp.lead', 'dp.w1', 'dp.w2', 'dp.w3']) + closeBtn(),
   withdraw: () => '<h2>' + t('pp.i.withdraw') + '</h2>' + lines(['x.gas', 'w.kaia.note']) + closeBtn(),
   invite: () => {
     const v = cached<InviteInfo>('invite'), p = cached<AppConfig>('config')?.params;
@@ -54,7 +54,7 @@ export const INFO: Record<string, () => string> = {
   name: () => '<h2>' + t('p.name') + '</h2>' + lines(['p.name.help']) + closeBtn(),
   device: () => {
     const days = cached<AppConfig>('config')?.params.playKeyTtlDays ?? 30;
-    return '<h2>' + t('pp.i.device') + '</h2>' + lines(['p.device.ready', 'p.device.until'], { date: F.dateLong(Date.now() + days * 86400_000) }) + closeBtn();
+    return '<h2>' + t('pp.i.device') + '</h2>' + lines(['p.device.untilfull', 'p.device.renew'], { date: F.dateLong(Date.now() + days * 86400_000) }) + closeBtn();
   },
   prizes: () => {
     const r = cached<Ranking>('ranking'); const ct = r?.pool.ct ?? 0; const split = r?.pool.splitPct ?? [];

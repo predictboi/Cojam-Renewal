@@ -38,6 +38,7 @@ import Withdraw from './screens/Withdraw';
 import Profile from './screens/Profile';
 import Invite from './screens/Invite';
 import System from './screens/System';
+import Legal from './screens/Legal';
 
 const SA_KEY = 'cjp.standalone';
 export function isStandalone(): boolean {
@@ -122,6 +123,8 @@ export function App() {
   else if (!sa || gateRoute) content = (
     <Routes>
       <Route path="/system/:kind" element={<System />} />
+      <Route path="/terms" element={<Legal kind="terms" />} />
+      <Route path="/privacy" element={<Legal kind="privacy" />} />
       <Route path="*" element={<Gate />} />
     </Routes>
   );
@@ -130,6 +133,8 @@ export function App() {
       <Route path="/i/:code" element={<InviteRedirect />} />
       <Route path="/login" element={<Login />} />
       <Route path="/welcome" element={<FirstRun />} />
+      <Route path="/terms" element={<Legal kind="terms" />} />
+      <Route path="/privacy" element={<Legal kind="privacy" />} />
       <Route path="/system/:kind" element={<System />} />
       <Route path="/" element={<Guard><HomeCards /></Guard>} />
       <Route path="/list" element={<Guard><HomeList /></Guard>} />

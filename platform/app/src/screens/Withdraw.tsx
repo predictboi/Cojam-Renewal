@@ -44,8 +44,10 @@ export default function Withdraw() {
   else if (contracts.includes(v.toLowerCase())) e1 = 'x.e.contract';
   const p = parseAmount(amt), a = p.value || 0;
   let e2 = '', fix = '';
+  // one rule and one sentence for amounts, as on Staking: a number, up to 4 decimals, not more than the balance
   if (p.bad || (!p.empty && a <= 0)) e2 = t('s.e.nan');
-  else if (!p.empty && ((p.decimals || 0) > 4 || Math.round(a * 1e4) / 1e4 <= 0)) e2 = t('pp.x.dec');   // nothing that rounds to 0 CT, nothing finer than the unit shown
+  else if (!p.empty && (p.decimals || 0) > 4) { const cut = Math.floor(a * 1e4) / 1e4; e2 = t('s.e.dec'); if (cut > 0) fix = btn(t('s.fix.dec', { b: F.dec(cut) }), { sm: true, attrs: 'data-fix="' + cut + '"' }); }
+  else if (!p.empty && Math.round(a * 1e4) / 1e4 <= 0) e2 = t('s.e.nan');   // nothing that rounds to 0 CT
   else if (a > bal && !loading) { e2 = t('s.e.bal', { b: F.dec(bal) }); fix = btn(t('s.fix.bal', { b: F.dec(bal) }), { sm: true, attrs: 'data-fix="' + bal + '"' }); }
   const noKaia = !loading && kaia < fee;
   const valid = !!v && !e1 && !e2 && !p.empty && !noKaia && !blocked;
@@ -77,15 +79,19 @@ export default function Withdraw() {
   };
   useEffect(() => { const h = (e: MouseEvent) => { const f = (e.target as Element).closest?.('[data-fix]'); if (f) setAmt(F.dec(+f.getAttribute('data-fix')!)); }; document.addEventListener('click', h); return () => document.removeEventListener('click', h); }, []);
   // the field cannot show 42 characters: a valid address is repeated in full, grouped as on the wallet, so it can be checked by eye
-  const toMsg = e1 ? '<span>' + t(e1) + '</span>' : v ? '<span class="tier-cue is-on">' + icon('check', 14) + t('x.addr.ok') + '</span><span class="addr-v" translate="no">' + F.groups(v) + '</span>' : '';
+  const toMsg = e1 ? '<span>' + t(e1) + '</span>' : v ? '<span class="tier-cue is-on">' + icon('check', 16) + t('x.addr.ok') + '</span><span class="addr-v" translate="no">' + F.groups(v) + '</span>' : '';
   // without KAIA for the fee the pinned action is the way out: it leads to the deposit page (never a dead button that names an action)
   const toDeposit = noKaia && !valid && !blocked;
-  const label = e1 ? t('pp.x.fix') : noKaia ? t('x.fix.kaia') : !p.empty && !e2 && a ? t('x.btn', { a: F.dec(a) }) : t('x.btn.empty');
+  // the action mirrors what is wrong: the address, the KAIA for the fee, then the amount (as Staking does)
+  const amtWhy = p.bad || (!p.empty && a <= 0) ? t('s.btn.nan') : (p.decimals || 0) > 4 ? t('s.btn.dec') : a > bal ? t('s.btn.bal') : t('s.btn.nan');
+  const label = e1 ? t('pp.x.fix') : noKaia ? t('x.fix.kaia') : e2 ? amtWhy : !p.empty && a ? (v ? t('x.btn', { a: F.dec(a) }) : t('x.e.empty').replace(/\.$/, '')) : t('x.btn.empty');
   const pin = (
     <div className="pin pin--act">
       <button type="button" className={'btn btn-primary btn-block' + (busy ? ' is-busy' : '')} id="go" disabled={(!valid && !toDeposit) || !!busy} onClick={() => { if (toDeposit) { nav('/deposit'); return; } if (valid) void runTx(txCfg(v, a, amt)); }}>
         {busy ? <><span className="spin" /><span>{busy}</span></> : <span>{label}</span>}
       </button>
+      {/* too little KAIA: the reason sits with the one way out, in view at every height */}
+      {noKaia && <p className="pin-note is-bad" id="kaia-why" role="alert">{t('x.e.kaia', { f: fee, k: F.dec(kaia) })}</p>}
     </div>
   );
   return (
@@ -105,8 +111,8 @@ export default function Withdraw() {
           <AmountField id="amt" label={t('x.amount')} unit="CT" value={amt} onChange={setAmt} disabled={blocked} error={!!e2}
             side={loading ? skel('110px', '12px') : t('x.avail', { c: '<b>' + F.dec(bal) + '</b>' })} msgHtml={e2 ? '<span>' + e2 + '</span>' + fix : ''} onMax={() => setAmt(F.dec(bal))} />
         </section>
-        <Html as="section" className="msec" html={rows([[t('x.kaia') + qbtn('withdraw', t('x.fee')), F.kaia(kaia)], [t('x.fee'), t('x.fee.v', { f: fee }) + '<small><b>' + t('pp.youpay') + '</b></small>'], [t('dp.net'), t('dp.net.v')]])} />
-        <div id="kaia-note" dangerouslySetInnerHTML={{ __html: noKaia ? note('error', t('x.e.kaia', { f: fee, k: F.dec(kaia) }), btn(t('x.fix.kaia'), { sm: true, href: '/deposit' })) : '' }} />
+        <Html as="section" className="msec" html={rows([[t('x.kaia') + qbtn('withdraw', t('x.fee')), noKaia ? '<span class="is-bad">' + F.kaia(kaia) + '</span>' : F.kaia(kaia)], [t('x.fee'), t('x.fee.v', { f: fee }) + '<small><b>' + t('pp.youpay') + '</b></small>'], [t('dp.net'), t('dp.net.v')]])} />
+
       </>
     </Shell>
   );

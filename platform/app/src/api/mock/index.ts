@@ -124,11 +124,12 @@ function wallet(): WalletInfo {
     address: M.user.address as Address, ct: Math.round(ct * 1e4) / 1e4, kaia, points: points(),
     staked: zero ? 0 : M.user.staked + c.stakes.reduce((a, s) => a + s.amount, 0), openStakes: st === 'max20' ? 20 : M.stakes.length + c.stakes.length,
     pendingHit: { points: M.user.pendingHit, landsAt: todayAt(21, 40) },
-    convert: { pointsPerCT: 1000, min: 1000, capLeftCt: st === 'cap' ? 0 : 50, capPerDayCt: 50, globalCapLeft: st === 'capglobal' ? 0 : 20000, firstConvertAt: st === 'wait' ? ahead(3.4) : null, paused: st === 'paused' && /convert/.test(path) },
+    convert: { pointsPerCT: 1000, min: 1000, capLeftCt: st === 'cap' ? 0 : 50, capPerDayCt: 50, globalCapLeft: st === 'capglobal' ? 0 : 20000, firstConvertAt: st === 'wait' || (st === 'short' && /convert/.test(path)) ? ahead(3.4) : null, paused: st === 'paused' && /convert/.test(path) },
     inviteWeek: zero || st === 'new' ? 0 : M.invite.week,
   };
 }
-function todayAt(h: number, m: number) { const d = new Date(); d.setHours(h, m, 0, 0); return d.getTime(); }
+/** today's date in Korea at h:m Korean time (the product's clock), whatever the device's time zone */
+function todayAt(h: number, m: number) { const k = new Date(Date.now() + 9 * 3600000); return Date.UTC(k.getUTCFullYear(), k.getUTCMonth(), k.getUTCDate(), h - 9, m); }
 
 function positions(): Positions {
   const st = guard(/^\/stakes/), c = mockChain();

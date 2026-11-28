@@ -30,6 +30,8 @@ const SCREENS = [
   ['profile', '/profile', ['', 'nameerror', 'notset', 'otherdevice', 'logout', 'session', 'hold', 'code-open', 'code-valid', 'code-unknown', 'code-own', 'code-linked']],
   ['invite', '/invite', ['', 'empty', 'loading', 'error', 'offline', 'copied', 'hold']],
   ['system', '/system', ['maintenance', 'update', 'offline', 'notfound', 'blocked']],
+  ['terms', '/terms', ['']],
+  ['privacy', '/privacy', ['']],
 ];
 
 const results = [];
@@ -64,6 +66,65 @@ const ok = (name, cond, extra) => { results.push([cond ? 'PASS' : 'FAIL', name, 
         ok(label + ' no horizontal overflow', ov.sw <= ov.w && ov.bad.length === 0, JSON.stringify(ov));
         await pg.screenshot({ path: path.join(OUT, lang, name + (st ? '-' + st : '') + '.png') });
       }
+    }
+
+    /* ---------- round 6 behaviour (reviews/review-ui-components.md, reviews/review-ux.md) ---------- */
+    errs = [];
+    try {
+      const L = lang + ' r6: ';
+      // the Staking tab opens New stake for a player without stakes, My stakes for a player with stakes
+      await pg.goto(B + '/stakes?state=empty'); await sleep(1300);
+      ok(L + 'Staking tab opens New stake when there are no stakes', (await pg.getAttribute('.tb a[data-tab="stake"]', 'href')) === '/staking', await pg.getAttribute('.tb a[data-tab="stake"]', 'href'));
+      await pg.goto(B + '/wallet'); await sleep(1300);
+      ok(L + 'Staking tab opens My stakes when there are stakes', (await pg.getAttribute('.tb a[data-tab="stake"]', 'href')) === '/stakes', await pg.getAttribute('.tb a[data-tab="stake"]', 'href'));
+      // an unlocked stake: first in the list with its Withdraw, and a badge on the Staking tab
+      ok(L + 'Staking tab carries a badge while a stake is unlocked', (await pg.locator('.tb a[data-tab="stake"] .tb-dot').count()) === 1);
+      await pg.locator('.tb a[data-tab="stake"]').tap(); await pg.waitForURL(/\/stakes/, { timeout: 4000 }).catch(() => {}); await sleep(1200);
+      const first = await pg.evaluate(() => { const a = document.querySelector('.mstake'); return a ? { wd: !!a.querySelector('[data-wd]'), unlocked: !!a.querySelector('[data-status] .tag') && /check|M5 12/.test(a.querySelector('[data-status]').innerHTML) } : null; });
+      ok(L + 'the unlocked stake sorts first with its Withdraw', /\/stakes/.test(pg.url()) && !!first && first.wd, JSON.stringify(first) + ' ' + pg.url());
+      // Terms and Privacy: real pages, marked as drafts, reachable from log in and from Profile
+      for (const k of ['terms', 'privacy']) {
+        await pg.goto(B + '/' + k); await sleep(900);
+        ok(L + '/' + k + ' is a page marked as a draft', (await pg.locator('#legal h1').count()) === 1 && (await pg.locator('.legal-draft').count()) === 1 && (await pg.locator('#legal section').count()) >= 4);
+      }
+      await pg.goto(B + '/login'); await sleep(1000);
+      await pg.locator('.fine a[href="/terms"]').click(); await sleep(700);
+      ok(L + 'the Terms link on log in opens /terms', /\/terms$/.test(pg.url()) && (await pg.locator('#legal').count()) === 1, pg.url());
+      await pg.goto(B + '/profile?state=help'); await sleep(1300);
+      ok(L + 'Profile, Help links Terms, Privacy and support', (await pg.locator('#sheet a[href="/terms"]').count()) === 1 && (await pg.locator('#sheet a[href="/privacy"]').count()) === 1 && (await pg.locator('#sheet a[href^="mailto:"]').count()) === 1);
+      // a toast never covers the answer buttons (list and cards, offline pick attempt)
+      for (const r of ['/list?state=offline', '/?state=offline']) {
+        await pg.goto(B + r); await sleep(1300);
+        await pg.evaluate(() => { const c = document.querySelector('.qcard[data-pos="0"] .choice, .trow .choice'); c && c.click(); });
+        await sleep(450);
+        const tv = await pg.evaluate(() => { const t = document.querySelector('.toast'); if (!t) return { none: true }; const a = t.getBoundingClientRect(); const hit = [...document.querySelectorAll('.choice')].some((c) => { const q = c.getBoundingClientRect(); return q.width > 0 && !(q.bottom <= a.top || q.top >= a.bottom || q.right <= a.left || q.left >= a.right); }); return { hit, top: Math.round(a.top) }; });
+        ok(L + 'a toast on ' + r + ' does not cover the answers', !tv.none && !tv.hit, JSON.stringify(tv));
+      }
+      // a finished transaction step shows its tick: an ink tile with the paper tick, inside the sheet
+      await pg.goto(B + '/staking?state=steps'); await sleep(1500);
+      const tick = await pg.evaluate(() => { const n = document.querySelector('#sheet .txsteps .is-done .n'); if (!n) return null; const s = getComputedStyle(n); return { bg: s.backgroundColor, fg: s.color, svg: !!n.querySelector('svg') }; });
+      ok(L + 'the done step tick is visible inside the sheet', !!tick && tick.svg && tick.bg !== tick.fg && tick.bg === 'rgb(22, 19, 14)', JSON.stringify(tick));
+      // the staking action says why it is off
+      await pg.goto(B + '/staking?state=paused'); await sleep(1300);
+      ok(L + 'a switched off Stake names the reason', (await pg.locator('#go').isDisabled()) && (await pg.locator('#go').innerText()).trim() !== (lang === 'ko' ? '스테이킹하기' : 'Stake'), await pg.locator('#go').innerText());
+      ok(L + 'no errors in the round 6 checks', errs.length === 0, errs.join(' | '));
+    } catch (e) {
+      ok(lang + ' r6: completed without an exception', false, e.message.split('\n')[0] + ' at ' + pg.url());
+    }
+    // short phone (360x640): the Withdraw of the unlocked stake is in view without scrolling; the own rank bar cuts nothing
+    {
+      const c3 = await b.newContext({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+      const p3 = await c3.newPage();
+      await p3.goto(B + '/?standalone=1&lang=' + lang); await sleep(800);
+      await p3.goto(B + '/stakes'); await sleep(1500);
+      const wd = await p3.evaluate(() => { const w = document.querySelector('[data-wd]'), tb = document.querySelector('.tb'); if (!w || !tb) return null; return { bottom: Math.round(w.getBoundingClientRect().bottom), tb: Math.round(tb.getBoundingClientRect().top) }; });
+      ok(lang + ' r6 360x640: Withdraw of the unlocked stake is in view without scrolling', !!wd && wd.bottom <= wd.tb, JSON.stringify(wd));
+      for (const st of ['top10', '']) {
+        await p3.goto(B + '/ranking' + (st ? '?state=' + st : '')); await sleep(1500);
+        const cut = await p3.evaluate(() => [...document.querySelectorAll('#pin .pin-main > *, #pin .pin-pts')].some((e) => e.scrollWidth > e.clientWidth + 1));
+        ok(lang + ' r6 360x640: own rank bar cuts nothing' + (st ? ' (' + st + ')' : ''), !cut);
+      }
+      await c3.close();
     }
 
     /* ---------- the primary flow by touch ---------- */

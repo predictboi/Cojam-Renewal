@@ -57,7 +57,7 @@ export default function Results() {
   function side(r: ResultRow): string {
     let chip: string, pts: string;
     switch (r.outcome) {
-      case 'wait': chip = '<span class="rchip rchip--wait">' + mark('wait') + t('pp.answerat', { time: r.expectedAt ? F.time(r.expectedAt) : '' }) + '</span>'; pts = ''; break;
+      case 'wait': chip = '<span class="rchip rchip--wait">' + mark('wait') + t('pp.answerat', { time: r.expectedAt ? F.dayTime(r.expectedAt) : '' }) + '</span>'; pts = ''; break;
       case 'hit': chip = stamp('hit', t('r.o.hit')); pts = '<span class="rs-pts">+50P</span>'; break;
       case 'pend': chip = stamp('hit', t('r.o.hit')); pts = '<span class="rs-pts">+50P<small>' + t('r.at', { time: r.landsAt ? F.time(r.landsAt) : '' }) + '</small></span>'; break;
       case 'corr': chip = stamp('corr', t('r.o.corr')); pts = '<span class="rs-pts">+50P</span>'; break;
@@ -76,7 +76,7 @@ export default function Results() {
     const ans = r.answer || (r.outcome === 'miss' ? (r.choice === 'r' ? 'l' : 'r') : r.choice) || 'r';
     // the evidence of the deciding run (GET /v1/results evidenceUrl) as a link; the design's sentence without one
     const ev = r.evidenceUrl && /^https:\/\//.test(r.evidenceUrl)
-      ? '<a class="linkish" href="' + esc(r.evidenceUrl) + '" target="_blank" rel="noopener" translate="no">' + esc(new URL(r.evidenceUrl).hostname.replace(/^www\./, '')) + icon('ext', 14) + '</a>'
+      ? '<a class="linkish" href="' + esc(r.evidenceUrl) + '" target="_blank" rel="noopener" translate="no">' + esc(new URL(r.evidenceUrl).hostname.replace(/^www\./, '')) + icon('ext', 16) + '</a>'
       : t('p.evidence');
     if (set) m += '<span><b>' + t('r.x.answer') + ':</b> ' + esc(ans === 'l' ? tx.left : tx.right) + '</span><span><b>' + t('r.x.evidence') + ':</b> ' + ev + '</span><span><b>' + t('r.x.setat') + ':</b> ' + F.date(r.setAt || date, true) + '</span>';
     if (r.outcome === 'pend') m += '<span>' + t('r.o.pend.help') + '</span>';
@@ -86,13 +86,14 @@ export default function Results() {
     const inner = '<span class="rs-main"><span class="rrow-q">' + esc(tx.title) + '</span><span class="rs-meta">' + (r.choice ? '<span>' + pick(r.choice, esc(r.choice === 'l' ? tx.left : tx.right)) + '</span>' : '<span>' + t('cat.' + r.category) + '</span>') + '</span></span>' + side(r);
     const li = '<li data-out="' + (r.outcome === 'wait' ? 'wait' : 'set') + '">';
     if (!m) return li + '<div class="rrow">' + inner + '</div></li>';
-    return li + '<button type="button" class="rrow" aria-expanded="false" aria-controls="' + id + '">' + inner + '</button>' +
+    return li + '<button type="button" class="rrow" aria-expanded="false" aria-controls="' + id + '">' + inner + icon('down', 18, 'rrow-ch') + '</button>' +
       '<div class="rrow-more" id="' + id + '" hidden><div class="rrow-clip">' + m + (r.outcome === 'void' ? '' : '<button type="button" class="linkish" data-how="' + id + '">' + t('h.ai.h') + icon('chev', 16) + '</button>') + '</div></div></li>';
   }
   function group(g: ResultDay, gi: number): string {
     // by day id (a day opens 09:00 KST = 00:00 UTC, dayId = unix / 86400), not by elapsed hours
     const ago = g.dayId ? Math.floor(Date.now() / 86400000) - g.dayId : Math.round((Date.now() - g.date) / 86400000);
-    const label = ago === 0 ? t('common.today') : ago === 1 ? t('common.yesterday') : F.weekday(g.date);
+    // every day names its date; today and yesterday also say so in words
+    const label = ago === 0 || ago === 1 ? t(ago === 0 ? 'common.today' : 'common.yesterday') + ' <small class="rs-date">' + F.weekday(g.date) + '</small>' : F.weekday(g.date);
     const n: Record<string, number> = { hit: 0, miss: 0, wait: 0, off: 0 }; g.rows.forEach((r) => n[MARK[r.outcome]]++);
     return '<section class="sec rs-day" data-group><div class="rs-dayh"><div class="rs-dayh-t"><h2>' + label + '</h2><span class="rmarks" role="img" aria-label="' + esc(t('r.marks.sr', { h: n.hit, m: n.miss, w: n.wait })) + '">' + g.rows.map((r) => mark(MARK[r.outcome])).join('') + '</span></div>' +
       (g.completed ? '' : '<p class="rs-dayh-sub">' + t('r.g.part', { k: g.answered }) + '</p>') + '<p class="rs-count' + (g.points ? '' : ' is-zero') + '" data-roll="' + g.points + '">+' + F.pts(g.points) + '</p></div>' +
@@ -131,7 +132,7 @@ export default function Results() {
   const onClick = (e: React.MouseEvent) => {
     const el = e.target as Element;
     const h = el.closest('[data-how]');
-    if (h) { const x = rowsById.current[h.getAttribute('data-how')!]; if (!x) return; const tx = x.r.text[L] || x.r.text.en; sheet.open(aiSheetHtml(tx.rule || '', x.r.outcome === 'wait' ? (tx.settle ? t('h.ai.after', { time: tx.settle }) : t('r.at', { time: x.r.expectedAt ? F.time(x.r.expectedAt) : '' })) : F.date(x.r.setAt || x.date, true))); return; }
+    if (h) { const x = rowsById.current[h.getAttribute('data-how')!]; if (!x) return; const tx = x.r.text[L] || x.r.text.en; sheet.open(aiSheetHtml(tx.rule || '', x.r.outcome === 'wait' ? (tx.settle ? t('h.ai.after', { time: tx.settle }) : t('r.at', { time: x.r.expectedAt ? F.dayTime(x.r.expectedAt) : '' })) : F.date(x.r.setAt || x.date, true))); return; }
     const b = el.closest('button.rrow'); if (!b) return;
     // the detail unfolds under its row like a clipping (the one place a height is animated, through grid rows)
     const open = b.getAttribute('aria-expanded') !== 'true'; b.setAttribute('aria-expanded', String(open));

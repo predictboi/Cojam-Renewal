@@ -6,16 +6,17 @@ import { t } from '../i18n';
 import { F, reduceMotion } from '../lib/fmt';
 import { datelineInner, icon, skel } from './h';
 import { dropToast, sheet, useUi } from '../state/ui';
-import { useMe, useToday, useWallet } from '../api';
+import { queryClient, useMe, usePositions, useToday, useWallet } from '../api';
 import { useOffline } from '../state/app';
 import { useOutbox } from '../chain/outbox/runner';
+import type { Me, WalletInfo } from '../api/types';
 
 /* ---------- raw HTML from the string builders ---------- */
 type HtmlProps = { as?: string; html: string; className?: string; id?: string; style?: CSSProperties; [k: string]: unknown };
 export const Html = forwardRef<HTMLElement, HtmlProps>(function Html({ as = 'div', html, ...rest }, ref) {
   return createElement(as as string, { ...(rest as Record<string, unknown>), ref, dangerouslySetInnerHTML: { __html: html as string } });
 });
-export const Icon = ({ name, size = 20, cls }: { name: string; size?: number; cls?: string }) => (
+export const Icon = ({ name, size = 18, cls }: { name: string; size?: number; cls?: string }) => (
   <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false" className={cls} dangerouslySetInnerHTML={{ __html: icon(name, size).replace(/^<svg[^>]*>|<\/svg>$/g, '') }} />
 );
 
@@ -101,6 +102,13 @@ export function useCountUp(target: number, fmt: (n: number) => string = F.pts): 
   return [fmt(shown), pulse];
 }
 
+/** the newest data of a read that is already in the cache (any key of that name): what stands in while the same read loads again */
+export function latest<T>(name: string): T | undefined {
+  const all = queryClient.getQueryCache().findAll({ predicate: (q) => q.queryKey[0] === name && q.state.data !== undefined });
+  all.sort((a, b) => b.state.dataUpdatedAt - a.state.dataUpdatedAt);
+  return all[0]?.state.data as T | undefined;
+}
+
 /* ---------- masthead ---------- */
 export type PtsState = '' | 'loading' | 'pending' | 'hits' | 'stale';
 /** the masthead: the nameplate (or, on a sub page, the back arrow and the page title), the points as a boxed figure,
@@ -110,26 +118,19 @@ export function Header({ back, title, pts = '', points, me }: { back?: string; t
   const loc = useLocation();
   const w = useWallet();
   const meQ = useMe();
-  const loading = pts === 'loading' || (points === undefined && !w.data);
-  const value = points ?? w.data?.points ?? 0;
+  // the last known balance and name stand in while the reads load again (no "0P" and no empty profile box between two screens)
+  const wd = w.data ?? latest<WalletInfo>('wallet');
+  const md = meQ.data ?? latest<Me>('me');
+  const loading = pts === 'loading' || (points === undefined && !wd);
+  const value = points ?? wd?.points ?? 0;
   const [txt, pulse] = useCountUp(value);
-  const hit = w.data?.pendingHit;
-  const name = meQ.data?.name || meQ.data?.wallet || '';
+  const hit = wd?.pendingHit;
+  const name = md?.name || md?.wallet || '';
   const label = loading ? t('hd.points.loading') : t('hd.points', { p: F.int(value) }) + (pts === 'pending' ? ' ' + t('hd.points.pending') : pts === 'hits' && hit ? ' ' + t('hd.points.hits', { n: hit.points, time: F.time(hit.landsAt) }) : pts === 'stale' ? ' ' + t('hd.points.stale') : '');
   const homeHref = homePath();
   const plateRef = useRef<HTMLSpanElement>(null);
-  useLayoutEffect(() => {
-    const pl = plateRef.current; if (!pl) return;
-    const fit = () => { pl.classList.remove('is-mark'); const sp = pl.querySelector('span'); if (sp && sp.scrollWidth > sp.clientWidth + 1) pl.classList.add('is-mark'); };
-    fit();
-    window.addEventListener('resize', fit);
-    void document.fonts?.ready.then(fit);
-    document.fonts?.addEventListener?.('loadingdone', fit);
-    // the points pill arrives after the first paint (and grows with "+50"): the plate gets narrower, so measure again when it changes size
-    const end = pl.closest('.mast-in')?.querySelector('.mast-end');
-    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => fit()) : null; if (ro && end) ro.observe(end);
-    return () => { ro?.disconnect(); window.removeEventListener('resize', fit); document.fonts?.removeEventListener?.('loadingdone', fit); };
-  }, [back]);
+  // the points pill arrives after the first paint (and grows with "+50"): the plate gets narrower, so it is measured again then
+  usePlateFit(plateRef, '.mast-end', [back]);
   const onBack = (e: React.MouseEvent) => {
     // back to where the player came from when that was inside the app, else to the fixed parent
     if (window.history.length > 1 && (loc.key !== 'default') && !/[?&]state=/.test(loc.search)) { e.preventDefault(); nav(-1); }
@@ -159,6 +160,24 @@ export function Header({ back, title, pts = '', points, me }: { back?: string; t
     </header>
   );
 }
+/** The nameplate gives way to the mark alone when its words do not fit (any bar that carries it: the masthead, the system bar) */
+export function usePlateFit(ref: React.RefObject<HTMLElement | null>, watch?: string, deps: unknown[] = []) {
+  useLayoutEffect(() => {
+    const pl = ref.current; if (!pl) return;
+    const box = pl.closest('.mast-home') as HTMLElement | null;
+    const fit = () => {
+      pl.classList.remove('is-mark'); const sp = pl.querySelector('span');
+      if ((sp && sp.scrollWidth > sp.clientWidth + 1) || (box && box.scrollWidth > box.clientWidth + 1)) pl.classList.add('is-mark');
+    };
+    fit();
+    window.addEventListener('resize', fit);
+    void document.fonts?.ready.then(fit);
+    document.fonts?.addEventListener?.('loadingdone', fit);
+    const end = watch ? pl.closest('.mast-in, .gate-bar')?.querySelector(watch) : null;
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => fit()) : null; if (ro && end) ro.observe(end);
+    return () => { ro?.disconnect(); window.removeEventListener('resize', fit); document.fonts?.removeEventListener?.('loadingdone', fit); };
+  }, deps); // eslint-disable-line
+}
 export function homePath() { let v = 'card'; try { v = localStorage.getItem('cjp.view') || 'card'; } catch { /* */ } return v === 'term' ? '/list' : '/'; }
 
 /* ---------- tab bar: the section index ---------- */
@@ -166,19 +185,30 @@ const TABS = [
   { id: 'home', icon: 'cards', href: homePath },
   { id: 'results', icon: 'list', href: () => '/results' },
   { id: 'rank', icon: 'podium', href: () => '/ranking' },
-  { id: 'stake', icon: 'lock', href: () => '/stakes' },
+  { id: 'stake', icon: 'lock', href: () => '/stakes' },   // replaced in TabBar: New stake for a player without stakes, else My stakes
   { id: 'wallet', icon: 'wallet', href: () => '/wallet' },
 ];
 const TAB_ORDER: Record<string, number> = { home: 0, results: 1, rank: 2, stake: 3, wallet: 4 };
 export type Badges = Partial<Record<'home' | 'results' | 'stake', 'dot' | number | 0>>;
 export const SEEN_KEY = 'cjp.seen';
-export function useBadges(over?: Badges): Badges {
+/** the player's stakes as the tab bar needs them: where the Staking tab opens, and whether any stake is unlocked (CT ready) */
+export function useStakeTab(enabled = true): { href: string; ready: boolean } {
+  const pos = usePositions(enabled);
+  const w = useWallet();
+  const list = pos.data?.positions;
+  const now = Date.now();
+  const ready = !!list?.some((p) => !p.closed && now >= p.start + p.lockDays * 86400000);
+  const any = list ? list.length > 0 : (w.data?.openStakes ?? 1) > 0;
+  return { href: any ? '/stakes' : '/staking', ready };
+}
+export function useBadges(over?: Badges, enabled = true): Badges {
   const today = useToday();
   const me = useMe();
+  const stake = useStakeTab(enabled);
   const items = useOutbox((s) => s.items);
   const answered = today.data ? today.data.markets.filter((m) => m.choice.chain || items.some((i) => i.marketId === m.marketId && i.state !== 'failed')).length : 5;
   let seen = false; try { seen = sessionStorage.getItem(SEEN_KEY) === '1'; } catch { /* */ }
-  const b: Badges = { home: today.data && today.data.state === 'open' && answered < 5 && !me.data?.frozen ? 'dot' : 0, results: seen ? 0 : me.data?.stats.newAnswers || 0 };
+  const b: Badges = { home: today.data && today.data.state === 'open' && answered < 5 && !me.data?.frozen ? 'dot' : 0, results: seen ? 0 : me.data?.stats.newAnswers || 0, stake: stake.ready ? 'dot' : 0 };
   // the badges follow the session: no "predictions left" once the five are picked, no "new answers" once Results was opened
   const out = { ...b, ...over };
   if (answered >= 5) out.home = 0;
@@ -186,13 +216,15 @@ export function useBadges(over?: Badges): Badges {
   return out;
 }
 export function TabBar({ current, badges }: { current?: string; badges: Badges }) {
+  const stake = useStakeTab();
   return (
     <nav className="tb" aria-label={t('nav.tabs')}>
       {TABS.map((tb) => {
+        const href = tb.id === 'stake' ? stake.href : tb.href();
         const b = tb.id === 'results' && current === 'results' ? 0 : badges[tb.id as keyof Badges];
         const said = b === 'dot' ? t('tab.badge.' + tb.id) : typeof b === 'number' && b > 0 ? t('tab.badge.results', { n: b }) : '';
         return (
-          <Link key={tb.id} to={tb.href()} aria-current={tb.id === current ? 'page' : undefined} data-rr="">
+          <Link key={tb.id} to={href} data-tab={tb.id} aria-current={tb.id === current ? 'page' : undefined} data-rr="">
             <span className="tb-ic">
               <Icon name={tb.id === current ? tb.icon + 'On' : tb.icon} size={22} />
               {b === 'dot' && <span className="tb-dot" />}
@@ -225,7 +257,7 @@ export interface ShellProps {
 export function Shell(p: ShellProps) {
   const off = useOffline();
   const offline = p.offline ?? off;
-  const badges = useBadges(p.badges);
+  const badges = useBadges(p.badges, !p.bare);
   const appRef = useRef<HTMLDivElement>(null);
   const mainRef = useRef<HTMLElement>(null);
   const loc = useLocation();
@@ -281,8 +313,11 @@ export function Toasts() {
   useEffect(() => {
     if (!cur) return;
     setOut(false);
-    const tm = setTimeout(() => setOut(true), cur.o.ms || (cur.o.btn ? 60_000 : 4000));
-    return () => clearTimeout(tm);
+    // a toast with an action stays 8 s (the update notice sets its own time); a tap anywhere else lets it go
+    const tm = setTimeout(() => setOut(true), cur.o.ms || (cur.o.btn ? 8000 : 4000));
+    const away = (e: PointerEvent) => { if (!(e.target as Element)?.closest?.('.toast')) setOut(true); };
+    if (cur.o.btn) document.addEventListener('pointerdown', away, true);
+    return () => { clearTimeout(tm); document.removeEventListener('pointerdown', away, true); };
   }, [cur?.id]);
   useEffect(() => { if (!out || !cur) return; const tm = setTimeout(() => dropToast(cur.id), 200); return () => clearTimeout(tm); }, [out, cur?.id]);
   return (
@@ -320,7 +355,7 @@ export function SheetRoot() {
   });
   const c = (s || shown)?.content;
   return (
-    <div className={'sheet-root' + (s ? ' is-open' : '')} id="sheet-root">
+    <div className={'sheet-root' + (s ? ' is-open' : shown ? ' is-closing' : '')} id="sheet-root">
       <div className="sheet-scrim" data-sheet-scrim="" onClick={() => { if (sheet.closable()) sheet.close(); }} />
       <div className="sheet" id="sheet" role="dialog" aria-modal="true" tabIndex={-1} ref={ref} aria-label={(s || shown)?.o.label}>
         <div className="sheet-grip" data-grip="" aria-hidden="true" />

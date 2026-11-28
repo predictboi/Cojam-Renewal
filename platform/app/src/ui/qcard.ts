@@ -30,14 +30,14 @@ export function qcard(q: Q, o: { disabled?: boolean; static?: boolean; failed?: 
     '<span class="qstamp qstamp--l" aria-hidden="true">' + esc(q.l) + '</span><span class="qstamp qstamp--r" aria-hidden="true">' + esc(q.r) + '</span>' +
     '<div class="qcard-body"><h2' + (xlong ? ' class="is-xlong"' : long ? ' class="is-long"' : '') + '>' + esc(q.title) + '</h2>' +
     (o.failed ? '<p class="qcard-note">' + icon('warn', 16) + t('h.notsaved') + '</p>' : '') +
-    (o.static ? '<div class="qmeta">' + meta + '</div>' : '<button type="button" class="qmeta" data-ai-info="' + esc(q.id) + '" aria-haspopup="dialog">' + meta + '<span class="qmeta-go">' + t('pp.rule') + icon('chev', 14) + '</span></button>') +
+    (o.static ? '<div class="qmeta">' + meta + '</div>' : '<button type="button" class="qmeta" data-ai-info="' + esc(q.id) + '" aria-haspopup="dialog">' + meta + '<span class="qmeta-go">' + t('pp.rule') + icon('chev', 16) + '</span></button>') +
     '<div class="choices' + (wordy ? ' is-wordy' : '') + '">' + choice('l') + choice('r') + '</div>' +
     (o.final ? '<p class="qcard-final">' + t('h.final') + '</p>' : '') +
     '</div></article>';
 }
 
-/** the view switch on the home head: two words, the current one underlined in ink */
+/** the view switch on the home head: two words, the current one bold on an ink bar (the page tabs of Staking, without their rule) */
 export function viewSwitch(cur: 'card' | 'term'): string {
   const a = (id: 'card' | 'term', href: string) => { const on = id === cur; return '<a href="' + href + '"' + (on ? ' aria-current="page"' : '') + '>' + t('h.view.' + id) + '</a>'; };
-  return '<div class="viewsw" role="group" aria-label="' + esc(t('h.view.label')) + '">' + a('card', '/') + a('term', '/list') + '</div>';
+  return '<nav class="mtabs mtabs--view" aria-label="' + esc(t('h.view.label')) + '">' + a('card', '/') + a('term', '/list') + '</nav>';
 }

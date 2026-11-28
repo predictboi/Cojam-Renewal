@@ -5,7 +5,7 @@
 import { create } from 'zustand';
 import { t } from '../i18n';
 import { F } from '../lib/fmt';
-import { btn, icon, rows, rstamp, type Row } from './h';
+import { btn, contact, icon, rows, rstamp, type Row } from './h';
 import { reduceMotion } from '../lib/fmt';
 import { live, sheet, toast } from '../state/ui';
 import { useNavigate } from 'react-router-dom';
@@ -85,7 +85,8 @@ function view(state: TxState, cfg: TxCfg, hash: string | null): string {
       '<div class="sheet-acts">' + (ok.btn ? btn(ok.btn.label, { kind: 'primary', block: true, attrs: 'data-tx="go"' }) + btn(t('common.done'), { kind: 'ghost', block: true, attrs: 'data-tx="done"' }) : btn(t('common.done'), { kind: 'primary', block: true, attrs: 'data-tx="done"' })) +
       '<a class="linkish self-center" href="' + scan + '" target="_blank" rel="noopener">' + t('tx.scan') + icon('ext', 16) + '</a></div>';
   }
-  return '<div class="sheet-state"><div class="sheet-ic is-bad">' + icon('x', 32) + '</div><h2>' + t('tx.fail.h') + '</h2><p class="sheet-lead">' + t(cfg.failKey || 'tx.fail.reverted') + '</p></div>' +
+  // a failure names the way to support too, quietly, for when it keeps failing
+  return '<div class="sheet-state"><div class="sheet-ic is-bad">' + icon('x', 28) + '</div><h2>' + t('tx.fail.h') + '</h2><p class="sheet-lead">' + t(cfg.failKey || 'tx.fail.reverted') + '</p></div>' + contact() +
     '<div class="sheet-acts">' + btn(t('common.retry'), { kind: 'primary', block: true, attrs: 'data-tx="retry"' }) + btn(t('common.close'), { kind: 'ghost', block: true, attrs: 'data-tx="cancel"' }) + '</div>';
 }
 

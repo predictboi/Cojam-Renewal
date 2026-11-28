@@ -6,6 +6,8 @@ import { encodeFunctionData, decodeFunctionResult, type Address, type Hex } from
 import { CONFIG } from '../config';
 import { t } from '../i18n';
 import { toast } from './ui';
+import { appNav } from '../ui/behaviours';
+import { homePath } from '../ui/kit';
 import { predictAbi } from '../chain/abi';
 import { ensurePlayKey, mockOutboxDeps, realOutboxDeps } from '../chain/chain';
 import { loadPlayKey, playKeyNeedsRenew } from '../chain/playKey';
@@ -21,8 +23,9 @@ export const usePlay = create<{ status: PlayStatus; failed: OutboxItem[] }>(() =
 
 function onFailed(item: OutboxItem, closed: boolean) {
   usePlay.setState((s) => ({ failed: [...s.failed, item] }));
-  // on the card view the returned card says "Not saved. Pick again." itself; elsewhere a toast says it
-  if (!closed && location.pathname !== '/') toast(t('h.toast.fail', { n: item.slot + 1 }), { btn: t('common.retry'), key: 'fail-' + item.id });
+  // on the card view the returned card says "Not saved. Pick again." itself, and in the list view the row does; elsewhere a toast says it
+  // and its action leads back to the questions, where the pick is made again
+  if (!closed && location.pathname !== '/' && location.pathname !== '/list') toast(t('h.toast.fail', { n: item.slot + 1 }), { btn: t('h.t.again'), fn: () => appNav(homePath()), key: 'fail-' + item.id });
 }
 
 async function keyOnChain(c: AppConfig, player: string): Promise<string | null> {

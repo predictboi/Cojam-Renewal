@@ -7,7 +7,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { api, useConfig } from '../api';
 import { ENABLED_LANG_NAMES, currentLang, t, useLang } from '../i18n';
 import { esc, sleep } from '../lib/fmt';
-import { btn, help, icon, langSelect, plate, qbtn } from '../ui/h';
+import { btn, contact, help, icon, langSelect, plate, qbtn } from '../ui/h';
 import { Dateline, Html, Shell } from '../ui/kit';
 import { useOffline, usePreset } from '../state/app';
 import { useWalletStore, walletApi } from '../wallet/wallet';
@@ -144,7 +144,7 @@ export default function Login() {
           <div className="field">
             <div className="field-label"><label htmlFor="email"><b>{t('a.email.label')}</b></label><span style={{ display: 'contents' }} dangerouslySetInnerHTML={{ __html: qbtn('email', t('pp.i.email')) }} /></div>
             <div className={'field-box field-box--text' + (bad ? ' is-error' : '') + (off ? ' is-off' : '')}>
-              <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: icon('mail', 20).replace(/^<svg[^>]*>|<\/svg>$/g, '') }} />
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" dangerouslySetInnerHTML={{ __html: icon('mail', 18).replace(/^<svg[^>]*>|<\/svg>$/g, '') }} />
               <input id="email" name="email" type="email" inputMode="email" autoComplete="email" autoCapitalize="off" spellCheck={false} enterKeyHint="send" placeholder="you@gmail.com" value={email} autoFocus
                 aria-describedby="email-msg" aria-invalid={bad ? 'true' : undefined} disabled={off || sending} onChange={(e) => { setEmail(e.target.value); if (S) setS(''); }} />
             </div>
@@ -156,7 +156,7 @@ export default function Login() {
           </div>
           <button type="submit" id="send" className={'btn btn-primary btn-block' + (sending ? ' is-loading' : '')} disabled={off || !!noteProv}>{sending && <span className="spin" />}<span>{t(sending ? 'a.email.sending' : 'a.email.btn')}</span></button>
         </form>
-        <Html as="div" style={{ display: 'contents' }} html={help(t('a.help.q'), '<p>' + t('a.help.a') + '</p>') + '<p class="fine">' + t('a.fine', { terms: '<a href="#terms">' + t('a.terms') + '</a>', privacy: '<a href="#privacy">' + t('a.privacy') + '</a>' }) + '</p>'} />
+        <Html as="div" style={{ display: 'contents' }} html={help(t('a.help.q'), '<p>' + t('a.help.a') + '</p>') + '<p class="fine">' + t('a.fine', { terms: '<a href="/terms">' + t('a.terms') + '</a>', privacy: '<a href="/privacy">' + t('a.privacy') + '</a>' }) + '</p>'} />
       </>
     );
   } else if (step === 'code') {
@@ -189,12 +189,14 @@ export default function Login() {
   } else {
     const out = <button type="button" className="btn btn-block" id="change" onClick={async () => { try { await walletApi().logout(); } catch { /* */ } setStep('email'); setS(''); }}><span>{t('p.logout')}</span></button>;
     const retry = <button type="button" className="btn btn-primary btn-block" id="retry" onClick={() => { setS('setup'); }}><span>{t('common.retry')}</span></button>;
-    const refused = (key: string, btns: React.ReactNode) => <><div className="setup"><div className="sheet-ic is-bad" dangerouslySetInnerHTML={{ __html: icon('warn', 28) }} /><h2>{t('a.refused.h')}</h2><p className="muted" role="alert" dangerouslySetInnerHTML={{ __html: t(key, { list: providerNames }) }} /></div>{btns}</>;
+    // a refused or failed setup also names the way to support
+    const support = <Html as="div" style={{ display: 'contents' }} html={contact()} />;
+    const refused = (key: string, btns: React.ReactNode) => <><div className="setup"><div className="sheet-ic is-bad" dangerouslySetInnerHTML={{ __html: icon('warn', 28) }} /><h2>{t('a.refused.h')}</h2><p className="muted" role="alert" dangerouslySetInnerHTML={{ __html: t(key, { list: providerNames }) }} /></div>{btns}{support}</>;
     if (S === 'refused-used') panel = refused('a.refused.used', out);
     else if (S === 'refused-provider') panel = refused('a.refused.provider', out);
     else if (S === 'refused-many') panel = refused('a.refused.many', <>{retry}{out}</>);
     else if (S === 'refused') panel = refused('a.setup.refused', out);
-    else if (S === 'walletfail' || S === 'devicefail') panel = <><div className="setup"><div className="sheet-ic is-bad" dangerouslySetInnerHTML={{ __html: icon('x', 28) }} /><h2 role="alert">{t(S === 'walletfail' ? 'a.setup.fail' : 'a.setup.devicefail')}</h2></div>{retry}</>;
+    else if (S === 'walletfail' || S === 'devicefail') panel = <><div className="setup"><div className="sheet-ic is-bad" dangerouslySetInnerHTML={{ __html: icon('x', 28) }} /><h2 role="alert">{t(S === 'walletfail' ? 'a.setup.fail' : 'a.setup.devicefail')}</h2></div>{retry}{support}</>;
     else {
       const back = S === 'returning';
       panel = (

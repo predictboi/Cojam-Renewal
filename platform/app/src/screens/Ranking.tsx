@@ -2,7 +2,7 @@
 // (the time on the dateline); ranks 1 to 3 are set larger, the leader largest, in one table with ranks 4 to 10. The
 // player's own rank is pinned above the tab bar in ink and steps aside while the own row of "Around you" is on screen.
 import { useEffect, useRef, useState } from 'react';
-import { useConfig, useRanking } from '../api';
+import { useConfig, useMe, useRanking, useResults } from '../api';
 import { t } from '../i18n';
 import { esc, F, reduceMotion } from '../lib/fmt';
 import { btn, errorNote, hold, icon, nameHtml, note, skel, stamp, tag } from '../ui/h';
@@ -27,6 +27,21 @@ export default function Ranking() {
   const loading = st === 'loading' || q.isPending;
   const d = q.data;
   const w = week === 'last' ? 'last' : 'this';
+  /* who counts for a prize (3 days played in the week, joined more than 7 days ago): an unranked player is told what is still missing */
+  const unranked = !!d && w === 'this' && d.me.rank === null && !held;
+  const meQ = useMe();
+  const res = useResults(unranked);
+  const elig = (): string => {
+    const joined = meQ.data ? Date.parse(meQ.data.signedUpAt) : NaN;
+    if (joined && Date.now() - joined < 7 * 86400000) return t('k.elig.age', { date: F.date(joined + 7 * 86400000) });
+    if (res.data) {
+      // the ranking week starts on Monday 09:00 KST (a day is a UTC day, dayId = unix / 86400)
+      const today = Math.floor(Date.now() / 86400000), dow = new Date().getUTCDay() || 7, monday = today - (dow - 1);
+      const played = res.data.days.filter((g) => g.dayId >= monday && g.dayId <= today && g.answered > 0).length;
+      if (played < 3) return t('k.elig.days', { k: played });
+    }
+    return t('k.elig.play');
+  };
 
   /* one row pattern for the whole table: rank, player, points, prize. Ranks 1 to 3 take the larger setting. */
   let rowN = 0;
@@ -42,7 +57,9 @@ export default function Ranking() {
     // the time left is on the dateline; beside the pool sits the way to the rules (or, for a closed week, its state)
     const how = '<button type="button" class="linkish" id="how">' + t('k.split.q') + icon('chev', 16) + '</button>';
     const right = '<div class="end">' + (w === 'last' && d.state !== 'sent' ? tag(t('k.final.h'), 'ink') : '') + how + '</div>';
-    return '<section class="sec pool"><div class="pool-top"><div class="mhero"><p class="lbl">' + t(w === 'last' ? 'k.lastweek' : 'k.pool') + '</p><p class="fig fig--xl">' + F.int(d.pool.ct) + '<small>CT</small></p></div>' + right + '</div></section>';
+    // when the prizes go out: a short labelled fact under the pool (a week already sent says so in its notice)
+    const when = d.state === 'sent' ? '' : '<p class="fact pool-when"><b>' + t('k.sent.lbl') + '</b>' + t('k.final.time') + '</p>';
+    return '<section class="sec pool"><div class="pool-top"><div class="mhero"><p class="lbl">' + t(w === 'last' ? 'k.lastweek' : 'k.pool') + '</p><p class="fig fig--xl">' + F.int(d.pool.ct) + '<small>CT</small></p></div>' + right + '</div>' + when + '</section>';
   }
   function list(): string {
     const colsHead = '<p class="cols" aria-hidden="true"><span>' + t('pp.rank.col') + '</span><span>' + t('pp.player.col') + '</span><span>' + t('pp.pts.col') + '</span><span>' + t('k.col.prize') + '</span></p>';
@@ -132,7 +149,7 @@ export default function Ranking() {
       <button type="button" className="pin" id="pin" aria-label={t('k.around.open')} onClick={toAround}><span className="pin-rank"><span className="sr-only">{t('k.rank.sr', { n: rank })}</span><span aria-hidden="true">{rank}</span></span><span className="pin-main"><b>{title}</b><span>{sub}</span></span><span className="pin-pts">{F.pts(pts)}<small>{label}</small></span></button>;
     if (held) pin = <aside className="pin pin--wide" id="pin" aria-label={t('k.you')}><span className="pin-main"><b>{t('k.you')}</b><span>{t('hold.rank.pin')}</span></span><span className="pin-pts">{F.pts(d.me.points)}<small>{t(w === 'last' ? 'k.lastweek' : 'r.week')}</small></span></aside>;
     else if (w === 'last') pin = bar(d.me.rank || 0, t('k.you'), t('k.final.h'), d.me.points, t('k.lastweek'));
-    else if (d.me.rank === null) pin = <aside className="pin pin--wide" id="pin" aria-label={t('k.you')}><div className="pin-main"><b>{t('k.none')}</b></div><Html as="span" style={{ display: 'contents' }} html={btn(t('k.play'), { sm: true, href: '/', cls: 'btn-onink' })} /></aside>;
+    else if (d.me.rank === null) pin = <aside className="pin pin--wide" id="pin" aria-label={t('k.you')}><div className="pin-main"><b>{t('k.none.h')}</b><span id="pin-elig">{elig()}</span></div><Html as="span" style={{ display: 'contents' }} html={btn(t('k.play'), { sm: true, href: '/', cls: 'btn-onink' })} /></aside>;
     else if (d.me.rank <= 10) pin = bar(d.me.rank, t('k.in'), t('k.prize', { c: F.prize(d.me.prize || 0) }), d.me.points, t('r.week'));
     else pin = bar(d.me.rank, t('k.you'), t('k.gap', { gap: F.int(d.me.gap || 0) }), d.me.points, t('r.week'));
   }

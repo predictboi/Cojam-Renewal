@@ -7,10 +7,10 @@ import { api, useConfig, useInvite, useMe, useWallet } from '../api';
 import { ApiError } from '../api/errors';
 import { LANGS, LANG_NAMES, setLang, t, useLang, type Lang } from '../i18n';
 import { esc, F } from '../lib/fmt';
-import { addr, btn, icon, qbtn, tag } from '../ui/h';
+import { addr, btn, contact, icon, qbtn, tag } from '../ui/h';
 import { Html, Icon, Seg, Shell } from '../ui/kit';
 import { useHold, useOffline, usePreset } from '../state/app';
-import { sheet, toast } from '../state/ui';
+import { live, sheet, toast } from '../state/ui';
 import { loadPlayKey } from '../chain/playKey';
 import { revokePlayKey } from '../chain/chain';
 import { outbox, hasOutbox } from '../chain/outbox/runner';
@@ -128,7 +128,7 @@ export default function Profile() {
     if (codeState === 'open' && /^code-/.test(st) && st !== 'code-open') openCode(codePreset[st]);
     if (st === 'logout') logout();
     if (st === 'saved') toast(t('p.name.saved'));
-    if (st === 'update') toast(t('toast.update'), { btn: t('toast.reload'), fn: () => location.reload() });
+    if (st === 'update') toast(t('toast.update'), { btn: t('toast.reload'), fn: () => location.reload(), key: 'update', ms: 60_000 });
     if (st === 'session') sheet.open('<div class="sheet-state"><div class="sheet-ic">' + icon('lock', 28) + '</div><h2>' + t('p.session.h') + '</h2><p class="sheet-lead">' + t('p.session.b') + '</p></div><div class="sheet-acts">' + btn(t('p.session.btn'), { kind: 'primary', block: true, href: '/login' }) + '</div>', { closable: false });
   }, [!!d, st]);
 
@@ -155,31 +155,44 @@ export default function Profile() {
     '<a class="inv-row" id="to-invite" href="/invite"><span class="inv-row-t"><b>' + t('inv.entry') + '</b></span><span class="inv-row-go inv-row-go--text">' + t('inv.entry.n', { n: inv.data?.stats.joined ?? 0 }) + icon('chev', 16) + '</span></a>';
   const hLeft = Math.max(1, Math.ceil(24 - (Date.now() - signedUp) / 3600000));
   const codeRow = codeState === 'linked'
-    ? '<div class="prow" id="code-row">' + icon('check', 20) + '<p class="grow"><b>' + t('p.code.by', { name: '<span translate="no">' + esc(inviter || '') + '</span>' }) + '</b></p></div>'
+    ? '<div class="prow" id="code-row">' + icon('check', 18) + '<p class="grow"><b>' + t('p.code.by', { name: '<span translate="no">' + esc(inviter || '') + '</span>' }) + '</b></p></div>'
     : codeState === 'open' ? '<button type="button" class="rowlink" id="code-row"><span><b>' + t('p.code') + '</b></span>' + tag(hLeft + 'h', '', 'clock') + icon('chev', 18) + '</button>' : '';
-  const dev = device?.state === 'notset' ? '<div class="row">' + icon('phone', 20) + '<p class="grow">' + t('p.device.notset') + '</p></div>' + btn(t('p.device.setup'), { block: true, href: '/login?setup=1' })
-    : device?.state === 'other' ? '<div class="row">' + icon('phone', 20) + '<p class="grow">' + t('p.device.other') + '</p></div>' + btn(t('h.other.btn'), { block: true, href: '/login?setup=1' })
-      // ready to play on this device: the sentence and the date are behind "?"
-      : '<div class="row">' + icon('check', 20) + '<p class="grow"><b>' + t('pp.i.device') + '</b></p>' + qbtn('device', t('pp.i.device')) + '</div>';
+  const dev = device?.state === 'notset' ? '<div class="row">' + icon('phone', 18) + '<p class="grow">' + t('p.device.notset') + '</p></div>' + btn(t('p.device.setup'), { block: true, href: '/login?setup=1' })
+    : device?.state === 'other' ? '<div class="row">' + icon('phone', 18) + '<p class="grow">' + t('p.device.other') + '</p></div>' + btn(t('h.other.btn'), { block: true, href: '/login?setup=1' })
+      // ready to play on this device: the status in the row; until when, and how it renews, behind "?"
+      : '<div class="row">' + icon('check', 18) + '<p class="grow"><b>' + t('p.device.ready') + '</b></p>' + qbtn('device', t('pp.i.device')) + '</div>';
   const explorer = cfg.data?.explorer || CONFIG.chain.explorer;
   const account = '<h2>' + t('p.account') + '</h2><div class="list">' +
     (held ? '<a class="rowlink" id="hold-row" href="/system/blocked"><span><b>' + t('hold.t') + '</b></span>' + tag(t('hold.tag'), '', 'pause') + icon('chev', 18) + '</a>' : '') +
-    '<div class="prow">' + icon('mail', 20) + '<p class="grow"><b translate="no">' + esc(d?.email || '') + '</b></p></div>' +
+    '<div class="prow">' + icon('mail', 18) + '<p class="grow"><b translate="no">' + esc(d?.email || '') + '</b></p></div>' +
     '<div id="code-slot">' + codeRow + '</div>' +
     '<div class="prow-addr"><p class="lbl">' + t('pp.addr') + '</p>' + (a ? addr(a) : '') + '</div>' +
     linkRow('Kaiascan', explorer + '/address/' + a, true) +
     '<div class="prow-dev stack-8">' + dev + '</div></div>';
   // the four help links sit behind one row
+  // help: how it works, how answers are set, the swap, the site, the terms and the privacy policy, and the way to support
   const helpSheet = () => sheet.open('<h2>' + t('p.help') + '</h2><div class="list">' + linkRow(t('p.how'), '/welcome?from=profile') +
     '<details class="help help--row"><summary>' + t('p.answers.q') + icon('down', 18) + '</summary><div class="help-body">' + t('p.answers.a') + '</div></details>' +
-    linkRow(t('p.swap'), CONFIG.swapUrl, true) + linkRow(t('p.site'), 'https://cojam.app', true) + '</div><div class="sheet-acts">' + btn(t('common.close'), { block: true, attrs: 'data-sheet-close' }) + '</div>');
+    linkRow(t('p.swap'), CONFIG.swapUrl, true) + linkRow(t('p.site'), 'https://cojam.app', true) + linkRow(t('a.terms'), '/terms') + linkRow(t('a.privacy'), '/privacy') + '</div>' + contact() +
+    '<div class="sheet-acts">' + btn(t('common.close'), { block: true, attrs: 'data-sheet-close' }) + '</div>');
   useEffect(() => { if (st === 'help') helpSheet(); }, [st]); // eslint-disable-line
   const onClick = (e: React.MouseEvent) => { if ((e.target as Element).closest('button#code-row')) openCode(); };
+  // "Check for update": the answer replaces the label for 2 s (as a copy control does), so no toast covers the control
+  const [upToDate, setUpToDate] = useState(false);
+  const checkUpdate = () => { if (upToDate) return; setUpToDate(true); live(t('p.uptodate')); setTimeout(() => setUpToDate(false), 2000); };
   const changeLang = (l: Lang) => { setLang(l); void api.patchMe({ language: l }).catch(() => {}); };
   return (
     <Shell me back="/wallet" title={t('p.title')}>
       <div style={{ display: 'contents' }} onClick={onClick}>
         <Html as="section" className="sec pid" aria-label={t('p.title')} html={ident} />
+        {/* the language and the home view come before the account: the one place to change the language after log in */}
+        <section className="sec">
+          <h2>{t('p.prefs')}</h2>
+          <div className="stack-8"><p className="small" id="l-lang">{t('lang.label')}</p>
+            <Seg<Lang> label={t('lang.label')} value={lang} onChange={changeLang} items={LANGS.map((l) => ({ label: LANG_NAMES[l], value: l }))} lang /></div>
+          <div className="stack-8"><p className="small">{t('p.view')}</p>
+            <Seg<'card' | 'term'> label={t('p.view')} value={view} onChange={(v) => { setView(v); try { localStorage.setItem('cjp.view', v); } catch { /* */ } }} items={[{ label: t('h.view.card'), value: 'card' }, { label: t('h.view.term'), value: 'term' }]} /></div>
+        </section>
         <Html as="section" className="sec" html={account} />
         <section className="sec">
           <div className="field">
@@ -194,17 +207,10 @@ export default function Profile() {
           </div>
         </section>
         <section className="sec">
-          <h2>{t('p.prefs')}</h2>
-          <div className="stack-8"><p className="small" id="l-lang">{t('lang.label')}</p>
-            <Seg<Lang> label={t('lang.label')} value={lang} onChange={changeLang} items={LANGS.map((l) => ({ label: LANG_NAMES[l], value: l }))} lang /></div>
-          <div className="stack-8"><p className="small">{t('p.view')}</p>
-            <Seg<'card' | 'term'> label={t('p.view')} value={view} onChange={(v) => { setView(v); try { localStorage.setItem('cjp.view', v); } catch { /* */ } }} items={[{ label: t('h.view.card'), value: 'card' }, { label: t('h.view.term'), value: 'term' }]} /></div>
-        </section>
-        <section className="sec">
           <div className="list"><button type="button" className="rowlink" id="help-row" onClick={helpSheet}><span><b>{t('pp.help')}</b></span><Icon name="chev" size={18} /></button></div>
           <div className="pfoot">
             <button type="button" className="btn btn-danger" id="logout" onClick={logout}><span>{t('p.logout')}</span></button>
-            <button type="button" className="linkish muted-link" id="upd" aria-label={t('p.update')} onClick={() => toast(t('p.uptodate'))}>{t('p.version', { v: CONFIG.appVersion })}</button>
+            <button type="button" className="linkish muted-link" id="upd" aria-label={t('p.update')} onClick={checkUpdate}>{upToDate ? t('p.uptodate.short') : t('p.version', { v: CONFIG.appVersion })}</button>
           </div>
         </section>
       </div>

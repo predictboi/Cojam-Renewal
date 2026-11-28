@@ -6,8 +6,9 @@
 import { currentLang, t } from '../i18n';
 import { F, esc } from '../lib/fmt';
 import { IC } from './icons';
+import { CONFIG } from '../config';
 
-export function icon(name: string, size = 20, cls?: string): string {
+export function icon(name: string, size = 18, cls?: string): string {
   return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"' + (cls ? ' class="' + cls + '"' : '') + '>' + (IC[name] || '') + '</svg>';
 }
 
@@ -33,7 +34,7 @@ export function day5(states: string[], o: { size?: string; cls?: string; label?:
 }
 /** a made pick carries the ink of its answer (persimmon left, teal right) as a small printed block */
 export const pick = (dir: 'l' | 'r', text: string) => '<span class="pk pk--' + dir + '"><i aria-hidden="true"></i>' + text + '</span>';
-export const tag = (text: string, kind?: string, ic?: string) => '<span class="tag' + (kind ? ' tag-' + kind : '') + '">' + (ic ? icon(ic, 14) : '') + text + '</span>';
+export const tag = (text: string, kind?: string, ic?: string) => '<span class="tag' + (kind ? ' tag-' + kind : '') + '">' + (ic ? icon(ic, 16) : '') + '<span>' + text + '</span></span>';
 /** a result as a rubber stamp: hit (blue, the reward), miss (hollow ink), corr (dashed), ink (a state) */
 export const rstamp = (kind: string, text: string) => '<span class="rstamp rstamp--' + kind + '">' + text + '</span>';
 export type Row = [string, string, boolean?] | null | false | undefined;
@@ -61,6 +62,10 @@ export const notice = (ic?: string) => '<span class="notice-st" aria-hidden="tru
 export function empty(o: { icon?: string; title: string; body?: string; extra?: string; action?: string }): string {
   return '<div class="empty">' + notice(o.icon) + '<h2>' + o.title + '</h2>' + (o.body ? '<p>' + o.body + '</p>' : '') + (o.extra || '') + (o.action || '') + '</div>';
 }
+/** the way to support (failure and refused screens, Help): a mail link and the address as a copy control */
+export const SUPPORT_MAIL = CONFIG.supportEmail;
+export const contact = () => '<div class="contact"><a class="linkish" href="mailto:' + SUPPORT_MAIL + '" id="contact-mail">' + icon('mail', 16) + '<span>' + t('help.contact') + '</span></a>' +
+  '<button type="button" class="addr-chip addr-chip--text" data-copy="' + SUPPORT_MAIL + '" data-done="' + esc(t('w.copy.done')) + '" aria-label="' + esc(t('help.copy') + ': ' + SUPPORT_MAIL) + '"><span class="addr-chip-v" translate="no">' + SUPPORT_MAIL + '</span>' + icon('copy', 16) + '</button></div>';
 export const errorNote = (key?: string) => note('error', t(key || 'e.load'), btn(t('common.retry'), { sm: true, icon: 'refresh', attrs: 'data-reload' }));
 export const actbar = (b: string, n?: string) => '<div class="pin pin--act">' + b + (n ? '<p class="pin-note">' + n + '</p>' : '') + '</div>';
 export const skel = (w: string, h?: string, extra?: string) => '<span class="skel" style="width:' + w + ';height:' + (h || '14px') + ';' + (extra || '') + '"></span>';
@@ -73,7 +78,7 @@ export const logo = plate;
 /** numbered steps with the icon of the control to look for */
 export const steps = (items: [string, string?][]) => '<ol class="steps">' + items.map((s, i) => '<li><b class="steps-n">' + (i + 1) + '</b><span>' + s[0] + '</span>' + (s[1] ? icon(s[1], 22) : '') + '</li>').join('') + '</ol>';
 export function hold(html: string, o: { action?: string; more?: boolean } = {}): string {
-  return '<div class="hold" role="status">' + icon('pause', 20) + '<div class="hold-body"><b class="hold-t">' + t('hold.t') + '</b><p>' + html + '</p>' + (o.action || '') +
+  return '<div class="hold" role="status">' + icon('pause', 18) + '<div class="hold-body"><b class="hold-t">' + t('hold.t') + '</b><p>' + html + '</p>' + (o.action || '') +
     (o.more === false ? '' : '<a class="hold-more" href="/system/blocked">' + t('hold.more') + icon('chev', 16) + '</a>') + '</div></div>';
 }
 export function banner(text: string, o: { kind?: string; spin?: boolean; icon?: string; btn?: string; attrs?: string } = {}): string {

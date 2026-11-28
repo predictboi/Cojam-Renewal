@@ -4,13 +4,13 @@
 // now". The reward is never shown before it is confirmed on chain (DEV-PLAN 4.6): "Saving your last pick" while any of the
 // five is not mined, then the band inks in as "Extra", "+100P" counts up from 0, a "Paid" stamp lands, the fifth box inks
 // in, the dateline turns to "Next set in" and the points in the masthead count up. A tap after that skips to the settled page.
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useMe, useToday, useWallet } from '../api';
 import { t } from '../i18n';
 import { esc, reduceMotion } from '../lib/fmt';
-import { btn, count as countCell, datelineInner, day5, pick, qbtn, rstamp } from '../ui/h';
-import { Html, Shell, Icon } from '../ui/kit';
+import { btn, count as countCell, datelineInner, day5, pick, qbtn, rstamp, skel } from '../ui/h';
+import { Html, Shell, Icon, latest } from '../ui/kit';
 import { qOf } from '../ui/qcard';
 import { usePreset } from '../state/app';
 import { live, toast } from '../state/ui';
@@ -18,6 +18,7 @@ import { outbox, hasOutbox, kick, useOutbox } from '../chain/outbox/runner';
 import { UNDO_MS } from '../chain/outbox/policy';
 import { DESIGN } from '../api/mock';
 import { CONFIG } from '../config';
+import type { Today, WalletInfo } from '../api/types';
 
 const num = (v: number) => '+' + String(Math.round(v)).replace(/\d/g, '<i class="dg">$&</i>') + 'P';
 function letters(text: string) {
@@ -34,7 +35,8 @@ export default function Done() {
   const wallet = useWallet();
   const meQ = useMe();
   const items = useOutbox((s) => s.items);
-  const td = today.data;
+  // until today's read answers, the set the deck was showing a moment ago stands in (never a made up value)
+  const td = today.data ?? latest<Today>('today');
   const dayItems = items.filter((i) => td && i.dayId === td.dayId);
   // the reward moment plays once: a reload of a paid day shows the settled screen
   const momentReq = st0 === 'moment' || sp.get('moment') === '1';
@@ -165,7 +167,7 @@ export default function Done() {
   useEffect(() => { if (mode !== 'undo') return; const t0 = Date.now(); const i = setInterval(() => setUndoLeft(Math.max(0, undoMs - (Date.now() - t0))), 200); return () => clearInterval(i); }, [mode]);
   // the row under the figure has one height in every phase: Undo's countdown, then "Saving your last pick", then the "Paid" stamp
   const row = shownPhase === 'undo'
-    ? '<p class="done-st" id="reward">' + t('h.end.in', { n: '<b id="fin-n">' + Math.max(1, Math.ceil(undoLeft / 1000)) + '</b>' }) + '</p>'
+    ? '<p class="done-st" id="reward"><span>' + t('h.end.in', { n: '<b id="fin-n">' + Math.max(1, Math.ceil(undoLeft / 1000)) + '</b>' }) + '</span></p>'
     : shownPhase === 'saving' ? '<p class="done-st" id="reward"><span class="spin"></span>' + t('d.saving.st') + '</p>'
       : '<span class="seal" id="seal" aria-hidden="true">' + rstamp('hit', t('pp.paid')) + '</span>' + (wel ? '<p class="done-st" id="reward">' + t('d.wel.st', { n: 100 + W }) + '</p>' : '<p class="sr-only" id="reward">' + t('d.paid.st') + '</p>');
   const segs = shownPhase === 'paid' ? ['done', 'done', 'done', 'done', 'done'] : ['done', 'done', 'done', 'done', 'pend'];
@@ -189,14 +191,18 @@ export default function Done() {
     '<section class="sec sec-rule"><div class="sh"><h2>' + t('d.picks') + '</h2><a class="linkish" href="/results">' + t('d.results') + '</a></div>' +
     (waiting ? '<p class="done-wait-n">' + t('d.waitn', { n: waiting }) + qbtn('hits', t('h.ai.h')) + '</p>' : '') +
     '<ul class="list">' + picks.map((p) => '<li class="pick"><span class="pick-q">' + esc(p.q.title) + '</span><span class="pick-c">' + pick(p.dir, esc(p.q[p.dir])) + '</span></li>').join('') + '</ul></section>';
-  // the dateline: while the last pick is saved it still reads "Closes in" (this edition is on the press); once paid it turns to the next set
-  const [dl] = useState(() => {
+  // the dateline: while the last pick is saved it still reads "Closes in" (this edition is on the press); once paid it turns to the next set.
+  // It counts down to the real time of today's set (the source Home uses); until that is known it holds a placeholder, so no made up
+  // countdown can reach zero and send the player home.
+  const nextAt = td?.nextOpenAt;
+  const dl = useMemo(() => {
     if (st === 'zero') return datelineInner('<span class="spin"></span> ' + t('d.loading'));
-    const k = animate ? 'h.closes' : 'd.next';
-    return datelineInner(countCell(k, td?.nextOpenAt ?? Date.now() + 3600_000, 'dl-flip').replace('id="dl-flip"', 'id="dl-flip" data-k="' + k + '"'));
-  });
+    if (!nextAt) return datelineInner(skel('96px', '12px'));
+    const k = animate && (modeRef.current === 'undo' || modeRef.current === 'saving') ? 'h.closes' : 'd.next';
+    return datelineInner(countCell(k, nextAt, 'dl-flip').replace('id="dl-flip"', 'id="dl-flip" data-k="' + k + '"'));
+  }, [nextAt, st]); // eslint-disable-line
   // the masthead: the 100P is counted up when it is paid. Mock presets opened on their own add the 100P the prototype shows; on chain the wallet read already has it
-  const pts = wallet.data?.points ?? 0;
+  const pts = (wallet.data ?? latest<WalletInfo>('wallet'))?.points ?? 0;
   const paidShown = shownPhase === 'paid';
   const mockCredit = CONFIG.mockApi && !td?.completed ? (preset && st !== 'saving' ? 100 + (wel ? W : 0) : simPaid ? 100 : 0) : 0;
   const shownPts = animate && !paidShown ? pts + mockCredit - (paidNow ? (mockCredit ? mockCredit : 100) : 0) : pts + mockCredit;

@@ -43,8 +43,8 @@ export default function Deposit() {
       btn(t('w.copy'), { kind: 'primary', block: true, icon: 'copy', id: 'copy-addr', attrs: 'data-copy="' + a + '" data-done="' + esc(t('w.copy.done')) + '"', disabled: loading }) +
       '<p class="watch watch--live" id="watch" role="status">' + (offline ? icon('offline', 16) + '<span>' + t('dp.offline') + '</span>' : '<i class="press" aria-hidden="true"></i><span>' + t('dp.watch') + '</span>') + '</p></section>' +
       '<section class="msec">' + rows([[t('dp.net'), t('dp.net.v')], [t('dp.token'), t('dp.token.v')]]) +
-      // one plain warning stays on the surface; old CT, exchanges and the token contract are in the sheet behind "?"
-      '<p class="hold-why">' + icon('warn', 16) + '<span>' + t('dp.w1') + '</span></p></section>';
+      // two plain warnings stay on the surface (the network, and that old CT does not work here); exchanges are in the sheet behind "?"
+      '<p class="hold-why">' + icon('warn', 16) + '<span>' + t('dp.w1') + '</span></p><p class="hold-why" id="old-ct">' + icon('warn', 16) + '<span>' + t('dp.w2') + '</span></p></section>';
   }
   return <Shell tab="wallet" back="/wallet" title={t('dp.title')} pts={loading ? 'loading' : ''}><Html as="div" style={{ display: 'contents' }} html={body} /></Shell>;
 }

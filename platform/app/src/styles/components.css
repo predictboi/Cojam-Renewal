@@ -721,7 +721,7 @@ button.pin:focus-visible { outline-color: var(--on-ink); outline-offset: -4px; }
 /* ---------- wide screens: the phone column on a desk ---------- */
 @media (min-width: 431px) { .app { box-shadow: 0 0 0 1px var(--ink-3); } }
 
-/* ---------- reduced motion: nothing moves on its own; countdown rings keep running because they are information ---------- */
+/* ---------- reduced motion: nothing moves on its own; countdown rings and the Undo fill keep running because they are information ---------- */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition-duration: 0.01ms !important; }
   .spin { animation: spin 1.6s linear infinite !important; }
@@ -881,7 +881,7 @@ button.pin:active { background: var(--ink-2); }
 .sheet { animation: sheet-in var(--dur-sheet) var(--ease-drawer) both; }
 
 /* ---------- reduced motion ----------
-   Nothing travels, lands, rolls or runs. States still change (a short opacity change at most). The fuse keeps running because it is the time left, not decoration. */
+   Nothing travels, lands, rolls or runs. States still change (a short opacity change at most). The fuse and the Undo fill keep running because they are the time left, not decoration. No press moves a control. */
 @media (prefers-reduced-motion: reduce) {
   .fuse i { animation-name: fuse !important; animation-duration: 3000ms !important; animation-timing-function: linear !important; animation-fill-mode: both !important; animation-delay: var(--gone, 0ms) !important; }
   .extra-run::before, .press::before { animation: none !important; }
@@ -1528,10 +1528,7 @@ button.pin .tag, aside.pin .tag { background: var(--ink-2); color: var(--on-ink)
 .undo .fuse--fill { position: absolute; inset: 0; left: 0; right: 0; top: 0; bottom: 0; width: auto; height: auto; background: none; }
 .undo .fuse--fill i { height: 100%; background: color-mix(in srgb, var(--ink) 20%, var(--sheet)); box-shadow: inset 0 -3px 0 var(--ink); }
 .undo > svg, .undo > span:not(.fuse), .undo > kbd { position: relative; z-index: 1; }
-@media (prefers-reduced-motion: reduce) {
-  /* reduced motion: the fill stands still (the announcement carries the time) */
-  .undo .fuse--fill i { animation: none !important; transform: none !important; }
-}
+/* reduced motion: the fill keeps draining, linearly, because it is the time left (the reduced motion block above runs every fuse) */
 /* 13. ranking: one face for every name (the text face); the slab stays on the rank numerals and the top three keep their size step */
 .krow-name, .krow--lead .krow-name, .krow-name .mono, .krow--lead .krow-name .mono { font-family: var(--font-text); letter-spacing: 0; }
 .krow--lead .krow-name { font-weight: var(--fw-bold); }
@@ -1567,3 +1564,70 @@ button.pin .tag, aside.pin .tag { background: var(--ink-2); color: var(--on-ink)
 /* the own bar without a rank: the sentence wraps, it is never cut */
 aside.pin--wide .pin-main, aside.pin--wide .pin-main > b, aside.pin--wide .pin-main > span { white-space: normal; overflow: visible; text-overflow: clip; }
 .xb { display: inline-block; }
+
+/* =====================================================================
+   REVIEW H (round 6): review-ui-components.md and review-ux.md
+   ===================================================================== */
+/* M1. a finished step keeps its ink tile inside a sheet too */
+.sheet .txsteps .is-done .n { background: var(--ink); color: var(--on-ink); }
+/* M2. the own rank bar on a short phone keeps two lines: the status is never cut, a prize least of all; the "This week" caption goes first */
+@media (max-height: 700px) and (min-width: 360px) {
+  button.pin, aside.pin { min-height: 50px; padding-top: var(--s-4); padding-bottom: var(--s-4); }
+  .pin-main { display: grid; gap: 0; white-space: normal; overflow: visible; }
+  .pin-main > span { overflow: visible; white-space: normal; text-overflow: clip; }
+  .pin-pts small { display: none; }
+}
+/* M3. list view: a toast comes in under the dateline, never over the answers */
+.is-list ~ .toasts { top: calc(var(--mast-h) + 40px + env(safe-area-inset-top)); bottom: auto; align-content: start; }
+.is-list ~ .toasts .toast { transform-origin: 50% 0; }
+@starting-style { .is-list ~ .toasts .toast { transform: translateY(-120%) rotate(-1.5deg); } }
+.is-list ~ .toasts .toast.is-out { transform: translateY(-120%); }
+/* M4. a sheet leaves the way it came: down onto the desk, the scrim clearing (no motion under reduced motion) */
+.sheet-root.is-closing { display: block; pointer-events: none; }
+.sheet-root.is-closing .sheet { animation: sheet-out 200ms cubic-bezier(0.4, 0, 1, 1) both; }
+.sheet-root.is-closing .sheet-scrim { animation: scrim-out 200ms var(--ease) both; }
+@keyframes sheet-out { to { transform: translateY(100%); } }
+@keyframes scrim-out { from { opacity: 0.5; } to { opacity: 0; } }
+/* L1. the invite code form never widens its column (a long message wraps instead) */
+.onb-code, .onb-foot, .sheet { grid-template-columns: minmax(0, 1fr); }
+.onb-code > *, .onb-foot > * { min-width: 0; }
+/* L2. the balance figure never covers the top of Deposit and Withdraw */
+.acts { position: relative; z-index: 1; }
+/* L4. with the "+50" tag the points pill is 36 px: the profile box takes the same height */
+.mast-end:has(.pts-tag) .me-in { height: 36px; }
+/* L5. a frame means pressable: the hold notice and the finished panel sit between rules like every other notice */
+.hold { padding-left: 0; padding-right: 0; border: 0; border-top: var(--rule-heavy); border-bottom: var(--rule); background: none; }
+.home-fin .deck-end { border: 0; border-top: var(--rule-heavy); border-bottom: var(--rule); background: none; }
+/* L6. the back arrow answers a press like every other control */
+.mast-back { transition: background-color var(--dur-press) var(--ease); }
+.mast-back:active { background-color: var(--paper-2); }
+/* L8. one text link: underlined blue words at 14 px, 600 (a sheet's Cancel and Close stay the one larger text action) */
+.linkish, .hold-more, .onb-code-open, .onb-code-skip, .qmeta-go, .sys-link, .fine a:not(.btn), .gate-foot a, .field-max, .muted-link { font-size: var(--fs-14); font-weight: var(--fw-mid); }
+.fine { font-size: var(--fs-14); }
+.gate-foot a { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+/* L9. one link row height (52 px, 44 px on short phones); a result row that opens shows a chevron that turns */
+.rowlink, .wrow, .inv-row, .rs-inv, .help summary { min-height: 52px; }
+@media (max-height: 660px) { .rowlink, .wrow, .inv-row, .rs-inv, .help summary { min-height: 44px; padding-top: var(--s-4); padding-bottom: var(--s-4); } }
+button.rrow { grid-template-columns: minmax(0, 1fr) auto auto; }
+.rrow-ch { flex: none; color: var(--ink-2); transition: transform var(--dur-fast) var(--ease); }
+button.rrow[aria-expanded="true"] .rrow-ch { transform: rotate(180deg); }
+/* L10. Cards and List use the page tabs of Staking (underlined words), set beside the title without the rule */
+.mtabs--view { gap: var(--s-4); border-bottom: 0; }
+.mtabs--view a { justify-content: center; min-width: var(--target); padding: 0 var(--s-6); }
+/* L13. short phones: the stacked sheet edges under the card stay clear of Undo */
+@media (max-height: 640px) { .deck { margin-bottom: 20px; } }
+/* L14. a long sheet keeps its action in view */
+.sheet-acts { position: sticky; bottom: calc((var(--s-16) + env(safe-area-inset-bottom)) * -1); z-index: 2; margin-bottom: calc((var(--s-16) + env(safe-area-inset-bottom)) * -1); padding: var(--s-8) 0 calc(var(--s-16) + env(safe-area-inset-bottom)); background: var(--sheet); }
+/* L15. a label that is too long ends in an ellipsis inside its segment or tag */
+.seg-btn { display: block; min-width: 0; overflow: hidden; text-overflow: ellipsis; line-height: var(--target); text-align: center; }
+.tag { max-width: 100%; overflow: hidden; }
+.tag > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* L16. one focus ring offset in both segmented groups */
+.period button:focus-visible { outline-offset: -4px; }
+/* L7. reduced motion: no press moves a control */
+@media (prefers-reduced-motion: reduce) {
+  .qbtn:active span, .pts:active .pts-in, .me:active .me-in, .tb a:active .tb-ic { transform: none; }
+  .sheet-root.is-closing { display: none; }
+}
+/* L17. Profile: the device row's "?" and the name field's "?" never share a pixel of their targets */
+.prow-dev { padding-bottom: var(--s-6); }

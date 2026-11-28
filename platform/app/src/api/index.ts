@@ -31,10 +31,10 @@ export function useConfig() {
 export const useMe = (enabled = true) => useQuery({ queryKey: useKey('me'), queryFn: api.me, enabled });
 export const useToday = () => useQuery({ queryKey: useKey('today'), queryFn: api.today, refetchInterval: 60_000 });
 export const useWallet = () => useQuery({ queryKey: useKey('wallet'), queryFn: api.wallet, refetchInterval: 30_000 });
-export const useResults = () => useQuery({ queryKey: useKey('results'), queryFn: () => api.results() });
+export const useResults = (enabled = true) => useQuery({ queryKey: useKey('results'), queryFn: () => api.results(), enabled });
 export const useRanking = (week: 'current' | 'last') => useQuery({ queryKey: useKey('ranking', week), queryFn: () => api.ranking(week), refetchInterval: 30_000 });
 /** The server's quote for an amount and lock (capacity: the caps and the interest the contract can still cover). */
 export const useQuote = (amount: number, lock: number, enabled: boolean) =>
   useQuery({ queryKey: useKey('quote', amount, lock), queryFn: () => api.stakingQuote(amount, lock), enabled, staleTime: 30_000, retry: 0 });
-export const usePositions = () => useQuery({ queryKey: useKey('positions'), queryFn: api.positions });
+export const usePositions = (enabled = true) => useQuery({ queryKey: useKey('positions'), queryFn: api.positions, enabled });
 export const useInvite = () => useQuery({ queryKey: useKey('invite'), queryFn: api.invite });

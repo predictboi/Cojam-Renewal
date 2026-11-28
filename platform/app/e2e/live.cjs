@@ -94,7 +94,8 @@ async function apiGet(p) { const r = await fetch(API + p, { headers: { 'x-dev-us
       await sleep(600);
       await shot('first-run-1');
       if (lang === 'en') {
-        await pg.locator('#code-open').tap();
+        // the invite code is a visible field on the first page (an older build unfolded it from a link)
+        if (await pg.locator('#code-open').count()) await pg.locator('#code-open').tap();
         await pg.fill('#code', 'DEVC2AB');
         await pg.locator('#code-apply').tap();
         await pg.waitForSelector('#code-msg.is-ok', { timeout: 8000 });

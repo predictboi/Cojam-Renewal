@@ -2,3 +2,38 @@
 .pg > [style*="contents"] > * { min-width: 0; }
 /* App only: the deck (deck/engine.ts fit) and the ranking table (whole rows above the own bar) measure with transitions off */
 .is-measuring, .is-measuring * { transition: none !important; }
+
+/* ---------- round 6 (reviews/review-ui-components.md, reviews/review-ux.md): rules for markup that only the app has ---------- */
+/* the way to support: a mail link and the address as a copy control, quiet, under a failure or in Help */
+.contact { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-4) var(--s-12); padding-top: var(--s-8); border-top: var(--hair); }
+.contact .linkish svg { color: var(--ink-2); }
+.setup ~ .contact { margin-top: var(--s-4); }
+/* a figure that is not enough (too little KAIA for the fee), and the reason under the one action */
+.is-bad, .pin-note.is-bad { color: var(--down); }
+.pin-note.is-bad { font-weight: var(--fw-mid); }
+/* Staking: on short phones the lock line rides in the pinned bar, above the action, and leaves the page */
+.pin-lock { display: none; align-items: center; justify-content: center; gap: var(--s-6); color: var(--ink); font-size: var(--fs-13); font-weight: var(--fw-bold); line-height: 1.3; }
+.pin-lock svg { flex: none; }
+@media (max-height: 700px) { .pin-lock { display: flex; } .stk-sum .stk-lock { display: none; } }
+/* Results: every day names its date */
+.rs-dayh h2 .rs-date { margin-left: var(--s-6); color: var(--ink-2); font-family: var(--font-text); font-size: var(--fs-13); font-weight: var(--fw-mid); letter-spacing: 0; white-space: nowrap; }
+/* Ranking: when the prizes go out, under the pool */
+.pool-when { margin-top: var(--s-4); }
+@media (max-height: 700px) { .pool-when { margin-top: 0; font-size: var(--fs-13); } }
+/* First run: the back arrow on pages 2 and 3, the nameplate after it, the way out on the right */
+.auth--onb .gate-bar { justify-content: flex-start; gap: var(--s-4); }
+.auth--onb .gate-bar .onb-plate { display: contents; }
+.auth--onb .gate-bar #onb-exit { margin-left: auto; }
+#onb-first { margin-top: calc(var(--s-4) * -1); }
+/* Terms and Privacy: a plain page in the cover style */
+.legal { display: grid; gap: var(--s-16); align-content: start; padding-top: var(--s-16); max-width: 40rem; }
+.legal h1 { font-family: var(--font-display); font-weight: var(--fw-fig); font-size: clamp(1.75rem, 9vw, 2.5rem); line-height: 1.08; letter-spacing: var(--track-fig); text-wrap: balance; }
+.legal-draft { display: flex; align-items: center; gap: var(--s-6); padding: var(--s-8) 0; border-top: var(--rule-heavy); border-bottom: var(--rule); color: var(--ink); font-size: var(--fs-14); font-weight: var(--fw-bold); }
+.legal-date { margin-top: calc(var(--s-8) * -1); color: var(--ink-2); font-size: var(--fs-13); }
+.legal section { display: grid; gap: var(--s-6); padding-top: var(--s-12); border-top: var(--hair); }
+.legal h2 { font-family: var(--font-display); font-weight: var(--fw-head); font-size: var(--fs-18); line-height: 1.25; letter-spacing: var(--track-head); }
+.legal section p { font-size: var(--fs-15); line-height: 1.55; text-wrap: pretty; }
+.legal section a { display: inline-block; padding: var(--s-10) 0; margin: calc(var(--s-10) * -1) 0; font-weight: var(--fw-mid); overflow-wrap: anywhere; }
+.legal-other { padding-top: var(--s-8); border-top: var(--rule); }
+/* the back arrow as a button (first run): the same bare arrow as the link in the masthead */
+button.mast-back { padding: 0; border: 0; background: none; }

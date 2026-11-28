@@ -15,6 +15,8 @@ const hooks: { nav: Nav; reload: () => void; ai: (id: string) => void; offline: 
   offline: () => false,
 };
 export function setBehaviourHooks(h: Partial<typeof hooks>) { Object.assign(hooks, h); }
+/** an in app navigation from code outside React (a toast action) */
+export function appNav(to: string) { hooks.nav(to); }
 
 const $ = <E extends Element = HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector(sel) as E | null;
 const $$ = <E extends Element = HTMLElement>(sel: string, root: ParentNode = document) => Array.from(root.querySelectorAll(sel)) as E[];
@@ -101,12 +103,17 @@ export function fitChoices(root: ParentNode = document) {
 let fitRaf = 0;
 const runFit = () => { if (fitRaf) return; fitRaf = requestAnimationFrame(() => { fitRaf = 0; fitChoices(); }); };
 
-/* Korean and Japanese: a figure never parts from the particle or the unit that follows it ("10%를", "5問", "3秒間").
-   A word joiner (U+2060) is set between them in every text node, also in text that arrives later. English is left alone. */
-const WJ = String.fromCharCode(0x2060), CJK = '぀-ヿ㐀-鿿가-힣';
+/* A figure never parts from its unit, in any language: the space between a number and a unit ("12,000 CT", "24 hours",
+   "21:40 KST") and between 오전 or 오후 and the hour becomes a no break space. Korean and Japanese also keep a figure with
+   the particle or the unit that follows it ("10%를", "5問", "3秒間"): a word joiner (U+2060) is set between them. Every text
+   node is treated, also text that arrives later. */
+const WJ = String.fromCharCode(0x2060), NBSP = String.fromCharCode(0xA0), CJK = '぀-ヿ㐀-鿿가-힣';
 const GLUE_RE = new RegExp('([0-9][0-9,.:]*(?:%|℃|°C|[A-Za-z]{1,4})?)(?=[' + CJK + '])', 'g'), HEAD = new RegExp('^[' + CJK + ']'), TAIL = /[0-9%](?:[A-Za-z]{1,4})?$/;
+const UNIT_RE = /([0-9]) (?=(?:CT|KAIA|KRW|KST|P|days?|hours?|minutes?|seconds?|weeks?|times?|%)(?![A-Za-z]))/g;
+const AMPM_RE = /(오전|오후) (?=[0-9])/g;
+const UNIT_HEAD = /^ (?=(?:CT|KAIA|KST|P|days?|hours?)(?![A-Za-z]))/, UNIT_AT = /^(?:CT|KAIA|KST|P|days?|hours?)(?![A-Za-z])/;
 function glue(root: Node) {
-  const lang = currentLang(); if (lang !== 'ko' && lang !== 'ja') return;
+  const lang = currentLang(), cjk = lang === 'ko' || lang === 'ja';
   if (root.nodeType === 1 && (root as Element).closest?.('script, style, textarea, .mono, [data-dg], .dg, [data-cd], [data-tick]')) return;
   const list: Text[] = [];
   if (root.nodeType === 3) list.push(root as Text);
@@ -114,9 +121,16 @@ function glue(root: Node) {
   for (const n of list) {
     const p = n.parentNode as Element | null;
     if (!p || /^(SCRIPT|STYLE|TEXTAREA|OPTION)$/.test(p.nodeName) || p.closest?.('.mono, .dg, [data-cd], [data-tick], [contenteditable]')) continue;
-    const v = n.nodeValue || ''; let o = v.replace(GLUE_RE, '$1' + WJ);
-    const prev = n.previousSibling;
-    if (prev && prev.nodeType === 1 && HEAD.test(o) && TAIL.test(prev.textContent || '') && !/^(BR|DIV|P|LI)$/.test(prev.nodeName) && o.charAt(0) !== WJ) o = WJ + o;
+    const v = n.nodeValue || ''; let o = v.replace(UNIT_RE, '$1' + NBSP);
+    // the figure and the unit in two nodes: "<b>500</b> CT", "12,000 <small>CT</small>"
+    const ps = n.previousSibling, ns = n.nextSibling;
+    if (ps && /[0-9]$/.test(ps.textContent || '') && UNIT_HEAD.test(o)) o = NBSP + o.slice(1);
+    if (ns && / $/.test(o) && /[0-9] $/.test(o) && UNIT_AT.test(ns.textContent || '')) o = o.slice(0, -1) + NBSP;
+    if (cjk) {
+      o = o.replace(AMPM_RE, '$1' + NBSP).replace(GLUE_RE, '$1' + WJ);
+      const prev = n.previousSibling;
+      if (prev && prev.nodeType === 1 && HEAD.test(o) && TAIL.test(prev.textContent || '') && !/^(BR|DIV|P|LI)$/.test(prev.nodeName) && o.charAt(0) !== WJ) o = WJ + o;
+    }
     if (o !== v) n.nodeValue = o;
   }
 }

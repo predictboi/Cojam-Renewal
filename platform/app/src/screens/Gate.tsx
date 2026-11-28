@@ -99,7 +99,7 @@ export default function Gate() {
     '<ul class="facts"><li>' + t('g.fact.1') + '</li><li>' + t('g.fact.2') + '</li><li>' + t('g.fact.3') + '</li></ul>' +
     '<section class="gate-swap"><h2>' + t('g.swap.h') + '</h2><p>' + t('g.swap.body') + '</p>' + btn(t('g.swap.btn'), { href: CONFIG.swapUrl, ext: true, iconEnd: 'ext' }) + '</section></div></div>' +
     '<footer class="gate-foot"><a href="https://cojam.app" target="_blank" rel="noopener">' + t('hd.home') + '</a><span>© 2026 Cojam</span></footer></div>' +
-    (v === 'ios' ? '<p class="ios-point" aria-hidden="true"><span>' + t('g.ios.point') + '</span>' + icon('down', 20) + '</p>' : '');
+    (v === 'ios' ? '<p class="ios-point" aria-hidden="true"><span>' + t('g.ios.point') + '</span>' + icon('down', 18) + '</p>' : '');
   // the slip that points at Safari's Share button never lies on the steps it explains: it steps aside while they are on screen
   useEffect(() => {
     const slip = document.querySelector('.ios-point'), pnl = document.getElementById('panel');
