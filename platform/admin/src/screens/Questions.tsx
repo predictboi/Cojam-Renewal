@@ -12,7 +12,7 @@ import { usePageCtx, useActs, nowS } from '../page';
 import { Shell } from '../Shell';
 import { qid, CAT, STATUS, IMG_STATE } from '../live';
 
-const LIM: Record<string, { title: number; c: number; rule: number }> = { en: { title: 70, c: 12, rule: 60 }, ko: { title: 40, c: 8, rule: 40 }, ja: { title: 40, c: 8, rule: 40 } };
+const LIM: Record<string, { title: number; c: number; rule: number }> = { en: { title: 70, c: 12, rule: 60 }, ko: { title: 44, c: 8, rule: 40 }, ja: { title: 44, c: 8, rule: 40 } };
 const LNAME: Record<string, string> = { en: 'English', ko: 'Korean', ja: 'Japanese' };
 const len = (s: string) => [...(s || '')].length;
 const CATS = ['Crypto', 'Markets', 'Weather', 'Sports', 'Culture'];
@@ -105,7 +105,7 @@ function render(D: any, qs: URLSearchParams): string {
   }
   function langCol(q: any, l: string, editable: boolean) {
     const t = q[l], L = LIM[l], over = is('edit') && l === 'ko';
-    const title = over ? '내일 밤 9시가 되었을 때 솔라나 가격은 과연 250달러 위에 올라가 있을까요?' : t.title;
+    const title = over ? '11월 29일(일) 오후 9시가 되었을 때 솔라나 가격은 과연 250달러 위에 올라가 있을까요?' : t.title;
     function f(id: string, label: string, val: string, max: number, rowsN?: number) {
       const c = len(val), left = max - c, cid = id + '-' + l;
       const cnt = '<span class="cnt"' + (left < 0 ? ' data-over' : '') + ' data-count="' + cid + '">' + (editable ? (left < 0 ? -left + ' over' : left + ' left') : c + '/' + max) + '</span>';

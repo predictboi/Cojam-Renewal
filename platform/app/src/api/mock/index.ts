@@ -173,6 +173,8 @@ function results(): Results {
   if (st === 'nowaiting') days = days.slice(1);
   if (st === 'noset') days = [{ day: 0, done: true, total: 100, rows: days[0].rows.map((r) => ({ ...r, out: 'wait', exp: r.exp || '16:00' })) }];
   const hm = (s?: string) => { if (!s) return undefined; const [h, m] = s.split(':').map(Number); return todayAt(h, m); };
+  // A day's answers fall on the next date (the one its titles name); one read before 09:00 KST falls a date later still.
+  const exp = (s: string | undefined, day: number) => { const t = hm(s); return t === undefined ? undefined : t + (1 - day + (Number(s!.split(':')[0]) < 9 ? 1 : 0)) * DAY; };
   const inv = M.invite.days as unknown as Record<string, { pts: number; n: number }>;
   const out: ResultDay[] = (st === 'empty' ? [] : days).map((g) => ({
     dayId: dayId() - g.day, date: ago(g.day), answered: g.answered ?? 5, completed: g.done, points: g.total, pendingPoints: g.pending || 0,
@@ -181,7 +183,7 @@ function results(): Results {
       const q = QS[r.q], rules = (M.pastRules as unknown as Record<string, string[]>)[r.q];
       const tx = text(r.q);
       if (rules) (['en', 'ko', 'ja'] as Lang[]).forEach((l, i) => { tx[l] = { ...tx[l], rule: tx[l].rule || rules[i] }; });
-      return { marketId: r.q, category: q.cat as Market['category'], text: tx, choice: r.c, outcome: r.out as ResultRow['outcome'], expectedAt: hm(r.exp), landsAt: hm(r.at), setAt: ago(g.day), answer: r.out === 'miss' ? (r.c === 'r' ? 'l' : 'r') : r.c || undefined };
+      return { marketId: r.q, category: q.cat as Market['category'], text: tx, choice: r.c, outcome: r.out as ResultRow['outcome'], expectedAt: exp(r.exp, g.day), landsAt: hm(r.at), setAt: ago(g.day), answer: r.out === 'miss' ? (r.c === 'r' ? 'l' : 'r') : r.c || undefined };
     }),
   }));
   return { summary: { week: { points: M.week.pts, hits: M.week.hits, answered: M.week.answered }, all: { points: M.all.pts, hitRate: M.all.rate }, pending: { points: M.user.pendingHit, landsAt: todayAt(21, 40) } }, days: out, nextCursor: st === 'empty' ? null : 'more' };
