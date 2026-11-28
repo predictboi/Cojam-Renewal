@@ -3,7 +3,7 @@
   "phases": {
     "staking": {
       "done": true,
-      "carriedOver": "staking ran live against the same staking contracts: see retired[0].phases.setup",
+      "carriedOver": "staking ran live against the same staking contracts: see retired[1].phases.staking",
       "shortLockPosition": {
         "id": 0,
         "principalCt": "10000.0",
@@ -17,135 +17,127 @@
       }
     },
     "setup": {
-      "startedAt": "2026-11-26T17:46:43.136Z",
+      "startedAt": "2026-11-28T10:55:32.123Z",
       "steps": [
         {
-          "label": "CT transfer 20,000 to player A",
-          "tx": "0x0cad7f526b0f86501c3151ba9dfe1b65373dfe1ab662fc0ca9a5fd3875937b00",
-          "block": 234070618,
-          "gasUsed": 34498,
-          "gasPriceGkei": 25.000000001,
-          "feeKaia": 0.000862450000034498
-        },
-        {
           "label": "registerPlayer (no inviter)",
-          "tx": "0x2f3b0e071bb88f0dd0b61c59fff089799d6ec799a4a389b76d0e9f437fdb2c25",
-          "block": 234070621,
+          "tx": "0xa78fdc2a1d05b301b3008c3fe9f42db533461529a7dceb7b5c531a1807ade58c",
+          "block": 234218731,
           "gasUsed": 50398,
-          "gasPriceGkei": 27.5,
-          "feeKaia": 0.001385945
+          "gasPriceGkei": 25.000000001,
+          "feeKaia": 0.001259950000050398
         },
         {
           "label": "registerPlayer (with inviter)",
-          "tx": "0x2bc992c480ec5857a5a75bfd79dc6403bfaf95109aedccefb6c4716a18f5bd59",
-          "block": 234070624,
+          "tx": "0xc6ed03f481f2b2c738a35da14367320eddca787eb8a6b530382dda2e8916f36d",
+          "block": 234218734,
           "gasUsed": 77703,
-          "gasPriceGkei": 25.000000001,
-          "feeKaia": 0.001942575000077703
+          "gasPriceGkei": 27.5,
+          "feeKaia": 0.0021368325
         },
         {
           "label": "registerPlayer (no inviter) [C]",
-          "tx": "0x5dbf2595d84f6a7f4a39a991adf02bc867d0b60702906d29756e207011797704",
-          "block": 234070627,
+          "tx": "0x4f45bf697edbcc691c22902eaf4a9242a59cbe65c2a5bb07db0eff5f03e50d3a",
+          "block": 234218737,
           "gasUsed": 50422,
-          "gasPriceGkei": 25.05,
-          "feeKaia": 0.0012630711
+          "gasPriceGkei": 25.000000001,
+          "feeKaia": 0.001260550000050422
         },
         {
           "label": "setReferrer (late code within 24 h)",
-          "tx": "0xf817da5f3251a95d83efe8b43966da858eb4dc65321081096721a15065c18d01",
-          "block": 234070630,
+          "tx": "0x22a3a6c6599e016d15b51a0afb07476c2abd6afd3636a2999394de9fef89f996",
+          "block": 234218740,
           "gasUsed": 40324,
-          "gasPriceGkei": 25.000000001,
-          "feeKaia": 0.001008100000040324
+          "gasPriceGkei": 25.05,
+          "feeKaia": 0.0010101162
         },
         {
           "label": "setPlayKey first",
-          "tx": "0xc77beb41fab704dece866ed6495efe7c116ef24a52917323c4aaca8d3701a841",
-          "block": 234070633,
+          "tx": "0x678b7927c2283884503e8507414969ba7ac7e04c6d2c5754fd6d1371a6b4e842",
+          "block": 234218744,
           "gasUsed": 74014,
           "gasPriceGkei": 25,
           "feeKaia": 0.00185035
         },
         {
           "label": "setPlayKey renew (same key)",
-          "tx": "0x58f9c0e8d371c3201e958da57fff9eba3667b2556f43f736b557c1aa186f247b",
-          "block": 234070636,
+          "tx": "0xabd518aab58738eb6532ea9ab009a868823ee8ac5b499fcc6e82c194928ee0cb",
+          "block": 234218747,
           "gasUsed": 37095,
           "gasPriceGkei": 25,
           "feeKaia": 0.000927375
         },
         {
           "label": "setPlayKey first [B]",
-          "tx": "0xb8c29c5331a1ff2f7bd6e6dc1857b49b508b884b1f134adfa390d7cd98d7d1ff",
-          "block": 234070639,
+          "tx": "0x670c196d76c2815da3082388bf557aba50c32df4801678a70e19b450e01ea700",
+          "block": 234218750,
           "gasUsed": 74014,
           "gasPriceGkei": 25,
           "feeKaia": 0.00185035
         },
         {
-          "label": "createDay late, day already open [20783]",
-          "tx": "0xa4ce967a0cfa85d8a277ce0db0ce3333bfb92345e7b03b56e5e7ed303f85b8b7",
-          "block": 234070642,
-          "gasUsed": 272157,
+          "label": "createDay late, day already open [20785]",
+          "tx": "0xafafdfb9fb1ae5931376d4dfa6eef816c40e4064620abd5fd9a795dff0832ef7",
+          "block": 234218753,
+          "gasUsed": 275162,
           "gasPriceGkei": 25.000000001,
-          "feeKaia": 0.006803925000272157
+          "feeKaia": 0.006879050000275162
         },
         {
-          "label": "createDay before the open [20784]",
-          "tx": "0xa0d1bac5f1d7fa8e68195b06bedef32c6707b1cf4cdf135fdd80a80cb34e6ea3",
-          "block": 234070645,
-          "gasUsed": 272217,
+          "label": "createDay before the open [20786]",
+          "tx": "0xf1578dffb2bd9bda3dbc834e5731f9ab66906e3eaa9f8cc841b8f34d803879e4",
+          "block": 234218756,
+          "gasUsed": 275234,
           "gasPriceGkei": 25.000000001,
-          "feeKaia": 0.006805425000272217
+          "feeKaia": 0.006880850000275234
         },
         {
-          "label": "createDay before the open [20785]",
-          "tx": "0x4a2cd23d2aeccc71b8adb3787d4e76683773b12f764dc741ae38a534de2dec5b",
-          "block": 234070648,
-          "gasUsed": 272145,
+          "label": "createDay before the open [20787]",
+          "tx": "0x561d874630fa57a7339b7b93ad957b45563a75c25f0c024fef35bc714fca5df6",
+          "block": 234218759,
+          "gasUsed": 275150,
           "gasPriceGkei": 25.000000001,
-          "feeKaia": 0.006803625000272145
+          "feeKaia": 0.00687875000027515
         },
         {
           "label": "setFrozen true",
-          "tx": "0xe7870998233d32ae0ac904214d0313d65bb1ece32131d1f24d9d6a5d795085a9",
-          "block": 234070652,
+          "tx": "0x93ac8615e12ed9eec52a1f44d701713e1dde7e2111a794ec4b3094bf01e329f6",
+          "block": 234218763,
           "gasUsed": 31778,
           "gasPriceGkei": 25.000000001,
           "feeKaia": 0.000794450000031778
         },
         {
           "label": "setFrozen false",
-          "tx": "0xeebccd08aa91fa336edbe15660e09d3629294d621c7a8b19596fa817e376f657",
-          "block": 234070655,
+          "tx": "0xd93d20d5953a7cf15ce9db7fac792b3cb1678722c28e7bd66cd78eec57587ec0",
+          "block": 234218766,
           "gasUsed": 31670,
           "gasPriceGkei": 25.000000001,
           "feeKaia": 0.00079175000003167
         },
         {
           "label": "predict pause",
-          "tx": "0x3339fecb6cbe0a7f24a4923809456b31744792c2ac1445c06df17f5845aeeda2",
-          "block": 234070657,
+          "tx": "0x5e39f43b0e0e603018aa209de75b3b1f726629860c9b6dd2501842d212812be2",
+          "block": 234218768,
           "gasUsed": 47091,
           "gasPriceGkei": 25.000000001,
           "feeKaia": 0.001177275000047091
         },
         {
           "label": "predict unpause",
-          "tx": "0x0e1f46501b6d84bfbb4c0eb5d8fd6ca1b67426f46a5f27d5fd413be0b5a74da9",
-          "block": 234070660,
-          "gasUsed": 25192,
-          "gasPriceGkei": 27.5,
-          "feeKaia": 0.00069278
+          "tx": "0xe816c94e5fdedf35a9ecb0007de9a3fcb09112263efd0bd96cb6110b89a3fb50",
+          "block": 234218771,
+          "gasUsed": 25214,
+          "gasPriceGkei": 25.000000001,
+          "feeKaia": 0.000630350000025214
         },
         {
           "label": "predict withdrawReserve 1,000 CT",
-          "tx": "0xc0af5ccb7452e0268ac895649b0432e411bb035be7cc1cfe9e1bd02dc9ce6c61",
-          "block": 234070662,
+          "tx": "0x98fdb34c2f9b0792080c91e573f4594af6f52a516dd9a31c40e92c95d6182250",
+          "block": 234218774,
           "gasUsed": 47437,
-          "gasPriceGkei": 27.5,
-          "feeKaia": 0.0013045175
+          "gasPriceGkei": 25.000000001,
+          "feeKaia": 0.001185925000047437
         }
       ],
       "refusals": [
@@ -229,140 +221,140 @@
         }
       ],
       "days": [
-        20783,
-        20784,
-        20785
+        20785,
+        20786,
+        20787
       ],
       "done": true,
-      "finishedAt": "2026-11-26T17:47:31.552Z"
+      "finishedAt": "2026-11-28T10:56:19.493Z"
     },
     "play": {
-      "startedAt": "2026-11-26T17:47:31.733Z",
+      "startedAt": "2026-11-28T10:56:19.674Z",
       "steps": [
         {
           "label": "predict by play key, first of the day [A]",
-          "tx": "0x1f2e10838025bdb9b7209f684897c24a99ab0e01615fcfe52a2f0bb6630d6c12",
-          "block": 234070666,
+          "tx": "0x8a9566c8d77aaddecea4257b07d99348ca5b4c0eb4671576b21aaeda8c1a3dbb",
+          "block": 234218778,
           "gasUsed": 58975,
           "gasPriceGkei": 25,
           "feeKaia": 0.001474375
         },
         {
           "label": "predict by play key, second to fourth [A]",
-          "tx": "0x8a9e46c8e18efc59c3ef693874f939a7c0eecf300d619c7d9ce193725700ec3b",
-          "block": 234070669,
+          "tx": "0x213f4f6716e3f8942a33ef7c8fb8adb2edbcb7463420e704a7f71d99c111bab3",
+          "block": 234218781,
           "gasUsed": 41875,
           "gasPriceGkei": 25,
           "feeKaia": 0.001046875
         },
         {
           "label": "predict by play key, second to fourth [A]",
-          "tx": "0x6ca5325e77ff387e3391dbf6c95f07cc71708217a4abfa1552183683d551c999",
-          "block": 234070672,
+          "tx": "0x1b9f33b8a4e6f8809e383d21c6198cf3ec82758039d71b0459f05281cd8e9545",
+          "block": 234218784,
           "gasUsed": 41895,
           "gasPriceGkei": 25,
           "feeKaia": 0.001047375
         },
         {
           "label": "predict by play key, second to fourth [A]",
-          "tx": "0x2bda67340ef5d37a46f9fbe7331f87cb20a473d952a40c294bd3e90bc8837fe5",
-          "block": 234070675,
+          "tx": "0x948161d9c584f43283c9c2b0077f1d6a91d7beb20804d571b1d4a385576eb28d",
+          "block": 234218787,
           "gasUsed": 41895,
           "gasPriceGkei": 25,
           "feeKaia": 0.001047375
         },
         {
           "label": "predict by play key, fifth, first completed day, no inviter [A]",
-          "tx": "0x2cb6b4f121b5693945c22fb23bd5e72e89d41ca9778af9680b751fddc877568f",
-          "block": 234070678,
+          "tx": "0x582ecdcd68c588a15aa280aefbf9da6f8534411780f52e788821b78bc5b0e87a",
+          "block": 234218790,
           "gasUsed": 119907,
           "gasPriceGkei": 25,
           "feeKaia": 0.002997675
         },
         {
           "label": "predict by play key, first of the day [B]",
-          "tx": "0xb708de5dc8d4ae5c34ab43a08996446cda57f5cb06c2cc5efe968acd8f6a1f59",
-          "block": 234070681,
+          "tx": "0x8b080df8745bdffbec09ffa7ad5c29c5a5888a9ca6b4fc3fc1d142851d3733ce",
+          "block": 234218796,
           "gasUsed": 58975,
           "gasPriceGkei": 25,
           "feeKaia": 0.001474375
         },
         {
           "label": "predict by play key, second to fourth [B]",
-          "tx": "0xeca2ef0f9e35b4218c20313b5292fa2d69882105b9c38a483171ba87d4fe99c2",
-          "block": 234070684,
+          "tx": "0x71180a43724887d2435c3919fb819443f24ec0d0766117c3759ca93ac5dc2adf",
+          "block": 234218799,
           "gasUsed": 41895,
           "gasPriceGkei": 25,
           "feeKaia": 0.001047375
         },
         {
           "label": "predict by play key, second to fourth [B]",
-          "tx": "0x232696460f0b2bbe024a35c08a09f260def1867900a3779ba70f2874379327d1",
-          "block": 234070687,
+          "tx": "0xe95b8c2ece3d8f047aac567c5142a474705f927141624be7cd26f3bce7b421e6",
+          "block": 234218802,
           "gasUsed": 41875,
           "gasPriceGkei": 25,
           "feeKaia": 0.001046875
         },
         {
           "label": "predict by play key, second to fourth [B]",
-          "tx": "0xb85f07a7c9a6d8476f851a197c2cc29d7c3f19e9fb32c56c4c566168d24f8913",
-          "block": 234070690,
+          "tx": "0x49adb0158d7874c7e7eee276572d07dd02a184b6093cd1797648de0701cda16d",
+          "block": 234218805,
           "gasUsed": 41895,
           "gasPriceGkei": 25,
           "feeKaia": 0.001047375
         },
         {
           "label": "predict by play key, fifth, invited, first completed day (bonus and welcome) [B]",
-          "tx": "0x9b42c9cdd7a6ae99f640707c75c818ba0662040f93cb3d8d87a1e903bc504aef",
-          "block": 234070693,
+          "tx": "0x9265e975a86b11170d5639e16e92a699df2a9009f2e04d96cdebdfba0212ed01",
+          "block": 234218808,
           "gasUsed": 125492,
           "gasPriceGkei": 25,
           "feeKaia": 0.0031373
         },
         {
           "label": "predict by wallet [C]",
-          "tx": "0x6356c46feb7e8acc3f23d5b23241cf2e4229cebea5217cfb67ac533909933b87",
-          "block": 234070696,
+          "tx": "0x9ba4ded0bb6ed6e9410427ff5f0ee56a4a226ff1975009b1f5aeb82883de148f",
+          "block": 234218811,
           "gasUsed": 56597,
           "gasPriceGkei": 25,
           "feeKaia": 0.001414925
         },
         {
           "label": "predict by wallet [C]",
-          "tx": "0x0a76ba727e7173a0392e7eb4b2e8848282f5096ae987a74a31d363593c2a439a",
-          "block": 234070699,
+          "tx": "0x68fd5ce06b8b6b37eb809bae5dc7d618d470d86c2dafd7d43be3ef22490638be",
+          "block": 234218814,
           "gasUsed": 39497,
           "gasPriceGkei": 25,
           "feeKaia": 0.000987425
         },
         {
           "label": "predict by wallet [C]",
-          "tx": "0x51b472dfe1c3cd6be91f6d38297e1b38a73b241da5ae804639476ca95869bf7a",
-          "block": 234070702,
+          "tx": "0xac49463c726d17d7b3987f8d27977c0ba66994a329f23340d5c53789f43463b5",
+          "block": 234218817,
           "gasUsed": 39497,
           "gasPriceGkei": 25,
           "feeKaia": 0.000987425
         },
         {
           "label": "predict by wallet [C]",
-          "tx": "0x41d5af8769c6a5fa69ff7c933f7f4127e167d52a29ee3de1b837ed421d39100f",
-          "block": 234070705,
+          "tx": "0xf20d960b3a87de2b5983b1868a7367a394fddfea1f0980c9af876ecadae5fa93",
+          "block": 234218820,
           "gasUsed": 39497,
           "gasPriceGkei": 25,
           "feeKaia": 0.000987425
         },
         {
           "label": "predict by wallet, fifth, late code (bonus and welcome) [C]",
-          "tx": "0x1ac1a0aa3bd844c01df6e484653beba8f81e0d886733c74fe345fc651a3e7518",
-          "block": 234070708,
+          "tx": "0x0c206b8d7fed56aa171d4475b9aacff715e50e17ec7754ad94f5a1eed169c07b",
+          "block": 234218823,
           "gasUsed": 123114,
           "gasPriceGkei": 25,
           "feeKaia": 0.00307785
         },
         {
           "label": "revokePlayKey (by the player)",
-          "tx": "0x446dd512a1759c31481e4267bfd7fcd241779df49246855e08b66e77e7227887",
-          "block": 234070711,
+          "tx": "0x87e051c9bcd82dd651e145f1651f738c81b4ffffb0edb2ccb5771ee2ef16fe57",
+          "block": 234218826,
           "gasUsed": 28362,
           "gasPriceGkei": 25,
           "feeKaia": 0.00070905
@@ -382,20 +374,17 @@
           "ok": true
         }
       ],
-      "dayId": 20783,
+      "dayId": 20785,
       "points": {
         "A": 120,
         "B": 200,
         "C": 200
       },
       "done": true,
-      "finishedAt": "2026-11-26T17:48:20.859Z"
+      "finishedAt": "2026-11-28T10:57:11.975Z"
     }
   },
   "gas": {
-    "CT transfer 20,000 to player A": [
-      34498
-    ],
     "registerPlayer (no inviter)": [
       50398,
       50422
@@ -413,11 +402,11 @@
       37095
     ],
     "createDay late, day already open": [
-      272157
+      275162
     ],
     "createDay before the open": [
-      272217,
-      272145
+      275234,
+      275150
     ],
     "setFrozen true": [
       31778
@@ -429,7 +418,7 @@
       47091
     ],
     "predict unpause": [
-      25192
+      25214
     ],
     "predict withdrawReserve 1,000 CT": [
       47437
@@ -460,7 +449,7 @@
   },
   "contracts": {
     "ct": "0xa8e540C5b5804D4BF2Dd2110a307a99E76C6Bd9E",
-    "predict": "0xdA6f0C9723056F6935cd011294C6b7A50673C40a",
+    "predict": "0xa3F8a699c495a2c9C0b23B557a6313fE6A7BB0Ce",
     "staking": "0x4978C46902a626437f6f092abB1cfa91705d3017",
     "stakingShortLock": "0xA0BE33166871862DC37164f1c9cBf1c6da82613D"
   },
@@ -473,7 +462,7 @@
     "playKeyB": "0xC4B513e50c115EC19363453a4fE41dc387E4AaC2",
     "note": "A registered without inviter; B registered with A as inviter; C registered alone and linked to A later (late invite code). Keys derived from the test key, never stored."
   },
-  "updatedAt": "2026-11-26T17:48:21.045Z",
+  "updatedAt": "2026-11-28T10:57:12.156Z",
   "retired": [
     {
       "contracts": {
@@ -1008,14 +997,497 @@
         "airdrop": "pending"
       },
       "archivedAt": "2026-11-26T17:46:43.094Z"
+    },
+    {
+      "contracts": {
+        "ct": "0xa8e540C5b5804D4BF2Dd2110a307a99E76C6Bd9E",
+        "predict": "0xdA6f0C9723056F6935cd011294C6b7A50673C40a",
+        "staking": "0x4978C46902a626437f6f092abB1cfa91705d3017",
+        "stakingShortLock": "0xA0BE33166871862DC37164f1c9cBf1c6da82613D"
+      },
+      "days": [
+        20783,
+        20784,
+        20785
+      ],
+      "playDay": 20783,
+      "phases": {
+        "staking": {
+          "done": true,
+          "carriedOver": "staking ran live against the same staking contracts: see retired[0].phases.setup",
+          "shortLockPosition": {
+            "id": 0,
+            "principalCt": "10000.0",
+            "interestPaidCt": "0.001902587519025875",
+            "aprBps": 1000,
+            "lockSeconds": 60
+          },
+          "mainStakingPosition": {
+            "id": 0,
+            "unlocksAt": "2026-12-26T17:34:46.000Z"
+          }
+        },
+        "setup": {
+          "startedAt": "2026-11-26T17:46:43.136Z",
+          "steps": [
+            {
+              "label": "CT transfer 20,000 to player A",
+              "tx": "0x0cad7f526b0f86501c3151ba9dfe1b65373dfe1ab662fc0ca9a5fd3875937b00",
+              "block": 234070618,
+              "gasUsed": 34498,
+              "gasPriceGkei": 25.000000001,
+              "feeKaia": 0.000862450000034498
+            },
+            {
+              "label": "registerPlayer (no inviter)",
+              "tx": "0x2f3b0e071bb88f0dd0b61c59fff089799d6ec799a4a389b76d0e9f437fdb2c25",
+              "block": 234070621,
+              "gasUsed": 50398,
+              "gasPriceGkei": 27.5,
+              "feeKaia": 0.001385945
+            },
+            {
+              "label": "registerPlayer (with inviter)",
+              "tx": "0x2bc992c480ec5857a5a75bfd79dc6403bfaf95109aedccefb6c4716a18f5bd59",
+              "block": 234070624,
+              "gasUsed": 77703,
+              "gasPriceGkei": 25.000000001,
+              "feeKaia": 0.001942575000077703
+            },
+            {
+              "label": "registerPlayer (no inviter) [C]",
+              "tx": "0x5dbf2595d84f6a7f4a39a991adf02bc867d0b60702906d29756e207011797704",
+              "block": 234070627,
+              "gasUsed": 50422,
+              "gasPriceGkei": 25.05,
+              "feeKaia": 0.0012630711
+            },
+            {
+              "label": "setReferrer (late code within 24 h)",
+              "tx": "0xf817da5f3251a95d83efe8b43966da858eb4dc65321081096721a15065c18d01",
+              "block": 234070630,
+              "gasUsed": 40324,
+              "gasPriceGkei": 25.000000001,
+              "feeKaia": 0.001008100000040324
+            },
+            {
+              "label": "setPlayKey first",
+              "tx": "0xc77beb41fab704dece866ed6495efe7c116ef24a52917323c4aaca8d3701a841",
+              "block": 234070633,
+              "gasUsed": 74014,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.00185035
+            },
+            {
+              "label": "setPlayKey renew (same key)",
+              "tx": "0x58f9c0e8d371c3201e958da57fff9eba3667b2556f43f736b557c1aa186f247b",
+              "block": 234070636,
+              "gasUsed": 37095,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.000927375
+            },
+            {
+              "label": "setPlayKey first [B]",
+              "tx": "0xb8c29c5331a1ff2f7bd6e6dc1857b49b508b884b1f134adfa390d7cd98d7d1ff",
+              "block": 234070639,
+              "gasUsed": 74014,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.00185035
+            },
+            {
+              "label": "createDay late, day already open [20783]",
+              "tx": "0xa4ce967a0cfa85d8a277ce0db0ce3333bfb92345e7b03b56e5e7ed303f85b8b7",
+              "block": 234070642,
+              "gasUsed": 272157,
+              "gasPriceGkei": 25.000000001,
+              "feeKaia": 0.006803925000272157
+            },
+            {
+              "label": "createDay before the open [20784]",
+              "tx": "0xa0d1bac5f1d7fa8e68195b06bedef32c6707b1cf4cdf135fdd80a80cb34e6ea3",
+              "block": 234070645,
+              "gasUsed": 272217,
+              "gasPriceGkei": 25.000000001,
+              "feeKaia": 0.006805425000272217
+            },
+            {
+              "label": "createDay before the open [20785]",
+              "tx": "0x4a2cd23d2aeccc71b8adb3787d4e76683773b12f764dc741ae38a534de2dec5b",
+              "block": 234070648,
+              "gasUsed": 272145,
+              "gasPriceGkei": 25.000000001,
+              "feeKaia": 0.006803625000272145
+            },
+            {
+              "label": "setFrozen true",
+              "tx": "0xe7870998233d32ae0ac904214d0313d65bb1ece32131d1f24d9d6a5d795085a9",
+              "block": 234070652,
+              "gasUsed": 31778,
+              "gasPriceGkei": 25.000000001,
+              "feeKaia": 0.000794450000031778
+            },
+            {
+              "label": "setFrozen false",
+              "tx": "0xeebccd08aa91fa336edbe15660e09d3629294d621c7a8b19596fa817e376f657",
+              "block": 234070655,
+              "gasUsed": 31670,
+              "gasPriceGkei": 25.000000001,
+              "feeKaia": 0.00079175000003167
+            },
+            {
+              "label": "predict pause",
+              "tx": "0x3339fecb6cbe0a7f24a4923809456b31744792c2ac1445c06df17f5845aeeda2",
+              "block": 234070657,
+              "gasUsed": 47091,
+              "gasPriceGkei": 25.000000001,
+              "feeKaia": 0.001177275000047091
+            },
+            {
+              "label": "predict unpause",
+              "tx": "0x0e1f46501b6d84bfbb4c0eb5d8fd6ca1b67426f46a5f27d5fd413be0b5a74da9",
+              "block": 234070660,
+              "gasUsed": 25192,
+              "gasPriceGkei": 27.5,
+              "feeKaia": 0.00069278
+            },
+            {
+              "label": "predict withdrawReserve 1,000 CT",
+              "tx": "0xc0af5ccb7452e0268ac895649b0432e411bb035be7cc1cfe9e1bd02dc9ce6c61",
+              "block": 234070662,
+              "gasUsed": 47437,
+              "gasPriceGkei": 27.5,
+              "feeKaia": 0.0013045175
+            }
+          ],
+          "refusals": [
+            {
+              "label": "setReferrer a second time",
+              "expected": "ReferrerAlreadySet",
+              "got": "ReferrerAlreadySet",
+              "ok": true
+            },
+            {
+              "label": "registerPlayer twice",
+              "expected": "AlreadyRegistered",
+              "got": "AlreadyRegistered",
+              "ok": true
+            },
+            {
+              "label": "setPlayKey with another player's key",
+              "expected": "PlayKeyTaken",
+              "got": "PlayKeyTaken",
+              "ok": true
+            },
+            {
+              "label": "setPlayKey by an unregistered address",
+              "expected": "NotRegistered",
+              "got": "NotRegistered",
+              "ok": true
+            },
+            {
+              "label": "createDay for a past day",
+              "expected": "BadTimes",
+              "got": "BadTimes",
+              "ok": true
+            },
+            {
+              "label": "createDay twice",
+              "expected": "DayExists",
+              "got": "DayExists",
+              "ok": true
+            },
+            {
+              "label": "predict on a day not created",
+              "expected": "DayNotOpen",
+              "got": "DayNotOpen",
+              "ok": true
+            },
+            {
+              "label": "predict before the day opens",
+              "expected": "DayNotOpen",
+              "got": "DayNotOpen",
+              "ok": true
+            },
+            {
+              "label": "convert by a new account",
+              "expected": "AccountTooNew",
+              "got": "AccountTooNew",
+              "ok": true
+            },
+            {
+              "label": "setPlayKey while frozen",
+              "expected": "Frozen",
+              "got": "Frozen",
+              "ok": true
+            },
+            {
+              "label": "predict while paused",
+              "expected": "EnforcedPause",
+              "got": "EnforcedPause",
+              "ok": true
+            },
+            {
+              "label": "convert while paused",
+              "expected": "EnforcedPause",
+              "got": "EnforcedPause",
+              "ok": true
+            },
+            {
+              "label": "withdrawReserve to a non treasury",
+              "expected": "NotTreasury",
+              "got": "NotTreasury",
+              "ok": true
+            }
+          ],
+          "days": [
+            20783,
+            20784,
+            20785
+          ],
+          "done": true,
+          "finishedAt": "2026-11-26T17:47:31.552Z"
+        },
+        "play": {
+          "startedAt": "2026-11-26T17:47:31.733Z",
+          "steps": [
+            {
+              "label": "predict by play key, first of the day [A]",
+              "tx": "0x1f2e10838025bdb9b7209f684897c24a99ab0e01615fcfe52a2f0bb6630d6c12",
+              "block": 234070666,
+              "gasUsed": 58975,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.001474375
+            },
+            {
+              "label": "predict by play key, second to fourth [A]",
+              "tx": "0x8a9e46c8e18efc59c3ef693874f939a7c0eecf300d619c7d9ce193725700ec3b",
+              "block": 234070669,
+              "gasUsed": 41875,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.001046875
+            },
+            {
+              "label": "predict by play key, second to fourth [A]",
+              "tx": "0x6ca5325e77ff387e3391dbf6c95f07cc71708217a4abfa1552183683d551c999",
+              "block": 234070672,
+              "gasUsed": 41895,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.001047375
+            },
+            {
+              "label": "predict by play key, second to fourth [A]",
+              "tx": "0x2bda67340ef5d37a46f9fbe7331f87cb20a473d952a40c294bd3e90bc8837fe5",
+              "block": 234070675,
+              "gasUsed": 41895,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.001047375
+            },
+            {
+              "label": "predict by play key, fifth, first completed day, no inviter [A]",
+              "tx": "0x2cb6b4f121b5693945c22fb23bd5e72e89d41ca9778af9680b751fddc877568f",
+              "block": 234070678,
+              "gasUsed": 119907,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.002997675
+            },
+            {
+              "label": "predict by play key, first of the day [B]",
+              "tx": "0xb708de5dc8d4ae5c34ab43a08996446cda57f5cb06c2cc5efe968acd8f6a1f59",
+              "block": 234070681,
+              "gasUsed": 58975,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.001474375
+            },
+            {
+              "label": "predict by play key, second to fourth [B]",
+              "tx": "0xeca2ef0f9e35b4218c20313b5292fa2d69882105b9c38a483171ba87d4fe99c2",
+              "block": 234070684,
+              "gasUsed": 41895,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.001047375
+            },
+            {
+              "label": "predict by play key, second to fourth [B]",
+              "tx": "0x232696460f0b2bbe024a35c08a09f260def1867900a3779ba70f2874379327d1",
+              "block": 234070687,
+              "gasUsed": 41875,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.001046875
+            },
+            {
+              "label": "predict by play key, second to fourth [B]",
+              "tx": "0xb85f07a7c9a6d8476f851a197c2cc29d7c3f19e9fb32c56c4c566168d24f8913",
+              "block": 234070690,
+              "gasUsed": 41895,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.001047375
+            },
+            {
+              "label": "predict by play key, fifth, invited, first completed day (bonus and welcome) [B]",
+              "tx": "0x9b42c9cdd7a6ae99f640707c75c818ba0662040f93cb3d8d87a1e903bc504aef",
+              "block": 234070693,
+              "gasUsed": 125492,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.0031373
+            },
+            {
+              "label": "predict by wallet [C]",
+              "tx": "0x6356c46feb7e8acc3f23d5b23241cf2e4229cebea5217cfb67ac533909933b87",
+              "block": 234070696,
+              "gasUsed": 56597,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.001414925
+            },
+            {
+              "label": "predict by wallet [C]",
+              "tx": "0x0a76ba727e7173a0392e7eb4b2e8848282f5096ae987a74a31d363593c2a439a",
+              "block": 234070699,
+              "gasUsed": 39497,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.000987425
+            },
+            {
+              "label": "predict by wallet [C]",
+              "tx": "0x51b472dfe1c3cd6be91f6d38297e1b38a73b241da5ae804639476ca95869bf7a",
+              "block": 234070702,
+              "gasUsed": 39497,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.000987425
+            },
+            {
+              "label": "predict by wallet [C]",
+              "tx": "0x41d5af8769c6a5fa69ff7c933f7f4127e167d52a29ee3de1b837ed421d39100f",
+              "block": 234070705,
+              "gasUsed": 39497,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.000987425
+            },
+            {
+              "label": "predict by wallet, fifth, late code (bonus and welcome) [C]",
+              "tx": "0x1ac1a0aa3bd844c01df6e484653beba8f81e0d886733c74fe345fc651a3e7518",
+              "block": 234070708,
+              "gasUsed": 123114,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.00307785
+            },
+            {
+              "label": "revokePlayKey (by the player)",
+              "tx": "0x446dd512a1759c31481e4267bfd7fcd241779df49246855e08b66e77e7227887",
+              "block": 234070711,
+              "gasUsed": 28362,
+              "gasPriceGkei": 25,
+              "feeKaia": 0.00070905
+            }
+          ],
+          "refusals": [
+            {
+              "label": "predict the same market twice",
+              "expected": "AlreadyPredicted",
+              "got": "AlreadyPredicted",
+              "ok": true
+            },
+            {
+              "label": "predict by a revoked key",
+              "expected": "NotRegistered",
+              "got": "NotRegistered",
+              "ok": true
+            }
+          ],
+          "dayId": 20783,
+          "points": {
+            "A": 120,
+            "B": 200,
+            "C": 200
+          },
+          "done": true,
+          "finishedAt": "2026-11-26T17:48:20.859Z"
+        }
+      },
+      "gas": {
+        "CT transfer 20,000 to player A": [
+          34498
+        ],
+        "registerPlayer (no inviter)": [
+          50398,
+          50422
+        ],
+        "registerPlayer (with inviter)": [
+          77703
+        ],
+        "setReferrer (late code within 24 h)": [
+          40324
+        ],
+        "setPlayKey first": [
+          74014
+        ],
+        "setPlayKey renew (same key)": [
+          37095
+        ],
+        "createDay late, day already open": [
+          272157
+        ],
+        "createDay before the open": [
+          272217,
+          272145
+        ],
+        "setFrozen true": [
+          31778
+        ],
+        "setFrozen false": [
+          31670
+        ],
+        "predict pause": [
+          47091
+        ],
+        "predict unpause": [
+          25192
+        ],
+        "predict withdrawReserve 1,000 CT": [
+          47437
+        ],
+        "predict by play key, first of the day": [
+          58975
+        ],
+        "predict by play key, second to fourth": [
+          41875,
+          41895
+        ],
+        "predict by play key, fifth, first completed day, no inviter": [
+          119907
+        ],
+        "predict by play key, fifth, invited, first completed day (bonus and welcome)": [
+          125492
+        ],
+        "predict by wallet": [
+          56597,
+          39497
+        ],
+        "predict by wallet, fifth, late code (bonus and welcome)": [
+          123114
+        ],
+        "revokePlayKey (by the player)": [
+          28362
+        ]
+      },
+      "status": {
+        "setup": "done",
+        "staking": "done",
+        "play": "done",
+        "resolve": "pending",
+        "settle": "pending",
+        "params": "pending",
+        "airdrop": "pending",
+        "convert": "pending"
+      },
+      "archivedAt": "2026-11-28T10:55:32.091Z"
     }
   ],
   "days": [
-    20783,
-    20784,
-    20785
+    20785,
+    20786,
+    20787
   ],
-  "playDay": 20783,
+  "playDay": 20785,
   "status": {
     "setup": "done",
     "staking": "done",

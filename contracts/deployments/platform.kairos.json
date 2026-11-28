@@ -2,7 +2,7 @@
   "network": "kairos",
   "chainId": 1001,
   "note": "Platform test deploy on Kairos with the throwaway test key. Owner, operator, treasury and pauser are all the test key. stakingShortLock is a TEST build (StakingShortLock, short days), never the main staking contract.",
-  "updatedAt": "2026-11-26T17:44:54.741Z",
+  "updatedAt": "2026-11-28T10:53:33.642Z",
   "owner": "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
   "operator": "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
   "treasury": "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
@@ -34,7 +34,7 @@
       "sourcify": {
         "status": "already verified",
         "match": "exact_match",
-        "checkedAt": "2026-11-26T17:45:10.851Z",
+        "checkedAt": "2026-11-28T10:53:52.508Z",
         "url": "https://repo.sourcify.dev/1001/0x4978C46902a626437f6f092abB1cfa91705d3017"
       }
     },
@@ -60,36 +60,36 @@
       "sourcify": {
         "status": "already verified",
         "match": "exact_match",
-        "checkedAt": "2026-11-26T17:45:11.310Z",
+        "checkedAt": "2026-11-28T10:53:52.697Z",
         "url": "https://repo.sourcify.dev/1001/0xA0BE33166871862DC37164f1c9cBf1c6da82613D"
       }
     },
     "predictLogic": {
       "contract": "PredictLogic",
-      "address": "0x3451E48D666cDf832659fDd4926bB2a7EB5e17e5",
-      "deployBlock": 234070510,
-      "tx": "0x9148ad59fbe04fdeba04cf3ac652f39e44fb22bdc71db0c3907b3a70faaba5fd",
+      "address": "0xB833B2ceD92E0038aec4A4719bc768ED32BD121c",
+      "deployBlock": 234218614,
+      "tx": "0x55395a7427519d323ca43b2eee40acbcb527df45a01026ddc0c6483139b7f920",
       "constructorArgs": [],
       "gas": {
-        "tx": "0x9148ad59fbe04fdeba04cf3ac652f39e44fb22bdc71db0c3907b3a70faaba5fd",
-        "block": 234070510,
-        "gasUsed": 1500294,
+        "tx": "0x55395a7427519d323ca43b2eee40acbcb527df45a01026ddc0c6483139b7f920",
+        "block": 234218614,
+        "gasUsed": 1551095,
         "gasPriceGkei": 25.000000001,
-        "feeKaia": 0.037507350001500295
+        "feeKaia": 0.038777375001551095
       },
       "sourcify": {
         "status": "verified",
         "match": "exact_match",
-        "verificationId": "ff81ed2a-f88f-4ce5-9d2f-e40abb7d8ac7",
-        "checkedAt": "2026-11-26T17:45:21.544Z",
-        "url": "https://repo.sourcify.dev/1001/0x3451E48D666cDf832659fDd4926bB2a7EB5e17e5"
+        "verificationId": "c2acb7bf-fd42-4617-bc52-1d3ffdf6fd25",
+        "checkedAt": "2026-11-28T10:54:07.049Z",
+        "url": "https://repo.sourcify.dev/1001/0xB833B2ceD92E0038aec4A4719bc768ED32BD121c"
       }
     },
     "predict": {
       "contract": "CojamPredict",
-      "address": "0xdA6f0C9723056F6935cd011294C6b7A50673C40a",
-      "deployBlock": 234070513,
-      "tx": "0x7ec26a0877baa22077f81558dc6cc1ecd1df342b86efc9380319ee4a6c327e23",
+      "address": "0xa3F8a699c495a2c9C0b23B557a6313fE6A7BB0Ce",
+      "deployBlock": 234218618,
+      "tx": "0x89c47a50544f4a3a741a1ccc3918c58fdd08b55fa70fb55adfa10fc6a1200f29",
       "constructorArgs": [
         "0xa8e540C5b5804D4BF2Dd2110a307a99E76C6Bd9E",
         "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
@@ -97,21 +97,21 @@
         "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1"
       ],
       "libraries": {
-        "PredictLogic": "0x3451E48D666cDf832659fDd4926bB2a7EB5e17e5"
+        "PredictLogic": "0xB833B2ceD92E0038aec4A4719bc768ED32BD121c"
       },
       "gas": {
-        "tx": "0x7ec26a0877baa22077f81558dc6cc1ecd1df342b86efc9380319ee4a6c327e23",
-        "block": 234070513,
-        "gasUsed": 5564060,
+        "tx": "0x89c47a50544f4a3a741a1ccc3918c58fdd08b55fa70fb55adfa10fc6a1200f29",
+        "block": 234218618,
+        "gasUsed": 5606887,
         "gasPriceGkei": 25.000000001,
-        "feeKaia": 0.13910150000556407
+        "feeKaia": 0.14017217500560689
       },
       "sourcify": {
         "status": "verified",
         "match": "exact_match",
-        "verificationId": "0b1022a3-fcb5-458b-93a2-f8ea212f6a38",
-        "checkedAt": "2026-11-26T17:45:41.276Z",
-        "url": "https://repo.sourcify.dev/1001/0xdA6f0C9723056F6935cd011294C6b7A50673C40a"
+        "verificationId": "a0990192-9e8b-4183-8d6b-cbe9d69265fb",
+        "checkedAt": "2026-11-28T10:54:20.132Z",
+        "url": "https://repo.sourcify.dev/1001/0xa3F8a699c495a2c9C0b23B557a6313fE6A7BB0Ce"
       }
     }
   },
@@ -137,12 +137,12 @@
     },
     {
       "to": "predict",
-      "address": "0xdA6f0C9723056F6935cd011294C6b7A50673C40a",
+      "address": "0xa3F8a699c495a2c9C0b23B557a6313fE6A7BB0Ce",
       "amountCt": "100000",
-      "tx": "0xb4e6134df4c071490a1f666befdbf0ed9b5a5cb0eda71f02ea8a6245c4d34fb1",
-      "block": 234070557,
+      "tx": "0xdf874b075bd34cfe509f268de51c4310c22e73b171ae69d219c28a04d8400542",
+      "block": 234218667,
       "gasUsed": 51622,
-      "at": "2026-11-26T17:45:46.458Z"
+      "at": "2026-11-28T10:54:32.023Z"
     }
   ],
   "retired": [
@@ -208,6 +208,71 @@
           "block": 234069510,
           "gasUsed": 51610,
           "at": "2026-11-26T17:28:19.621Z"
+        }
+      ]
+    },
+    {
+      "retiredAt": "2026-11-28T10:53:33.642Z",
+      "reason": "CojamPredict / PredictLogic changed; redeployed",
+      "predictLogic": {
+        "contract": "PredictLogic",
+        "address": "0x3451E48D666cDf832659fDd4926bB2a7EB5e17e5",
+        "deployBlock": 234070510,
+        "tx": "0x9148ad59fbe04fdeba04cf3ac652f39e44fb22bdc71db0c3907b3a70faaba5fd",
+        "constructorArgs": [],
+        "gas": {
+          "tx": "0x9148ad59fbe04fdeba04cf3ac652f39e44fb22bdc71db0c3907b3a70faaba5fd",
+          "block": 234070510,
+          "gasUsed": 1500294,
+          "gasPriceGkei": 25.000000001,
+          "feeKaia": 0.037507350001500295
+        },
+        "sourcify": {
+          "status": "verified",
+          "match": "exact_match",
+          "verificationId": "ff81ed2a-f88f-4ce5-9d2f-e40abb7d8ac7",
+          "checkedAt": "2026-11-26T17:45:21.544Z",
+          "url": "https://repo.sourcify.dev/1001/0x3451E48D666cDf832659fDd4926bB2a7EB5e17e5"
+        }
+      },
+      "predict": {
+        "contract": "CojamPredict",
+        "address": "0xdA6f0C9723056F6935cd011294C6b7A50673C40a",
+        "deployBlock": 234070513,
+        "tx": "0x7ec26a0877baa22077f81558dc6cc1ecd1df342b86efc9380319ee4a6c327e23",
+        "constructorArgs": [
+          "0xa8e540C5b5804D4BF2Dd2110a307a99E76C6Bd9E",
+          "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+          "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+          "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1"
+        ],
+        "libraries": {
+          "PredictLogic": "0x3451E48D666cDf832659fDd4926bB2a7EB5e17e5"
+        },
+        "gas": {
+          "tx": "0x7ec26a0877baa22077f81558dc6cc1ecd1df342b86efc9380319ee4a6c327e23",
+          "block": 234070513,
+          "gasUsed": 5564060,
+          "gasPriceGkei": 25.000000001,
+          "feeKaia": 0.13910150000556407
+        },
+        "sourcify": {
+          "status": "verified",
+          "match": "exact_match",
+          "verificationId": "0b1022a3-fcb5-458b-93a2-f8ea212f6a38",
+          "checkedAt": "2026-11-26T17:45:41.276Z",
+          "url": "https://repo.sourcify.dev/1001/0xdA6f0C9723056F6935cd011294C6b7A50673C40a"
+        }
+      },
+      "funding": [
+        {
+          "to": "predict",
+          "address": "0xdA6f0C9723056F6935cd011294C6b7A50673C40a",
+          "amountCt": "100000",
+          "tx": "0xb4e6134df4c071490a1f666befdbf0ed9b5a5cb0eda71f02ea8a6245c4d34fb1",
+          "block": 234070557,
+          "gasUsed": 51622,
+          "at": "2026-11-26T17:45:46.458Z"
         }
       ]
     }
