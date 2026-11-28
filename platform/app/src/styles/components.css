@@ -1537,11 +1537,10 @@ button.pin .tag, aside.pin .tag { background: var(--ink-2); color: var(--on-ink)
 .krow--lead .krow-name { font-weight: var(--fw-bold); }
 .krow-name .mono, .krow--lead .krow-name .mono { font-size: 1em; font-weight: inherit; }
 
-/* 4. day done, while the last pick can still be undone and while it is saved: "+100P" stands in its final place as an outline and fills in when it is paid */
+/* 4. day done, while the last pick can still be undone and while it is saved: "+100P" stands in its final place in grey and takes the reward blue when it is paid */
 .is-moment.is-saving .done-fig { opacity: 1; }
-.done-fig { transition: color 320ms var(--ease-out), -webkit-text-stroke-color 320ms var(--ease-out); -webkit-text-stroke: 1.5px transparent; paint-order: stroke fill; }
-.done-fig.is-wait, .is-moment.is-saving .done-fig { color: transparent; -webkit-text-stroke: 1.5px var(--ink-2); }
-@supports not (-webkit-text-stroke: 1px black) { .done-fig.is-wait, .is-moment.is-saving .done-fig { color: var(--ink-3); } }
+.done-fig { transition: color 320ms var(--ease-out); }
+.done-fig.is-wait, .is-moment.is-saving .done-fig { color: var(--ink-2); }
 
 /* 1. home card from 600 px of height: the picture always stays (72 px at least); the card closes up around it first */
 .qcard.is-snug .qimg { min-height: 72px; margin-top: var(--s-8); }

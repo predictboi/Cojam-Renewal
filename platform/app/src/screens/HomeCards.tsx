@@ -99,8 +99,8 @@ export const closedSet = (href: string) => empty({ icon: 'refresh', title: t('h.
 const endRing = (id?: string) => '<div class="end-mark" aria-hidden="true">' + icon('check', 30) + '</div><span class="fuse fuse--end" aria-hidden="true"' + (id ? ' id="' + id + '"' : '') + '></span>';
 
 /* ---------- the deck: React renders the cards once, the engine moves them ---------- */
-const Cards = memo(function Cards({ cards, failedN, offline, noimgN }: { cards: Q[]; failedN?: number; offline: boolean; noimgN?: number }) {
-  return <Html as="div" style={{ display: 'contents' }} html={cards.map((q) => qcard(q, { failed: failedN === q.n, disabled: offline, noimg: noimgN === q.n, final: true })).join('')} />;
+const Cards = memo(function Cards({ cards, failed, offline, noimgN }: { cards: Q[]; failed: number[]; offline: boolean; noimgN?: number }) {
+  return <Html as="div" style={{ display: 'contents' }} html={cards.map((q) => qcard(q, { failed: failed.includes(q.n), disabled: offline, noimg: noimgN === q.n, final: true })).join('')} />;
 });
 
 /** the fifth pick: day done opens with the Undo of that pick for what is left of its window */
@@ -133,6 +133,8 @@ export default function HomeCards() {
   // the deck is built from the unanswered cards when the set (or the language, or a failed pick) changes
   const failedIds = dayItems.filter((i) => i.state === 'failed').map((i) => i.id).join(',');
   const deckKey = (today.data?.dayId ?? 0) + ':' + lang + ':' + failedIds + ':' + st;
+  // a pick that was not saved: its card is back on the deck and says so itself (no toast over the card)
+  const failedNs = useMemo(() => slots.filter((s) => s.seg === 'fail').map((s) => s.q.n), [deckKey, today.dataUpdatedAt > 0]); // eslint-disable-line
   const deckCards = useMemo(() => {
     const open = slots.filter((s) => !s.answered).map((s) => s.q);
     if (st === 'failed') open.sort((a, b) => (a.n === 2 ? -1 : 0) - (b.n === 2 ? -1 : 0));
@@ -153,7 +155,6 @@ export default function HomeCards() {
   useEffect(() => {
     const n = takeLeft();
     if (n) toast(n > 1 ? t('h.left.savedn', { n }) : t('h.left.saved'));
-    if (st === 'failed') toast(t('h.toast.fail', { n: 2 }), { btn: t('common.retry') });
   }, []);
 
   // the engine
@@ -267,7 +268,7 @@ export default function HomeCards() {
         {playBannerHtml(bannerState, slow) && <Html as="div" style={{ display: 'contents' }} html={playBannerHtml(bannerState, slow)} />}
         <div className="deck" id="deck" ref={deckRef} key={deckKey}>
           <DeckEnd count={count} held={held} onFinish={finishNow} />
-          <Cards cards={deckCards} failedN={st === 'failed' ? 2 : undefined} offline={offline} noimgN={st === 'noimage' ? 1 : undefined} />
+          <Cards cards={deckCards} failed={failedNs} offline={offline} noimgN={st === 'noimage' ? 1 : undefined} />
         </div>
       </>
     );

@@ -1,4 +1,4 @@
 /* App only: React wraps some HTML string parts in display: contents boxes; their children get the same rule as .pg > * */
 .pg > [style*="contents"] > * { min-width: 0; }
-/* App only: the deck measures its front card with transitions off (deck/engine.ts fit) */
-.qcard.is-measuring, .qcard.is-measuring * { transition: none !important; }
+/* App only: the deck (deck/engine.ts fit) and the ranking table (whole rows above the own bar) measure with transitions off */
+.is-measuring, .is-measuring * { transition: none !important; }

@@ -64,9 +64,10 @@ export default function Withdraw() {
   };
   useEffect(() => {
     const show = ({ review: 'review', signing: 'signing', sending: 'sending', success: 'success', failed: 'failed' } as const)[st as 'review'];
+    if (!q.data) return;   // the review and success rows need the balance
     if (show) showTx(show, txCfg(GOOD, 250, '250'));
     return () => { if (show) useTx.setState({ pending: false }); };
-  }, [st]);
+  }, [st, !!q.data]);
 
   const paste = async () => {
     setTouched(true);

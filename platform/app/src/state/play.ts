@@ -21,7 +21,8 @@ export const usePlay = create<{ status: PlayStatus; failed: OutboxItem[] }>(() =
 
 function onFailed(item: OutboxItem, closed: boolean) {
   usePlay.setState((s) => ({ failed: [...s.failed, item] }));
-  if (!closed) toast(t('h.toast.fail', { n: item.slot + 1 }), { btn: t('common.retry'), key: 'fail-' + item.id });
+  // on the card view the returned card says "Not saved. Pick again." itself; elsewhere a toast says it
+  if (!closed && location.pathname !== '/') toast(t('h.toast.fail', { n: item.slot + 1 }), { btn: t('common.retry'), key: 'fail-' + item.id });
 }
 
 async function keyOnChain(c: AppConfig, player: string): Promise<string | null> {

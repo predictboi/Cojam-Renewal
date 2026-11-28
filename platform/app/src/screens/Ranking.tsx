@@ -101,6 +101,29 @@ export default function Ranking() {
     return () => io.disconnect();
   }, [week, loading, q.dataUpdatedAt]); // eslint-disable-line
   useEffect(() => { if (st === 'how' && d) howSheet(d); }, [!!d]); // eslint-disable-line
+  /* At rest the pinned own bar never cuts through a row: the table is set down by the few pixels it takes for a row to end
+     exactly at the bar's top edge (on load, once the bar has come in, on resize, fonts and week change) */
+  useEffect(() => {
+    const wholeRows = () => {
+      const sec = document.querySelector('#view .sec-rule') as HTMLElement | null, p = document.getElementById('pin'); if (!sec) return;
+      // measured with transitions off (under reduced motion every property still transitions for a moment, so a read in the same frame would be stale)
+      const v = document.getElementById('view'); v?.classList.add('is-measuring'); requestAnimationFrame(() => v?.classList.remove('is-measuring'));
+      sec.style.marginTop = '';
+      if (!p || p.classList.contains('is-flow') || p.classList.contains('is-away') || window.scrollY > 0) return;
+      // the bar's resting edge (it may still be sliding up as a ticker strip): the top of the tab bar minus its own height
+      const tb = document.querySelector('.tb'); const top = (tb ? tb.getBoundingClientRect().top : innerHeight) - p.offsetHeight;
+      for (const r of Array.from(document.querySelectorAll('#top10 .krow, #view .sh, #view .cols'))) {
+        const q = r.getBoundingClientRect();
+        if (q.top < top - 0.5 && q.bottom > top + 0.5) { sec.style.marginTop = Math.ceil(top - q.top) + 'px'; break; }
+      }
+    };
+    wholeRows();
+    const tms = [setTimeout(wholeRows, 400), setTimeout(wholeRows, 800)];
+    window.addEventListener('resize', wholeRows); void document.fonts?.ready.then(wholeRows); document.fonts?.addEventListener?.('loadingdone', wholeRows);
+    // rows change height as late font subsets arrive: measure again whenever the table changes size (idempotent, so it settles)
+    const ro = new ResizeObserver(() => wholeRows()); const v = document.getElementById('top10'); if (v) ro.observe(v);
+    return () => { ro.disconnect(); tms.forEach(clearTimeout); window.removeEventListener('resize', wholeRows); document.fonts?.removeEventListener?.('loadingdone', wholeRows); };
+  }, [week, loading, q.dataUpdatedAt]); // eslint-disable-line
 
   let pin: React.ReactNode = null;
   if (!loading && d && !q.isError && st !== 'error') {
