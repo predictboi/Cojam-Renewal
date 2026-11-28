@@ -55,6 +55,11 @@ function fits(chosen: Candidate[], c: Candidate, dayId: number, maxLong: number)
   return chosen.every((x) => jaccard(tok, titleTokens(x.titleEn)) < 0.6);
 }
 
+/** True when `c` can join `chosen` (bands of the short questions, the long allowance, no near duplicate title). */
+export function fitsWith(chosen: Candidate[], c: Candidate, dayId: number, maxLong = MAX_LONG_PER_DAY): boolean {
+  return fits(chosen, c, dayId, maxLong);
+}
+
 export function selectFive(cands: Candidate[], mix: Record<Category, number>, dayId: number, opts: SelectOptions = {}): Candidate[] {
   const maxLong = Math.max(0, opts.maxLong ?? MAX_LONG_PER_DAY);
   // A linked (Polymarket mirrored) candidate ranks above any own candidate of the same category.

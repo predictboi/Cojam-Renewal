@@ -295,3 +295,167 @@ export async function daysNeedingQuestions(db: WDb, today: number, horizon: numb
   for (let d = today + 1; d <= today + horizon; d++) if ((have.get(d) ?? 0) < 5) out.push(d);
   return out;
 }
+
+// ---------------------------------------------------------------- questions from Polymarket
+
+/** Outside slugs already linked to a question of the day. */
+async function linkedSlugsOf(db: WDb, dayId: number): Promise<Set<string>> {
+  const rows = await db
+    .selectFrom('market_outside as o')
+    .innerJoin('markets as m', 'm.market_id', 'o.market_id')
+    .select('o.market_slug')
+    .where('m.day_id', '=', dayId)
+    .where('m.status', 'in', [...ACTIVE])
+    .execute();
+  return new Set(rows.map((r) => r.market_slug));
+}
+
+export interface MatchOutcome {
+  dayId: number;
+  /** Why nothing was tried (the set is on chain, no source, the list could not be read). */
+  skipped: string | null;
+  candidates: number;
+  drafted: number;
+  accepted: number;
+  /** Free slots filled (market ids). */
+  filled: number[];
+  /** Own questions replaced by a mirrored one: { from: old market id moved aside, to: market id }. */
+  replaced: number[];
+}
+
+/**
+ * The Polymarket source step for one day (run at the 18:00 KST drafting run for the next day's set, before it goes on
+ * chain from 12:00 UTC): list the outside markets that fit our timing rule, let the drafter write native questions that
+ * mirror them, check each against the market read again (open, binary, the outcome named, end time agreeing with our
+ * answer time), validate in a fresh context, then prefer them slot by slot: free slots first, then an own scheduled
+ * question of the same category is replaced when the mirrored one fits the set. A slot with no fitting market keeps
+ * our own question. Our answer is still set by our AI from the answer source, never read from the outside market.
+ */
+export async function matchOutsideDay(deps: AiDeps, dayId: number): Promise<MatchOutcome> {
+  const out: MatchOutcome = { dayId, skipped: null, candidates: 0, drafted: 0, accepted: 0, filled: [], replaced: [] };
+  if (!deps.outside) return { ...out, skipped: 'no outside source' };
+  const day = await deps.db.selectFrom('markets').select(['market_id', 'slot', 'category', 'status', 'create_tx', 'resolves_at', 'content', 'draft_id']).where('day_id', '=', dayId).where('status', 'in', [...ACTIVE]).execute();
+  if (day.some((m) => m.create_tx || (m.status !== 'scheduled' && m.status !== 'draft'))) return { ...out, skipped: 'the set is already on chain' };
+  const timing = await timingOf(deps);
+  let list: OutsideMarket[];
+  try {
+    list = await outsideCandidates(deps.outside, dayId, timing.longMaxDays);
+  } catch (e) {
+    deps.log.warn('match: outside markets could not be listed', { dayId, error: (e as Error).message });
+    return { ...out, skipped: 'outside list failed' };
+  }
+  out.candidates = list.length;
+  if (!list.length) return out; // every slot keeps our own question
+
+  const recent = await recentQuestions(deps.db, dayId);
+  const linked = await linkedSlugsOf(deps.db, dayId);
+  const count = Math.min(deps.candidates ?? 12, Math.max(5, list.length));
+  let drafts: Draft[] = [];
+  let runId: number | null = null;
+  try {
+    const r = await runLogged(
+      deps.db,
+      deps.provider,
+      {
+        job: 'draft_outside',
+        promptVersion: PROMPT_VERSIONS.draftOutside,
+        system: DRAFT_SYSTEM,
+        user: draftOutsideUser(dayId, count, categoryMix(dayId), recent.slice(-60).map((x) => x.titleEn), timing, list.map(promptMarket)),
+        schema: outsideDraftSetJson,
+        effort: 'medium',
+        maxTokens: 64_000,
+        webSearch: { maxUses: 8 },
+        meta: { dayId, count, outside: list.map((m) => m.slug) },
+      },
+      (x) => draftSetZ.parse(x),
+    );
+    drafts = r.output.candidates;
+    runId = r.runId;
+  } catch (e) {
+    deps.log.error('match: drafting call failed', { dayId, error: (e as Error).message, runId: e instanceof AiOutputError ? e.runId : null });
+    return { ...out, skipped: 'drafting call failed' };
+  }
+  out.drafted = drafts.length;
+
+  for (const d0 of drafts) {
+    const slug = d0.outsideSlug?.trim() || '';
+    const listed = list.find((m) => m.slug === slug);
+    let d: Draft = { ...d0, outsideSlug: slug || undefined, outsideUrl: listed?.url };
+    let errors: string[] = [];
+    let fresh: OutsideMarket | null = null;
+    if (!listed) {
+      // Not mirrored after all: keep it as an own question, without a link.
+      const { outsideSlug: _s, outsideRightOutcome: _r, outsideUrl: _u, ...own } = d;
+      d = own;
+    } else if (linked.has(slug)) errors.push('that outside market is already linked to a question of the day');
+    else {
+      fresh = await deps.outside.market(slug).catch(() => null);
+      if (!fresh) errors.push('the outside market cannot be read again');
+      else errors.push(...checkOutsideLink(d, fresh, dayId, timing.longMaxDays));
+    }
+    const code = checkDraft(d, { dayId, minResolveGapSec: deps.minResolveGapSec, recent, longMaxDays: timing.longMaxDays });
+    errors = [...code.errors, ...errors];
+    let rejected: string | null = errors.length ? `code: ${errors.join('; ')}` : null;
+    let ai: unknown = null;
+    if (!rejected) {
+      const v = await aiValidate(deps, dayId, d, fresh ? promptMarket(fresh) : null);
+      ai = v.result;
+      if (!v.ok) rejected = v.reason;
+    }
+    await deps.db
+      .insertInto('market_drafts')
+      .values({
+        target_day: dayId,
+        payload: JSON.stringify(d),
+        validator_result: JSON.stringify({ code: { ok: !errors.length, errors }, ai, outside: fresh ? { slug, endsAt: fresh.endsAt } : null }),
+        rejected_reason: rejected ? rejected.slice(0, 1000) : null,
+        ai_run_id: runId,
+      })
+      .execute();
+    if (!rejected) out.accepted++;
+  }
+
+  // Free slots: the reserve selection ranks a linked draft above any own draft of its category.
+  out.filled = await fillFromReserve(deps, dayId);
+
+  // Occupied slots: replace an own scheduled question by an accepted mirrored one of the same category.
+  const rows = await deps.db
+    .selectFrom('market_drafts')
+    .select(['id', 'payload', 'validator_result'])
+    .where('target_day', '=', dayId)
+    .where('selected', '=', false)
+    .where('rejected_reason', 'is', null)
+    .execute();
+  const usedSlugs = await linkedSlugsOf(deps.db, dayId);
+  const mirrored = rows
+    .map((r) => ({ id: r.id, d: draftZ.safeParse(r.payload), q: (r.validator_result as { ai?: { qualityScore?: number } } | null)?.ai?.qualityScore ?? 0.5 }))
+    .filter((x): x is { id: number; d: { success: true; data: Draft }; q: number } => x.d.success && Boolean(x.d.data.outsideSlug && x.d.data.outsideUrl))
+    .sort((a, b) => b.q - a.q || a.id - b.id);
+  for (const cand of mirrored) {
+    const d = cand.d.data;
+    if (usedSlugs.has(d.outsideSlug!)) continue;
+    const code = checkDraft(d, { dayId, minResolveGapSec: deps.minResolveGapSec, recent, longMaxDays: timing.longMaxDays });
+    if (!code.ok) continue;
+    const current = await deps.db.selectFrom('markets').select(['market_id', 'slot', 'category', 'status', 'create_tx', 'resolves_at', 'content', 'draft_id']).where('day_id', '=', dayId).where('status', 'in', [...ACTIVE]).execute();
+    if (current.some((m) => m.create_tx)) break;
+    const linkedIds = new Set(
+      (await deps.db.selectFrom('market_outside').select('market_id').where('market_id', 'in', current.length ? current.map((m) => m.market_id) : [-1]).execute()).map((r) => r.market_id),
+    );
+    const asCand = (m: (typeof current)[number]): Candidate => ({ id: -1 - m.slot, category: normCategory(m.category) ?? 'Culture', titleEn: m.content.en.title, resolvesAt: Math.floor((m.resolves_at as Date).getTime() / 1000), quality: 0 });
+    const next: Candidate = { id: cand.id, category: d.category, titleEn: d.en.title, resolvesAt: code.times!.resolvesAt, quality: cand.q, linked: true };
+    const target = current.find((m) => m.status === 'scheduled' && !linkedIds.has(m.market_id) && normCategory(m.category) === d.category && fitsWith(current.filter((x) => x.market_id !== m.market_id).map(asCand), next, dayId, timing.maxLong));
+    if (!target) continue;
+    await deps.db.transaction().execute(async (tx) => {
+      await tx.updateTable('markets').set({ status: 'cancelled', updated_at: new Date() }).where('market_id', '=', target.market_id).execute();
+      if (target.draft_id) await tx.updateTable('market_drafts').set({ selected: false }).where('id', '=', target.draft_id).execute();
+      await audit(tx as never, { actor: 'drafter', action: 'question.replaced_by_outside', target: String(target.market_id), payload: { outsideSlug: d.outsideSlug, previous: target.content.en.title, next: d.en.title } });
+    });
+    const written = await schedule(deps.db, dayId, [{ draftId: cand.id, d }], [target.slot]);
+    if (written.length) {
+      out.replaced.push(...written);
+      usedSlugs.add(d.outsideSlug!);
+    }
+  }
+  deps.log.info('match: outside markets', { ...out });
+  return out;
+}
