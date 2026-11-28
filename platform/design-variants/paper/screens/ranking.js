@@ -27,7 +27,8 @@
     App.sheet.open("<h2>" + t("k.split.q") + '</h2><div class="stack-8"><p class="sheet-lead">' + t("k.pool.line", { n: F.int(ct) }) + '</p><p class="sheet-lead">' + t("k.tie") + " " + t("k.tie.note") + '</p><p class="sheet-lead">' + t("k.split.note") + "</p></div>" +
       '<div class="split">' + split + '</div><div class="sheet-acts">' + C.btn(t("common.close"), { block: true, attrs: "data-sheet-close" }) + "</div>");
   }
-  function name(r) { return App.name(r.name); }
+  /* one face for every name in the table (the text face). The "x" of an address is shaped on its own (an inline block), so the text face cannot turn "0x4" into a multiplication sign. */
+  function name(r) { return /^0x/i.test(r.name) ? '<span translate="no">0<span class="xb">x</span>' + App.esc(r.name.slice(2)) + "</span>" : App.name(r.name); }
   function rankNo(n) { return '<span class="sr-only">' + t("k.rank.sr", { n: n }) + '</span><span aria-hidden="true">' + n + "</span>"; }
   function gap(g) { return t(g > 0 ? "k.gap.up" : g < 0 ? "k.gap.down" : "k.gap.same", { n: F.int(Math.abs(g)) }); }
   /* one row pattern for the whole table: rank, player, points, prize. Ranks 1 to 3 take the larger setting. */
@@ -114,5 +115,14 @@
     });
     if (S === "how") howSheet();
     roll(); watchOwn();
+    /* At rest the pinned own bar never cuts through a row: the table is set down by the few pixels it takes for a row to end exactly at the bar's top edge. */
+    function wholeRows() {
+      var sec = $("#view .sec-rule"), p = $("#pin"); if (!sec) return; sec.style.marginTop = "";
+      if (!p || p.classList.contains("is-flow") || p.classList.contains("is-away") || window.scrollY > 0) return;
+      var top = p.getBoundingClientRect().top, rows = App.$$("#top10 .krow, #view .sh, #view .cols");
+      for (var i = 0; i < rows.length; i++) { var q = rows[i].getBoundingClientRect(); if (q.top < top - 0.5 && q.bottom > top + 0.5) { sec.style.marginTop = Math.ceil(top - q.top) + "px"; break; } }
+    }
+    wholeRows(); setTimeout(wholeRows, 800); window.addEventListener("resize", wholeRows);   /* again once the bar has come in */ document.addEventListener("seg", function () { setTimeout(wholeRows, 0); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(wholeRows);
   } });
 })();

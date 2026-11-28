@@ -5,7 +5,7 @@
   var n = +S >= 1 && +S <= 3 ? +S : S === "settingup" ? 3 : 1;
   var from = new URLSearchParams(location.search).get("from"), exit = from === "profile" ? "profile.html" : "home.html?state=fresh";
   function art(i) {
-    if (i === 1) return '<div class="art-fig"><div class="art-cards" aria-hidden="true"><i></i><i><span class="art-img"></span><span class="art-ch"><b></b><b></b></span></i></div>' + C.day5(["done", "done", "pend", "", ""], { label: " " }) + "</div>";
+    if (i === 1) return '<div class="art-fig"><div class="art-cards" aria-hidden="true"><i></i><i><span class="art-img">' + C.halftone(App.q("q1"), 320, 240) + '</span><span class="art-ch"><b></b><b></b></span></i></div>' + C.day5(["done", "done", "pend", "", ""], { label: " " }) + "</div>";
     if (i === 2) return '<div class="art-fig"><div class="two"><div><p class="fig">+100P</p><p class="small muted">' + t("o.2.a") + '</p></div><div><p class="fig">+50P</p><p class="small muted">' + t("o.2.c") + "</p></div></div>" + C.day5(["done", "done", "done", "done", "done"], { label: " " }) + "</div>";
     return '<div class="art-swap" aria-hidden="true"><span class="art-coin">1,000P</span>' + C.icon("right", 28) + '<span class="art-coin">1 CT</span></div>';
   }
@@ -27,7 +27,8 @@
     var ready = from === "profile", waiting = false, line = $("#setup-line");
     /* the drawing is scaled to the band, whatever the band's height on this phone */
     function fitArt() { App.$$(".onb-art").forEach(function (band) { var f = band.firstElementChild; if (!f) return; f.style.transform = ""; var hidden = band.closest("[hidden]"); if (hidden) hidden.hidden = false; var k = Math.min(1, (band.clientHeight - 24) / f.offsetHeight, (band.clientWidth - 24) / f.offsetWidth); if (hidden) hidden.hidden = true; f.style.transform = k < 1 ? "scale(" + k.toFixed(3) + ")" : ""; }); }
-    fitArt(); window.addEventListener("resize", fitArt); if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitArt);
+    fitArt(); window.addEventListener("resize", fitArt);
+    if (window.ResizeObserver) { var artRo = new ResizeObserver(fitArt); App.$$(".onb-art").forEach(function (band) { artRo.observe(band); }); }   /* the band shrinks when the invite code opens */ if (document.fonts && document.fonts.ready) document.fonts.ready.then(fitArt);
     function setReady() { ready = true; line.innerHTML = C.icon("check", 16) + "<span>" + t("o.3.wait") + "</span>"; if (waiting) location.href = exit; }
     if (ready) line.hidden = true; else setTimeout(setReady, S === "settingup" ? 9000 : 3200);
     function leave() { if (ready) { location.href = exit; return; } waiting = true; var b = $("#next"); b.classList.add("is-loading"); b.innerHTML = '<span class="spin"></span><span>' + t("a.setup.h") + "</span>"; }

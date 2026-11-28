@@ -49,7 +49,6 @@
   App.mount({ tab: "home", cls: "is-home" + (App.offline ? " is-offline" : ""), docTitle: t("h.title"), live: liveCell(), head: head(), body: body(), pin: hasDeck ? '<div class="pin pickbar" id="pickbar"></div>' : "", badges: { home: 5 - count && S !== "hold" ? "dot" : 0, results: 2 }, after: function () {
     var deckEl = $("#deck"); if (!deckEl) return;
     var day5 = $("#day5"), cnt = $("#cnt"), bar = $("#pickbar");
-    if (S === "failed") { App.toast(t("h.toast.fail", { n: 2 }), { btn: t("common.retry") }); }
     if (leftSaved) App.toast(leftSaved > 1 ? t("h.left.savedn", { n: leftSaved }) : t("h.left.saved"));
 
     var held = [], shown = null, fade, leaving = false;
@@ -86,9 +85,8 @@
         bar._held = p;
         var gone = Date.now() - p.t0, wasOnUndo = document.activeElement && document.activeElement.id === "undo";
         /* the 3 seconds are a rule across the top of the bar, used up from the right; when it is gone the pick goes to press */
-        bar.innerHTML = '<span class="fuse" aria-hidden="true"><i style="--gone:-' + gone + 'ms"></i></span>' +
-          '<span class="pickbar-msg" id="pick-msg">' + C.icon("check", 16) + "<span>" + label(p) + "</span></span>" +
-          '<button type="button" class="undo" id="undo" aria-label="' + App.esc(t("h.undo.aria", { n: p.n, choice: App.q(p.id)[p.dir] })) + '">' + C.icon("undo", 18) + "<span>" + t("h.undo") + '</span><kbd aria-hidden="true">Z</kbd></button>';
+        bar.innerHTML = '<span class="pickbar-msg" id="pick-msg">' + C.icon("check", 16) + "<span>" + label(p) + "</span></span>" +
+          '<button type="button" class="undo" id="undo" aria-label="' + App.esc(t("h.undo.aria", { n: p.n, choice: App.q(p.id)[p.dir] })) + '"><span class="fuse fuse--fill" aria-hidden="true"><i style="--gone:-' + gone + 'ms"></i></span>' + C.icon("undo", 18) + "<span>" + t("h.undo") + '</span><kbd aria-hidden="true">Z</kbd></button>';
         /* after a pick made with the keyboard or a screen reader (the focus was in the card or on Undo), Undo is where the focus goes next */
         if (p.focusUndo || wasOnUndo) { p.focusUndo = false; var ub = $("#undo", bar); if (ub) ub.focus({ preventScroll: true }); }
         return;
@@ -178,7 +176,6 @@
     deckEl.addEventListener("pointerdown", stopNudge, true);
     document.addEventListener("keydown", stopNudge, true);
     render();
-    deckEl.focus({ preventScroll: true });
 
     document.addEventListener("click", function (e) {
       if (!e.target.closest("[data-retry-now]")) return;

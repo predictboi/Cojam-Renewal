@@ -78,6 +78,16 @@
     "pp.x.sum": ["A letter in this address is wrong. Paste it again from where you copied it.", "주소에 잘못된 글자가 있어요. 복사한 곳에서 다시 붙여 넣어 주세요.", "アドレスに誤った文字があります。コピー元からもう一度貼り付けてください。"],
     "pp.c.nan": ["Enter points as a number, like 1,000.", "포인트를 숫자로 입력해 주세요. 예: 1,000", "ポイントを数字で入力してください。例: 1,000"],
     "pp.live.key": ["Picked {choice}. Undo within 10 seconds.", "{choice} 선택. 10초 안에 되돌릴 수 있어요.", "{choice}を選択。10秒以内なら取り消せます。"],
+    /* review G: the success stamp names what happened; a refused key says why */
+    "pp.st.sent": ["Sent", "보냄", "送金済"],
+    "pp.st.staked": ["Staked", "스테이킹 완료", "ステーク済"],
+    "pp.st.conv": ["Converted", "전환 완료", "交換済"],
+    "pp.st.claimed": ["Claimed", "수령 완료", "受取済"],
+    "pp.st.out": ["Withdrawn", "출금 완료", "引き出し済"],
+    "pp.numonly": ["Numbers only.", "숫자만 입력할 수 있어요.", "数字のみ入力できます。"],
+    "pp.onepoint": ["One decimal point only.", "소수점은 한 번만 쓸 수 있어요.", "小数点は1つだけです。"],
+    "pp.c.whole": ["Points are whole numbers, like 1,000.", "포인트는 1,000처럼 정수로 입력하세요.", "ポイントは1,000のように整数で入力してください。"],
+    "pp.finishnow": ["Finish now", "지금 완료", "今すぐ完了"],
     "pp.lede": ["We email you a code.", "이메일로 코드를 보내 드려요.", "メールでコードをお送りします。"]
   };
   var d = window.CJ_I18N.dict;

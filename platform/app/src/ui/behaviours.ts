@@ -119,7 +119,7 @@ export function installBehaviours() {
   installed = true;
   enhance(document);
   glue(document.body);
-  runFit(); window.addEventListener('resize', runFit); void document.fonts?.ready.then(runFit);
+  runFit(); window.addEventListener('resize', runFit); void document.fonts?.ready.then(runFit); document.fonts?.addEventListener?.('loadingdone', runFit);
   new MutationObserver((list) => {
     for (const m of list) {
       if (m.type === 'characterData') { glue(m.target); continue; }

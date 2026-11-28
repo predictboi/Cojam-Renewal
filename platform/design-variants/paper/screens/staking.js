@@ -34,7 +34,7 @@
     return { label: t("s.chip", { a: amt }), busy: busy, onSuccess: function () { staked(a, period, r); }, stepsTitle: t("tx.stake.h", { a: amt }), steps: [t("tx.step1", { a: amt }), t("tx.step2", { a: amt })],
       cancelMsg: t("s.cancelled"),
       review: { title: t("s.rv.h", { a: amt, d: period }), rows: [[t("s.amount"), F.ct(a)], [t("s.period"), t("s.days", { d: period })], [t("s.apr"), r + "%"], [t("s.interest", { d: period }), F.ct(a * r / 100 * period / 365), true]], warn: t("s.noexit", { date: unlock }), confirm: t("s.btn", { a: amt }) },
-      success: { title: t("s.ok.h", { a: amt }), rows: [[t("s.unlock"), unlock], [t("s.apr"), r + "%"]], btn: { label: t("s.ok.btn"), href: "stakes.html" } } };
+      success: { stamp: "pp.st.staked", title: t("s.ok.h", { a: amt }), rows: [[t("s.unlock"), unlock], [t("s.apr"), r + "%"]], btn: { label: t("s.ok.btn"), href: "stakes.html" } } };
   }
   /* while a stake is pending the primary button is disabled and is the status; a second stake waits until the first ends */
   var pending = "", refresh = function () {};

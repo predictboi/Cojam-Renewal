@@ -124,7 +124,8 @@ export function Header({ back, title, pts = '', points, me }: { back?: string; t
     fit();
     window.addEventListener('resize', fit);
     void document.fonts?.ready.then(fit);
-    return () => window.removeEventListener('resize', fit);
+    document.fonts?.addEventListener?.('loadingdone', fit);
+    return () => { window.removeEventListener('resize', fit); document.fonts?.removeEventListener?.('loadingdone', fit); };
   }, [back]);
   const onBack = (e: React.MouseEvent) => {
     // back to where the player came from when that was inside the app, else to the fixed parent

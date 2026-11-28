@@ -67,16 +67,16 @@
       var c = e.target.closest("[data-claim]"), w = e.target.closest("[data-wd]");
       /* on hold every claim and withdrawal is reviewed first: the sheet states the fee, who pays it and the KAIA balance */
       function rv(title, amount) { return hold ? { title: title, rows: [[t("x.amount"), amount], [t("x.fee"), t("x.fee.v", { f: M.fee })], [t("x.kaia"), F.kaia(kaia)]], note: t("hold.fee.line") + ". " + t("hold.fee.rv"), confirm: t("tx.confirm") } : null; }
-      if (c) { var s = find(c.getAttribute("data-claim")), i = F.dec(calc(s).interest, 2); App.tx.run({ label: t("m.chip.claim", { i: i }), review: rv(t("m.claim", { i: i }), F.ct(calc(s).interest)), success: { title: t("m.ok.claim", { i: i }) },
+      if (c) { var s = find(c.getAttribute("data-claim")), i = F.dec(calc(s).interest, 2); App.tx.run({ label: t("m.chip.claim", { i: i }), review: rv(t("m.claim", { i: i }), F.ct(calc(s).interest)), success: { stamp: "pp.st.claimed", title: t("m.ok.claim", { i: i }) },
         onSuccess: function () { var got = calc(s).interest, now = Date.now(); s.claimAt = now; if (S === "") { App.ledger(Math.round(got * 1e4) / 1e4, 0); App.claimStake(s.id, now); }
           var el = $('[data-stake="' + s.id + '"]'); if (el) el.outerHTML = card(s); redraw(); } }); }
       if (w) { var s2 = find(w.getAttribute("data-wd")), a = F.dec(out(s2), 4), c2 = calc(s2);
         var rvw = { title: t("m.withdraw", { a: a }), rows: [[t("pp.stake"), F.ct(s2.amount)], [t("m.interest"), F.ct(c2.interest)], [t("pp.total"), F.ct(out(s2)), true]].concat(hold ? [[t("x.fee"), t("x.fee.v", { f: M.fee })], [t("x.kaia"), F.kaia(kaia)]] : []), note: hold ? t("hold.fee.line") + ". " + t("hold.fee.rv") : "", confirm: t("m.withdraw", { a: a }) };
-        App.tx.run({ label: t("m.chip.wd", { a: a }), review: rvw, success: { title: t("m.ok.wd", { a: a }) },
+        App.tx.run({ label: t("m.chip.wd", { a: a }), review: rvw, success: { stamp: "pp.st.out", title: t("m.ok.wd", { a: a }) },
           /* the stake and its interest go to the wallet (the session ledger), the stake is closed for the session, and the head follows */
           onSuccess: function () { if (S === "") { App.ledger(out(s2), 0); App.closeStake(s2.id); } stakes.splice(stakes.indexOf(s2), 1); var el = $('[data-stake="' + s2.id + '"]'); if (el) el.parentNode.removeChild(el); redraw(); } }); }
     });
-    if (S === "claim") App.tx.show("success", { label: "", success: { title: t("m.ok.claim", { i: "263.01" }) } });
+    if (S === "claim") App.tx.show("success", { label: "", success: { stamp: "pp.st.claimed", title: t("m.ok.claim", { i: "263.01" }) } });
     if (S === "unlocking") setTimeout(function () {   /* the unlock moment: the tag flips and the withdraw button appears, no reload */
       var s = stakes[0], el = $('[data-stake="u"]'); if (!el) return;
       el.outerHTML = card(s); App.enhance(document.body); App.live(t("m.unlocked"));

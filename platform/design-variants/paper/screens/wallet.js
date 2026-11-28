@@ -12,7 +12,7 @@
     var canCt = Math.floor(pts / 1000), a = u.address;
     return (off ? C.note("warn", t("w.offline")) : "") + (hold ? C.hold(t("hold.wallet")) : "") +
       '<section class="msec" aria-labelledby="ct-h">' + (S === "error" ? C.note("warn", t("e.rpc"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" })) : "") +
-      '<div class="mhero"><h2 class="lbl" id="ct-h">' + t("w.avail") + '</h2><p class="fig fig--xl" id="ct-fig">' + (ct ? F.dec(ct) + "<small>CT</small>" : '<span class="is-zero">0 CT</span>') + "</p>" + (App.isKo ? '<p class="sub">' + F.krw(ct) + "</p>" : "") + "</div>" +
+      '<div class="mhero"><div class="lbl-row"><h2 class="lbl" id="ct-h">' + t("w.avail") + "</h2>" + (App.isKo ? '<span class="sub">' + F.krw(ct) + "</span>" : "") + '</div><p class="fig fig--xl" id="ct-fig">' + (ct ? F.dec(ct) + "<small>CT</small>" : '<span class="is-zero">0 CT</span>') + "</p></div>" +
       '<div class="acts">' + C.btn(t("w.deposit"), { icon: "download", href: "deposit.html", disabled: off, id: "dep" }) + C.btn(t("w.withdraw"), { icon: "share", href: "withdraw.html", disabled: off, id: "wd" }) + "</div>" +
       '<div class="list"><div class="wrow wrow--addr"><span>' + t("pp.addr") + "</span>" + C.addr(a, { id: "copy-addr" }) + "</div>" +
       '<a class="wrow" href="stakes.html"><span>' + t("w.staked") + '</span><b id="staked">' + F.dec(staked) + ' <small>CT</small></b><span class="wrow-go"><span class="sr-only">' + t("s.mine", { n: S === "zero" ? 0 : M.stakes.length }) + '</span><span aria-hidden="true">' + (S === "zero" ? 0 : M.stakes.length) + "</span>" + C.icon("chev", 16) + "</span></a>" +

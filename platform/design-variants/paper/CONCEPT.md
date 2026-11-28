@@ -94,6 +94,16 @@ A zero is never a hero on any screen: an empty balance on the wallet, a conversi
 - The masthead gives way in a fixed order: the words of the nameplate go first (the mark stays), the points and the profile never leave the screen. Tab labels stay on one line. Figures that sit side by side wrap to rows when they no longer fit. Checked at 320 px and with the root font at 130% and 200%.
 - A focused control is never left behind the tab bar or a pinned bar (`tools/focus-check.js`).
 
+## Small rules added in round 5
+
+- A ticking slab figure sets every digit in a cell of one width and its colon in a centred cell of its own, so digits never touch the colon at any size.
+- The pending "+50" sits inside the points pill under the balance, so the masthead keeps "Cojam Daily" at 360 px on every tab.
+- Names in the ranking use the text face in every row; the slab stays on the rank numerals and the first three rows keep their size step. Addresses there use the text face too.
+- A fiat estimate is shown only in Korean (the won is the reader's currency) and always on the label line, never on a row of its own.
+- The stamp on a success sheet names what happened: Sent, Staked, Converted, Claimed, Withdrawn.
+- An amount field never changes what was entered: a key that cannot be part of an amount is refused with the reason under the field ("Numbers only.", "One decimal point only."), and a pasted value that cannot be read stays in the field with an error.
+- No screen takes the focus at load: Tab starts at the skip link and the masthead on every tab; on home the arrow keys pick without focus.
+
 ## Controls that change a view
 
 Two patterns only. A segmented control (ink frame, the current segment inverted) filters or switches in place: This week and Last week, All, Waiting and Set, the language, the home view preference. Underlined words (the current one bold with a 3 px ink bar) lead to another page or view: Cards and List, New stake and My stakes. Below 360 px, things that sit side by side at 390 px stack as rows: the three facts on convert, the three figures on the profile, and the link to the prize rules under the pool figure. The language control on the cover screens is a globe and a two letter code that opens the native list; the nameplate there always keeps its words.

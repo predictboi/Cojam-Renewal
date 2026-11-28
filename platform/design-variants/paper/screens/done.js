@@ -27,9 +27,9 @@
   }
   function undoBar() {
     var dir = undoQ && sess.data.picks[undoQ], q = undoQ ? App.q(undoQ) : null;
-    return '<div class="pin pin--undo" id="undo-bar"><span class="fuse" aria-hidden="true"><i style="--gone:-' + (3000 - undoMs) + 'ms"></i></span>' +
+    return '<div class="pin pin--undo" id="undo-bar">' +
       '<span class="pickbar-msg">' + C.icon("check", 16) + "<span>" + (q && dir ? t("h.sync", { n: q.n, choice: C.pick(dir, App.esc(q[dir])) }) : t("h.qn.sr", { n: q ? q.n : 5 })) + "</span></span>" +
-      '<button type="button" class="undo" id="undo-last" aria-label="' + App.esc(t("h.undo.aria", { n: q ? q.n : 5, choice: q && dir ? q[dir] : "" })) + '">' + C.icon("undo", 18) + "<span>" + t("h.undo") + '</span><kbd aria-hidden="true">Z</kbd></button></div>';
+      '<button type="button" class="undo" id="undo-last" aria-label="' + App.esc(t("h.undo.aria", { n: q ? q.n : 5, choice: q && dir ? q[dir] : "" })) + '"><span class="fuse fuse--fill" aria-hidden="true"><i style="--gone:-' + (3000 - undoMs) + 'ms"></i></span>' + C.icon("undo", 18) + "<span>" + t("h.undo") + '</span><kbd aria-hidden="true">Z</kbd></button></div>';
   }
   function letters(text) {
     var i = 0;
@@ -52,8 +52,9 @@
     var sub = o === "pend" ? t("d.hitpending", { time: "22:10" }) : o === "miss" ? t("d.miss") : "";
     return '<li class="pick"><span class="pick-q">' + App.esc(q.title) + '</span><span class="pick-c">' + C.pick(p[1], App.esc(q[p[1]])) + (sub ? "<small>" + sub + "</small>" : "") + "</span></li>";
   }
+  function rankBtn() { return C.btn(t("d.rank"), { kind: "primary", block: true, href: "ranking.html", iconEnd: "right", id: "rank-btn" }); }
   function body() {
-    return C.btn(t("d.rank"), { kind: "primary", block: true, href: "ranking.html", iconEnd: "right" }) +
+    return '<div id="done-act">' + (undoMs ? C.btn(t("pp.finishnow"), { kind: "primary", block: true, id: "fin-btn" }) : rankBtn()) + "</div>" +
       (wel ? '<p class="done-welnote">' + t("d.wel.note", { name: '<b translate="no">' + App.esc(M.invite.by) + "</b>", w: W }) + "</p>" : "") +
       '<section class="sec sec-rule"><div class="sh"><h2>' + t("d.picks") + '</h2><a class="linkish" href="results.html">' + t("d.results") + "</a></div>" +
       (waiting ? '<p class="done-wait-n">' + t("d.waitn", { n: waiting }) + C.q("hits", t("h.ai.h")) + "</p>" : "") +
@@ -71,7 +72,9 @@
     function at(ms, fn) { timers.push(setTimeout(fn, App.reduce ? Math.min(ms, 300) : ms)); }
     /* the Undo window of the fifth pick has closed (or the player tapped anywhere to finish now): the pick is sent, then the points are paid */
     function dropBar() { clearInterval(finT); var bar = $("#undo-bar"); if (bar) bar.parentNode.removeChild(bar); var app = $(".app"); if (app) app.classList.remove("app--pin"); }
-    function toSaving(wait) { if (mode !== "undo") return; mode = "saving"; dropBar(); wrap.innerHTML = row("saving"); at(wait, pay); }
+    function toSaving(wait) { if (mode !== "undo") return; mode = "saving"; dropBar(); wrap.innerHTML = row("saving"); primary(); at(wait, pay); }
+    /* the window has ended: "Finish now" gives its place to the way on (the focus follows if it was on the button) */
+    function primary() { var act = $("#done-act"); if (!act || !$("#fin-btn")) return; var had = document.activeElement && document.activeElement.id === "fin-btn"; act.innerHTML = rankBtn(); if (had) $("#rank-btn").focus({ preventScroll: true }); }
     var finT = 0, t0 = Date.now();
     if (undoMs) { finT = setInterval(function () { var n = $("#fin-n"); if (n) n.textContent = Math.max(1, Math.ceil((undoMs - (Date.now() - t0)) / 1000)); }, 200);
       var ub = $("#undo-last"); if (ub) ub.focus({ preventScroll: true }); }   /* the focus goes to Undo, where it also was on the deck */
@@ -82,7 +85,7 @@
       sess.data.paid = true; sess.save();
       hero.classList.remove("is-saving"); hero.classList.add("is-paid");   /* the band inks in (CSS); the figure counts up; the stamp lands */
       fig.classList.remove("is-wait");
-      App.countTo(fig, 0, 100, num, null, 620);   /* the figure only ever shows amounts on the way to 100 */
+      fig.innerHTML = num(100);   /* the figure stood here in outline; it fills in (CSS), it never shows another amount */
       day5.children[4].className = "is-done";
       try { if (navigator.vibrate) navigator.vibrate([12, 40, 18]); } catch (e) {}
       App.addPoints(100);   /* the row under the figure is the one live region that says it */
@@ -95,6 +98,7 @@
       if (settled) return; settled = true;
       timers.forEach(clearTimeout); document.removeEventListener("pointerdown", skip, true); document.removeEventListener("keydown", skip, true);
       if (!paid) { mode = "saving"; pay(); timers.forEach(clearTimeout); }
+      primary();
       if (fig._roll) cancelAnimationFrame(fig._roll); fig.innerHTML = num(100);
       wrap.innerHTML = row("paid");
       var f = $("#dl-flip"); if (f) { f.firstChild.textContent = t("d.next"); var s2 = f.parentNode.querySelector("[data-cd-sr]"); if (s2) { s2.setAttribute("data-cd-sr", "d.next"); s2.textContent = s2.textContent.replace(t("h.closes"), t("d.next")); } }

@@ -53,7 +53,10 @@ export function createDeck(root: HTMLElement, o: DeckOpts = {}): DeckApi {
   }
   const onResize = () => fit();
   window.addEventListener('resize', onResize);
-  void document.fonts?.ready.then(() => { if (root.isConnected) fit(); });
+  // the faces are self hosted subsets that load on first use: measure again whenever a face arrives
+  const onFonts = () => { if (root.isConnected) fit(); };
+  void document.fonts?.ready.then(onFonts);
+  document.fonts?.addEventListener?.('loadingdone', onFonts);
   function buzz(ms: number) { try { (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive && navigator.vibrate?.(ms); } catch { /* */ } }
   /* under the threshold the stamp is a proof (an unfilled outline that grows with the travel); at the threshold it presses in */
   function paint(card: HTMLElement, k: number, armed: boolean) {
@@ -183,7 +186,7 @@ export function createDeck(root: HTMLElement, o: DeckOpts = {}): DeckApi {
     destroy() {
       root.removeEventListener('pointerdown', down); root.removeEventListener('pointermove', move);
       root.removeEventListener('pointerup', end); root.removeEventListener('pointercancel', end);
-      root.removeEventListener('click', click); document.removeEventListener('keydown', key); window.removeEventListener('resize', onResize); clearTimeout(qTimer);
+      root.removeEventListener('click', click); document.removeEventListener('keydown', key); window.removeEventListener('resize', onResize); document.fonts?.removeEventListener?.('loadingdone', onFonts); clearTimeout(qTimer);
       lift.remove();
     },
   };

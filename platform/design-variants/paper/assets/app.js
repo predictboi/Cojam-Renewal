@@ -496,7 +496,7 @@
   /* a countdown ticks like a date stamp: only the digit that changed is replaced, and it drops into place (one short step, never under reduced motion) */
   App.digits = function (el, str) {
     if (!el._dg || el._s.length !== str.length) {
-      el.innerHTML = str.replace(/./g, function (c) { return '<i class="' + (/\d/.test(c) ? "dg" : "dgs") + '">' + c + "</i>"; });
+      el.innerHTML = str.replace(/./g, function (c) { return '<i class="' + (/\d/.test(c) ? "dg" : c === ":" ? "dgs dgc" : "dgs") + '">' + c + "</i>"; });
       el._dg = Array.prototype.slice.call(el.children); el._s = str; return;
     }
     for (var i = 0; i < str.length; i++) if (str[i] !== el._s[i]) {
@@ -619,7 +619,7 @@
       var fig = ok.fig, m;
       if (!fig) { var txt = String(ok.title).replace(/<[^>]+>/g, ""), re = /([+\-]?\d[\d,]*(?:\.\d+)?)\s?(CT|P)(?![A-Za-z])/g, hit = null; while ((m = re.exec(txt))) { if (!hit || (m[2] === "CT" && hit[2] !== "CT") || m[2] === hit[2]) hit = m; } if (hit) fig = hit[1] + " " + hit[2]; }
       var parts = fig ? /^(.*?)(?:\s(CT|P))?$/.exec(fig) : null;
-      return '<div class="sheet-done" aria-hidden="true">' + C.rstamp("hit", t("pp.filed")) + (parts ? '<span class="sheet-done-fig">' + parts[1] + (parts[2] ? "<small>" + parts[2] + "</small>" : "") + "</span>" : "") + "</div>";
+      return '<div class="sheet-done" aria-hidden="true">' + C.rstamp("hit", t(ok.stamp || "pp.filed")) + (parts ? '<span class="sheet-done-fig">' + parts[1] + (parts[2] ? "<small>" + parts[2] + "</small>" : "") + "</span>" : "") + "</div>";
     },
     show: function (state, cfg) {
       App.tx.cfg = cfg; App.tx.state = state;
@@ -775,8 +775,16 @@
      Enter (the "Go" key of a phone keyboard) in a field of a form with one pinned action runs that action's own check. */
   document.addEventListener("beforeinput", function (e) {
     var el = e.target; if (!el || !el.closest || !el.closest(".field-box--fig") || e.inputType !== "insertText" || !e.data) return;
-    if (!/^[0-9\uFF10-\uFF19.,\uFF0E\uFF0C]+$/.test(e.data) || (/[.\uFF0E]/.test(e.data) && /[.\uFF0E]/.test(el.value) && el.selectionStart === el.selectionEnd)) e.preventDefault();
+    var bad = !/^[0-9\uFF10-\uFF19.,\uFF0E\uFF0C]+$/.test(e.data), twice = !bad && /[.\uFF0E]/.test(e.data) && /[.\uFF0E]/.test(el.value) && el.selectionStart === el.selectionEnd;
+    if (bad || twice) { e.preventDefault(); App.refuse(el, t(bad ? "pp.numonly" : "pp.onepoint")); }
   });
+  /* the reason a key was refused: a short line under the field (also announced), gone after a moment or with the next accepted key. The value is never changed. */
+  App.refuse = function (el, why) {
+    var f = el.closest(".field"); if (!f) return; var n = $(".field-refuse", f);
+    if (!n) { n = document.createElement("p"); n.className = "field-refuse"; n.setAttribute("role", "status"); var box = $(".field-box", f); box.parentNode.insertBefore(n, box.nextSibling); }
+    n.textContent = why; clearTimeout(n._t); n._t = setTimeout(function () { if (n.parentNode) n.parentNode.removeChild(n); }, 2600);
+  };
+  document.addEventListener("input", function (e) { var f = e.target && e.target.closest ? e.target.closest(".field") : null, n = f && $(".field-refuse", f); if (n) { clearTimeout(n._t); n.parentNode.removeChild(n); } });
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Enter" || e.isComposing) return; var el = e.target; if (!el || el.tagName !== "INPUT" || !el.closest(".field-box") || el.closest("form, #sheet")) return;
     var go = $("#go"); if (go) { e.preventDefault(); if (!go.disabled) go.click(); }
@@ -819,11 +827,21 @@
     function fit() {
       root.style.minHeight = "";
       var c = live()[0]; if (!c) return;
-      c.classList.remove("is-tight", "is-up");
-      var body = $(".qcard-body", c), top = $(".qcard-top", c), need = (top ? top.offsetHeight : 0) + (body ? body.offsetHeight : 0) + 4, room = root.clientHeight - need - 12;
-      /* the picture needs 64 px to read (a strip); with less it is dropped (never a sliver). The card keeps the deck's height: the question block is centred between
+      c.classList.remove("is-tight", "is-up", "is-snug");
+      var need = 0;
+      function room() { var body = $(".qcard-body", c), top = $(".qcard-top", c); need = (top ? top.offsetHeight : 0) + (body ? body.offsetHeight : 0) + 4; return root.clientHeight - need - 12; }
+      var r = room();
+      /* From 600 px of height (360 x 640 is the most common small Android phone) the card always has its picture, as a band of at least 72 px. The room comes
+         from the card itself first (is-snug: a smaller headline, tighter gaps, the second source sentence moves to Rules); if that is not enough the deck grows
+         and the page scrolls. */
+      if (window.innerHeight >= 600) {
+        if (r < 72) { c.classList.add("is-snug"); r = room(); }
+        if (r < 72) root.style.minHeight = (need + 12 + 72) + "px";
+        return;
+      }
+      /* Under 600 px of height the picture may give way: a strip from 64 px, with less it is dropped (never a sliver). Then the question block is centred between
          the kicker rule and the answers, and the headline is set one size up when that still fits. */
-      if (room < 64) { c.classList.add("is-tight"); if (room > 20) { c.classList.add("is-up"); if (c.scrollHeight > c.clientHeight + 1) c.classList.remove("is-up"); } }
+      if (r < 64) { c.classList.add("is-tight"); if (r > 20) { c.classList.add("is-up"); if (c.scrollHeight > c.clientHeight + 1) c.classList.remove("is-up"); } }
       if (root.clientHeight < need) root.style.minHeight = need + "px";   /* still too short without the picture: the deck grows and the page scrolls */
     }
     window.addEventListener("resize", fit);

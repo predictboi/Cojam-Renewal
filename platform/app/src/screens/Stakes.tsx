@@ -90,7 +90,7 @@ export default function Stakes() {
     stakes.map(card).join('') +
     help(t('m.closed.q', { n: (q.data?.closed || []).length }), (q.data?.closed || []).map((s) => '<div class="mclosed"><div class="row-between"><span>' + F.ct(s.amount) + ', ' + t('m.card.period', { d: s.lockDays, r: s.aprPct }) + '</span>' + tag(t('m.closed'), 'line') + '</div><p class="tiny muted">' + t('m.paidout', { a: F.dec(s.paid || 0, 2) }) + '</p></div>').join(''));
   return (
-    <Shell tab="stake" docTitle={t('s.title')} head={<Html className="ph-top ph-top--q" html={'<h1>' + t('s.title') + '</h1>' + qbtn('staking', t('s.title'))} />} badges={{ stake: 'dot' }}>
+    <Shell tab="stake" docTitle={t('s.title')} head={<Html className="ph-top ph-top--q" html={'<h1>' + t('s.title') + '</h1>' + qbtn('staking', t('s.title'))} />}>
       {tabs}
       <Html as="div" style={{ display: 'contents' }} html={body} onClick={onClick} />
     </Shell>

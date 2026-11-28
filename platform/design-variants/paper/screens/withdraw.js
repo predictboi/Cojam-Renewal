@@ -21,7 +21,7 @@
   function cfg(to, a) {
     var amt = F.dec(a);
     return { label: t("x.chip", { a: amt }), review: { title: t("x.rv.h", { a: amt }), rows: [[t("x.rv.to"), '<span class="addr-v" translate="no">' + F.groups(to) + "</span>"], [t("x.amount"), F.ct(a), true], [t("x.fee"), t("x.fee.v", { f: fee })]], check: t("x.rv.check"), confirm: t("x.rv.h", { a: amt }) },
-      success: { title: t("x.ok", { a: amt }), rows: [[t("x.rv.to"), '<span class="addr-v" translate="no">' + F.groups(to) + "</span>"], [t("pp.balance"), F.ct(Math.round((bal - a) * 1e4) / 1e4)]] },
+      success: { stamp: "pp.st.sent", title: t("x.ok", { a: amt }), rows: [[t("x.rv.to"), '<span class="addr-v" translate="no">' + F.groups(to) + "</span>"], [t("pp.balance"), F.ct(Math.round((bal - a) * 1e4) / 1e4)]] },
       onSuccess: function () { if (S === "" || S === "filled") App.ledger(-a, 0); var t1 = $("#to"), a1 = $("#amt"); if (t1) t1.value = ""; if (a1) a1.value = ""; touched = false; update(); },
       onDone: function () { if (S === "" || S === "filled") location.href = "wallet.html"; } };
   }

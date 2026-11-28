@@ -41,11 +41,12 @@ const { chromium } = require('playwright');
   const y0 = await pg.locator('#day5').evaluate(e => e.getBoundingClientRect().top);
   const ub = await pg.locator('#undo-last').boundingBox(); log.push('Undo on day done: right edge ' + Math.round(390 - ub.x - ub.width) + ' px from the right, ' + Math.round(844 - ub.y - ub.height) + ' px from the bottom (bottom right, as on the deck); focus on ' + await pg.evaluate(() => document.activeElement && document.activeElement.id));
   await pg.locator('.pick').first().tap(); await pg.waitForTimeout(300); log.push('tap on the list during the Undo window: Undo still there: ' + (await pg.locator('#undo-last').count() === 1));
+  const during = await pg.evaluate(() => { const f = document.querySelector('#done-fig'), s = getComputedStyle(f), b = document.querySelector('.pg .btn-primary'); return f.textContent + ' ' + (s.color === 'rgba(0, 0, 0, 0)' ? 'outline' : 'filled') + ', primary "' + b.textContent.trim() + '"'; });
   await pg.locator('#hero h1').tap(); await pg.waitForTimeout(250); await pg.screenshot({ path: 'captures/done-saving-en-390.png' });   // a tap on the headline area means finish now
   await pg.waitForSelector('#hero.is-paid');
   const seen = await pg.evaluate(() => new Promise(res => { const out = new Set(), f = document.querySelector('#done-fig'); const t = setInterval(() => out.add(f.textContent), 16); setTimeout(() => { clearInterval(t); res([...out]); }, 1600); }));
-  const nums = seen.map(x => +x.replace(/\D/g, '')), mono = nums.every((v, i) => i === 0 || v >= nums[i - 1]) && nums.every(v => v <= 100);
-  log.push('figure values seen while paying: ' + nums.length + ' steps from ' + nums[0] + ' to ' + nums[nums.length - 1] + ', never above 100 and never going down: ' + mono);
+  const after = await pg.evaluate(() => { const f = document.querySelector('#done-fig'), s = getComputedStyle(f), b = document.querySelector('.pg .btn-primary'); return f.textContent + ' ' + (s.color === 'rgba(0, 0, 0, 0)' ? 'outline' : 'filled') + ', primary "' + b.textContent.trim() + '"'; });
+  log.push('day done figure during the Undo window: ' + during + '; after: ' + after + '; values seen while paying: ' + seen.join(' '));
   await pg.waitForTimeout(1200); const y1 = await pg.locator('#day5').evaluate(e => e.getBoundingClientRect().top);
   log.push('layout shift of the boxes row between Undo phase and settled page: ' + Math.round(y1 - y0) + ' px');
   log.push('reward: ' + (await pg.locator('#seal').textContent()).trim() + ', points ' + (await pg.locator('#pts-val').textContent()) + ', dateline: ' + (await pg.locator('#dl-flip').textContent()).trim().replace(/\d\d:\d\d:\d\d/, 'hh:mm:ss'));
@@ -84,7 +85,7 @@ const { chromium } = require('playwright');
   log.push('typing "abc" into the amount leaves "' + junk + '"; Enter opens the review: ' + ((await pg.locator('#tx-confirm').count()) === 1));
   // a keyboard pick: Undo holds the pick while it has the focus, but only up to 10 seconds after the pick
   const kp = await b.newPage({ viewport: { width: 390, height: 844 } }); await kp.addInitScript(() => { try { localStorage.setItem('cjp.nudged', '1'); } catch (e) {} });
-  await kp.goto('http://localhost:8851/home.html?state=fresh', { waitUntil: 'networkidle' }); await kp.waitForTimeout(600); await kp.keyboard.press('Tab'); await kp.keyboard.press('ArrowRight'); const k0 = Date.now(); await kp.waitForTimeout(600);
+  await kp.goto('http://localhost:8851/home.html?state=fresh', { waitUntil: 'networkidle' }); await kp.waitForTimeout(600); await kp.keyboard.press('ArrowRight'); const k0 = Date.now(); await kp.waitForTimeout(600);
   const said = await kp.locator('#live').textContent(); const at5 = await kp.waitForTimeout(4400).then(() => kp.locator('#undo').count());
   await kp.waitForFunction(() => !document.querySelector('#undo'), null, { timeout: 9000 }); log.push('keyboard pick: announced "' + said + '"; Undo still there at 5 s: ' + (at5 === 1) + '; final after ' + ((Date.now() - k0) / 1000).toFixed(1) + ' s'); await kp.close();
   console.log(log.join('\n')); if (errs.length) console.log('ERRORS', errs);

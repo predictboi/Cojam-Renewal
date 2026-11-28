@@ -29,7 +29,7 @@
   function row(q) {
     var n = q.n, p = picks[n], num = '<span class="trow-n" aria-hidden="true">' + n + "</span>", cat = "<span>" + t("cat." + q.cat) + "</span>";
     if (p && p.sync !== "fail") {
-      var undo = p.sync === "held" ? '<button type="button" class="undo" data-undo="' + n + '" aria-label="' + App.esc(t("h.undo.aria", { n: n, choice: q[p.dir] })) + '"><span class="fuse fuse--btn" aria-hidden="true"><i style="--gone:-' + (Date.now() - p.t0) + 'ms"></i></span>' + C.icon("undo", 18) + "<span>" + t("h.undo") + "</span></button>" : "";
+      var undo = p.sync === "held" ? '<button type="button" class="undo" data-undo="' + n + '" aria-label="' + App.esc(t("h.undo.aria", { n: n, choice: q[p.dir] })) + '"><span class="fuse fuse--fill" aria-hidden="true"><i style="--gone:-' + (Date.now() - p.t0) + 'ms"></i></span>' + C.icon("undo", 18) + "<span>" + t("h.undo") + "</span></button>" : "";
       return '<li class="trow is-done">' + num + '<div><p class="trow-q">' + App.esc(q.title) + '</p><div class="trow-foot"><span class="trow-state">' +
         (p.sync === "saving" ? '<span class="spin"></span><span class="sr-only">' + t("common.saving") + "</span>" : undo ? "" : C.icon("check", 16)) + t("h.t.chose", { choice: C.pick(p.dir, App.esc(q[p.dir])) }) + "</span>" + (undo || (p.sync === "ok" ? C.tag(t("pp.final"), "", "lock") : "")) + "</div></div>" + C.thumb(q) + "</li>";
     }
@@ -42,7 +42,7 @@
           return '<button type="button" class="choice" data-pick="' + n + '" data-dir="' + d + '"' + (App.offline ? ' aria-disabled="true"' : "") + ' aria-label="' + App.esc(t("h.pick.aria", { choice: q[d], q: q.title })) + '">' + (d === "l" ? C.icon("left", 18) : "") + "<span>" + App.esc(q[d]) + "</span>" + (d === "r" ? C.icon("right", 18) : "") + "</button>";
         }).join("") + "</div>" + (App.offline ? '<p class="qcard-final">' + t("h.offline") + "</p>" : '<p class="qcard-final">' + t("h.final") + "</p>") + "</div></li>";
     }
-    return '<li class="trow' + (failed ? " is-fail" : "") + '">' + num + '<div><p class="trow-q">' + App.esc(q.title) + '</p><div class="trow-foot">' + cat +
+    return '<li class="trow' + (failed ? " is-fail" : "") + '">' + num + '<div><div class="trow-qw"><span class="trow-kick">' + t("cat." + q.cat) + '</span><p class="trow-q">' + App.esc(q.title) + '</p></div><div class="trow-foot">' +
       (failed ? '<span class="trow-state">' + C.icon("warn", 16) + t("h.t.notsaved") + "</span>" : "") +
       C.btn(failed ? t("h.t.again") : t("h.t.pick"), { sm: true, attrs: 'data-open="' + n + '"' }) + "</div></div>" + C.thumb(q) + "</li>";
   }
