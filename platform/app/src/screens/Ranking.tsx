@@ -114,7 +114,8 @@ export default function Ranking() {
       const tb = document.querySelector('.tb'); const top = (tb ? tb.getBoundingClientRect().top : innerHeight) - p.offsetHeight;
       for (const r of Array.from(document.querySelectorAll('#top10 .krow, #view .sh, #view .cols'))) {
         const q = r.getBoundingClientRect();
-        if (q.top < top - 0.5 && q.bottom > top + 0.5) { sec.style.marginTop = Math.ceil(top - q.top) + 'px'; break; }
+        // the exact (fractional) offset: a whole pixel rounded up would leave up to 1 px of the row above under the bar
+        if (q.top < top - 0.5 && q.bottom > top + 0.5) { sec.style.marginTop = (Math.ceil((top - q.top) * 100) / 100) + 'px'; break; }
       }
     };
     wholeRows();

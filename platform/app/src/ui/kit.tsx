@@ -125,7 +125,10 @@ export function Header({ back, title, pts = '', points, me }: { back?: string; t
     window.addEventListener('resize', fit);
     void document.fonts?.ready.then(fit);
     document.fonts?.addEventListener?.('loadingdone', fit);
-    return () => { window.removeEventListener('resize', fit); document.fonts?.removeEventListener?.('loadingdone', fit); };
+    // the points pill arrives after the first paint (and grows with "+50"): the plate gets narrower, so measure again when it changes size
+    const end = pl.closest('.mast-in')?.querySelector('.mast-end');
+    const ro = typeof ResizeObserver === 'function' ? new ResizeObserver(() => fit()) : null; if (ro && end) ro.observe(end);
+    return () => { ro?.disconnect(); window.removeEventListener('resize', fit); document.fonts?.removeEventListener?.('loadingdone', fit); };
   }, [back]);
   const onBack = (e: React.MouseEvent) => {
     // back to where the player came from when that was inside the app, else to the fixed parent
