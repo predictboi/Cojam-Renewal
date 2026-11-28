@@ -19,6 +19,7 @@ export default function Ranking() {
   const st = usePreset();
   const [week, setWeek] = useState<'current' | 'last'>(st === 'lastweek' || st === 'sent' ? 'last' : 'current');
   const q = useRanking(week);
+  const cur = useRanking('current');   // the dateline always says when this week ends
   const cfgQ = useConfig();
   const held = useHold() || st === 'hold';
   const loading = st === 'loading' || q.isPending;
@@ -110,7 +111,8 @@ export default function Ranking() {
     else pin = bar(d.me.rank, t('k.you'), t('k.gap', { gap: F.int(d.me.gap || 0) }), d.me.points, t('r.week'));
   }
   const onClick = (e: React.MouseEvent) => { if ((e.target as Element).closest('#how') && d) howSheet(d); };
-  const live = d && w === 'this' ? '<span>' + t('k.ends') + '</span> <b data-cd="' + Math.round((d.endsAt - Date.now()) / 1000) + '" data-cd-end="' + d.endsAt + '" data-cd-fmt="dh"></b>' : '';
+  const ends = cur.data?.endsAt;
+  const live = ends ? '<span>' + t('k.ends') + '</span> <b data-cd="' + Math.round((ends - Date.now()) / 1000) + '" data-cd-end="' + ends + '" data-cd-fmt="dh"></b>' : '';
   return (
     <Shell tab="rank" cls="sc-rank" docTitle={t('k.title')} live={live} head={<Html className="ph-top" html={'<h1>' + t('k.title') + '</h1>'} />} pin={pin}>
       {st === 'error' || q.isError ? <Html as="div" style={{ display: 'contents' }} html={errorNote()} /> : (

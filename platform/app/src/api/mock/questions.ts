@@ -20,8 +20,8 @@ export const MOCK_QUESTIONS: Record<string, MockQuestion> = {
 
 /** Today's set has no outcome before the day ends: every row of day 0 waits (times follow each question's rule). */
 export const MOCK_RESULTS_DAY0 = [
-  { q: 'q2', c: 'r', out: 'wait', exp: '16:00' },
   { q: 'q1', c: 'r', out: 'wait', exp: '21:00' },
+  { q: 'q2', c: 'r', out: 'wait', exp: '16:00' },
   { q: 'q3', c: 'l', out: 'wait', exp: '18:00' },
   { q: 'q4', c: 'r', out: 'wait', exp: '07:00' },
   { q: 'q5', c: 'r', out: 'wait', exp: '21:00' },
