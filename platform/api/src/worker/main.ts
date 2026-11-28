@@ -47,6 +47,8 @@ export function workerSettings(env: NodeJS.ProcessEnv, base: Partial<WorkerSetti
     poolPerPlayerWei: ct(Number(env.WEEKLY_POOL_PER_PLAYER_CT ?? 1)),
     poolCapWei: ct(Number(env.WEEKLY_POOL_CAP_CT ?? 10_000)),
     aiEnabled: env.AI_ENABLED !== '0' && env.AI_ENABLED !== 'false',
+    // Set to 1 only once CojamPredict with a per market answer deadline is deployed (long questions).
+    longQuestionsOnChain: env.LONG_QUESTIONS_ON_CHAIN === '1',
   };
 }
 

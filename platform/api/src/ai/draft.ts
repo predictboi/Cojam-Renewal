@@ -11,11 +11,15 @@ import { dayEnd } from '../../../shared/src/time.ts';
 import type { WDb } from '../worker/db.ts';
 import type { Logger } from '../worker/log.ts';
 import { contentHash } from './contentHash.ts';
-import { DRAFT_SYSTEM, PROMPT_VERSIONS, VALIDATE_SYSTEM, draftUser, validateUser } from './prompts.ts';
+import { DRAFT_SYSTEM, PROMPT_VERSIONS, VALIDATE_SYSTEM, draftOutsideUser, draftUser, validateUser, type OutsidePromptMarket } from './prompts.ts';
 import { AiOutputError, runLogged, type AiProvider } from './provider.ts';
-import { CHECKLIST, draftSetJson, draftSetZ, draftZ, normCategory, validationJson, validationZ, type Category, type Draft } from './schemas.ts';
-import { selectFive, type Candidate } from './select.ts';
-import { categoryMix, checkDraft, parseIsoWithOffset, type RecentQuestion } from './validate.ts';
+import { CHECKLIST, draftSetJson, draftSetZ, draftZ, normCategory, outsideDraftSetJson, validationJson, validationZ, type Category, type Draft } from './schemas.ts';
+import { fitsWith, selectFive, type Candidate } from './select.ts';
+import { categoryMix, checkDraft, checkOutsideLink, parseIsoWithOffset, type RecentQuestion } from './validate.ts';
+import { effectiveTiming, storedTiming } from './timing.ts';
+import { outsideCandidates, promptMarket } from './outside.ts';
+import type { OutsideMarket, OutsideMarkets } from '../dataRoom/polymarket.ts';
+import { audit } from '../db/index.ts';
 
 export interface AiDeps {
   db: WDb;
@@ -24,6 +28,14 @@ export interface AiDeps {
   now: () => number; // unix seconds
   minResolveGapSec: number;
   candidates?: number; // per drafting call, default 12
+  /** The deployed contract accepts long questions (worker setting LONG_QUESTIONS_ON_CHAIN). */
+  longOnChain?: boolean;
+  /** Outside markets for the Polymarket source step (matchOutsideDay). */
+  outside?: OutsideMarkets;
+}
+
+async function timingOf(deps: AiDeps) {
+  return effectiveTiming(await storedTiming(deps.db as never), Boolean(deps.longOnChain));
 }
 
 export interface DraftOutcome {
@@ -56,7 +68,7 @@ async function recentQuestions(db: WDb, dayId: number): Promise<RecentQuestion[]
 }
 
 /** Validates one draft in a fresh context. Returns quality (0..1) when accepted, or the reason. */
-async function aiValidate(deps: AiDeps, dayId: number, d: Draft): Promise<{ ok: true; quality: number; result: unknown } | { ok: false; reason: string; result: unknown }> {
+async function aiValidate(deps: AiDeps, dayId: number, d: Draft, outside?: OutsidePromptMarket | null): Promise<{ ok: true; quality: number; result: unknown } | { ok: false; reason: string; result: unknown }> {
   try {
     const { output, runId } = await runLogged(
       deps.db,
@@ -65,7 +77,7 @@ async function aiValidate(deps: AiDeps, dayId: number, d: Draft): Promise<{ ok: 
         job: 'validate',
         promptVersion: PROMPT_VERSIONS.validate,
         system: VALIDATE_SYSTEM,
-        user: validateUser(dayId, d),
+        user: validateUser(dayId, d, outside),
         schema: validationJson,
         effort: 'medium',
         maxTokens: 16_000,
@@ -129,6 +141,14 @@ async function schedule(db: WDb, dayId: number, chosen: { draftId: number; d: Dr
           draft_id: draftId,
         })
         .execute();
+      if (d.outsideSlug && d.outsideUrl && d.outsideRightOutcome) {
+        // The drafter mirrored an outside market: link it for the data room comparison (price read at our close).
+        await tx
+          .insertInto('market_outside')
+          .values({ market_id: marketId, source: 'polymarket', url: d.outsideUrl, market_slug: d.outsideSlug, right_outcome: d.outsideRightOutcome, linked_by: 'drafter' })
+          .onConflict((oc) => oc.column('market_id').doUpdateSet({ url: d.outsideUrl!, market_slug: d.outsideSlug!, right_outcome: d.outsideRightOutcome!, linked_by: 'drafter', right_price: null, taken_at: null, attempted_at: null, error: null, updated_at: new Date() }))
+          .execute();
+      }
       await tx.updateTable('market_drafts').set({ selected: true }).where('id', '=', draftId).execute();
       written.push(marketId);
     }
@@ -163,24 +183,31 @@ export async function fillFromReserve(deps: AiDeps, dayId: number): Promise<numb
     .where('rejected_reason', 'is', null)
     .execute();
   const recent = await recentQuestions(deps.db, dayId);
+  const timing = await timingOf(deps);
+  const linkedSlugs = await linkedSlugsOf(deps.db, dayId);
   const cands: (Candidate & { d: Draft })[] = [];
   for (const r of rows) {
     const parsed = draftZ.safeParse(r.payload);
     if (!parsed.success) continue;
     const d = parsed.data;
     // Re-run the code checks: the duplicate list and the clock have moved since drafting.
-    const code = checkDraft(d, { dayId, minResolveGapSec: deps.minResolveGapSec, recent });
+    const code = checkDraft(d, { dayId, minResolveGapSec: deps.minResolveGapSec, recent, longMaxDays: timing.longMaxDays });
     if (!code.ok) continue;
+    if (d.outsideSlug && linkedSlugs.has(d.outsideSlug)) continue; // one question per outside market
     const q = (r.validator_result as { ai?: { qualityScore?: number } } | null)?.ai?.qualityScore ?? 0.5;
-    cands.push({ id: r.id, category: d.category, titleEn: d.en.title, resolvesAt: code.times!.resolvesAt, quality: q, d });
+    cands.push({ id: r.id, category: d.category, titleEn: d.en.title, resolvesAt: code.times!.resolvesAt, quality: q, linked: Boolean(d.outsideSlug), d });
   }
   // The bands rule counts the questions already on the day.
   const existing = await deps.db.selectFrom('markets').select(['resolves_at', 'content']).where('day_id', '=', dayId).where('status', 'in', [...ACTIVE]).execute();
   const pinned: Candidate[] = existing.map((e, i) => ({ id: -1 - i, category: 'Crypto', titleEn: e.content.en.title, resolvesAt: Math.floor((e.resolves_at as Date).getTime() / 1000), quality: 2 }));
-  const picked = selectFive([...pinned, ...cands], remainingMix(dayId, taken), dayId)
+  const picked = selectFive([...pinned, ...cands], remainingMix(dayId, taken), dayId, { maxLong: timing.maxLong })
     .filter((c) => c.id >= 0)
     .slice(0, free.length);
-  const chosen = picked.map((c) => ({ draftId: c.id, d: cands.find((x) => x.id === c.id)!.d }));
+  // Two drafts of the same outside market: keep the first only.
+  const slugs = new Set<string>();
+  const chosen = picked
+    .map((c) => ({ draftId: c.id, d: cands.find((x) => x.id === c.id)!.d }))
+    .filter((c) => !c.d.outsideSlug || (!slugs.has(c.d.outsideSlug) && slugs.add(c.d.outsideSlug)));
   return schedule(deps.db, dayId, chosen, free);
 }
 
@@ -193,6 +220,7 @@ export async function draftDay(deps: AiDeps, dayId: number): Promise<DraftOutcom
 
   const recent = await recentQuestions(deps.db, dayId);
   const count = deps.candidates ?? 12;
+  const timing = await timingOf(deps);
   let drafts: Draft[] = [];
   let draftRunId: number | null = null;
   try {
@@ -203,7 +231,7 @@ export async function draftDay(deps: AiDeps, dayId: number): Promise<DraftOutcom
         job: 'draft',
         promptVersion: PROMPT_VERSIONS.draft,
         system: DRAFT_SYSTEM,
-        user: draftUser(dayId, count, remainingMix(dayId, taken), recent.slice(-60).map((x) => x.titleEn)),
+        user: draftUser(dayId, count, remainingMix(dayId, taken), recent.slice(-60).map((x) => x.titleEn), timing),
         schema: draftSetJson,
         effort: 'medium',
         maxTokens: 64_000,
@@ -221,8 +249,10 @@ export async function draftDay(deps: AiDeps, dayId: number): Promise<DraftOutcom
   }
   out.drafted = drafts.length;
 
-  for (const d of drafts) {
-    const code = checkDraft(d, { dayId, minResolveGapSec: deps.minResolveGapSec, recent });
+  for (const d0 of drafts) {
+    // Our own questions carry no outside link (only the source step may set one, from a listed market).
+    const { outsideSlug: _s, outsideRightOutcome: _r, outsideUrl: _u, ...d } = d0;
+    const code = checkDraft(d, { dayId, minResolveGapSec: deps.minResolveGapSec, recent, longMaxDays: timing.longMaxDays });
     let rejected: string | null = code.ok ? null : `code: ${code.errors.join('; ')}`;
     let ai: unknown = null;
     if (!rejected) {

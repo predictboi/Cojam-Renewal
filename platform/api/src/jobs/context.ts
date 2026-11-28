@@ -31,6 +31,8 @@ export interface WorkerSettings {
   publishAlertHourUtc: number;
   publishReserveHourUtc: number;
   aiEnabled: boolean;
+  /** The deployed CojamPredict accepts long questions (a per market answer deadline). False: none is drafted. */
+  longQuestionsOnChain: boolean;
   /** Floors for the balance monitors (wei). */
   minOperatorBalanceWei: bigint;
   minFeePayerBalanceWei: bigint;
@@ -56,6 +58,7 @@ export const DEFAULT_SETTINGS: WorkerSettings = {
   publishAlertHourUtc: 18,
   publishReserveHourUtc: 22,
   aiEnabled: true,
+  longQuestionsOnChain: false,
   minOperatorBalanceWei: 5n * 10n ** 18n,
   minFeePayerBalanceWei: 10n * 10n ** 18n,
   feePayerAddress: null,

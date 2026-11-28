@@ -26,7 +26,7 @@ const b32 = (s: string): Hex => stringToHex(s.slice(0, 31), { size: 32 });
 const unix = (d: Date | string | null) => (d ? Math.floor(new Date(d).getTime() / 1000) : 0);
 
 export function aiDeps(ctx: JobContext, minResolveGapSec: number): AiDeps {
-  return { db: ctx.db, provider: ctx.ai, log: ctx.log, now: ctx.now, minResolveGapSec, candidates: ctx.settings.draftCandidates };
+  return { db: ctx.db, provider: ctx.ai, log: ctx.log, now: ctx.now, minResolveGapSec, candidates: ctx.settings.draftCandidates, longOnChain: ctx.settings.longQuestionsOnChain };
 }
 
 export function resolveDeps(ctx: JobContext): ResolveDeps {

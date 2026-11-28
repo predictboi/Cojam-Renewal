@@ -34,6 +34,7 @@ export interface ListOpenOptions {
   endFrom: number;
   endTo: number;
   limit?: number;
+  offset?: number;
   /** Only markets with at least this traded volume (USD). */
   minVolume?: number;
 }
@@ -42,7 +43,7 @@ export interface OutsideMarkets {
   readonly name: string;
   /** One market by its slug (throws when it cannot be read). */
   market(slug: string): Promise<OutsideMarket>;
-  /** Open markets ending inside the window, most traded first. */
+  /** Open markets ending inside the window, most traded first (the API returns at most 100 a page). */
   listOpen(opts: ListOpenOptions): Promise<OutsideMarket[]>;
 }
 
@@ -145,7 +146,8 @@ export class PolymarketGamma implements OutsideMarkets {
       end_date_max: new Date(o.endTo * 1000).toISOString(),
       order: "volumeNum",
       ascending: "false",
-      limit: String(o.limit ?? 200),
+      limit: String(o.limit ?? 100),
+      offset: String(o.offset ?? 0),
     });
     if (o.minVolume) q.set("volume_num_min", String(o.minVolume));
     const raw = await this.get(`/markets?${q}`);
@@ -197,6 +199,6 @@ export class FakeOutsideMarkets implements OutsideMarkets {
     return [...this.markets.values()]
       .filter((m) => !m.closed && m.endsAt !== null && m.endsAt >= o.endFrom && m.endsAt <= o.endTo && m.volume >= (o.minVolume ?? 0))
       .sort((a, b) => b.volume - a.volume)
-      .slice(0, o.limit ?? 200);
+      .slice(o.offset ?? 0, (o.offset ?? 0) + (o.limit ?? 100));
   }
 }
