@@ -123,7 +123,7 @@ export default function Login() {
   const factsRef = useRef<HTMLUListElement>(null);
   useLayoutEffect(() => {
     const f = factsRef.current; if (!f) return;
-    f.hidden = step === 'setup';
+    f.hidden = false;
   });
   const headline = step === 'email' ? t('a.h1') : step === 'code' ? t('a.code.h1') : t('a.setup.h1');
 

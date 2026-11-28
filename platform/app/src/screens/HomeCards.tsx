@@ -72,7 +72,7 @@ export function HomeHead({ view, count, segs, loading }: { view: 'card' | 'term'
   return (
     <>
       <Html className="ph-top" html={'<h1>' + t('h.title') + '</h1>' + viewSwitch(view)} />
-      <Html className="ph-line" html={'<span class="sr-only"><span id="cnt">' + (loading ? 0 : count) + '</span>/5</span>' + day5(loading ? ['', '', '', '', ''] : segs, { id: 'day5' })} />
+      <Html className="ph-line" html={'<span class="sr-only"><span id="cnt">' + (loading ? 0 : count) + '</span>/5</span>' + day5(loading ? ['', '', '', '', ''] : [0, 1, 2, 3, 4].map((i) => segs[i] || ''), { id: 'day5' })} />
     </>
   );
 }
