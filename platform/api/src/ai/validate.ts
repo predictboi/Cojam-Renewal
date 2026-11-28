@@ -6,6 +6,7 @@
 
 import { dayEnd, dayOpensAt, kstDate, kstDateLabels, kstParts, MAX_RESOLVE_AFTER_OPEN_SECONDS, SECONDS_PER_DAY } from '../../../shared/src/time.ts';
 import { LANGS, type Category, type Draft, type Lang } from './schemas.ts';
+import type { OutsideMarket } from '../dataRoom/polymarket.ts';
 
 export interface TextLimits {
   title: number;
@@ -163,6 +164,11 @@ const BANNED: { re: RegExp; topic: string }[] = [
   { re: /\b(odds|betting|bets?|casino|bookmaker|gambling)\b/i, topic: 'gambling odds' },
   { re: /\b(porn\w*|adult content|nsfw|sex\w*)\b/i, topic: 'adult content' },
 ];
+
+/** Banned topics named in a free text (used to filter outside markets before drafting). */
+export function bannedInText(text: string): string[] {
+  return [...new Set(BANNED.filter((b) => b.re.test(text)).map((b) => b.topic))];
+}
 
 export function bannedTopics(d: Draft): string[] {
   const hay = [d.en.title, d.en.rule, d.criteria, ...d.entities].join(' \n ');
@@ -401,4 +407,37 @@ export function categoryMix(dayId: number): Record<Category, number> {
   if (marketsAllowedOnDay(dayId)) return { Crypto: 2, Sports: 1, Markets: 1, Culture: 1, Weather: 0 };
   // Friday and Saturday sets: the Markets slot becomes a Weather question (as in the admin design).
   return { Crypto: 2, Sports: 1, Markets: 0, Culture: 1, Weather: 1 };
+}
+
+// ---------------------------------------------------------------- questions mirrored from an outside market
+
+/** A linked question's answer time may follow the outside market's end by at most this much. */
+export const OUTSIDE_RESOLVE_AFTER_END_SEC = 6 * 3600;
+/** The outside market must end within this window after our close (DECISIONS "Questions from Polymarket"). */
+export const OUTSIDE_MIN_END_AFTER_CLOSE_SEC = DISCRETE_MIN_GAP_SEC;
+export const OUTSIDE_MAX_END_AFTER_CLOSE_SEC = 24 * 3600;
+
+/**
+ * Code checks of a question mirrored from an outside market (`m` is the market as read again just now): the market
+ * is still open and binary, the outcome named as our right choice is one of its two outcomes, it ends inside our
+ * timing window, and our answer time agrees with its end (not before it, at most 6 hours after it).
+ */
+export function checkOutsideLink(d: Pick<Draft, 'resolvesAt'> & { outsideRightOutcome?: string }, m: OutsideMarket, dayId: number): string[] {
+  const errors: string[] = [];
+  const close = dayEnd(dayId);
+  if (m.closed || !m.active) errors.push('the outside market is closed');
+  else if (!m.acceptingOrders) errors.push('the outside market no longer accepts orders');
+  if (m.outcomes.length !== 2) errors.push('the outside market is not binary');
+  const right = (d.outsideRightOutcome ?? '').trim().toLowerCase();
+  if (!right || !m.outcomes.some((o) => o.trim().toLowerCase() === right)) errors.push(`outsideRightOutcome "${d.outsideRightOutcome ?? ''}" is not one of ${JSON.stringify(m.outcomes)}`);
+  if (m.endsAt === null) errors.push('the outside market has no end time');
+  else {
+    if (m.endsAt < close + OUTSIDE_MIN_END_AFTER_CLOSE_SEC) errors.push('the outside market ends before our day closes (its outcome could be known before the close)');
+    if (m.endsAt > close + OUTSIDE_MAX_END_AFTER_CLOSE_SEC) errors.push('the outside market ends more than 24 hours after our close');
+    const resolvesAt = parseIsoWithOffset(d.resolvesAt);
+    if (resolvesAt !== null && (resolvesAt < m.endsAt || resolvesAt > m.endsAt + OUTSIDE_RESOLVE_AFTER_END_SEC)) {
+      errors.push('resolvesAt does not agree with the outside market end time (it must be at or up to 6 hours after it)');
+    }
+  }
+  return errors;
 }

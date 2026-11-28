@@ -48,6 +48,11 @@ export const draftZ = z.object({
   entities: z.array(z.string()),
   imageSubject: z.string(), // one concrete subject for the picture, no people, logos or text
   rationale: z.string(),
+  /** Mirrored from an outside market (Polymarket): its slug, and which of its outcomes is our right choice (choice B). */
+  outsideSlug: z.string().optional(),
+  outsideRightOutcome: z.string().optional(),
+  /** Set by code from the outside market, never by the model. */
+  outsideUrl: z.string().optional(),
 });
 export type Draft = z.infer<typeof draftZ>;
 
@@ -108,6 +113,24 @@ export const draftJson = {
     imageSubject: { type: 'string' },
     rationale: { type: 'string' },
   },
+} as const;
+
+/** A drafted question mirrored from a listed outside market: the draft plus the link (empty strings when none). */
+export const outsideDraftJson = {
+  ...draftJson,
+  required: [...draftJson.required, 'outsideSlug', 'outsideRightOutcome'],
+  properties: {
+    ...draftJson.properties,
+    outsideSlug: { type: 'string', description: 'slug of the listed outside market this question mirrors' },
+    outsideRightOutcome: { type: 'string', description: 'the outcome label of that market that equals our right choice (choice B)' },
+  },
+} as const;
+
+export const outsideDraftSetJson = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['candidates'],
+  properties: { candidates: { type: 'array', items: outsideDraftJson } },
 } as const;
 
 export const draftSetJson = {

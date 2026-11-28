@@ -1,6 +1,8 @@
 // Mock mode walk through of the PWA (build with `npm run build:mock`, serve with `npx vite preview --port 4180`).
 // 1. Opens every screen and its main states at 390x844 in EN and KO: no page errors, no console errors, no horizontal
 //    overflow; a capture of each goes to captures/<lang>/<screen>-<state>.png.
+// 1b. The public data room (/data) in a plain browser tab and inside the app at 390, 360x640 and 320: overflow, targets,
+//    the easy line in EN and KO, the expander, the Polymarket link; Results shows the split line on picked rows only.
 // 2. Plays the primary flow by touch (CDP touch events): swipe, Undo, five picks, day done.
 // Run: node e2e/walk.cjs [en|ko|all] (APP_PORT=4180)
 const { chromium } = require('playwright');
@@ -32,6 +34,7 @@ const SCREENS = [
   ['system', '/system', ['maintenance', 'update', 'offline', 'notfound', 'blocked']],
   ['terms', '/terms', ['']],
   ['privacy', '/privacy', ['']],
+  ['data', '/data', ['', 'open', 'loading', 'empty', 'error']],
 ];
 
 const results = [];
@@ -125,6 +128,72 @@ const ok = (name, cond, extra) => { results.push([cond ? 'PASS' : 'FAIL', name, 
         ok(lang + ' r6 360x640: own rank bar cuts nothing' + (st ? ' (' + st + ')' : ''), !cut);
       }
       await c3.close();
+    }
+
+
+    /* ---------- the data room (DECISIONS "Data room") ---------- */
+    {
+      const X = lang === 'ko'
+        ? { line: '62% 예', gapAbove: '폴리마켓보다 7%p 높아요', gapBelow: '폴리마켓보다 12%p 낮아요', same: '폴리마켓과 같아요', count: '집계 중', says: /Cojam 플레이어 \d+%가 .+ 쪽이에요|Cojam 플레이어가 50% : 50%로 나뉘었어요|집계 중/ }
+        : { line: '62% Yes', gapAbove: '7 points above Polymarket', gapBelow: '12 points below Polymarket', same: 'Same as Polymarket', count: 'Counting', says: /Cojam says \d+% .+|Cojam says 50% : 50%|Counting/ };
+      for (const [vw, vh] of [[390, 844], [360, 640], [320, 568]]) {
+        for (const mode of ['browser', 'app']) {
+          const L = lang + ' data ' + mode + ' ' + vw + 'x' + vh + ': ';
+          const cx = await b.newContext({ viewport: { width: vw, height: vh }, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+          const p = await cx.newPage(); const e2 = [];
+          p.on('pageerror', (e) => e2.push('pageerror: ' + e.message));
+          p.on('console', (m) => { if (m.type() === 'error' && !/fonts\.googleapis|jsdelivr|net::ERR/.test(m.text())) e2.push('console: ' + m.text()); });
+          try {
+            if (mode === 'app') { await p.goto(B + '/?standalone=1&lang=' + lang); await sleep(700); await p.goto(B + '/data'); }
+            else await p.goto(B + '/data?lang=' + lang);
+            await p.waitForSelector('button.dr-row', { timeout: 8000 }).catch(() => {}); await sleep(900);
+            const ov = await p.evaluate(() => { const w = document.documentElement.clientWidth; const bad = [...document.querySelectorAll('body *')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.right > w + 1 && !e.closest('.sheet-root:not(.is-open), .toasts, [aria-hidden="true"]') && getComputedStyle(e).position !== 'fixed'; }).slice(0, 3).map((e) => e.tagName + '.' + e.className); return { sw: document.documentElement.scrollWidth, w, bad }; });
+            ok(L + 'no horizontal overflow', ov.sw <= ov.w && ov.bad.length === 0, JSON.stringify(ov));
+            ok(L + 'opens as the data room, not the gate', (await p.locator('#data h1').count()) === 1 && (await p.locator('button.dr-row').count()) >= 10);
+            const text = await p.locator('#data').innerText();
+            ok(L + 'the easy line is there', text.includes(X.line) && text.includes(X.gapAbove) && text.includes(X.gapBelow) && text.includes(X.same) && text.includes(X.count) && text.includes('50% : 50%'), text.slice(0, 200));
+            ok(L + 'no word probability', !/probab|확률/i.test(text));
+            // a row: open, its detail shows; the Polymarket link opens a new tab without the opener
+            const first = p.locator('button.dr-row').first();
+            await first.tap(); await sleep(400);
+            const open = await p.evaluate(() => { const b = document.querySelector('button.dr-row'); const m = document.getElementById(b.getAttribute('aria-controls')); return { exp: b.getAttribute('aria-expanded'), shown: !!m && !m.hidden && m.getBoundingClientRect().height > 20, text: m ? m.innerText : '' }; });
+            ok(L + 'a tap opens the row detail', open.exp === 'true' && open.shown && /\d/.test(open.text), JSON.stringify(open));
+            const pm = await p.evaluate(() => { const a = document.querySelector('.rrow-more:not([hidden]) a[data-pm]'); return a ? { rel: a.getAttribute('rel'), target: a.getAttribute('target'), href: a.getAttribute('href') } : null; });
+            ok(L + 'the Polymarket link opens a new tab with rel noopener', !!pm && /noopener/.test(pm.rel || '') && pm.target === '_blank' && /^https:\/\/polymarket\.com\//.test(pm.href), JSON.stringify(pm));
+            // every visible control is at least 44 px both ways
+            const small = await p.evaluate(() => [...document.querySelectorAll('.auth.dr a, .auth.dr button')].filter((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && r.height > 0 && !e.closest('[hidden]') && (r.width < 43.5 || r.height < 43.5); }).map((e) => e.tagName + '.' + e.className + ' ' + Math.round(e.getBoundingClientRect().width) + 'x' + Math.round(e.getBoundingClientRect().height)));
+            ok(L + 'targets at least 44 px', small.length === 0, small.join(' | '));
+            await first.tap(); await sleep(400);
+            ok(L + 'a second tap closes it', (await first.getAttribute('aria-expanded')) === 'false');
+            // earlier days
+            const n0 = await p.locator('.dr-day').count();
+            await p.locator('#dr-more').tap(); await sleep(900);
+            ok(L + 'Show earlier days adds days', (await p.locator('.dr-day').count()) > n0 && (await p.locator('#dr-more').count()) === 0);
+            ok(L + (mode === 'browser' ? 'one quiet link to get the app' : 'no link to get the app inside the app'), (await p.locator('#dr-getapp').count()) === (mode === 'browser' ? 1 : 0));
+            if (vw === 390) {
+              await p.locator('.dr-head .qbtn').tap(); await sleep(500);
+              ok(L + 'the "?" sheet explains the figures', (await p.locator('#sheet h2').count()) === 1 && /30/.test(await p.locator('#sheet').innerText()));
+              await p.screenshot({ path: path.join(OUT, lang, 'data-' + mode + '.png') });
+            }
+            ok(L + 'no errors', e2.length === 0, e2.join(' | '));
+          } catch (e) { ok(L + 'completed without an exception', false, e.message.split('\n')[0]); }
+          await cx.close();
+        }
+      }
+      // Results: the split line on picked rows only; the way to the data room from its "?" sheet and from Profile
+      const L = lang + ' data results: ';
+      try {
+        await pg.goto(B + '/results'); await sleep(1400);
+        const sp = await pg.evaluate(() => { const rows = [...document.querySelectorAll('.rrow')]; return { withSplit: rows.filter((r) => r.querySelector('.rs-split')).length, splitNoPick: rows.filter((r) => r.querySelector('.rs-split') && !r.querySelector('.pk')).length, texts: [...document.querySelectorAll('.rs-split')].map((e) => e.textContent) }; });
+        ok(L + 'the split line shows on picked rows only', sp.withSplit >= 3 && sp.splitNoPick === 0 && sp.texts.every((x) => X.says.test(x)), JSON.stringify(sp));
+        await pg.locator('.rrow:has(.rs-split)').first().tap(); await sleep(400);
+        ok(L + 'the row detail shows the players', /\d/.test(await pg.locator('.rrow-more.is-open').first().innerText()) && (await pg.locator('.rrow-more.is-open').first().innerText()).includes(lang === 'ko' ? '참여 인원' : 'Players'));
+        await pg.locator('.ph-top .qbtn').tap(); await sleep(500);
+        await pg.locator('#sheet a#to-data').tap(); await sleep(1200);
+        ok(L + 'the "?" sheet leads to the data room', /\/data$/.test(pg.url()) && (await pg.locator('#data').count()) === 1, pg.url());
+        await pg.goto(B + '/profile'); await sleep(1300);
+        ok(L + 'Profile lists the data room', (await pg.locator('a#to-data[href="/data"]').count()) === 1);
+      } catch (e) { ok(L + 'completed without an exception', false, e.message.split('\n')[0]); }
     }
 
     /* ---------- the primary flow by touch ---------- */
