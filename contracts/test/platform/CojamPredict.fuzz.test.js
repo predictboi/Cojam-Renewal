@@ -587,7 +587,11 @@ async function runOne(seed) {
   // start with a conversion friendly preset (100 points per CT, 1 day account age), applied after the delay
   await actions.find(([, f]) => f.name === "params")[1]();
   await time.increase(48n * H);
-  while (M.pending) await actions.find(([, f]) => f.name === "params")[1]();
+  // a random re-proposal restarts the delay, so time moves on until one is applied
+  while (M.pending) {
+    await actions.find(([, f]) => f.name === "params")[1]();
+    if (M.pending) await time.increase(48n * H);
+  }
   const counts = {};
   for (let step = 0; step < STEPS; step++) {
     await ensureDays();
