@@ -334,3 +334,71 @@ Review F scored 84 / 100 and 36 / 40 with no blocker (`reviews/review-F.md`).
 | `node tools/motion-run.js all` and `node tools/motion-trace.js` | Five flows recorded again, 19 stills, no page errors. Drag: 121 frames, average 16.67 ms, maximum 16.8 ms at CPU 1x and 4x. Raster during a 2 s drag: 16.2 ms with layers, 57.1 ms without |
 | Captures | 168 stills in `captures/` retaken, 6 videos and 19 frames in `captures/video/` |
 
+## Round 5 (review G)
+
+Review G scored 83 / 100 and 34 / 40 (`reviews/review-G.md`). This is the last review round; the prototype is the reference for the app port from here.
+
+### Changes since 91dce3f (for the app port)
+
+| File | What changed |
+| --- | --- |
+| `assets/app.js` | `App.deck` `fit()`: from 600 px of viewport height the card keeps a picture of at least 72 px (class `is-snug` closes the card up first, then the deck grows); under 600 px the old rule stays (strip from 64 px, else `is-tight` and `is-up`). New `App.fitChoices()`: an answer label that does not fit steps the size of both answers down (run on load, resize, fonts ready and when nodes are added). `App.digits`: the colon gets the class `dgc`. Amount fields: the `beforeinput` filter now calls the new `App.refuse(el, why)`, which shows the reason under the field (`.field-refuse`, `role="status"`) and never changes the value. `App.tx.doneFig`: the stamp word comes from `success.stamp` (default "Filed") |
+| `assets/paper-i18n.js` | New keys: `pp.st.sent`, `pp.st.staked`, `pp.st.conv`, `pp.st.claimed`, `pp.st.out` (success stamps), `pp.numonly`, `pp.onepoint` (refused key), `pp.c.whole` (points with decimals), `pp.finishnow` |
+| `components.css` | Two appended blocks: "SPOT CHECK after round 4" and "REVIEW G (round 5)". Answer labels wrap only at a space (`word-break: keep-all`, `overflow-wrap: normal`). Under 600 px of height the home card is set tighter and the second source sentence is hidden. Home toasts come in under the dateline. `.dgc` colon cell. `+50` inside the points pill (column). Undo fill (`.undo .fuse--fill`) and its reduced motion state. Ranking names in the text face, `.xb`. Day done grey figure. `.qcard.is-snug`. `.field-refuse`. `.lbl-row` (fiat on the label line). First run: smaller drawing band when the invite code is open, the drawing centred absolutely, a real picture in `.art-img`. Own bar without a rank wraps |
+| `screens/home.js` | The Undo button carries the fuse (`fuse--fill` inside `#undo`; no rule on the bar). No toast in the `failed` state. No focus is taken at load |
+| `screens/home-list.js` | Undo button uses `fuse--fill`. Unopened rows carry the kicker above the headline (`trow-qw`, `trow-kick`) |
+| `screens/done.js` | The fuse is inside `#undo-last`. During the Undo window the primary is a button "Finish now" (`#fin-btn` in `#done-act`); `primary()` swaps in the link to the ranking when the window ends. The figure no longer counts up: it stands in grey (`is-wait`, `is-saving`) and turns blue when paid |
+| `screens/ranking.js` | `name()` sets every name in the text face (the "x" of an address is an inline block). `wholeRows()` sets the table down so a row ends at the top edge of the own bar at rest |
+| `screens/convert.js` | Points with decimals are refused (`pp.c.whole`); success stamp "Converted" |
+| `screens/withdraw.js`, `screens/staking.js`, `screens/stakes.js` | Success stamps "Sent", "Staked", "Claimed", "Withdrawn" |
+| `screens/wallet.js` | The fiat estimate (Korean only) sits on the label line (`.lbl-row`) |
+| `screens/first-run.js` | The drawing prints question 1 through the halftone; the drawing is fitted again when its band changes size |
+| `tools/small-check.js` | Card rule: at 600 px of height and more the first card has a picture of at least 72 px. After a pick: every card's two answers are whole above the pick bar without scrolling; no answer label breaks inside a word or overflows; a toast on home covers neither the answers nor the pick bar |
+| `tools/flow-test.js` | Day done figure (grey, then blue) and the primary label during and after the window; the keyboard pick no longer needs a Tab first |
+| `tools/amount-check.js`, `tools/tab-order.js`, `tools/card-measure.js` | New: amount fields (refused keys and pasted values), the Tab order on the tab roots, a measuring aid for the cards |
+
+### Spot check after round 4 (coordinator)
+
+| Finding | What was done |
+| --- | --- |
+| `home.html?lang=ja` at 320 x 568 after a pick: the pick bar covers the next card's answers; "上回らない" breaks inside the word | Under 600 px of height the card is set tighter (smaller headline, tighter gaps, the second source sentence in Rules), so both answers of every card are whole above the bar without scrolling. Labels wrap only at a space; a word that does not fit steps the size down (16 px for that pair at 320 px) |
+| `home.html?state=failed`: the toast covers the answers | Toasts on home come in under the dateline; in round 5 the `failed` toast itself was dropped because the card says it |
+
+### Review G: finding by finding
+
+| # | Finding | What was done |
+| --- | --- | --- |
+| 1 | No picture on the first card at 360 x 640 | From 600 px of height the card always has a picture band of at least 72 px in EN, KO and JA; the card closes up around it. The picture may drop only under 600 px. `small-check` holds the rule |
+| 2 | Colons collide with digits in the large countdown | The colon has its own centred cell (0.42em) at every size |
+| 3 | First run `code` state clips the text at 360 x 640 and 320 x 568 | With the code field open the drawing band shrinks first (to 56 px on the shortest phones) and the drawing is scaled into it; the panel scrolls after that. Headline and sentence are whole |
+| 4 | Day done looks half loaded during the Undo window; the primary ends the window without saying so | "+100P" stands in its final place in grey and turns to the reward blue when paid (an outline failed the contrast audit, so grey it is). The primary reads "Finish now" until the window ends, then "See weekly ranking" |
+| 5 | The nameplate drops its words at 360 px when the masthead carries "+50" | "+50" sits inside the points pill under the balance; "Cojam Daily" stays on every tab at 360 px |
+| 6 | The Undo time is only a 2 px line | The time is a draining fill inside the Undo button, with a 3 px ink foot. With reduced motion the fill stands still and the announcement carries the time |
+| 7 | "-5" leaves "5", "1e5" leaves "15" without a word | A refused key says why under the field ("Numbers only.", "One decimal point only.") and the value is never changed; a pasted value that cannot be read stays with an error and a disabled action. Withdraw, convert and staking use the one parser (`App.parseAmount`); points with decimals are refused, not rounded |
+| 8 | The own rank bar cuts through a table row | At rest the table is set down by the few pixels it takes for a row to end exactly at the bar's top edge (on load, resize and week change) |
+| 9 | The "not saved" toast sits over the title for 7 seconds | Dropped; the card carries "Not saved. Pick again." |
+| 10 | First run drawing is a blank halftone square | It prints question 1 through the halftone |
+| 11 | List view: the kicker of an unopened row sits by the Pick button | Above the headline, as in the open row |
+| 12 | Wallet KO: the fiat line pushes Convert under the fold at 360 x 640 | One rule: the estimate is Korean only and sits on the label line; rows are 44 px under 660 px of height |
+| 13 | Three faces for names in the ranking | The text face for every name; the slab stays on the rank numerals |
+| 14 | "FILED" is vague | "SENT", "STAKED", "CONVERTED", "CLAIMED", "WITHDRAWN" (and their Korean and Japanese forms) |
+| 15 | Tab reaches the skip link and masthead only after the tab bar | Home no longer takes the focus at load; `tools/tab-order.js` checks skip link, then masthead, on six tab roots |
+
+### Verification of round 5
+
+| Check | Result |
+| --- | --- |
+| `node tools/state-check.js` with the covered target test: EN at 390 x 844, KO at 320 x 568, JA at 360 x 640 | 215 states each, 645 pages, 0 problems (JA at 320 x 568 was also run after the spot check: 215, 0 problems) |
+| `node tools/small-check.js` with the round 5 rules | 705 checks, 0 failed |
+| `node tools/focus-check.js` | 201 focus stops, 0 hidden |
+| `node tools/lang-switch-check.js` | 45 checks, 0 failed |
+| `node tools/amount-check.js` (new) | 24 checks, 0 failed |
+| `node tools/tab-order.js` (new) | 6 tab roots, 0 wrong: skip link, then masthead |
+| `node tools/flow-test.js` | All steps as expected. Day done during the Undo window: "+100P" grey, primary "Finish now"; after: "+100P" blue, primary "See weekly ranking"; the figure never shows another amount; 0 px layout shift |
+| `sh tools/audit-all.sh` (the repository audit): EN every state at 390 x 844; KO and JA base screens at 390 x 844; EN at 360 x 640; KO at 320 x 568 | 287 URLs. 286 came back with 0 overflow, 0 contrast failures, 0 small targets. One (`done.html?state=saving`) flagged the first version of the waiting figure, a transparent outline; it is now grey and audits at 0 |
+| `node tools/motion-run.js all` and `node tools/motion-trace.js` | Five flows recorded again, 19 stills, no page errors. Drag with layers: 121 frames, average 16.67 ms, maximum 16.8 ms at CPU 1x and 4x. Raster during a 2 s drag: 18.5 ms with layers, 41.9 ms without |
+| Captures | 173 stills in `captures/` retaken, 6 videos and 19 frames in `captures/video/` |
+
+### Not fixed in round 5
+
+Every defect of review G is fixed. Two things differ from the letter of a ruling and are stated here: the waiting "+100P" on day done is grey, not an outline (ruling 4 allowed either; the outline failed the contrast audit), and typing "-5" still ends with "5" in the field, because the minus key is refused with the reason "Numbers only." shown under the field (ruling 7: refuse and state why; the value is never changed by the page). The items listed as not changed in rounds 3 and 4 stand.

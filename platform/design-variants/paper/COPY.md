@@ -53,6 +53,7 @@ Target check: the aim was a cut of at least 40% on the money, profile and invite
 - Results is long because it lists four days of five questions; the question texts are most of the words. A waiting row says "Answer at 21:00" and "+50P if hit" again (review A).
 - The card line "+50P if right. Undo for 3 seconds." is a rule of the game and shows at every screen size; the Rules sheet adds "A pick can be undone for 3 seconds. After that it is final."
 - Round 4: "+50P if hit" is said once, in the legend of the results list, not on every waiting row. An amount in error is explained once, under the field; the disabled action keeps its own words ("Stake", "Enter points to convert"). "Prizes sent." appears once. Empty and blocked states carry a one or two word stamp in place of an icon. In Korean and Japanese a figure never parts from the particle or unit after it ("10%를", "5問"): a word joiner is set between them in all text.
+- Round 5: the stamp on a success sheet names what happened ("Sent", "Staked", "Converted", "Claimed", "Withdrawn"). A refused key says why in two or three words ("Numbers only."). On day done the primary reads "Finish now" while the last pick can still be undone. On short phones the second sentence of the source line ("AI settles it after ...") is in the Rules sheet.
 - Home was not part of the pass (the founder asked to keep it). The source line now ends with the word "Rules", and the "0/5" figure is gone.
 
 ## Where each explanation went
