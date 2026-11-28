@@ -8,7 +8,7 @@ import { setState, STATE_KEYS } from "../../src/db/index.ts";
 import { createDevStubChain } from "../../src/chain/devStub.ts";
 import { cojamPredictAbi } from "../../src/chain/abi.ts";
 import { devSet, outcomeDayIsWeekend } from "../../../shared/src/devQuestions.ts";
-import { dayEnd } from "../../../shared/src/time.ts";
+import { dayEnd, kstDateLabels, settleDateLabels } from "../../../shared/src/time.ts";
 import { auth, buildTestApp, registeredUser, seedDay, type TestKit } from "./helpers.ts";
 
 let k: TestKit;
@@ -190,10 +190,15 @@ describe("dev question sets", () => {
           expect(q.resolveAfterMin).toBeGreaterThan(0);
           expect(dayEnd(d) + q.resolveAfterMin * 60).toBeGreaterThan(dayEnd(d));
           for (const l of ["en", "ko", "ja"] as const) expect(q.text[l].title.length).toBeGreaterThan(5);
-          // Each asks about the day after the set (its outcome falls after the close).
-          expect(q.text.en.title).toMatch(/tomorrow/i);
-          expect(q.text.ko.title).toMatch(/내일/);
-          expect(q.text.ja.title).toMatch(/明日/);
+          // Each names the set's settle date (the day after the set, or the date after it for answers read after
+          // midnight KST), never a relative day word that would read wrong on the Results screen days later.
+          const sd = settleDateLabels(d);
+          const nd = kstDateLabels(dayEnd(d) + 86400);
+          for (const l of ["en", "ko", "ja"] as const) {
+            expect([sd[l], nd[l]].some((x) => q.text[l].title.includes(x))).toBe(true);
+            expect([sd[l], nd[l]].some((x) => q.text[l].settle.includes(x))).toBe(true);
+            expect(`${q.text[l].title} ${q.text[l].settle}`).not.toMatch(/\b(tomorrow|tonight|today)\b|내일|오늘|明日|今日/i);
+          }
         }
         if (outcomeDayIsWeekend(d)) expect(set.some((q) => q.category === "markets")).toBe(false);
       }

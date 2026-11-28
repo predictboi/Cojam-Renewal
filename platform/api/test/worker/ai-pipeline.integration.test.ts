@@ -79,7 +79,7 @@ run('AI pipeline on Postgres', () => {
     expect(out.missingSlots).toEqual([0, 1, 2, 3, 4]);
     const runs = await t.db.selectFrom('ai_runs').selectAll().execute();
     expect(runs).toHaveLength(1);
-    expect(runs[0]).toMatchObject({ job: 'draft', stop_reason: 'refusal', prompt_version: 'draft-v1' });
+    expect(runs[0]).toMatchObject({ job: 'draft', stop_reason: 'refusal', prompt_version: 'draft-v2' });
     expect(runs[0].error).toMatch(/refusal \(cyber\)/);
     fake.on('draft', () => ({ candidates: [{ title: 'missing fields' }] }));
     await draftDay(deps, THU);

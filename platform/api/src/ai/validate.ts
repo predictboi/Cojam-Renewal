@@ -2,9 +2,9 @@
 // languages"). The fresh context AI validation covers meaning and voice; these checks are the hard
 // rules a model must never be trusted with: times against the contract, the text limits of every
 // language, the weekend rule, sources, banned topics, matching numbers across languages, the house
-// punctuation rule and duplicates.
+// punctuation rule, absolute dates (no relative day words) and duplicates.
 
-import { dayEnd, dayOpensAt, kstParts, MAX_RESOLVE_AFTER_OPEN_SECONDS } from '../../../shared/src/time.ts';
+import { dayEnd, dayOpensAt, kstDate, kstDateLabels, kstParts, MAX_RESOLVE_AFTER_OPEN_SECONDS, SECONDS_PER_DAY } from '../../../shared/src/time.ts';
 import { LANGS, type Category, type Draft, type Lang } from './schemas.ts';
 
 export interface TextLimits {
@@ -14,11 +14,15 @@ export interface TextLimits {
   settle: number;
 }
 
-/** DEV-PLAN 6.4 and SCREEN-SPEC AD3: EN title 70, choice 12, rule 60; KO and JA 40, 8, 40. */
+/**
+ * DEV-PLAN 6.4 and SCREEN-SPEC AD3: EN title 70, choice 12, rule 60; KO and JA 40, 8, 40. Titles and settle phrases
+ * name an absolute date with its weekday ("11월 29일(일) 오후 9시" instead of "내일 오후 9시"), so the KO and JA
+ * title limit was raised from 40 to 44 and their settle limit from 16 to 22.
+ */
 export const TEXT_LIMITS: Record<Lang, TextLimits> = {
   en: { title: 70, choice: 12, rule: 60, settle: 28 },
-  ko: { title: 40, choice: 8, rule: 40, settle: 16 },
-  ja: { title: 40, choice: 8, rule: 40, settle: 16 },
+  ko: { title: 44, choice: 8, rule: 40, settle: 22 },
+  ja: { title: 44, choice: 8, rule: 40, settle: 22 },
 };
 
 export const MIN_PROBABILITY = 0.25;
@@ -55,6 +59,75 @@ export function textLength(s: string): number {
 /** House rule: no dash as a sentence break (" - ", " – ", " — ") and no em dash at all. */
 export function hasDashBreak(s: string): boolean {
   return /\s[-–—]\s/.test(s) || /—/.test(s);
+}
+
+/**
+ * Relative day words a title or settle phrase must never use: a question is shown again on the Results screen days
+ * later, where "tomorrow" would be wrong. English is matched on word boundaries.
+ */
+const RELATIVE_DAY_WORDS: RegExp[] = [
+  /\b(tomorrow|tonight|today|yesterday|this evening|next week)\b/i,
+  /(내일|모레|오늘|어제)/,
+  /(明後日|明日|今日|今夜|昨日|あした|あさって)/,
+];
+
+/** The first relative day word in a text ("tomorrow", "내일", "明日", ...), or null. */
+export function relativeDayWord(s: string): string | null {
+  const t = s.normalize('NFKC');
+  for (const re of RELATIVE_DAY_WORDS) {
+    const m = re.exec(t);
+    if (m) return m[1];
+  }
+  return null;
+}
+
+export interface StatedDate {
+  month: number; // 1..12
+  day: number; // 1..31
+  /** 0 Sunday .. 6 Saturday, when the text gives the weekday. */
+  weekday: number | null;
+  text: string;
+}
+
+const EN_MONTH_RE = '(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sep(?:t(?:ember)?)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\\.?';
+const EN_WEEKDAY_RE = '(sun(?:day)?|mon(?:day)?|tue(?:s(?:day)?)?|wed(?:nesday)?|thu(?:r(?:s(?:day)?)?)?|fri(?:day)?|sat(?:urday)?)\\.?';
+const EN_MONTHS = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+const EN_WEEKDAYS = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+const KO_WEEKDAYS = '일월화수목금토';
+const JA_WEEKDAYS = '日月火水木金土';
+
+/** English "Sun, Nov 29" (weekday optional). */
+export const EN_DATE_RE = new RegExp(`\\b(?:${EN_WEEKDAY_RE},?\\s+)?${EN_MONTH_RE}\\s+(\\d{1,2})(?:st|nd|rd|th)?\\b`, 'gi');
+
+/** Dates a text states: EN "Sun, Nov 29", KO "11월 29일(일)", JA "11月29日(日)" (weekdays optional). */
+export function statedDates(lang: Lang, s: string): StatedDate[] {
+  const t = s.normalize('NFKC');
+  const out: StatedDate[] = [];
+  if (lang === 'en') {
+    for (const m of t.matchAll(EN_DATE_RE)) {
+      out.push({ month: EN_MONTHS.indexOf(m[2].slice(0, 3).toLowerCase()) + 1, day: Number(m[3]), weekday: m[1] ? EN_WEEKDAYS.indexOf(m[1].slice(0, 3).toLowerCase()) : null, text: m[0] });
+    }
+  } else {
+    const re = lang === 'ko' ? /(\d{1,2})\s*월\s*(\d{1,2})\s*일(?:\s*\(\s*([일월화수목금토])\s*\))?/g : /(\d{1,2})\s*月\s*(\d{1,2})\s*日(?:\s*\(\s*([日月火水木金土])\s*\))?/g;
+    const wds = lang === 'ko' ? KO_WEEKDAYS : JA_WEEKDAYS;
+    for (const m of t.matchAll(re)) out.push({ month: Number(m[1]), day: Number(m[2]), weekday: m[3] ? wds.indexOf(m[3]) : null, text: m[0] });
+  }
+  return out;
+}
+
+/**
+ * KST dates a question of `dayId` may name: the set's settle date (the day after the set opens, when its outcomes
+ * fall) and, when the answer is read only on the following date (a European match that ends after midnight KST),
+ * that date too.
+ */
+export function allowedDates(dayId: number, resolvesAt: number | null): { month: number; day: number; weekday: number }[] {
+  const close = dayEnd(dayId);
+  const out = [close];
+  if (resolvesAt !== null && resolvesAt > close && kstDate(resolvesAt) !== kstDate(close)) out.push(close + SECONDS_PER_DAY);
+  return out.map((u) => {
+    const p = kstParts(u);
+    return { month: p.month, day: p.day, weekday: p.weekday };
+  });
 }
 
 /** Parses an ISO 8601 timestamp that carries an offset or Z. Returns unix seconds or null. */
@@ -175,6 +248,9 @@ const STOP = new Set(['will', 'the', 'a', 'an', 'be', 'at', 'on', 'in', 'of', 't
 export function titleTokens(s: string): Set<string> {
   return new Set(
     s
+      .normalize('NFKC')
+      .replace(EN_DATE_RE, ' ')
+      .replace(/\bKST\b/gi, ' ')
       .toLowerCase()
       .replace(/[^a-z0-9$%. ]+/g, ' ')
       .split(/\s+/)
@@ -229,6 +305,27 @@ export function checkDraft(d: Draft, ctx: CheckContext): CodeCheckResult {
     if (t.left.trim() === t.right.trim()) errors.push(`${lang}: both choices are the same`);
   }
   if (hasDashBreak(d.criteria)) errors.push('criteria uses a dash as a sentence break');
+
+  // Absolute dates: no relative day words, and the date named is the set's settle date (with the right weekday).
+  const allowed = allowedDates(ctx.dayId, parseIsoWithOffset(d.resolvesAt));
+  const settleLabel = kstDateLabels(dayEnd(ctx.dayId));
+  for (const lang of LANGS) {
+    for (const f of ['title', 'settle'] as const) {
+      const v = d[lang][f];
+      const rel = relativeDayWord(v);
+      if (rel) errors.push(`${lang}.${f} uses the relative day word "${rel}"; name the date (${settleLabel[lang]})`);
+      const dates = statedDates(lang, v);
+      if (!dates.length) {
+        errors.push(`${lang}.${f} must name the date in KST (${settleLabel[lang]})`);
+        continue;
+      }
+      for (const sd of dates) {
+        const hit = allowed.find((a) => a.month === sd.month && a.day === sd.day);
+        if (!hit) errors.push(`${lang}.${f} names "${sd.text}", which is not the set's settle date ${settleLabel[lang]}`);
+        else if (sd.weekday !== null && sd.weekday !== hit.weekday) errors.push(`${lang}.${f} gives the wrong weekday in "${sd.text}"`);
+      }
+    }
+  }
 
   // Same large numbers in all three languages.
   const en = numbersOf(d.en);

@@ -182,3 +182,39 @@ export function dayIdFromKstDate(date: string): number {
   const ms = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
   return Math.floor(ms / 1000 / SECONDS_PER_DAY);
 }
+
+// ---------- Absolute date phrases of question texts ----------
+// Question texts never say "tomorrow" (a past question shown days later on the Results screen would read wrong):
+// they name the KST date with its weekday in each language's natural form.
+
+const EN_WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] as const;
+const EN_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"] as const;
+const KO_WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
+const JA_WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"] as const;
+
+export interface KstDateLabels {
+  /** "Sun, Nov 29" */
+  en: string;
+  /** "11월 29일(일)" */
+  ko: string;
+  /** "11月29日(日)" */
+  ja: string;
+}
+
+/** The KST calendar date of a unix time written as question texts write it, in EN, KO and JA. */
+export function kstDateLabels(unix: Int): KstDateLabels {
+  const p = kstParts(unix);
+  return {
+    en: `${EN_WEEKDAYS[p.weekday]}, ${EN_MONTHS[p.month - 1]} ${p.day}`,
+    ko: `${p.month}월 ${p.day}일(${KO_WEEKDAYS[p.weekday]})`,
+    ja: `${p.month}月${p.day}日(${JA_WEEKDAYS[p.weekday]})`,
+  };
+}
+
+/**
+ * The settle date of a set: the KST date of the day after the set opens, when every outcome of the set falls
+ * (the set closes at 09:00 KST on that date).
+ */
+export function settleDateLabels(dayId: Int): KstDateLabels {
+  return kstDateLabels(dayEnd(dayId));
+}

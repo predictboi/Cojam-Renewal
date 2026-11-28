@@ -7,7 +7,7 @@
 //   image_*      -> a prompt / an accepting check
 // Any job can be overridden with `on(job, handler)` (a handler may return an AiResponse or throw).
 
-import { dayEnd, dayOpensAt } from '../../../shared/src/time.ts';
+import { dayEnd, dayOpensAt, kstDateLabels, settleDateLabels } from '../../../shared/src/time.ts';
 import type { AiProvider, AiRequest, AiResponse } from './provider.ts';
 import type { Category, Draft, Resolution } from './schemas.ts';
 import { marketsAllowedOnDay } from './validate.ts';
@@ -29,7 +29,10 @@ export function fakeDraft(dayId: number, category: Category, n: number): Draft {
     imageSubject: 'a coin and a rising price line',
     rationale: 'fake draft for tests',
   };
-  const settle = { en: '21:00 tomorrow', ko: '내일 오후 9시', ja: '明日の21時' };
+  // Absolute dates (never "tomorrow"): the set's settle date, and the date after it for a match that ends after midnight KST.
+  const sd = settleDateLabels(dayId);
+  const nd = kstDateLabels(close + 86400);
+  const settle = { en: `21:00 KST on ${sd.en}`, ko: `${sd.ko} 오후 9시`, ja: `${sd.ja}21時` };
   switch (category) {
     case 'Crypto': {
       const coin = n % 2 === 0 ? 'Bitcoin' : 'Ethereum';
@@ -41,9 +44,9 @@ export function fakeDraft(dayId: number, category: Category, n: number): Draft {
         ...base,
         category,
         kind: 'continuous',
-        en: { title: `Will ${coin} be above $${lv} at 21:00 tomorrow?`, left: 'No', right: 'Yes', rule: `Binance price at 21:00 KST`, settle: settle.en },
-        ko: { title: `내일 밤 9시, ${ko}는 ${lv}달러 위에 있을까요?`, left: '아니요', right: '예', rule: '바이낸스 오후 9시 가격', settle: settle.ko },
-        ja: { title: `明日の21時、${ja}は${lv}ドルを超えている？`, left: '超えない', right: '超える', rule: 'Binanceの21時の価格', settle: settle.ja },
+        en: { title: `Will ${coin} be above $${lv} at 21:00 KST on ${sd.en}?`, left: 'No', right: 'Yes', rule: `Binance price at 21:00 KST`, settle: settle.en },
+        ko: { title: `${sd.ko} 오후 9시, ${ko}은 ${lv}달러 위에 있을까요?`, left: '아니요', right: '예', rule: '바이낸스 오후 9시 가격', settle: settle.ko },
+        ja: { title: `${sd.ja}21時、${ja}は${lv}ドルを超えている？`, left: '超えない', right: '超える', rule: 'Binanceの21時の価格', settle: settle.ja },
         criteria: `Binance ${coin} USDT last price at 21:00 KST on the day after the set; above ${lv} is Yes, equal or below is No.`,
         primarySource: { name: 'Binance', url: 'https://www.binance.com/en/trade/BTC_USDT' },
         secondarySource: { name: 'CoinGecko', url: 'https://www.coingecko.com/en/coins/bitcoin' },
@@ -58,9 +61,9 @@ export function fakeDraft(dayId: number, category: Category, n: number): Draft {
         category,
         kind: 'discrete',
         imageSubject: 'a ball flying into a net',
-        en: { title: `Match ${n}: ${goals} goals or more tomorrow night?`, left: `${goals - 1} or fewer`, right: `${goals} or more`, rule: 'Total goals at full time', settle: '07:00 in two days' },
-        ko: { title: `내일 밤 ${n}번 경기, ${goals}골 이상 나올까요?`, left: `${goals - 1}골 이하`, right: `${goals}골 이상`, rule: '정규 시간 기준 합계 득점', settle: '모레 오전 7시' },
-        ja: { title: `明日の夜の第${n}試合、合計${goals}点以上入る？`, left: `${goals - 1}点以下`, right: `${goals}点以上`, rule: '90分終了時の合計得点', settle: 'あさっての午前7時' },
+        en: { title: `Match ${n} at 05:00 KST on ${nd.en}: ${goals} goals or more?`, left: `${goals - 1} or fewer`, right: `${goals} or more`, rule: 'Total goals at full time', settle: `07:00 KST on ${nd.en}` },
+        ko: { title: `${nd.ko} 오전 5시 ${n}번 경기, ${goals}골 이상 나올까요?`, left: `${goals - 1}골 이하`, right: `${goals}골 이상`, rule: '정규 시간 기준 합계 득점', settle: `${nd.ko} 오전 7시` },
+        ja: { title: `${nd.ja}5時の第${n}試合、合計${goals}点以上入る？`, left: `${goals - 1}点以下`, right: `${goals}点以上`, rule: '90分終了時の合計得点', settle: `${nd.ja}7時` },
         criteria: `Total goals at full time of the match that starts 20:00 UTC on the day after the set; ${goals} or more is the right choice.`,
         primarySource: { name: 'Premier League', url: 'https://www.premierleague.com/matches' },
         secondarySource: { name: 'BBC Sport', url: 'https://www.bbc.com/sport/football/scores-fixtures' },
@@ -76,9 +79,9 @@ export function fakeDraft(dayId: number, category: Category, n: number): Draft {
         category,
         kind: 'continuous',
         imageSubject: 'two coins over a bar chart',
-        en: { title: `Will the Nikkei 225 close above ${lv} tomorrow?`, left: 'No', right: 'Yes', rule: 'Nikkei 225 official close', settle: '15:40 tomorrow' },
-        ko: { title: `내일 닛케이 225, ${lv} 위에서 마감할까요?`, left: '아니요', right: '예', rule: '닛케이 225 공식 종가', settle: '내일 오후 3시 40분' },
-        ja: { title: `明日の日経平均、終値は${lv}円を超える？`, left: '超えない', right: '超える', rule: '日経平均株価の終値', settle: '明日の15時40分' },
+        en: { title: `Will the Nikkei 225 close above ${lv} on ${sd.en}?`, left: 'No', right: 'Yes', rule: 'Nikkei 225 official close', settle: `15:40 KST on ${sd.en}` },
+        ko: { title: `${sd.ko} 닛케이 225, ${lv} 위에서 마감할까요?`, left: '아니요', right: '예', rule: '닛케이 225 공식 종가', settle: `${sd.ko} 오후 3시 40분` },
+        ja: { title: `${sd.ja}の日経平均、終値は${lv}円を超える？`, left: '超えない', right: '超える', rule: '日経平均株価の終値', settle: `${sd.ja}15時40分` },
         criteria: `Nikkei 225 official closing value at 15:30 JST on the day after the set; above ${lv} is Yes.`,
         primarySource: { name: 'Nikkei Indexes', url: 'https://indexes.nikkei.co.jp/en/nkave' },
         secondarySource: { name: 'JPX', url: 'https://www.jpx.co.jp/english/markets/indices/' },
@@ -93,9 +96,9 @@ export function fakeDraft(dayId: number, category: Category, n: number): Draft {
         category,
         kind: 'continuous',
         imageSubject: 'a city skyline under a cloud',
-        en: { title: `Will Tokyo reach ${t}°C between 09:00 and 21:00 tomorrow?`, left: 'No', right: 'Yes', rule: 'JMA Tokyo station, high', settle: '22:00 tomorrow' },
-        ko: { title: `내일 도쿄 낮 기온, ${t}도까지 오를까요?`, left: '아니요', right: '예', rule: '일본 기상청 도쿄 관측소 최고기온', settle: '내일 오후 10시' },
-        ja: { title: `明日の東京、最高気温は${t}℃に届く？`, left: '届かない', right: '届く', rule: '気象庁・東京の最高気温', settle: '明日の22時' },
+        en: { title: `Will Tokyo reach ${t}°C between 09:00 and 21:00 KST on ${sd.en}?`, left: 'No', right: 'Yes', rule: 'JMA Tokyo station, high', settle: `22:00 KST on ${sd.en}` },
+        ko: { title: `${sd.ko} 도쿄 낮 기온, ${t}도까지 오를까요?`, left: '아니요', right: '예', rule: '일본 기상청 도쿄 관측소 최고기온', settle: `${sd.ko} 오후 10시` },
+        ja: { title: `${sd.ja}の東京、最高気温は${t}℃に届く？`, left: '届かない', right: '届く', rule: '気象庁・東京の最高気温', settle: `${sd.ja}22時` },
         criteria: `Highest temperature at JMA Tokyo station between 09:00 and 21:00 JST on the day after the set; ${t}.0 or more is Yes.`,
         primarySource: { name: 'JMA', url: 'https://www.data.jma.go.jp/obd/stats/data/mdrr/tem_rct/alltable/mxtemsadext00.html' },
         secondarySource: { name: 'tenki.jp', url: 'https://tenki.jp/forecast/3/16/4410/13101/' },
@@ -109,9 +112,9 @@ export function fakeDraft(dayId: number, category: Category, n: number): Draft {
         category,
         kind: 'discrete',
         imageSubject: 'a film reel and a star',
-        en: { title: `Chart ${n}: will this week's No. 1 song change?`, left: 'No', right: 'Yes', rule: 'Weekly chart, published tomorrow', settle: '18:00 tomorrow' },
-        ko: { title: `${n}번 차트, 이번 주 1위 곡이 바뀔까요?`, left: '아니요', right: '예', rule: '내일 발표되는 주간 차트', settle: '내일 오후 6시' },
-        ja: { title: `第${n}チャート、今週の1位は入れ替わる？`, left: '変わらない', right: '変わる', rule: '明日発表の週間チャート', settle: '明日の18時' },
+        en: { title: `Chart ${n}: will the No. 1 song change on ${sd.en}?`, left: 'No', right: 'Yes', rule: 'Weekly chart published at 17:00 KST', settle: `18:00 KST on ${sd.en}` },
+        ko: { title: `${n}번 차트, ${sd.ko} 1위 곡이 바뀔까요?`, left: '아니요', right: '예', rule: '오후 5시에 발표되는 주간 차트', settle: `${sd.ko} 오후 6시` },
+        ja: { title: `第${n}チャート、${sd.ja}の1位は入れ替わる？`, left: '変わらない', right: '変わる', rule: '17時発表の週間チャート', settle: `${sd.ja}18時` },
         criteria: `The weekly chart published at 08:00 UTC on the day after the set; a different No. 1 song than last week is Yes.`,
         primarySource: { name: 'Melon', url: 'https://www.melon.com/chart/week/index.htm' },
         secondarySource: { name: 'Circle Chart', url: 'https://circlechart.kr/page_chart/global.circle' },

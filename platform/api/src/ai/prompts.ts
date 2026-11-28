@@ -1,13 +1,13 @@
 // Prompts of the AI pipeline. Bump the version string of a prompt whenever its text changes: every
 // `ai_runs` row records it, so results can be compared across versions.
 
-import { dayEnd, dayOpensAt, kstDateTime, kstParts } from '../../../shared/src/time.ts';
+import { dayEnd, dayOpensAt, kstDateLabels, kstDateTime, kstParts, settleDateLabels } from '../../../shared/src/time.ts';
 import type { Category, Draft } from './schemas.ts';
 import { TEXT_LIMITS, marketsAllowedOnDay } from './validate.ts';
 
 export const PROMPT_VERSIONS = {
-  draft: 'draft-v1',
-  validate: 'validate-v1',
+  draft: 'draft-v2',
+  validate: 'validate-v2',
   resolve: 'resolve-v1',
   imagePrompt: 'image-prompt-v1',
   imageCheck: 'image-check-v1',
@@ -24,6 +24,7 @@ const HOUSE_RULES = `House rules for every text, in every language:
 * Korean fixed terms: 예측 (prediction), 적중 (hit), 포인트 (points). Japanese fixed terms: 予想 (prediction), 的中 (hit), ポイント (points).
 * Korean: polite question endings such as "~할까요?", complete sentences, no noun phrase endings in titles.
 * Japanese: natural casual question form as used on the card ("~る？"), full width punctuation.
+* Absolute dates only: a question stays on the Results screen for days, so the title and the settle phrase name the date and time in Korea time, with the weekday, exactly as given for the set. Never use relative day words in a title or settle phrase: no "tomorrow", "tonight", "today", "yesterday", "this evening", "next week"; no 내일, 모레, 오늘, 오늘 밤, 어제; no 明日, 明後日, 今日, 今夜, 昨日. Avoid them in the answer rule too.
 * Write each language natively for its reader. Do not translate word for word: choices may differ in wording (English "No" / "Yes", Japanese "超えない" / "超える"), but meaning, numbers, dates, units and the source must be identical.`;
 
 export const DRAFT_SYSTEM = `You write the daily questions of Cojam, a free prediction game played on a phone in English, Korean and Japanese. Every day has a set of 5 binary questions. Players answer with a swipe; points only, no money is wagered.
@@ -52,6 +53,8 @@ export function draftUser(dayId: number, count: number, mix: Record<Category, nu
   const close = dayEnd(dayId);
   const wd = WEEKDAYS[kstParts(open).weekday];
   const l = TEXT_LIMITS;
+  const sd = settleDateLabels(dayId);
+  const nd = kstDateLabels(close + 86400);
   return `Write ${count} candidate questions for the set of ${wd} ${kstDateTime(open).slice(0, 10)} (day id ${dayId}).
 The set opens ${iso(open)} (${kstDateTime(open)} KST) and every question closes ${iso(close)} (${kstDateTime(close)} KST).
 Markets category allowed for this set: ${marketsAllowedOnDay(dayId) ? 'yes' : 'NO (the answers fall on the weekend)'}.
@@ -62,8 +65,16 @@ Category mix the 5 published questions need: ${Object.entries(mix)
 
 Text limits in characters (hard limits, counted as written):
 * English: title ${l.en.title}, each choice ${l.en.choice}, answer rule ${l.en.rule}, settle phrase ${l.en.settle}.
-* Korean and Japanese: title ${l.ko.title}, each choice ${l.ko.choice}, answer rule ${l.ko.rule}, settle phrase ${l.ko.settle}.
-The settle phrase says when the answer is known, relative to the set day, e.g. "21:00 tomorrow" / "내일 오후 9시" / "明日の21時". Times in Korean and Japanese texts are KST / JST.
+* Korean: title ${l.ko.title}, each choice ${l.ko.choice}, answer rule ${l.ko.rule}, settle phrase ${l.ko.settle}.
+* Japanese: title ${l.ja.title}, each choice ${l.ja.choice}, answer rule ${l.ja.rule}, settle phrase ${l.ja.settle}.
+Dates (copy these strings exactly, do not work out weekdays yourself):
+* The settle date of this set, when its outcomes fall: English "${sd.en}", Korean "${sd.ko}", Japanese "${sd.ja}".
+* Only when the deciding event happens or the answer is read after midnight KST that night, the following date: English "${nd.en}", Korean "${nd.ko}", Japanese "${nd.ja}".
+Every title and every settle phrase names one of these dates with a time in Korea time, in each language's natural form, for example:
+* English title "Will Bitcoin be above $100,000 at 21:00 KST on ${sd.en}?", settle "21:00 KST on ${sd.en}".
+* Korean title "${sd.ko} 오후 9시, 비트코인은 10만 달러 위에 있을까요?", settle "${sd.ko} 오후 9시".
+* Japanese title "${sd.ja}21時、ビットコインは10万ドルを超えている？", settle "${sd.ja}21時".
+The settle phrase says when the answer is known. Times in English texts carry "KST"; times in Korean and Japanese texts are KST / JST (the same clock) and carry no zone. Keep the rest of the title short so the date fits the limits.
 
 For every candidate give:
 * kind: "discrete" or "continuous".
@@ -91,13 +102,14 @@ Checklist ids and meaning:
 * allowed_topic: no politics, war, disasters, health of named people, private individuals, crime, Cojam or CT, thin tokens, adult content or gambling odds.
 * same_meaning: the English, Korean and Japanese texts say the same thing with the same numbers, dates, units and source.
 * native_voice: each language reads as written by a native writer for that reader.
-* house_rules: no dash used as a sentence break; Korean uses 예측, 적중, 포인트 and Japanese 予想, 的中, ポイント where those ideas appear.
+* house_rules: no dash used as a sentence break; no relative day word (tomorrow, tonight, today, 내일, 오늘, 明日, 今日 and the like) in a title or settle phrase, which name the set's settle date with the right weekday instead; Korean uses 예측, 적중, 포인트 and Japanese 予想, 的中, ポイント where those ideas appear.
 
 Return every checklist id once. verdict is "accept" only when every check passes. qualityScore from 0 to 1 says how good and interesting the question is for players.`;
 
 export function validateUser(dayId: number, d: Draft): string {
   const open = dayOpensAt(dayId);
-  return `Set: ${WEEKDAYS[kstParts(open).weekday]} ${kstDateTime(open).slice(0, 10)}, opens ${iso(open)}, closes ${iso(dayEnd(dayId))}.
+  const sd = settleDateLabels(dayId);
+  return `Set: ${WEEKDAYS[kstParts(open).weekday]} ${kstDateTime(open).slice(0, 10)}, opens ${iso(open)}, closes ${iso(dayEnd(dayId))}. Settle date: "${sd.en}" / "${sd.ko}" / "${sd.ja}".
 Question (JSON):
 ${JSON.stringify(d, null, 2)}`;
 }
