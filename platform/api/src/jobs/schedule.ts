@@ -8,6 +8,7 @@ import { compensationSweep } from './compensation.ts';
 import type { JobContext } from './context.ts';
 import { correctionCheck, expirySweep, publishDay, resolutionSweep, settleSweep } from './markets.ts';
 import { runMonitors } from './monitors.ts';
+import { outsidePriceSweep } from './outside.ts';
 import { riskCheck } from '../risk/check.ts';
 import { closeWeek, refreshWeekPool, runAirdrop } from './weekly.ts';
 
@@ -56,6 +57,12 @@ export const CRON_JOBS: CronJob[] = [
     },
   },
   { name: 'risk', cron: '0 * * * *', what: 'Hourly risk check over accounts active in 14 days', run: (ctx) => riskCheck(ctx, { run: 'hourly' }) },
+  {
+    name: 'outside-prices',
+    cron: '*/5 * * * *',
+    what: 'Data room: read the linked Polymarket price once, right after our day closes (a failure leaves it empty)',
+    run: async (ctx) => (ctx.outside ? outsidePriceSweep({ db: ctx.db as never, source: ctx.outside, now: ctx.now, log: ctx.log }) : { skipped: 'no outside source' }),
+  },
   { name: 'monitors', cron: '* * * * *', what: 'Snapshots for the API and alert conditions', run: runMonitors },
 ];
 

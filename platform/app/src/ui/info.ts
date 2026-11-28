@@ -6,6 +6,7 @@ import { F, esc } from '../lib/fmt';
 import { queryClient } from '../api';
 import type { AppConfig, InviteInfo, Ranking, WalletInfo } from '../api/types';
 import { btn, icon, rows } from './h';
+import { DATA_MIN_PLAYERS } from '../../../shared/src/dataRoom.ts';
 
 function cached<T>(name: string): T | undefined {
   return queryClient.getQueriesData<T>({ predicate: (q) => q.queryKey[0] === name }).map(([, d]) => d).find(Boolean);
@@ -20,6 +21,11 @@ export const INFO: Record<string, () => string> = {
   kaia: () => '<h2>' + t('pp.i.kaia') + '</h2>' + lines(['w.kaia.note', 'x.gas']) + closeBtn(),
   // how answers are set, and what the figure at the top of the screen is (the points balance)
   hits: () => '<h2>' + t('h.ai.h') + '</h2>' + lines(['d.hit.1', 'd.hit.2']) + plainSteps(['h.ai.1', 'h.ai.2', 'h.ai.3'].map((k) => t(k))) + lines(['r.bal.note']) + closeBtn(),
+  // Results: the same sheet, with the one way to the data room (the screen itself stays quiet)
+  results: () => '<h2>' + t('h.ai.h') + '</h2>' + lines(['d.hit.1', 'd.hit.2']) + plainSteps(['h.ai.1', 'h.ai.2', 'h.ai.3'].map((k) => t(k))) + lines(['r.bal.note']) +
+    '<p class="dr-sheet-link"><a class="linkish" href="/data" id="to-data">' + t('dr.link') + icon('chev', 16) + '</a></p>' + closeBtn(),
+  // the data room: what the figures are, and what they are not
+  data: () => '<h2>' + t('dr.i.h') + '</h2>' + lines(['dr.i.1', 'dr.i.2', 'dr.i.3', 'dr.i.4', 'dr.i.5'], { n: DATA_MIN_PLAYERS }) + closeBtn(),
   /* the conversion rules, with the 7 day wait before the first conversion and the daily limit, told before the player meets them */
   points: () => {
     const p = cached<AppConfig>('config')?.params;

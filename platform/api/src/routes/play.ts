@@ -21,6 +21,7 @@ import {
   requirePlayer,
   toUnix,
 } from "./common.ts";
+import { splitsFor } from "./data.ts";
 import { currentDayId, dayEnd, dayOpensAt, weekEnd, weekFirstDay, weekOf, weekStart } from "../../../shared/src/time.ts";
 import type {
   Choice,
@@ -224,11 +225,17 @@ export function registerPlayRoutes(app: FastifyInstance, kit: RouteKit): void {
           .execute()
       : [];
     const evidence = await evidenceUrls(markets.filter((m) => m.resolved_at).map((m) => m.market_id));
+    // Data room: the split only on rows whose pick is recorded (indexed), live while the day is open, final after.
+    const splits = await splitsFor(deps.db, markets.filter((m) => choiceOf.has(m.market_id)), nowMs);
 
     const days: ResultDay[] = page.map((ud) => {
       const rows = markets
         .filter((m) => m.day_id === ud.day_id)
-        .map((m) => rowOf(m, choiceOf.get(m.market_id) ?? null, ud.settled_mask, params.hitPoints, nowS, evidence));
+        .map((m) => {
+          const row = rowOf(m, choiceOf.get(m.market_id) ?? null, ud.settled_mask, params.hitPoints, nowS, evidence);
+          const split = row.myChoice ? splits.get(m.market_id) : undefined;
+          return split ? { ...row, split } : row;
+        });
       return {
         dayId: ud.day_id,
         weekId: weekOf(ud.day_id),

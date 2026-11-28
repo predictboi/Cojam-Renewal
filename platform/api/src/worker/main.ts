@@ -13,6 +13,7 @@ import { AnthropicProvider } from '../ai/anthropic.ts';
 import { FakeProvider } from '../ai/fake.ts';
 import { CategoryIllustrationGenerator } from '../ai/images.ts';
 import type { AiProvider } from '../ai/provider.ts';
+import { PolymarketGamma } from '../dataRoom/polymarket.ts';
 import { DEFAULT_SETTINGS, type JobContext, type WorkerSettings } from '../jobs/context.ts';
 import { processRegistrations } from '../jobs/registration.ts';
 import { processOperatorRequests } from '../jobs/requests.ts';
@@ -123,6 +124,8 @@ async function main() {
     images: { generator: new CategoryIllustrationGenerator(), store: null },
     adapters: [],
     settings,
+    // Public Polymarket Gamma API (no key). OUTSIDE_MARKETS=off turns the price read and the drafting source step off.
+    outside: process.env.OUTSIDE_MARKETS === 'off' ? undefined : new PolymarketGamma(),
     now: () => Math.floor(Date.now() / 1000),
   };
   // Dev only: follow the chain clock (a local node whose time is moved forward) instead of the wall clock.

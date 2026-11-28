@@ -13,6 +13,7 @@ import { Html, Shell, Seg } from '../ui/kit';
 import { usePreset } from '../state/app';
 import { sheet } from '../state/ui';
 import type { ResultDay, ResultRow } from '../api/types';
+import { saysText, shareText, splitView, topView } from '../lib/dataLine';
 
 const MARK: Record<string, string> = { hit: 'hit', pend: 'hit', corr: 'hit', miss: 'miss', wait: 'wait', none: 'off', void: 'off' };
 const mark = (k: string) => '<i class="rmark rmark--' + k + '" aria-hidden="true"></i>';
@@ -83,7 +84,14 @@ export default function Results() {
     if (r.outcome === 'corr') m += '<span>' + t('r.o.corr.line', { date: F.date(r.correctedAt || date) }) + ' ' + t('r.o.added') + '</span>';
     if (r.outcome === 'void') m += '<span>' + t('r.o.void.line') + '</span>';
     if (r.outcome === 'wait') m += '<span><b>' + t('h.ai.src') + ':</b> ' + esc(tx.rule || '') + '</span>';
-    const inner = '<span class="rs-main"><span class="rrow-q">' + esc(tx.title) + '</span><span class="rs-meta">' + (r.choice ? '<span>' + pick(r.choice, esc(r.choice === 'l' ? tx.left : tx.right)) + '</span>' : '<span>' + t('cat.' + r.category) + '</span>') + '</span></span>' + side(r);
+    // how the players picked: one small line under the player's own pick, the players and the top players behind the tap
+    let says = '';
+    if (r.choice && r.split) {
+      const w = { l: esc(tx.left), r: esc(tx.right) }, v = splitView(r.split), tv = topView(r.split);
+      says = '<span class="rs-split">' + saysText(v, w, t, (n) => '<span class="nw">' + n + '%</span>') + '</span>';
+      m += '<span><b>' + t('dr.x.players') + ':</b> <span class="tnum">' + F.int(r.split.players) + '</span></span>' + (tv && v.kind !== 'counting' ? '<span><b>' + t('dr.x.top') + ':</b> ' + shareText(tv, w, t, (n) => '<span class="nw">' + n + '%</span>') + '</span>' : '');
+    }
+    const inner = '<span class="rs-main"><span class="rrow-q">' + esc(tx.title) + '</span><span class="rs-meta">' + (r.choice ? '<span>' + pick(r.choice, esc(r.choice === 'l' ? tx.left : tx.right)) + '</span>' : '<span>' + t('cat.' + r.category) + '</span>') + '</span>' + says + '</span>' + side(r);
     const li = '<li data-out="' + (r.outcome === 'wait' ? 'wait' : 'set') + '">';
     if (!m) return li + '<div class="rrow">' + inner + '</div></li>';
     return li + '<button type="button" class="rrow" aria-expanded="false" aria-controls="' + id + '">' + inner + icon('down', 18, 'rrow-ch') + '</button>' +
@@ -162,7 +170,7 @@ export default function Results() {
   const next = today.data?.nextOpenAt;
   return (
     <Shell tab="results" cls="sc-results" docTitle={t('r.title')} live={next ? countCell('d.next', next) : ''}
-      head={<Html className="ph-top ph-top--q" html={'<h1>' + t('r.title') + '</h1>' + qbtn('hits', t('h.ai.h'))} />} pts={!st ? 'hits' : loading ? 'loading' : ''} badges={{ results: 0 }}>
+      head={<Html className="ph-top ph-top--q" html={'<h1>' + t('r.title') + '</h1>' + qbtn('results', t('h.ai.h'))} />} pts={!st ? 'hits' : loading ? 'loading' : ''} badges={{ results: 0 }}>
       {body}
     </Shell>
   );

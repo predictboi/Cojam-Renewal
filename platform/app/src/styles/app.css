@@ -37,3 +37,42 @@
 .legal-other { padding-top: var(--s-8); border-top: var(--rule); }
 /* the back arrow as a button (first run): the same bare arrow as the link in the masthead */
 button.mast-back { padding: 0; border: 0; background: none; }
+/* ---------- the data room (/data, DECISIONS "Data room"): a poll column in the cover style, rows are lines, not frames ---------- */
+.nw { white-space: nowrap; }
+.dr-page { display: grid; gap: var(--s-16); align-content: start; padding-top: var(--s-16); max-width: 40rem; min-width: 0; }
+.dr-page > * { min-width: 0; }
+.dr-head { display: flex; align-items: center; gap: var(--s-8); min-width: 0; }
+.dr-head h1 { min-width: 0; font-family: var(--font-display); font-weight: var(--fw-fig); font-size: clamp(1.75rem, 9vw, 2.5rem); line-height: 1.08; letter-spacing: var(--track-fig); text-wrap: balance; }
+.dr-head .qbtn { margin: 0 0 0 -4px; }
+/* the one figure: how often the larger share was right */
+.dr-crowd { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--s-4) var(--s-10); padding: var(--s-12) 0 var(--s-4); border-top: var(--rule-heavy); }
+.dr-crowd-l { font-size: var(--fs-15); font-weight: var(--fw-bold); }
+.dr-crowd-fig { font-family: var(--font-display); font-weight: var(--fw-fig); font-size: var(--fs-44); line-height: var(--lh-fig); letter-spacing: var(--track-fig); }
+.dr-crowd-n { color: var(--ink-2); font-size: var(--fs-13); }
+/* a day: the date as its rule heading */
+.dr-days { display: grid; gap: var(--s-24); min-width: 0; }
+.dr-day { padding-top: var(--s-12); border-top: var(--rule); }
+.dr-day h2 { font-size: var(--fs-18); }
+.dr-day .list { border-top: 0; }
+/* a row: the share in the slab with its answer's ink mark, the question in body type, the outside line small, the bar under it */
+.dr-row { row-gap: var(--s-8); padding: var(--s-12) 0; }
+.dr-row--plain { grid-template-columns: minmax(0, 1fr) auto; }
+.dr-row .rs-main { gap: var(--s-6); }
+.dr-fig { display: block; font-family: var(--font-display); font-weight: var(--fw-fig); font-size: var(--fs-26); line-height: 1.05; letter-spacing: var(--track-fig); overflow-wrap: anywhere; }
+.dr-fig--count { color: var(--ink-2); font-family: var(--font-text); font-size: var(--fs-15); font-weight: var(--fw-bold); letter-spacing: 0; }
+.dr-mk { display: inline-block; width: 12px; height: 12px; margin: 0 var(--s-8) 0 0; border: var(--rule); background: var(--pick-l); vertical-align: 0.12em; }
+.dr-mk--end { margin: 0 0 0 var(--s-8); }
+.dr-mk--r { background: var(--pick-r); }
+.dr-q { font-size: var(--fs-15); line-height: 1.4; text-wrap: pretty; }
+.dr-pm { color: var(--ink-2); font-size: var(--fs-13); font-weight: var(--fw-mid); font-variant-numeric: tabular-nums; }
+.dr-bar { grid-column: 1 / -1; display: flex; gap: 2px; height: 4px; }
+.dr-bar i:first-child { flex: none; background: var(--pick-l); }
+.dr-bar i:last-child { flex: 1 1 auto; background: var(--pick-r); }
+.dr-row .rs-side { min-width: 0; }
+.dr-day .rrow-more { justify-items: stretch; }
+.dr-row .rstamp { font-size: var(--fs-12); }
+/* the way to the app, for a visitor in a browser tab: one quiet link at the foot */
+.dr-app { padding-top: var(--s-4); border-top: var(--hair); }
+/* Results: how the players picked, one small line under the player's pick; the way to the data room in the "?" sheet */
+.rs-split { color: var(--ink-2); font-size: var(--fs-13); font-variant-numeric: tabular-nums; }
+.dr-sheet-link { margin-top: var(--s-4); }

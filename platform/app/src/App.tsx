@@ -39,6 +39,7 @@ import Profile from './screens/Profile';
 import Invite from './screens/Invite';
 import System from './screens/System';
 import Legal from './screens/Legal';
+import DataRoom from './screens/DataRoom';
 
 const SA_KEY = 'cjp.standalone';
 export function isStandalone(): boolean {
@@ -125,6 +126,7 @@ export function App() {
       <Route path="/system/:kind" element={<System />} />
       <Route path="/terms" element={<Legal kind="terms" />} />
       <Route path="/privacy" element={<Legal kind="privacy" />} />
+      <Route path="/data" element={<DataRoom inApp={false} />} />
       <Route path="*" element={<Gate />} />
     </Routes>
   );
@@ -135,6 +137,7 @@ export function App() {
       <Route path="/welcome" element={<FirstRun />} />
       <Route path="/terms" element={<Legal kind="terms" />} />
       <Route path="/privacy" element={<Legal kind="privacy" />} />
+      <Route path="/data" element={<DataRoom inApp />} />
       <Route path="/system/:kind" element={<System />} />
       <Route path="/" element={<Guard><HomeCards /></Guard>} />
       <Route path="/list" element={<Guard><HomeList /></Guard>} />

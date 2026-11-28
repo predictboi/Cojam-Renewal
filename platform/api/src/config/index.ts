@@ -88,6 +88,8 @@ const schema = z.object({
   SIGNUP_DEVICE_TOTAL: int(3),
   SIGNUP_GLOBAL_PER_HOUR_MIN: int(200),
   EMAIL_CHECK_IP_PER_HOUR: int(10),
+  /** GET /public/data (the data room, no sign in) per network per hour. */
+  PUBLIC_DATA_IP_PER_HOUR: int(600),
   EMAIL_CHECK_DEVICE_PER_HOUR: int(5),
   EMAIL_CHECK_EMAIL_PER_HOUR: int(5),
   INVITE_LOOKUP_IP_PER_HOUR: int(30),

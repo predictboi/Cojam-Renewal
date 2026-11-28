@@ -17,7 +17,7 @@ import type { AuthedAdmin } from "../auth/index.ts";
 /** app_state key of the maintenance switch (read by GET /v1/config once the player API exposes it). */
 export const MAINTENANCE_KEY = "app.maintenance";
 /** Names of the worker's scheduled jobs (src/jobs/schedule.ts CRON_JOBS), for `run_job`. */
-export const JOB_NAMES = ["draft", "draft-catchup", "images", "publish", "publish-late", "resolution", "settle", "expiry", "correction", "compensation", "week-close", "airdrop", "week-pool", "risk", "monitors"] as const;
+export const JOB_NAMES = ["draft", "draft-catchup", "images", "publish", "publish-late", "resolution", "settle", "expiry", "correction", "compensation", "week-close", "airdrop", "week-pool", "risk", "monitors", "outside-prices"] as const;
 const LOCK_DAYS = [30, 90, 180, 365];
 const CT = 10n ** 18n;
 const intStr = (v: string | null | undefined) => (v ?? "0").split(".")[0] || "0";

@@ -4,6 +4,7 @@ import type { AiProvider } from '../ai/provider.ts';
 import type { ImageGenerator, ImageStore } from '../ai/images.ts';
 import type { DataAdapter } from '../ai/resolve.ts';
 import type { Alerts } from '../worker/alerts.ts';
+import type { OutsideMarkets } from '../dataRoom/polymarket.ts';
 import type { Address } from '../worker/chain.ts';
 import type { WDb } from '../worker/db.ts';
 import type { Logger } from '../worker/log.ts';
@@ -73,6 +74,8 @@ export interface JobContext {
   images: { generator: ImageGenerator; store: ImageStore | null };
   adapters: DataAdapter[];
   settings: WorkerSettings;
+  /** Outside markets (Polymarket): the data room price read at day close and the drafting source step. Absent: both are skipped. */
+  outside?: OutsideMarkets;
   /** Unix seconds. Production: the wall clock (Kaia block time follows it); tests: the chain clock. */
   now: () => number;
 }

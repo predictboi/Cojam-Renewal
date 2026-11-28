@@ -56,6 +56,15 @@ describe('play and money reads', () => {
         rows: [{ marketId: 5, slot: 0, category: 'crypto', text: { en: T, ko: T, ja: T }, thumbUrl: null, myChoice: 1, outcome: null, correctedOutcome: null, result: 'pending', hitPoints: 0, hitState: 'none', landsAt: null, resolvesAt: 300, resolvedAt: null, evidenceUrl: null }] }] });
     expect(r.days[0].inviteBonus).toEqual({ points: 30, friends: 3 });
     expect(r.days[0].rows[0]).toMatchObject({ outcome: 'wait', expectedAt: 300_000 });
+    expect(r.days[0].rows[0].split).toBeUndefined();
+  });
+  it('results: the split of players reaches a picked row only', () => {
+    const row = { marketId: 5, slot: 0, category: 'crypto', text: { en: T, ko: T, ja: T }, thumbUrl: null, outcome: null, correctedOutcome: null, result: 'pending', hitPoints: 0, hitState: 'none', landsAt: null, resolvesAt: 300, resolvedAt: null, evidenceUrl: null, split: { players: 640, rightShare: 61.4, topRightShare: null } } as const;
+    const r = A.results({ summary: { week: { weekId: 0, points: 0, hits: 0, answered: 0, daysPlayed: 0 }, allTime: { points: 0, hits: 0, settled: 0, hitRate: null }, pendingPoints: 0 }, nextCursor: null,
+      days: [{ dayId: 1, weekId: 0, answered: 1, completed: false, completionPoints: 0, hits: 0, hitPointsCredited: 0, hitPointsPending: 0, welcomePoints: 0, inviteBonus: 0, inviteFriends: 0,
+        rows: [{ ...row, myChoice: 2 }, { ...row, marketId: 6, myChoice: null, result: 'unanswered' }] as never }] });
+    expect(r.days[0].rows[0].split).toEqual({ players: 640, rightShare: 61, topRightShare: null });
+    expect(r.days[0].rows[1].split).toBeUndefined();
   });
   it('ranking: last week and the airdrop transaction', () => {
     const k = A.ranking({ weekId: 9, startsAt: 0, endsAt: 1, status: 'airdropped', poolWei: CT(100), qualifiedPlayers: 3, splitBps: [10000], top: [], me: null, around: [], tieBreak: 'earlier_last_completion', airdropTx: '0xabc', lastWeek: { weekId: 8, rank: 4, prizeWei: '119600000000000000000', txHash: '0xdef' } });

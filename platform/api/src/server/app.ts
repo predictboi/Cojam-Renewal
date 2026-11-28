@@ -14,6 +14,7 @@ import { registerInviteRoutes } from "../routes/invite.ts";
 import { registerTxRoutes } from "../routes/tx.ts";
 import { registerAdminRoutes } from "../routes/admin.ts";
 import { registerDevRpcRoutes } from "../routes/devRpc.ts";
+import { registerDataRoutes } from "../routes/data.ts";
 
 export interface RouteKit {
   deps: Deps;
@@ -74,6 +75,7 @@ export async function buildApp(deps: Deps, opts: { logger?: boolean | object } =
   registerInviteRoutes(app, kit);
   registerTxRoutes(app, kit);
   registerAdminRoutes(app, kit);
+  registerDataRoutes(app, kit);
   registerDevRpcRoutes(app, kit);
   return app;
 }
