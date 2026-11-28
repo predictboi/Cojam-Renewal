@@ -168,6 +168,7 @@ export class FakeProvider implements AiProvider {
   private defaultFor(req: AiRequest): unknown {
     const meta = req.meta ?? {};
     if (req.job === 'draft') return { candidates: fakeDrafts(Number(meta.dayId), Number(meta.count ?? 12)) };
+    if (req.job === 'draft_outside') return { candidates: [] };
     if (req.job === 'validate') {
       const title = String(meta.title ?? '');
       const quality = 0.5 + ((title.length * 7) % 40) / 100;
