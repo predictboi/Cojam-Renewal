@@ -292,6 +292,8 @@ describe("CojamPredict: parameters", function () {
       [13, { treasury: Z }],
       [14, { splitBps: [3000n, 2000n, 1500n, 1000n, 700n, 500n, 400n, 300n, 300n, 299n] }],
       [14, { splitBps: [2000n, 3000n, 1500n, 1000n, 700n, 500n, 400n, 300n, 300n, 300n] }],
+      [15, { maxResolveAfterClose: DAY - 1n }], [15, { maxResolveAfterClose: 90n * DAY + 1n }], [15, { maxResolveAfterClose: 0n }],
+      [15, { minResolveGap: 2n * DAY, maxResolveAfterClose: 2n * DAY - 1n }],
     ];
     for (const [which, patch] of bad) {
       await expect(own.proposeParams(withParams(ctx, patch)), JSON.stringify(patch, (k, v) => (typeof v === "bigint" ? v.toString() : v)))
@@ -305,9 +307,10 @@ describe("CojamPredict: parameters", function () {
       { maxConvertCtPerUserPerDay: 1n, maxConvertCtPerDay: 100n }, { maxConvertCtPerUserPerDay: 10000n, maxConvertCtPerDay: 1_000_000n },
       { minAccountAge: 30n * DAY, minResolveGap: 7n * DAY, maxWeeklyPool: 1_000_000n, airdropDelay: 7n * DAY },
       { splitBps: [10000n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n, 0n] }, { splitBps: Array(10).fill(1000n) },
+      { maxResolveAfterClose: DAY }, { maxResolveAfterClose: 90n * DAY }, { minResolveGap: 7n * DAY, maxResolveAfterClose: 7n * DAY },
     ];
     for (const patch of edges) await own.proposeParams(withParams(ctx, patch));
-    expect(PARAM_FIELDS.length).to.equal(15);
+    expect(PARAM_FIELDS.length).to.equal(16);
   });
 
   it("applied parameters take effect: points, rate, treasury", async function () {

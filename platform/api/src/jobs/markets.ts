@@ -9,7 +9,7 @@
 
 import { sql } from 'kysely';
 import { stringToHex, type Hex } from 'viem';
-import { canCreateDay, dayEnd, dayOpensAt, LATE_CREATE_MARGIN_SECONDS, resolveDeadline } from '../../../shared/src/time.ts';
+import { answerDeadline, canCreateDay, dayEnd, dayOpensAt, LATE_CREATE_MARGIN_SECONDS } from '../../../shared/src/time.ts';
 import { contentHash } from '../ai/contentHash.ts';
 import { draftDay, fillFromReserve, type AiDeps } from '../ai/draft.ts';
 import { prepareImage } from '../ai/images.ts';
@@ -128,7 +128,8 @@ export async function resolutionSweep(ctx: JobContext): Promise<SweepResult> {
     .orderBy('resolves_at')
     .execute();
   for (const m of rows) {
-    if (now >= resolveDeadline(m.day_id)) continue; // expiry sweep's job
+    const resolvesAt = unix(m.resolves_at);
+    if (now >= answerDeadline(m.day_id, resolvesAt)) continue; // expiry sweep's job
     const onChain = await chainMarket(ctx, m.market_id);
     if (onChain.outcome !== 0) continue; // set already; the indexer will mirror it
     const last = await ctx.db.selectFrom('resolutions').select(sql<Date>`max(created_at)`.as('at')).where('market_id', '=', m.market_id).where('run', 'in', ['1', '2']).executeTakeFirst();
@@ -147,7 +148,7 @@ export async function resolutionSweep(ctx: JobContext): Promise<SweepResult> {
         await ctx.alerts.raise(`market-voided:${m.market_id}`, 'warn', `Market ${m.market_id} voided (${d.reason})`, 'No hit points on this market; completion points are unaffected.');
       } else {
         out.waiting++;
-        if (now >= dayEnd(m.day_id) + 24 * 3600) await ctx.alerts.raise(`outcome-missing:${m.market_id}`, 'warn', `Market ${m.market_id} still without an answer`, d.reason);
+        if (now >= Math.max(dayEnd(m.day_id) + 24 * 3600, resolvesAt + 6 * 3600)) await ctx.alerts.raise(`outcome-missing:${m.market_id}`, 'warn', `Market ${m.market_id} still without an answer`, d.reason);
       }
     } catch (e) {
       ctx.log.warn('resolution: send failed', { marketId: m.market_id, error: (e as Error).message });
@@ -228,12 +229,13 @@ export async function settleSweep(ctx: JobContext): Promise<{ batches: number; u
 
 export async function expirySweep(ctx: JobContext): Promise<number> {
   const now = ctx.now();
-  const rows = await ctx.db.selectFrom('markets').select(['market_id', 'day_id']).where('status', 'in', ['published', 'closed']).where('outcome', 'is', null).execute();
+  const rows = await ctx.db.selectFrom('markets').select(['market_id', 'day_id', 'resolves_at']).where('status', 'in', ['published', 'closed']).where('outcome', 'is', null).execute();
   let n = 0;
   for (const m of rows) {
-    if (now < resolveDeadline(m.day_id)) continue;
+    // Short questions: dayEnd + 48 h (deployed contract). Long ones: their own deadline (placeholder until the new ABI).
+    if (now < answerDeadline(m.day_id, unix(m.resolves_at))) continue;
     if ((await chainMarket(ctx, m.market_id)).outcome !== 0) continue;
-    await ctx.alerts.raise(`expired:${m.market_id}`, 'critical', `Market ${m.market_id} passed the 48 hour deadline without an answer`, 'voidExpired is being sent.');
+    await ctx.alerts.raise(`expired:${m.market_id}`, 'critical', `Market ${m.market_id} passed its answer deadline without an answer`, 'voidExpired is being sent.');
     try {
       await ctx.sender.send({ job: 'expiry', to: ctx.contracts.predict, abi: cojamPredictAbi, functionName: 'voidExpired', args: [BigInt(m.market_id)] });
       n++;

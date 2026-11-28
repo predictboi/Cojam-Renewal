@@ -9,15 +9,16 @@
 //     without a verified quote counts as undeterminable.
 //   * Both runs (and the adapter when present) agree with confidence >= 0.9: setOutcome.
 //     Both say the event was cancelled or postponed: void.
-//     Otherwise: retry every hour; 40 hours after the day's end the market is voided (8 hours of
-//     margin before the contract's 48 hour deadline).
+//     Otherwise: retry every hour; 8 hours before the market's answer deadline it is voided (for a short
+//     question 40 hours after the day's end, 8 hours of margin before the contract's 48 hour deadline; for a
+//     long question its own deadline, see answerDeadline in shared/src/time.ts).
 //   * Inside the settle window a third run checks the answer again. A disagreement triggers one more
 //     independent run; `correctOutcome` only when the two re-check runs (plus the adapter) agree on
 //     the other answer. Otherwise an alert, and the answer stands.
 
 import { createHash } from 'node:crypto';
 import { gzipSync } from 'node:zlib';
-import { dayEnd } from '../../../shared/src/time.ts';
+import { answerDeadline, dayEnd } from '../../../shared/src/time.ts';
 import type { WDb } from '../worker/db.ts';
 import type { Logger } from '../worker/log.ts';
 import { PROMPT_VERSIONS, RESOLVE_SYSTEM, resolveUser, type ResolvePromptMarket } from './prompts.ts';
@@ -27,6 +28,8 @@ import { hostOf } from './validate.ts';
 
 export const MIN_CONFIDENCE = 0.9;
 export const VOID_AFTER_DAY_END_SEC = 40 * 3600;
+/** A market without an answer is voided this long before its answer deadline. */
+export const VOID_BEFORE_DEADLINE_SEC = 8 * 3600;
 export const RETRY_EVERY_SEC = 3600;
 
 export type AB = 'A' | 'B';
@@ -52,7 +55,7 @@ export function isDecisive(r: RunSummary): r is RunSummary & { outcome: AB } {
 export type Decision = { action: 'set'; outcome: 1 | 2 } | { action: 'void'; reason: string } | { action: 'wait'; reason: string };
 
 /** The rule for a first answer: two decisive runs on the same answer, and the adapter if any. */
-export function decide(runs: RunSummary[], adapter: AB | null | undefined, nowUnix: number, dayId: number): Decision {
+export function decide(runs: RunSummary[], adapter: AB | null | undefined, nowUnix: number, dayId: number, resolvesAt?: number): Decision {
   const [r1, r2] = runs;
   if (r1 && r2 && isDecisive(r1) && isDecisive(r2) && r1.outcome === r2.outcome && (adapter === undefined || adapter === r1.outcome)) {
     return { action: 'set', outcome: r1.outcome === 'A' ? 1 : 2 };
@@ -60,7 +63,7 @@ export function decide(runs: RunSummary[], adapter: AB | null | undefined, nowUn
   if (r1 && r2 && r1.outcome === 'void' && r2.outcome === 'void' && r1.eventCancelled && r2.eventCancelled && r1.verifiedQuotes > 0 && r2.verifiedQuotes > 0) {
     return { action: 'void', reason: 'cancelled' };
   }
-  if (nowUnix >= dayEnd(dayId) + VOID_AFTER_DAY_END_SEC) return { action: 'void', reason: 'unresolved' };
+  if (nowUnix >= answerDeadline(dayId, resolvesAt ?? dayEnd(dayId)) - VOID_BEFORE_DEADLINE_SEC) return { action: 'void', reason: 'unresolved' };
   const why = !r1 || !r2 ? 'missing run' : adapter === null ? 'adapter has no data' : `runs: ${r1.outcome}/${r1.confidence} and ${r2.outcome}/${r2.confidence}`;
   return { action: 'wait', reason: why };
 }
@@ -219,7 +222,7 @@ export async function resolveMarket(deps: ResolveDeps, marketId: number): Promis
   const adapter = await adapterAnswer(deps, pm);
   const r1 = await runResolution(deps, pm, 1);
   const r2 = await runResolution(deps, pm, 2);
-  return decide([r1, r2], adapter, deps.now(), pm.dayId);
+  return decide([r1, r2], adapter, deps.now(), pm.dayId, pm.resolvesAt);
 }
 
 /** The re-check inside the settle window. Runs at most two re-check runs. Sends nothing. */

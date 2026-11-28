@@ -340,12 +340,12 @@ describe("CojamPredict: days", function () {
     const d = day0 + 10n;
     const open = dayOpen(d);
     const m = marketsFor(d, { gap: H });
-    m[1].resolvesAt = open + 2n * DAY; // the 48 hour rule's last second
+    m[1].resolvesAt = open + DAY + 30n * DAY; // maxResolveAfterClose (30 days) after the close, the last second
     m[0].resolvesAt = m[0].closesAt + H; // exactly the gap
     await expect(op.createDay(d, m)).to.emit(predict, "DayCreated").withArgs(d, m.map((x) => x.contentHash));
     const mk = await predict.markets(d * 5n + 1n);
     expect(mk.closesAt).to.equal(open + DAY);
-    expect(mk.resolvesAt).to.equal(open + 2n * DAY);
+    expect(mk.resolvesAt).to.equal(open + 31n * DAY);
     expect(mk.resolvedAt).to.equal(0n);
     expect(mk.outcome).to.equal(0n);
     expect(mk.contentHash).to.equal(m[1].contentHash);
@@ -367,7 +367,7 @@ describe("CojamPredict: days", function () {
     await expect(op.createDay(d, m)).to.be.revertedWithCustomError(predict, "BadTimes");
     m = good(); m[0].resolvesAt = m[0].closesAt + H - 1n;
     await expect(op.createDay(d, m)).to.be.revertedWithCustomError(predict, "BadTimes");
-    m = good(); m[4].resolvesAt = open + 2n * DAY + 1n;
+    m = good(); m[4].resolvesAt = open + DAY + 30n * DAY + 1n; // beyond maxResolveAfterClose
     await expect(op.createDay(d, m)).to.be.revertedWithCustomError(predict, "BadTimes");
     m = good(); m[1].contentHash = ethers.ZeroHash;
     await expect(op.createDay(d, m)).to.be.revertedWithCustomError(predict, "EmptyContentHash");

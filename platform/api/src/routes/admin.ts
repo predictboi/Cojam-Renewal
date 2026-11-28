@@ -10,7 +10,7 @@ import type { RouteKit } from "../server/app.ts";
 import { ApiError } from "../server/errors.ts";
 import { cojamPredictAbi } from "../chain/abi.ts";
 import { addresses as sharedAddresses } from "../../../shared/addresses/index.ts";
-import { DEFAULT_PARAMS, LIVE_STATUSES, chainTry, imageUrls, predictParams, toUnix } from "./common.ts";
+import { DEFAULT_PARAMS, LIVE_STATUSES, chainTry, checkAnswerWindow, imageUrls, predictParams, toUnix } from "./common.ts";
 import { emailDomains, invalidateDomains } from "./public.ts";
 import { buildRanking } from "./play.ts";
 import { currentDayId, dayEnd, weekOf, weekFirstDay } from "../../../shared/src/time.ts";
@@ -400,7 +400,7 @@ export function registerAdminRoutes(app: FastifyInstance, kit: RouteKit): void {
     }
     const q = body.question;
     const end = dayEnd(m.day_id);
-    if (q.resolvesAt < end || q.resolvesAt > end + 86400) throw new ApiError("BAD_REQUEST", "resolvesAt must be between the day's end and 24 hours after it");
+    await checkAnswerWindow(deps, m.day_id, q.resolvesAt, id);
     await db.transaction().execute(async (trx) => {
       await trx
         .updateTable("markets")

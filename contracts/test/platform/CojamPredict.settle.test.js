@@ -45,12 +45,13 @@ describe("CojamPredict: outcomes", function () {
     await goTo(m.resolvesAt - 2n);
     await at(m.resolvesAt - 1n);
     await expect(op.setOutcome(id, 1)).to.be.revertedWithCustomError(predict, "NotResolvable");
-    const deadline = dayOpen(day0 + 1n) + RESOLVE_DEADLINE;
+    const deadline = m.resolvesAt + RESOLVE_DEADLINE; // the market's own deadline
     await goTo(deadline - 2n);
     await at(deadline - 1n);
     await op.setOutcome(id, 3); // the last second; 3 = void through setOutcome
     await expect(op.setOutcome(id, 1)).to.be.revertedWithCustomError(predict, "AlreadyResolved");
     await at(deadline);
+    // slot 3 resolves 60 seconds before slot 4, so its own deadline has passed too
     await expect(op.setOutcome(id - 1n, 1)).to.be.revertedWithCustomError(predict, "ResolveDeadlinePassed");
   });
 
@@ -100,10 +101,10 @@ describe("CojamPredict: outcomes", function () {
     await expect(op.voidMarket(a + 2n, R)).to.be.revertedWithCustomError(predict, "CorrectionWindowOver");
   });
 
-  it("voidExpired: anyone, from the day's end plus 48 hours, only when nothing was set", async function () {
+  it("voidExpired: anyone, from the market's own resolvesAt plus 48 hours, only when nothing was set", async function () {
     const { predict, op, stranger, day0 } = await loadFixture(played);
     const id = day0 * 5n + 3n;
-    const deadline = dayOpen(day0 + 1n) + RESOLVE_DEADLINE;
+    const deadline = (await predict.markets(id)).resolvesAt + RESOLVE_DEADLINE;
     await expect(predict.connect(stranger).voidExpired(day0 * 5n + 100n)).to.be.revertedWithCustomError(predict, "UnknownMarket");
     await goTo(deadline - 3n);
     await op.setOutcome(id + 1n, 2);

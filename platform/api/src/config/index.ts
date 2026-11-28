@@ -124,6 +124,8 @@ const schema = z.object({
   USER_TX_FEE_KAIA: num(0.005),
   /** Maintenance fallback when app_state has no "app.maintenance" row: 1 shows the maintenance screen. */
   MAINTENANCE: bool,
+  /** CojamPredict with a per market answer deadline is deployed: long questions (DECISIONS "Longer questions mixed in") are allowed. */
+  LONG_QUESTIONS_ON_CHAIN: bool,
   /** Maintenance message (plain text, shown in every language) and the expected end, ISO 8601 or unix seconds. */
   MAINTENANCE_MESSAGE: optStr,
   MAINTENANCE_BACK_AT: optStr,

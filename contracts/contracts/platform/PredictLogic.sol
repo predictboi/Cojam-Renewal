@@ -29,7 +29,7 @@ library PredictLogic {
     event ParamsApplied(Params p);
 
     /// @notice Reverts `ParamOutOfBounds(which)` unless every field of `p` lies inside the bounds of
-    /// section 3.6 of the development plan. `which` numbers the fields in declaration order (0 to 14).
+    /// section 3.6 of the development plan. `which` numbers the fields in declaration order (0 to 15).
     function checkParams(Params memory p) public pure {
         if (p.completionPoints > 1_000) revert ParamOutOfBounds(0);
         if (p.hitPoints > 1_000) revert ParamOutOfBounds(1);
@@ -53,6 +53,9 @@ library PredictLogic {
             sum += p.splitBps[i];
         }
         if (sum != BPS) revert ParamOutOfBounds(14);
+        // At least minResolveGap, so a valid resolve time always exists (DECISIONS "Longer questions mixed in").
+        uint256 maxAfter = p.maxResolveAfterClose;
+        if (maxAfter < 1 days || maxAfter > 90 days || maxAfter < p.minResolveGap) revert ParamOutOfBounds(15);
     }
 
     /// @notice Checks `p` and stores it as the pending proposal.
@@ -72,18 +75,21 @@ library PredictLogic {
 
     /// @notice Checks and writes the 5 markets of `dayId`: before the day opens, or after it opened while at
     /// least 1 hour remains before its end (`block.timestamp + 1 hours <= dayEnd`), so a missed run does not
-    /// lose the day. Every `closesAt` equals
-    /// the day's end, open + 1 day (DECISIONS "Question timing": all five stay open the whole day); each
-    /// `resolvesAt` lies in [closesAt + gap, open + 2 days]; every content hash is set. Outcomes are refused
-    /// from 48 hours after the close (`RESOLVE_DEADLINE`).
+    /// lose the day. Every `closesAt` equals the day's end, open + 1 day (DECISIONS "Question timing": all
+    /// five stay open the whole day); each `resolvesAt` lies in [closesAt + minResolveGap,
+    /// closesAt + maxResolveAfterClose] (DECISIONS "Longer questions mixed in"), so markets of one day may
+    /// resolve weeks apart; every content hash is set. Each market's outcome is refused from its own
+    /// `resolvesAt + RESOLVE_DEADLINE` (48 hours), when anyone may void it.
     /// @return hashes The 5 content hashes, for the `DayCreated` event.
     function createDay(
         mapping(uint256 => Market) storage markets,
         uint32 dayId,
         MarketInput[5] calldata m,
-        uint256 gap
+        Params storage p
     ) external returns (bytes32[5] memory hashes) {
         uint256 open = uint256(dayId) * 1 days;
+        uint256 gap = p.minResolveGap;
+        uint256 maxAfter = p.maxResolveAfterClose;
         // Before the open, or late (a missed run) while at least 1 hour of the day remains; never a past day.
         if (block.timestamp + 1 hours > open + 1 days) revert BadTimes();
         uint256 first = uint256(dayId) * SLOTS;
@@ -91,7 +97,7 @@ library PredictLogic {
         for (uint256 i = 0; i < SLOTS; ++i) {
             MarketInput calldata x = m[i];
             if (x.closesAt != open + 1 days) revert BadTimes(); // all five close at the day's end
-            if (x.resolvesAt < x.closesAt + gap || x.resolvesAt > open + 2 days) revert BadTimes();
+            if (x.resolvesAt < x.closesAt + gap || x.resolvesAt > x.closesAt + maxAfter) revert BadTimes();
             if (x.contentHash == bytes32(0)) revert EmptyContentHash();
             Market storage mk = markets[first + i];
             mk.closesAt = SafeCast.toUint40(x.closesAt);
@@ -164,6 +170,7 @@ library PredictLogic {
         dst.airdropDelay = p.airdropDelay;
         dst.treasury = p.treasury;
         dst.splitBps = p.splitBps;
+        dst.maxResolveAfterClose = p.maxResolveAfterClose;
     }
 
     function _clear(Params storage dst) private {

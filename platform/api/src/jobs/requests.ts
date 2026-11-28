@@ -62,7 +62,7 @@ export async function handleRequest(ctx: JobContext, r: RequestRow): Promise<{ r
       const chain = await marketOnChain(ctx, id);
       const deps = resolveDeps(ctx);
       if (chain.outcome === 0) {
-        const d = decide([await runResolution(deps, pm, 1), await runResolution(deps, pm, 2)], undefined, ctx.now(), pm.dayId);
+        const d = decide([await runResolution(deps, pm, 1), await runResolution(deps, pm, 2)], undefined, ctx.now(), pm.dayId, pm.resolvesAt);
         if (d.action === 'set') {
           const res = await ctx.sender.send({ job: 'resolution', to: ctx.contracts.predict, abi: cojamPredictAbi, functionName: 'setOutcome', args: [BigInt(id), d.outcome] });
           return { result: d, txHash: res.hash };

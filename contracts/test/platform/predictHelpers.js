@@ -12,7 +12,7 @@ const MAX_TTL = 90n * DAY;
 const PARAM_FIELDS = [
   "completionPoints", "hitPoints", "referralBps", "welcomePoints", "settleDelay", "pointsPerCT",
   "minConvertPoints", "maxConvertCtPerUserPerDay", "maxConvertCtPerDay", "minAccountAge", "minResolveGap",
-  "maxWeeklyPool", "airdropDelay", "treasury", "splitBps",
+  "maxWeeklyPool", "airdropDelay", "treasury", "splitBps", "maxResolveAfterClose",
 ];
 
 const DEFAULTS = {
@@ -20,6 +20,7 @@ const DEFAULTS = {
   pointsPerCT: 1000n, minConvertPoints: 1000n, maxConvertCtPerUserPerDay: 50n, maxConvertCtPerDay: 20000n,
   minAccountAge: 7n * DAY, minResolveGap: H, maxWeeklyPool: 10000n, airdropDelay: 60n * H,
   splitBps: [3000n, 2000n, 1500n, 1000n, 700n, 500n, 400n, 300n, 300n, 300n],
+  maxResolveAfterClose: 30n * DAY,
 };
 
 /** Converts a Params result from the contract into a plain object of bigints (treasury stays a string). */

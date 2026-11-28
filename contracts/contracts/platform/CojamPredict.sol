@@ -17,7 +17,9 @@ import {PredictLogic} from "./PredictLogic.sol";
 /// player answers each one with one transaction (`predict`), sent by the player's wallet or by the
 /// player's play key, a device key that can only predict. The fifth answer of a day credits the
 /// completion points at once. Hit points are credited lazily per market by `settle`, which anyone may
-/// call once the market's settle time (resolution plus the correction window) has passed.
+/// call once the market's settle time (resolution plus the correction window) has passed. Markets of
+/// one day may resolve weeks apart (each up to `maxResolveAfterClose` after the close); hits are ranked
+/// in the day's week while that week's airdrop is not sent, else in the current week.
 ///
 /// Points ("Cojam Points", CJP, 0 decimals) are an ERC-20 shaped but soulbound ledger kept in this
 /// contract: they are created only by completions, hits, compensations and the invite and welcome
@@ -52,7 +54,7 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
     uint64 public constant INVITE_WINDOW = 24 hours;
     /// @notice Longest lifetime of a play key binding.
     uint64 public constant MAX_PLAY_KEY_TTL = 90 days;
-    /// @notice Every market is resolved (or voidable by anyone) within this time after its day's end.
+    /// @notice Every market is resolved (or voidable by anyone) within this time after its own `resolvesAt`.
     uint64 public constant RESOLVE_DEADLINE = 48 hours;
     /// @notice Wait between `proposeParams` and `applyParams`.
     uint64 public constant PARAM_DELAY = 48 hours;
@@ -242,6 +244,7 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
         p.airdropDelay = 60 hours;
         p.treasury = treasury;
         p.splitBps = [uint16(3000), 2000, 1500, 1000, 700, 500, 400, 300, 300, 300];
+        p.maxResolveAfterClose = 30 days;
         PredictLogic.checkParams(p);
         _params = p;
         emit ParamsApplied(p);
@@ -387,20 +390,22 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
     /// @notice Publishes the 5 markets of `dayId`, before the day opens or late while at least 1 hour of
     /// the day remains; once per day, never for a past day.
     /// @dev Every `closesAt` equals the day's end (open + 1 day); `resolvesAt` lies in
-    /// [closesAt + minResolveGap, open + 2 days]; every content hash is set. See `PredictLogic.createDay`.
+    /// [closesAt + minResolveGap, closesAt + maxResolveAfterClose]; every content hash is set. See
+    /// `PredictLogic.createDay`.
     function createDay(uint32 dayId, MarketInput[5] calldata m) external onlyRole(OPERATOR_ROLE) {
-        bytes32[5] memory hashes = PredictLogic.createDay(markets, dayId, m, _params.minResolveGap);
+        bytes32[5] memory hashes = PredictLogic.createDay(markets, dayId, m, _params);
         emit DayCreated(dayId, hashes);
     }
 
-    /// @notice Sets the outcome (1 A, 2 B, 3 void) once, between `resolvesAt` and the resolve deadline.
+    /// @notice Sets the outcome (1 A, 2 B, 3 void) once, between `resolvesAt` and its resolve deadline
+    /// `resolvesAt + RESOLVE_DEADLINE`.
     /// Starts the correction window: hits of this market are credited from `resolvedAt + settleDelay`.
     function setOutcome(uint256 marketId, uint8 outcome) external onlyRole(OPERATOR_ROLE) {
         Market storage m = _market(marketId);
         if (outcome == 0 || outcome > OUTCOME_VOID) revert BadChoice();
         if (m.outcome != 0) revert AlreadyResolved();
         if (block.timestamp < m.resolvesAt) revert NotResolvable();
-        if (block.timestamp >= _dayEnd(marketId) + RESOLVE_DEADLINE) revert ResolveDeadlinePassed();
+        if (block.timestamp >= uint256(m.resolvesAt) + RESOLVE_DEADLINE) revert ResolveDeadlinePassed();
         m.outcome = outcome;
         m.resolvedAt = SafeCast.toUint40(block.timestamp);
         m.settlesAt = SafeCast.toUint40(block.timestamp + _params.settleDelay);
@@ -428,11 +433,12 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
         _void(m, marketId, reason);
     }
 
-    /// @notice Voids a market nobody resolved by its day's end plus `RESOLVE_DEADLINE`. Anyone may call it.
+    /// @notice Voids a market nobody resolved by its own `resolvesAt` plus `RESOLVE_DEADLINE`, so a long
+    /// question is never voidable early. Anyone may call it.
     function voidExpired(uint256 marketId) external {
         Market storage m = _market(marketId);
         if (m.outcome != 0) revert AlreadyResolved();
-        if (block.timestamp < _dayEnd(marketId) + RESOLVE_DEADLINE) revert NotExpired();
+        if (block.timestamp < uint256(m.resolvesAt) + RESOLVE_DEADLINE) revert NotExpired();
         _void(m, marketId, EXPIRED_REASON);
     }
 
@@ -532,10 +538,7 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
         uint256 corrected = _market(marketId).correctedOutcome;
         if (corrected == 0) revert NothingToCompensate();
         uint32 dayId = uint32(marketId / SLOTS);
-        // The question's week while its airdrop is not sent, else the current week (DECISIONS
-        // "Compensation points").
-        uint32 weekId = weekOf(dayId);
-        if (airdropDone[weekId]) weekId = weekOf(currentDay());
+        uint32 weekId = _rankWeek(dayId);
         uint256 slot = marketId % SLOTS;
         uint256 amount = _params.hitPoints;
         for (uint256 i = 0; i < users.length; ++i) {
@@ -891,7 +894,7 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
         if (newHits != 0) ud.hits = uint8(ud.hits + newHits);
         points = newHits * hitPoints;
         emit Settled(user, dayId, uint8(todo), uint8(newHits), points);
-        if (points != 0) _credit(user, points, KIND_HITS, weekOf(dayId), dayId);
+        if (points != 0) _credit(user, points, KIND_HITS, _rankWeek(dayId), dayId);
     }
 
     /// @dev Which answered slots are ready and unsettled (`todo`) and how many of them are hits.
@@ -927,7 +930,11 @@ contract CojamPredict is AccessControlDefaultAdminRules, Pausable, ReentrancyGua
         if (m.closesAt == 0) revert UnknownMarket();
     }
 
-    function _dayEnd(uint256 marketId) private pure returns (uint256) {
-        return (marketId / SLOTS + 1) * 1 days;
+    /// @dev Week that ranks a late credit (hits or compensation) of `dayId`: the day's week while its
+    /// airdrop is not sent, else the current week, whose airdrop cannot be sent yet (DECISIONS
+    /// "Compensation points", "Longer questions mixed in"). No credit ever lands in a paid week.
+    function _rankWeek(uint32 dayId) private view returns (uint32 weekId) {
+        weekId = weekOf(dayId);
+        if (airdropDone[weekId]) weekId = weekOf(currentDay());
     }
 }

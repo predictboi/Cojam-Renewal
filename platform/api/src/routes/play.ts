@@ -270,11 +270,20 @@ export function registerPlayRoutes(app: FastifyInstance, kit: RouteKit): void {
       .where("wallet", "=", wallet)
       .where("ranked", "=", true)
       .executeTakeFirst();
-    const recentIds = [today, today - 1, today - 2, today - 3];
-    const recentUd = await deps.db.selectFrom("user_days").select(["day_id", "settled_mask"]).where("wallet", "=", wallet).where("day_id", "in", recentIds).execute();
-    const recentMarkets = await liveMarkets(recentIds);
-    const recentPreds = await deps.db.selectFrom("predictions").select(["market_id", "choice"]).where("wallet", "=", wallet).where("day_id", "in", recentIds).execute();
-    const rc = new Map(recentPreds.map((p) => [p.market_id, p.choice as Choice]));
+    // Pending hits can sit on any day: a long question (DECISIONS "Longer questions mixed in") is answered up to
+    // 30 days after its day, so look at every picked market with an answer and no settled slot yet, not the last days only.
+    const pendingPicks = await deps.db
+      .selectFrom("predictions as p")
+      .innerJoin("markets as m", "m.market_id", "p.market_id")
+      .select(["p.market_id", "p.day_id", "p.choice"])
+      .where("p.wallet", "=", wallet)
+      .where("m.outcome", "in", [1, 2])
+      .where((eb) => eb.or([eb("m.settles_at", "is", null), eb("m.settles_at", ">", new Date(nowMs - 7 * 86400_000))]))
+      .execute();
+    const recentIds = [...new Set(pendingPicks.map((p) => p.day_id))];
+    const recentUd = recentIds.length ? await deps.db.selectFrom("user_days").select(["day_id", "settled_mask"]).where("wallet", "=", wallet).where("day_id", "in", recentIds).execute() : [];
+    const recentMarkets = (await liveMarkets(recentIds)).filter((m) => pendingPicks.some((p) => p.market_id === m.market_id));
+    const rc = new Map(pendingPicks.map((p) => [p.market_id, p.choice as Choice]));
     let pendingPoints = 0;
     for (const m of recentMarkets) {
       const mask = recentUd.find((u) => u.day_id === m.day_id)?.settled_mask ?? 0;

@@ -10,9 +10,10 @@ import { sql, audit, getState, setState, STATE_KEYS } from "../db/index.ts";
 import type { RouteKit } from "../server/app.ts";
 import { ApiError } from "../server/errors.ts";
 import { cojamPredictAbi, cojamStakingAbi } from "../chain/abi.ts";
-import { DEFAULT_PARAMS, chainTry, predictParams, toUnix } from "./common.ts";
+import { DEFAULT_PARAMS, chainTry, checkAnswerWindow, predictParams, toUnix } from "./common.ts";
 import { currentDayId, dayEnd, weekOf, weekFirstDay } from "../../../shared/src/time.ts";
 import type { AuthedAdmin } from "../auth/index.ts";
+import { DEFAULT_TIMING, DRAFT_TIMING_KEY, effectiveTiming, storedTiming } from "../ai/timing.ts";
 
 /** app_state key of the maintenance switch (read by GET /v1/config once the player API exposes it). */
 export const MAINTENANCE_KEY = "app.maintenance";
@@ -161,6 +162,23 @@ export function registerAdminExtraRoutes(app: FastifyInstance, kit: RouteKit, h:
     return { ok: true };
   });
 
+  // ------------------------------------------------------------ draft timing (DECISIONS "Longer questions mixed in")
+  get("/admin/v1/draft-timing", "viewer", async () => {
+    const t = await storedTiming(db);
+    return { ...t, longQuestionsOnChain: Boolean(deps.config.env.LONG_QUESTIONS_ON_CHAIN), effective: effectiveTiming(t, Boolean(deps.config.env.LONG_QUESTIONS_ON_CHAIN)), defaults: DEFAULT_TIMING };
+  });
+  post("/admin/v1/draft-timing", "owner", async (req, admin) => {
+    const b = z.object({ minShort: z.number().int().min(0).max(5), maxLong: z.number().int().min(0).max(5), longMaxDays: z.number().int().min(1).max(60), reason }).parse(req.body);
+    if (b.minShort + b.maxLong > 5) throw new ApiError("BAD_REQUEST", "minShort plus maxLong must be at most 5");
+    const prev = await storedTiming(db);
+    const next = { minShort: b.minShort, maxLong: b.maxLong, longMaxDays: b.longMaxDays };
+    await db.transaction().execute(async (trx) => {
+      await setState(trx as any, DRAFT_TIMING_KEY, next);
+      await audit(trx as any, { actor: actor(admin), action: "draft.timing", payload: { reason: b.reason, previous: prev, next } });
+    });
+    return { ...next, effective: effectiveTiming(next, Boolean(deps.config.env.LONG_QUESTIONS_ON_CHAIN)) };
+  });
+
   // ------------------------------------------------------------ app: maintenance switch
   async function appState() {
     const m = await getState<{ on?: boolean; message?: string; endsAt?: string; since?: number; by?: string }>(db, MAINTENANCE_KEY);
@@ -259,9 +277,13 @@ export function registerAdminExtraRoutes(app: FastifyInstance, kit: RouteKit, h:
     const observesAt = d.observesAt ? Math.floor(Date.parse(d.observesAt) / 1000) : null;
     return { r, d, sources, resolvesAt, observesAt };
   }
-  function draftValues(x: Awaited<ReturnType<typeof draftRow>>, dayId: number) {
-    const end = dayEnd(dayId);
-    if (!Number.isFinite(x.resolvesAt) || x.resolvesAt < end || x.resolvesAt > end + 86400) throw new ApiError("BAD_REQUEST", "This draft does not fit that day: its answer would not be due within 24 hours after the day ends");
+  async function draftValues(x: Awaited<ReturnType<typeof draftRow>>, dayId: number, replacing?: number) {
+    try {
+      await checkAnswerWindow(deps, dayId, x.resolvesAt, replacing);
+    } catch (e) {
+      if (e instanceof ApiError) throw new ApiError("BAD_REQUEST", `This draft does not fit that day: ${e.message}`);
+      throw e;
+    }
     return {
       category: x.d.category, content: JSON.stringify({ en: x.d.en, ko: x.d.ko, ja: x.d.ja }), resolves_at: new Date(x.resolvesAt * 1000),
       observes_at: x.observesAt ? new Date(x.observesAt * 1000) : null, kind: x.d.kind ?? null, sources: JSON.stringify(x.sources), criteria: x.d.criteria, rationale: x.d.rationale ?? null, draft_id: Number(x.r.id),
@@ -273,8 +295,9 @@ export function registerAdminExtraRoutes(app: FastifyInstance, kit: RouteKit, h:
     const b = z.object({ dayId: z.number().int(), slot: z.number().int().min(0).max(4), reason: reason.optional() }).parse(req.body);
     checkFutureDay(b.dayId);
     const x = await draftRow(id);
+    const values = await draftValues(x, b.dayId);
     const marketId = await db.transaction().execute(async (trx) => {
-      const mid = await placeMarket(trx, b.dayId, b.slot, draftValues(x, b.dayId));
+      const mid = await placeMarket(trx, b.dayId, b.slot, values);
       await trx.updateTable("market_drafts").set({ selected: true }).where("id", "=", id).execute();
       await audit(trx as any, { actor: actor(admin), action: "draft.schedule", target: String(mid), payload: { draftId: id, dayId: b.dayId, slot: b.slot, reason: b.reason } });
       return mid;
@@ -290,7 +313,7 @@ export function registerAdminExtraRoutes(app: FastifyInstance, kit: RouteKit, h:
     if (!m) throw new ApiError("NOT_FOUND");
     if (m.create_tx || !["draft", "scheduled"].includes(m.status)) throw new ApiError("QUESTION_PUBLISHED");
     const x = await draftRow(b.draftId);
-    const values = draftValues(x, m.day_id);
+    const values = await draftValues(x, m.day_id, marketId);
     await db.transaction().execute(async (trx) => {
       await trx.updateTable("markets").set({ status: "cancelled", updated_at: new Date() }).where("market_id", "=", marketId).execute();
       await placeMarket(trx, m.day_id, m.slot, values);
@@ -306,7 +329,7 @@ export function registerAdminExtraRoutes(app: FastifyInstance, kit: RouteKit, h:
     const b = z.object({ dayId: z.number().int(), slot: z.number().int().min(0).max(4), reason, question: questionSchema }).parse(req.body);
     checkFutureDay(b.dayId);
     const end = dayEnd(b.dayId);
-    if (b.question.resolvesAt < end || b.question.resolvesAt > end + 86400) throw new ApiError("BAD_REQUEST", "The answer must be due between the day's end and 24 hours after it");
+    await checkAnswerWindow(deps, b.dayId, b.question.resolvesAt);
     const q = b.question;
     const marketId = await db.transaction().execute(async (trx) => {
       const mid = await placeMarket(trx, b.dayId, b.slot, { category: q.category, content: JSON.stringify(q.content), resolves_at: new Date(q.resolvesAt * 1000), sources: JSON.stringify(q.sources), criteria: q.criteria, rationale: `Written by ${actor(admin)}` });
