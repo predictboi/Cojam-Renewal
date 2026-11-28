@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>G1 Gate | Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/screens/invite.css">
+</head>
+<body>
+<!-- G1 Gate. States: (none) picks android or desktop by width, android, accepted, dismissed, android-manual, ios, ios-other, inapp, inapp-ios, desktop, generic, installed, invited (an invite link opened in a browser), invited-noname (the inviter's name could not be loaded), invited-ios-other, invited-inapp, invited-inapp-ios (the same variants reached from an invite link: "Copy link" copies the invite link). Add ?lang=en|ko|ja. Mock data only. -->
+<noscript>Cojam needs JavaScript to show this screen.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/components.js"></script>
+<script>
+(function () {
+  var t = App.t, S = App.state, M = MOCK, $ = App.$;
+  var wide = matchMedia("(min-width: 900px) and (pointer: fine)").matches;
+  var v = S || (wide ? "desktop" : "android");
+  /* reached from an invite link: the invite block leads the panel, and every "Copy link" on the screen copies the invite link (with its code), never the plain app address */
+  var inv = /^invited/.test(v), base = inv ? v.replace(/^invited-?/, "") : v, noName = base === "noname";
+  if (noName) base = "";
+  var manual = [[t("g.manual.1"), "more"], [t("g.manual.2"), "addhome"], [t("g.manual.3"), "phone"]];
+  var ios = [[t("g.ios.1"), "share"], [t("g.ios.2"), "addhome"], [t("g.ios.3"), "phone"]];
+  var copy = C.btn(t("g.copy"), { block: true, icon: "copy", id: "copylink", attrs: 'data-copy="' + (inv ? M.invite.link : M.appUrl) + '" data-toast="' + App.esc(t(inv ? "g.inv.copied" : "g.copied")) + '"' });
+  /* who invited, the code as a copy block, what to do with it and what the friend gets. Without a name the headline is "You were invited": the code is what matters */
+  function invBlock() {
+    return '<div class="gate-inv"><h2>' + (noName ? t("g.inv.h.anon") : t("g.inv.h", { name: '<b translate="no">' + App.esc(M.invite.by) + "</b>" })) + "</h2>" + C.code(M.invite.code, { id: "inv-code", label: t("g.inv.code") }) +
+      "<p>" + t("g.inv.b") + '</p><p class="gate-inv-get">' + t("g.inv.get", { w: M.invite.welcome }) + "</p></div>";
+  }
+  function panel() {
+    if (inv && base) return invBlock() + variant(base).replace("<h2>", "<h3>").replace("</h2>", "</h3>");
+    if (inv) return invBlock() + "<h3>" + t("g.manual.h") + "</h3>" + C.steps(wide ? manual : ios);
+    return variant(v);
+  }
+  function variant(v) {
+    switch (v) {
+      case "android": return "<h2>" + t("g.install.h") + '</h2><p class="muted">' + t("g.install.b") + "</p>" + C.btn(t("g.android.btn"), { kind: "primary", block: true, icon: "download", id: "install" });
+      case "accepted": return C.note("ok", t("g.android.accepted"));
+      case "dismissed": return "<h2>" + t("g.install.h") + "</h2>" + C.btn(t("g.android.btn"), { kind: "primary", block: true, icon: "download", id: "install" }) + '<p class="small muted">' + t("g.android.or") + "</p>" + C.steps(manual);
+      case "android-manual": return "<h2>" + t("g.manual.h") + "</h2>" + C.steps(manual);
+      case "ios": return "<h2>" + t("g.manual.h") + "</h2>" + C.steps(ios);
+      case "ios-other": return "<h2>" + t("g.manual.h") + "</h2>" + C.steps([[t("g.iosother.1"), "share"], ios[1], ios[2]]) + C.note("", t("g.iosother.note")) + copy;
+      case "inapp": return "<h2>" + t("g.inapp.h") + '</h2><p class="muted">' + t("g.inapp.body", { app: "KakaoTalk" }) + "</p>" + C.btn(t("g.inapp.btn"), { kind: "primary", block: true, iconEnd: "ext", id: "openext" }) + '<div id="inapp-more" hidden><p class="small muted">' + t("g.inapp.or") + "</p>" + C.steps([[t("g.inapp.1"), "dots"], [t("g.inapp.2"), "ext"]]) + "</div>" + copy;
+      case "inapp-ios": return "<h2>" + t("g.inapp.h") + '</h2><p class="muted">' + t("g.inapp.body", { app: "Instagram" }) + "</p>" + C.steps([[t("g.inapp.1"), "dots"], [t("g.inapp.2"), "ext"]]) + copy;
+      case "desktop": return "<h2>" + t("g.desk.h") + '</h2><p class="muted">' + t("g.desk.body") + "</p>" + C.qr(M.qrUrl, t("g.qr.alt")) + '<p class="center mono" translate="no">app.cojam.app</p>' + copy;
+      case "generic": return "<h2>" + t("g.desk.h") + "</h2>" + C.qr(M.qrUrl, t("g.qr.alt")) + C.help(t("g.gen.ios"), C.steps(ios)) + C.help(t("g.gen.android"), C.steps(manual));
+      case "installed": return C.note("ok", t("g.installed"));
+    }
+    return "";
+  }
+  /* the example card; for an invited visitor the panel with the code comes first and the card follows it */
+  var demo = '<div class="gate-demo" aria-hidden="true"><span class="qcard-back"></span><span class="sticker">' + t("g.example") + "</span>" + C.qcard(M.set[4], { static: true }) + "</div>";
+  var raw = '<div class="topnote" role="note">' + C.icon("shield", 16) + "<span>" + t("g.top") + "</span></div>" +
+    '<div class="gate"><div class="gate-bar">' + C.logo() + C.lang() + "</div>" +
+    '<div class="gate-col"><div class="stack-12"><h1>' + t("g.h1") + '</h1><p class="gate-lede">' + t("g.lede") + "</p></div>" +
+    (inv ? "" : demo) + "</div>" +
+    '<div class="gate-col"><section class="panel" aria-live="polite" id="panel">' + panel() + "</section>" + (inv ? demo : "") +
+    '<ul class="facts"><li>' + C.icon("bolt", 20) + t("g.fact.1") + "</li><li>" + C.icon("mail", 20) + t("g.fact.2") + "</li><li>" + C.icon("shield", 20) + t("g.fact.3") + "</li></ul>" +
+    '<section class="gate-swap"><h2>' + t("g.swap.h") + "</h2><p>" + t("g.swap.body") + "</p>" + C.btn(t("g.swap.btn"), { href: "https://cojam.app/migrate/", ext: true, iconEnd: "ext" }) + "</section></div>" +
+    '<footer class="gate-foot"><a href="https://cojam.app">' + t("hd.home") + "</a><span>© 2026 Cojam</span></footer></div>" +
+    (v === "ios" ? '<p class="ios-point" aria-hidden="true"><span>' + t("g.ios.point") + "</span>" + C.icon("down", 20, "bounce") + "</p>" : "");
+  App.mount({ bare: true, cls: "is-gate", docTitle: "Cojam", raw: raw, after: function () {
+    var q = $(".gate-demo .qcard"); if (q) q.setAttribute("inert", "");
+    var ins = $("#install"); if (ins) ins.addEventListener("click", function () { $("#panel").innerHTML = C.note("ok", t("g.android.accepted")); setTimeout(function () { $("#panel").innerHTML = C.note("ok", t("g.installed")); }, 2200); });
+    var oe = $("#openext"); if (oe) oe.addEventListener("click", function () { setTimeout(function () { $("#inapp-more").hidden = false; }, 1500); });
+  } });
+})();
+</script>
+</body>
+</html>

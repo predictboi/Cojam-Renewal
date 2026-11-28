@@ -1,0 +1,28 @@
+{
+  "name": "@cojam/shared",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Shared ABIs, contract addresses and time rules for the Cojam platform (PWA, admin, API, worker)",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./time": "./src/time.ts",
+    "./abi": "./abi/index.ts",
+    "./abi/*.json": "./abi/*.json",
+    "./addresses": "./addresses/index.ts",
+    "./addresses/*.json": "./addresses/*.json",
+    "./package.json": "./package.json"
+  },
+  "files": ["src", "abi", "addresses"],
+  "scripts": {
+    "sync-abi": "node scripts/sync-abi.mjs",
+    "test": "node --test test/*.test.ts",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "engines": { "node": ">=20" },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}

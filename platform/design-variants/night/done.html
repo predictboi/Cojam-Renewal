@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F131B">
+<title>Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<noscript>Cojam needs JavaScript to show today's predictions.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* H3 Day done. States: paid (default), moment (the figure counts up once), saving, offline. Never shows the reward as paid before the last pick is saved. */
+(function () {
+  var t = N.t, M = N.M, st = N.state, picks = N.savedPicks(), saving = st === "saving";
+  function body() {
+    var s = M.untilNextSet();
+    return '<section class="reward' + (saving ? " is-saving" : "") + '">' +
+        '<p class="fig fig-xl" id="rw" aria-label="+100P">+<span id="rw-n">100</span><small>P</small></p>' +
+        '<p class="reward-st" role="status">' + (saving ? '<i class="spin"></i><span>' + t("d.saving.st") + "</span>" : N.dayTicks(picks) + "<span>" + t("d.paid.st") + "</span>") + "</p></section>" +
+      '<a class="btn btn-1" href="' + N.href("ranking.html") + '">' + t("d.rank") + "</a>" +
+      '<div class="next"><span class="lbl">' + t("d.next") + '</span><span class="clock" data-cd="' + s + '" data-fmt="parts"><span><b data-h>00</b><small>' + t("d.u.h") + '</small></span><span><b data-m>00</b><small>' + t("d.u.m") + '</small></span><span><b data-s>00</b><small>' + t("d.u.s") + '</small></span></span><span class="fine">' + t("d.next.at") + "</span></div>" +
+      '<section class="sec"><div class="sec-h"><h2>' + t("d.picks") + '</h2><a class="lnk" href="' + N.href("results.html") + '">' + t("d.results") + "</a></div>" +
+        '<p class="fine">' + t("d.waitn", { n: 5 }) + ". " + t("d.hit.1") + " " + t("d.hit.2") + "</p>" +
+        '<ol class="plist mt-8">' + M.set.map(function (id) {
+          var Q = N.q(id), side = picks[id];
+          return '<li><span class="qrow-n">' + N.pad(Q.n) + "</span><p>" + Q.title + '</p><span class="qrow-pick">' + N.mark(side) + (side === "l" ? Q.left : Q.right) + "</span></li>";
+        }).join("") + "</ol></section>";
+  }
+  N.page({
+    tab: "home", title: t("d.h1"), body: body,
+    after: function (app) {
+      if (st !== "moment" || N.reduced) return;
+      /* the reward moment: the figure counts up once, then rests */
+      var el = app.querySelector("#rw-n"), t0 = performance.now(), D = 700;
+      el.textContent = "0";
+      (function step(now) { var p = Math.min(1, (now - t0) / D), e = 1 - Math.pow(1 - p, 3); el.textContent = Math.round(e * 100); if (p < 1) requestAnimationFrame(step); })(t0);
+    }
+  });
+})();
+</script>
+</body>
+</html>

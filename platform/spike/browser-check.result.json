@@ -1,0 +1,76 @@
+{
+  "base": "http://localhost:4173",
+  "checkedAt": "2026-11-26T16:24:09.984Z",
+  "feePayerBanner": "Fee payer http://localhost:8787: checking…",
+  "serviceWorker": {
+    "scope": "http://localhost:4173/",
+    "active": true,
+    "controllingAfterReload": true
+  },
+  "manifest": {
+    "url": "http://localhost:4173/manifest.webmanifest",
+    "errors": [],
+    "parsed": {
+      "name": "Cojam Spike",
+      "short_name": "Cojam Spike",
+      "description": "Phase 0 spike: Privy login, raw hash signing and Kaia fee delegation on Kairos.",
+      "id": "/",
+      "start_url": "/?source=pwa",
+      "scope": "/",
+      "display": "standalone",
+      "orientation": "portrait",
+      "lang": "en",
+      "background_color": "#ffffff",
+      "theme_color": "#124CC4",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png",
+          "purpose": "any",
+          "httpStatus": 200
+        },
+        {
+          "src": "/icons/icon-512.png",
+          "sizes": "512x512",
+          "type": "image/png",
+          "purpose": "any",
+          "httpStatus": 200
+        },
+        {
+          "src": "/icons/icon-maskable-512.png",
+          "sizes": "512x512",
+          "type": "image/png",
+          "purpose": "maskable",
+          "httpStatus": 200
+        }
+      ]
+    }
+  },
+  "installabilityErrors": [],
+  "devKeyAddress": "0x1f8cF2562Ed7be99BBFd2F0C4A9eA93020b5d928",
+  "f_noKaia": {
+    "badge": "error",
+    "error": "NoKaia: NO_KAIA: this wallet holds 0.0 test KAIA. A user paid transfer needs test KAIA for the amount (0.001) and the fee. Send test KAIA to 0x1f8cF2562Ed7be99BBFd2F0C4A9eA93020b5d928 from https://www.kaia.io/faucet, then run this step again."
+  },
+  "c": {
+    "badge": "ok"
+  },
+  "c2": {
+    "badge": "ok"
+  },
+  "d": {
+    "badge": "ok"
+  },
+  "e": {
+    "badge": "ok"
+  },
+  "f_funding": "0xb39949dc20e2375263775e5f3295466bd85177688d203afd9fe5e93a7a335e8d",
+  "f": {
+    "badge": "ok"
+  },
+  "reportBytes": 7461,
+  "reportHasNoDevKey": true,
+  "playKeyAfterReload": "On launch: found (created 2026-11-26T16:24:12.",
+  "consoleWarningsAndErrors": []
+}

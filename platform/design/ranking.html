@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>K1 Weekly ranking | Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/screens/rank.css">
+</head>
+<body>
+<!-- K1 Weekly ranking. States: (none) outside the Top 10, top10, unranked, winner, short, lastweek (being finalised), sent (prizes sent), loading, error, offline, hold (account on hold: left out of the ranks, so no own row on the board and no "Around you"; the pinned bar shows the points and "On hold: no weekly prize", without a rank). Add ?lang=en|ko|ja. Mock data only. -->
+<noscript>Cojam needs JavaScript to show this screen.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/components.js"></script>
+<script>
+(function () {
+  var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$;
+  var week = S === "lastweek" || S === "sent" ? "last" : "this";
+  function prize(n) { return Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }   /* one format for every prize: two decimals */
+  function head() { return '<div class="ph-top"><h1>' + t("k.title") + "</h1></div>"; }
+  function rowsFor(w) {
+    /* an account on hold is never in the prize ranks: its row is dropped and the players below move up one place */
+    var rows = M.ranking.filter(function (r) { return !r.hold; }).map(function (r, i) { return r.rank === i + 1 ? r : Object.assign({}, r, { rank: i + 1 }); });
+    /* last week ran the full seven days, so its totals are higher */
+    if (w === "last") return rows.map(function (r, i) { return Object.assign({}, r, { pts: r.pts + 900 - i * 10, prize: +(1196 * M.pool.split[i] / 100).toFixed(2) }); });
+    if (S === "top10") rows[6] = { rank: 7, name: M.user.name, pts: 1150, prize: 51.36, me: true };
+    if (S === "short") rows = rows.slice(0, 6);
+    return rows;
+  }
+  function poolCt(w) { return w === "last" ? 1196 : M.pool.ct; }
+  /* the pool is two figures straight on the page (the pot and the time left), so the board starts on the first screen; the rules open in a sheet */
+  function pool(w) {
+    if (S === "loading") return '<section class="sec pool" aria-busy="true">' + C.skel("120px") + C.skel("160px", "32px") + "</section>";
+    var ct = poolCt(w);
+    var right = w === "last" ? '<div class="end">' + (S === "sent" ? C.tag(t("k.sent"), "sky", "check") : C.tag(t("k.final.h"), "ink")) + "</div>" :
+      '<div class="end"><p class="lbl">' + t("k.ends") + '</p><p class="fig fig--md" data-cd="' + M.untilWeekEnd() + '" data-cd-fmt="dh"></p></div>';
+    return '<section class="sec pool"><div class="pool-top"><div><p class="lbl">' + t(w === "last" ? "k.lastweek" : "k.pool") + '</p><p class="fig">' + F.int(ct) + "<small>CT</small></p></div>" + right + "</div>" +
+      '<button type="button" class="linkish" id="how">' + t("k.split.q") + C.icon("chev", 16) + "</button></section>";
+  }
+  function howSheet() {
+    var ct = poolCt(week);
+    var split = M.pool.split.map(function (p, i) { return "<div><span>" + t("k.rankth", { n: i + 1 }) + "</span><span>" + p + "%</span><b>" + prize(ct * p / 100) + " CT</b></div>"; }).join("");
+    App.sheet.open("<h2>" + t("k.split.q") + '</h2><div class="stack-12"><p class="sheet-lead">' + t("k.pool.line", { n: F.int(ct) }) + '</p><p class="sheet-lead">' + t("k.tie") + " " + t("k.tie.note") + '</p><p class="sheet-lead">' + t("k.split.note") + "</p></div>" +
+      '<div class="split">' + split + '</div><div class="sheet-acts">' + C.btn(t("common.close"), { block: true, attrs: "data-sheet-close" }) + "</div>");
+  }
+  function name(r) { return '<span translate="no">' + App.esc(r.name) + "</span>"; }
+  function rankNo(n) { return '<span class="sr-only">' + t("k.rank.sr", { n: n }) + '</span><span aria-hidden="true">' + n + "</span>"; }
+  /* ranks 1 to 3: a podium. Name, points and prize stand on a step whose height is the rank. */
+  function pod(r) {
+    return '<li class="pod' + (r.me ? " is-me" : "") + '" data-rank="' + r.rank + '"><p class="pod-name">' + name(r) + (r.me ? " " + C.tag(t("k.you"), "ink") : "") + '</p><p class="pod-pts">' + F.pts(r.pts) + "</p>" +
+      '<p class="pod-prize">' + prize(r.prize) + '<small>CT</small></p><p class="pod-step">' + rankNo(r.rank) + "</p></li>";
+  }
+  /* a gap is written in words: "50P ahead", "50P behind" */
+  function gap(g) { return t(g > 0 ? "k.gap.up" : g < 0 ? "k.gap.down" : "k.gap.same", { n: F.int(Math.abs(g)) }); }
+  function row(r) {
+    return '<li class="krow' + (r.me ? " is-me" : "") + '" data-rank="' + r.rank + '"><span class="krow-rank">' + rankNo(r.rank) + "</span>" +
+      '<div class="grow"><p class="krow-name">' + name(r) + (r.me ? C.tag(t("k.you"), "ink") : "") + '</p><p class="krow-pts">' + F.pts(r.pts) + "</p></div>" +
+      (r.prize === undefined ? "" : '<p class="krow-prize">' + prize(r.prize) + "<small>CT</small></p>") +
+      (r.gap === undefined || r.me ? "" : '<p class="krow-gap">' + gap(r.gap) + "</p>") + "</li>";
+  }
+  /* "Around you": no second label row (the heading and the words "ahead" and "behind" say what the right column is). The rank just above, the player, the rank just below, each with its distance in points */
+  function aroundRows(w) {
+    var rows = M.around.slice(1, 4);
+    if (w === "last") rows = rows.map(function (r, i) { return Object.assign({}, r, { rank: 30 + i, pts: 1250 - i * 50 }); });
+    var mine = rows.filter(function (r) { return r.me; })[0];
+    return rows.map(function (r) { return Object.assign({}, r, { gap: r.pts - mine.pts }); });
+  }
+  /* on hold the player has no rank, so there is no "Around you" either */
+  function hasAround(w) { return S !== "loading" && S !== "unranked" && S !== "hold" && !(w === "this" && S === "top10"); }
+  function around(w) {
+    if (!hasAround(w)) return "";
+    var rows = aroundRows(w);
+    return '<section class="sec sec-rule" id="around" tabindex="-1"><div class="sect-h"><h2 class="sect-h">' + t("k.around") + '</h2><span class="muted">' + t("k.around.sub", { a: rows[0].rank, b: rows[rows.length - 1].rank }) + "</span></div>" +
+      '<ol class="list" aria-label="' + App.esc(t("k.col.gap")) + '">' + rows.map(row).join("") + "</ol></section>";
+  }
+  function list(w) {
+    if (S === "loading") return '<ul class="list" id="top10" aria-busy="true">' + [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(function () { return '<li class="krow">' + C.skel("24px", "24px") + "<div>" + C.skel("120px", "14px") + C.skel("60px", "10px", "margin-top:8px") + "</div>" + C.skel("64px", "16px") + "</li>"; }).join("") + "</ul>";
+    var rows = rowsFor(w), voids = "";
+    for (var i = rows.length + 1; i <= 10; i++) voids += '<li class="krow is-void"><span class="krow-rank" aria-hidden="true">' + i + '</span><p class="krow-name">' + t("k.void") + '</p><p class="krow-prize"></p></li>';
+    /* one ordered list of ten for a screen reader: the podium holds ranks 1 to 3, plain rows continue from 4 */
+    return '<div id="top10"><ol class="podium">' + rows.slice(0, 3).map(pod).join("") + "</ol>" +
+      '<p class="cols" aria-hidden="true"><span>' + t("k.col.player") + "</span><span>" + t("k.col.prize") + '</span></p><ol class="list" start="4">' + rows.slice(3).map(row).join("") + voids + "</ol></div>";
+  }
+  /* the pinned bar: the player's own rank, with "This week" on the points so they are not read as the balance in the header pill */
+  function pin(w) {
+    if (S === "loading" || S === "error") return "";
+    var me = M.me;
+    function bar(rank, title, sub, pts, label) {
+      return '<button type="button" class="pin" id="pin" aria-label="' + App.esc(t("k.around.open")) + '"><span class="pin-rank"><span class="sr-only">' + t("k.rank.sr", { n: rank }) + '</span><span aria-hidden="true">' + rank + '</span></span><span class="pin-main"><b>' + title + "</b><span>" + sub + '</span></span><span class="pin-pts">' + F.pts(pts) + "<small>" + label + "</small></span></button>";
+    }
+    /* on hold: the same bar without a rank block (the account is left out of the ranks, this week and last); the points stay */
+    if (S === "hold") return '<aside class="pin pin--wide" id="pin" aria-label="' + App.esc(t("k.you")) + '"><span class="pin-main"><b>' + t("k.you") + "</b><span>" + t("hold.rank.pin") + '</span></span><span class="pin-pts">' + F.pts(w === "last" ? 1200 : me.pts) + "<small>" + t(w === "last" ? "k.lastweek" : "r.week") + "</small></span></aside>";
+    if (w === "last") return bar(31, t("k.you"), t("k.final.h"), 1200, t("k.lastweek"));
+    if (S === "unranked") return '<aside class="pin pin--wide" id="pin" aria-label="' + t("k.you") + '"><div class="pin-main"><b>' + t("k.none") + "</b></div>" + C.btn(t("k.play"), { sm: true, href: "home-cards.html", cls: "btn-onink" }) + "</aside>";
+    if (S === "top10") return bar(7, t("k.in"), t("k.prize", { c: "51.36" }), 1150, t("r.week"));
+    return bar(me.rank, t("k.you"), t("k.gap", { gap: F.int(me.gap) }), me.pts, t("r.week"));
+  }
+  /* the pinned bar jumps to the "Around you" block under rank 10 */
+  function toAround() {
+    var a = $("#around"); if (!a) return;
+    a.scrollIntoView({ behavior: App.reduce ? "auto" : "smooth", block: "center" }); a.focus({ preventScroll: true });
+    a.classList.remove("is-flash"); void a.offsetWidth; a.classList.add("is-flash");
+  }
+  /* first view: the pinned bar's top edge lands on a line between two rows, never through one.
+     Rows stretch a little (53 to 64 px) to fill the space above the bar; what is left over goes to the podium height. */
+  function snap() {
+    var app = $(".app"), first = $("#top10 .list .krow"), p = $("#pin"); if (!app || !first || !p) return;
+    app.style.removeProperty("--krow-h"); app.style.removeProperty("--pod-h");
+    var avail = p.getBoundingClientRect().top - (first.getBoundingClientRect().top + window.scrollY), n = Math.floor(avail / 53);
+    if (avail <= 0) return;
+    var h = n ? Math.min(avail / n, 64) : 0, left = Math.ceil(avail - n * h);
+    if (left > 32) return;
+    if (n) app.style.setProperty("--krow-h", h + "px"); if (left > 0) app.style.setProperty("--pod-h", 88 + left + "px");
+  }
+  function view(w) {
+    var note = "";
+    if (S === "hold") note = C.hold(t("hold.rank"));
+    else if (w === "last") note = S === "sent" ? C.note("ok", t("k.sent") + ' <a href="https://kaiascan.io/" target="_blank" rel="noopener">' + t("w.scan") + "</a>") : C.note("sky", t("k.closed", { time: t("k.final.time") }));
+    else if (S === "winner") note = C.note("sky", t("k.last", { rank: 4, amount: "119.60" }));
+    return note + pool(w) + '<section class="sec sec-rule"><div class="sect-h"><h2 class="sect-h">' + t("k.top") + "</h2>" + (S === "loading" || w === "last" ? "" : '<span class="live"><span class="live-dot"></span><span data-stamp="12">' + t("common.updated", { n: 12 }) + "</span></span>") + "</div>" +
+      list(w) + '<p class="tie-line">' + C.icon("info", 16) + "<span>" + t("k.tie") + "</span></p></section>" + around(w);
+  }
+  function body() {
+    if (S === "error") return C.error();
+    return C.seg([{ label: t("r.week"), value: "this", on: week === "this" }, { label: t("k.lastweek"), value: "last", on: week === "last" }], { name: "week", label: t("k.week") }) + '<div class="stack pg-fade" id="view">' + view(week) + "</div>";
+  }
+  App.mount({ tab: "rank", cls: "sc-rank", docTitle: t("k.title"), head: head(), body: body(), pin: pin(week), badges: { home: "dot", results: 2 }, after: function () {
+    document.addEventListener("seg", function (e) {
+      if (e.detail.name !== "week") return; week = e.detail.value;
+      var v = $("#view"); v.innerHTML = view(week); v.classList.remove("pg-fade"); void v.offsetWidth; v.classList.add("pg-fade");
+      var p = $("#pin"); if (p) p.outerHTML = pin(week); App.enhance(document.body); App.pinFit(); snap();
+    });
+    snap(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(snap);
+    window.addEventListener("resize", snap);
+    document.addEventListener("click", function (e) {
+      if (e.target.closest("#how")) howSheet();
+      else if (e.target.closest("button#pin")) toAround();
+    });
+  } });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,250 @@
+{
+  "spike": "cojam-phase0",
+  "release": "dev",
+  "origin": "http://localhost:4173",
+  "devKeyMode": true,
+  "config": {
+    "chainId": 1001,
+    "contract": "0x5064CD6b484d3A1B9a2f3A27c364370ffAa39f58",
+    "api": "http://localhost:8787",
+    "privyAppId": "cmwxqqrt0017p0gl5hi2gewh7"
+  },
+  "apiHealth": {
+    "ok": true,
+    "text": "chain 1001, fee payer 0x6Fd4…F5b1 holds 24.578 KAIA",
+    "feePayer": "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1"
+  },
+  "launch": {
+    "count": 2,
+    "previousLaunchAt": "2026-11-26T16:24:10.311Z",
+    "wasLoggedInLastTime": false,
+    "startedAt": "2026-11-26T16:24:10.713Z",
+    "sessionRestoredOnLaunch": false,
+    "playKeyOnLaunch": {
+      "found": false
+    }
+  },
+  "player": "0x1f8cF2562Ed7be99BBFd2F0C4A9eA93020b5d928",
+  "playKey": {
+    "address": "0x05C2a6c94C2498E4c7cD326e90841a07611801e8",
+    "createdAt": "2026-11-26T16:24:12.323Z",
+    "authorisedTx": "0xf53ad6be05cac9b6f57fec35c33b2a84534bfb02507acf5cd0fc0cda37e2179c",
+    "expiresAt": 1798302252
+  },
+  "steps": {
+    "a": {
+      "status": "ok",
+      "result": {
+        "userAgent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+        "platform": "other",
+        "standalone": false,
+        "displayMode": "browser",
+        "navigatorStandalone": null,
+        "launchedFrom": null,
+        "inAppBrowser": null,
+        "serviceWorker": "controlling",
+        "storagePersisted": false,
+        "storagePersistRequest": null,
+        "storageEstimateMB": {
+          "usage": 2.1,
+          "quota": 4098
+        },
+        "indexedDB": true,
+        "online": true,
+        "screen": "390x844 @2",
+        "language": "en-US",
+        "checkedAt": "2026-11-26T16:24:10.761Z"
+      }
+    },
+    "b": {
+      "status": "ok",
+      "result": {
+        "mode": "devkey (localhost only): Privy skipped",
+        "address": "0x1f8cF2562Ed7be99BBFd2F0C4A9eA93020b5d928"
+      }
+    },
+    "c": {
+      "status": "ok",
+      "result": {
+        "signer": "dev key (stand in for Privy)",
+        "player": "0x1f8cF2562Ed7be99BBFd2F0C4A9eA93020b5d928",
+        "playKey": "0x05C2a6c94C2498E4c7cD326e90841a07611801e8",
+        "playKeyCreatedNow": true,
+        "expiresAt": 1798302252,
+        "sigHash": "0x97961220abbd0ed27b3d62f886ee04a8aa333559eaabcd24c5f0977d0678ec8c",
+        "signatureReturned": "0x5f90c2bebfd0ac96bfd11e28a47b19287bdda3977a144313745b5f52cf029f5659d3a3b598a2fef238f6f33bad6c672a6e7888e800e83eaf04cca544ff01c0361b",
+        "signatureBytes": 65,
+        "vReturned": 27,
+        "conversion": "v 27 -> yParity 0 -> v = 1001 * 2 + 35 + 0 = 2037",
+        "signMs": 3.3,
+        "postMs": 569,
+        "serverMs": 561,
+        "mineMs": 2017,
+        "totalMs": 2991,
+        "gasUsed": "81614",
+        "block": 234065666,
+        "feePayer": "0x6fd4d26d4c1ecc8b9692ed5852f26bf1f16df5b1",
+        "txHash": "0xf53ad6be05cac9b6f57fec35c33b2a84534bfb02507acf5cd0fc0cda37e2179c"
+      },
+      "links": [
+        {
+          "label": "setPlayKey",
+          "hash": "0xf53ad6be05cac9b6f57fec35c33b2a84534bfb02507acf5cd0fc0cda37e2179c"
+        }
+      ],
+      "ms": 3281
+    },
+    "c2": {
+      "status": "ok",
+      "result": {
+        "signer": "dev key (stand in for Privy)",
+        "samplesMs": [
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "minMs": 1,
+        "medianMs": 1,
+        "maxMs": 1,
+        "allRecoveredToWallet": true
+      },
+      "ms": 13
+    },
+    "d": {
+      "status": "ok",
+      "result": {
+        "playKey": "0x05C2a6c94C2498E4c7cD326e90841a07611801e8",
+        "player": "0x1f8cF2562Ed7be99BBFd2F0C4A9eA93020b5d928",
+        "txs": [
+          {
+            "nonce": 0,
+            "txHash": "0x96190a86bfc66e04e43160e4be991975dcbb7f5364701a66c8e36130dbe12882",
+            "signMs": 0.5,
+            "postMs": 559,
+            "block": 234065670,
+            "index": 0,
+            "status": 1
+          },
+          {
+            "nonce": 1,
+            "txHash": "0xdf5fd1b68388e521c2884fd959e59c0a3905409bd3c0e77d8debeac8dbdf65e0",
+            "signMs": 0.8,
+            "postMs": 558,
+            "block": 234065670,
+            "index": 2,
+            "status": 1
+          },
+          {
+            "nonce": 2,
+            "txHash": "0x6d6ad91d5a8a74caf35ae6fc95ddb6eac429ab47ad875063c71fc1f60f4373b1",
+            "signMs": 0.6,
+            "postMs": 565,
+            "block": 234065671,
+            "index": 0,
+            "status": 1
+          },
+          {
+            "nonce": 3,
+            "txHash": "0x7cd84f960f7081f5150cb79f9f3e5ee3d7adda81e6f9916254ac0650ed7714bc",
+            "signMs": 0.7,
+            "postMs": 559,
+            "block": 234065671,
+            "index": 1,
+            "status": 1
+          },
+          {
+            "nonce": 4,
+            "txHash": "0x765133def9b23e89669d8441c5122f2675f72b8ea4403c0d27697191170f5dec",
+            "signMs": 0.6,
+            "postMs": 560,
+            "block": 234065672,
+            "index": 0,
+            "status": 1
+          }
+        ],
+        "minedOrderByNonce": [
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        "inNonceOrder": true,
+        "sendAllMs": 3053,
+        "totalUntilAllMinedMs": 4384,
+        "pointsBefore": 0,
+        "pointsAfter": 5,
+        "keyPointsAfter": 0,
+        "creditedToPlayerNotKey": true
+      },
+      "links": [
+        {
+          "label": "predict nonce 0",
+          "hash": "0x96190a86bfc66e04e43160e4be991975dcbb7f5364701a66c8e36130dbe12882"
+        },
+        {
+          "label": "predict nonce 1",
+          "hash": "0xdf5fd1b68388e521c2884fd959e59c0a3905409bd3c0e77d8debeac8dbdf65e0"
+        },
+        {
+          "label": "predict nonce 2",
+          "hash": "0x6d6ad91d5a8a74caf35ae6fc95ddb6eac429ab47ad875063c71fc1f60f4373b1"
+        },
+        {
+          "label": "predict nonce 3",
+          "hash": "0x7cd84f960f7081f5150cb79f9f3e5ee3d7adda81e6f9916254ac0650ed7714bc"
+        },
+        {
+          "label": "predict nonce 4",
+          "hash": "0x765133def9b23e89669d8441c5122f2675f72b8ea4403c0d27697191170f5dec"
+        }
+      ],
+      "ms": 6382
+    },
+    "e": {
+      "status": "ok",
+      "result": {
+        "signer": "dev key (stand in for Privy)",
+        "signMs": 0.6,
+        "postMs": 560,
+        "mineMs": 1414,
+        "totalMs": 2195,
+        "gasUsed": "75961",
+        "vReturned": 27,
+        "txHash": "0x5e878f40aac3616af7ca80cb5d624c6618e58408d9d4efb08ad5929e3e506ca2"
+      },
+      "links": [
+        {
+          "label": "direct predict",
+          "hash": "0x5e878f40aac3616af7ca80cb5d624c6618e58408d9d4efb08ad5929e3e506ca2"
+        }
+      ],
+      "ms": 2196
+    },
+    "f": {
+      "status": "ok",
+      "result": {
+        "how": "ethers Wallet.sendTransaction (dev key)",
+        "from": "0x1f8cF2562Ed7be99BBFd2F0C4A9eA93020b5d928",
+        "to": "0x6Fd4d26d4C1ECc8B9692eD5852f26BF1f16DF5b1",
+        "amountKaia": "0.001",
+        "sendMs": 865,
+        "totalMs": 2302,
+        "block": 234065684,
+        "gasUsed": "21000",
+        "txHash": "0xf3a40fc03218a8d02d01928a3af8a1d43b02c059c2b549eeabe73eda320fb935"
+      },
+      "links": [
+        {
+          "label": "transfer",
+          "hash": "0xf3a40fc03218a8d02d01928a3af8a1d43b02c059c2b549eeabe73eda320fb935"
+        }
+      ],
+      "ms": 2499
+    }
+  },
+  "console": [],
+  "reportedAt": "2026-11-26T16:24:33.044Z"
+}

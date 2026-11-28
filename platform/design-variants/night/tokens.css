@@ -1,0 +1,94 @@
+/* Hallmark · v2.0.0 · shape: app screen · direction: custom (Night Desk, by request) · deal: manual · genre: modern-minimal · signature: the balance rail under the card, a tick scale whose needle follows the drag to the commit mark
+ * critique: every figure is a readout on a ruled desk; colour only says which side, who you are, or what failed.
+ * waive 64: mono is the material here. It is used for figures only, never for words. · sweep: manual (sloplint not available in this packaging) */
+
+/* Cojam Daily Prediction, variant B "Night Desk": tokens.
+   Every colour and every font on every screen goes through this block. */
+:root {
+  color-scheme: dark;
+
+  /* ground and layered flat surfaces (hue 222, taken from the brand blue, almost no chroma) */
+  --bg: #090C12;          /* the desk */
+  --s1: #0F131B;          /* raised: header, tab bar, sheets */
+  --s2: #161B25;          /* cells, fields, the card back */
+  --s3: #1E2430;          /* pressed, skeleton */
+  --line: #252C3A;        /* hairline between rows and cells */
+  --line-2: #3A4458;      /* rule between sections, tick marks */
+  --line-strong: #5C6882; /* edge of a control (3.4:1 on the desk) */
+
+  /* text */
+  --text: #EDF0F5;        /* 16.6:1 on the desk */
+  --text-2: #AAB3C5;      /* 9.0:1 */
+  --text-3: #8791A7;      /* 6.0:1 on the desk, 5.4:1 on --s2 */
+
+  /* the two signals: the two answers, left and right, and nothing else */
+  --warm: #FFB454;        /* left answer (no, down, under) */
+  --cool: #97DBFF;        /* right answer (yes, up, over): the brand sky */
+  --warm-dim: #3A2A14;    /* wash of the left answer on the desk */
+  --cool-dim: #14303F;    /* wash of the right answer on the desk */
+  --on-signal: #090C12;
+
+  /* paper: the one action, and the tile under the mark */
+  --paper: #EDF0F5;
+  --paper-press: #C9D0DC;
+  --on-paper: #090C12;
+  --paper-off: #2A3140;   /* a switched off primary keeps its shape */
+  --on-paper-off: #A3ADC0;
+
+  /* brand blue: "you". The current tab, the chosen option, your own row */
+  --you: #124CC4;
+  --you-line: #4C7BE6;
+  --on-you: #FFFFFF;
+
+  /* failure only */
+  --danger: #FF8A7A;
+  --danger-dim: #3B1A17;
+
+  /* hatching: anything held (pending, locked, on hold) */
+  --hatch: repeating-linear-gradient(135deg, var(--line-2) 0 1px, transparent 1px 6px);
+  --hatch-strong: repeating-linear-gradient(135deg, var(--text-3) 0 1.5px, transparent 1.5px 5px);
+  /* a ruler: one tick every 8 px */
+  --ticks: repeating-linear-gradient(90deg, var(--line-2) 0 1px, transparent 1px 8px);
+  --plate: #1B2B4D;       /* the ground the question picture is printed on, in one ink */
+  --scrim: linear-gradient(180deg, transparent 34%, rgba(9, 12, 18, 0.82) 60%, var(--bg) 80%);
+  --veil: rgba(4, 6, 10, 0.72);
+
+  /* type */
+  --font-text: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  --font-num: "Chivo Mono", "Pretendard Variable", Pretendard, ui-monospace, "SF Mono", Menlo, monospace;
+
+  --t-12: 12px;
+  --t-13: 13px;
+  --t-15: 15px;
+  --t-17: 17px;
+  --t-20: 20px;
+  --t-24: 24px;
+  --t-32: 32px;
+  --t-44: 44px;
+  --t-64: 64px;
+
+  /* space: a 4 px grid */
+  --s-2: 2px; --s-4: 4px; --s-6: 6px; --s-8: 8px; --s-10: 10px; --s-12: 12px; --s-16: 16px; --s-20: 20px; --s-24: 24px; --s-32: 32px; --s-40: 40px;
+  --gutter: 16px;
+  --col: 430px;
+
+  /* shape */
+  --r-1: 3px;   /* chips, ticks */
+  --r-2: 6px;   /* controls */
+  --r-3: 10px;  /* the card, sheets */
+
+  /* motion */
+  --dur-micro: 120ms;
+  --dur-short: 220ms;
+  --dur-move: 320ms;
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-settle: cubic-bezier(0.25, 1, 0.35, 1);
+
+  --header-h: 52px;
+  --tabs-h: 60px;
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--cool);
+}
+:lang(ja) {
+  --font-text: "Pretendard JP Variable", "Pretendard JP", "Pretendard Variable", -apple-system, BlinkMacSystemFont, "Hiragino Sans", system-ui, sans-serif;
+  --font-num: "Chivo Mono", "Pretendard JP Variable", "Pretendard JP", ui-monospace, "SF Mono", Menlo, monospace;
+}

@@ -1,0 +1,68 @@
+/* Hallmark · custom run · concept: Poster (International Typographic Style as an app) · deal: manual · signature: the question card as a one field poster with a giant numeral, and the day's five answers locking into a printed grid · sweep: manual (scripts not packaged) */
+/* critique: type carries every screen; colour enters only as a decision (red left, blue right) or as the house yellow field; rules exist only where they divide information. */
+/* waive 9: none (labels are sentence case, untracked) · waive 13: app screens carry product data, not marketing copy */
+:root {
+  /* inks */
+  --paper: #F2F0E9;      /* the ground sheet */
+  --sheet: #FFFFFF;      /* a white sheet on the ground */
+  --ink: #0F0F0F;        /* text, rules, the primary action */
+  --ink-2: #55524B;      /* secondary text: 6.6:1 on paper, 7.5:1 on sheet */
+  --hair: #CBC7BB;       /* hairline dividers inside a group */
+  --mute: #DEDBD1;       /* disabled fill, skeleton */
+  --yellow: #FFD400;     /* the house field: reward, points, current selection. Ink on it: 13.4:1 */
+  --red: #D3221B;        /* the LEFT answer, nothing else. White on it: 5.2:1 */
+  --blue: #124CC4;       /* the RIGHT answer and the Cojam mark, nothing else. White on it: 7.4:1 */
+  --on-ink: #F2F0E9;
+  --on-colour: #FFFFFF;
+
+  /* type */
+  --f-display: "Inter Tight", "Pretendard Variable", Pretendard, "Helvetica Neue", Arial, sans-serif;
+  --f-text: "Pretendard Variable", Pretendard, "Inter Tight", "Helvetica Neue", Arial, sans-serif;
+  --t-mega: 9.5rem;      /* 152: +100, the invite 10% */
+  --t-d1: 5.5rem;        /* 88: wallet figure never; rank 1, countdown digits */
+  --t-d2: 3.5rem;        /* 56: page titles, hero figures */
+  --t-d3: 2.5rem;        /* 40: second figures */
+  --t-h1: 1.875rem;      /* 30: card headline, sheet titles */
+  --t-h2: 1.375rem;      /* 22: section heads */
+  --t-h3: 1.0625rem;     /* 17: row titles, buttons */
+  --t-body: 1rem;        /* 16 */
+  --t-small: 0.875rem;   /* 14 */
+  --t-label: 0.8125rem;  /* 13 */
+  --track-display: -0.045em;
+  --track-head: -0.025em;
+  --lh-display: 0.9;
+  --lh-head: 1.08;
+  --lh-body: 1.45;
+
+  /* the grid: 4 columns, 16 margin, 8 gutter, 8 unit */
+  --m: 16px;
+  --g: 8px;
+  --u: 8px;
+  --col: 430px;
+  --rule: 2px;
+  --rule-heavy: 8px;
+  --tap: 44px;
+  --hd-h: 52px;
+  --tab-h: 56px;
+
+  /* motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --d-press: 120ms;
+  --d-fast: 180ms;
+  --d-base: 260ms;
+  --d-sheet: 420ms;
+  --d-slide: 520ms;
+}
+:lang(ja) {
+  --f-display: "Inter Tight", "Pretendard JP Variable", "Pretendard Variable", "Hiragino Sans", sans-serif;
+  --f-text: "Pretendard JP Variable", "Pretendard Variable", "Hiragino Sans", sans-serif;
+}
+:lang(ko), :lang(ja) {
+  --track-display: -0.035em;
+  --track-head: -0.02em;
+  --lh-display: 1;
+  --lh-head: 1.16;
+  --lh-body: 1.5;
+}

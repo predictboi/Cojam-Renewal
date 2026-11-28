@@ -1,0 +1,83 @@
+/* Hallmark v2.0.0 · theme: custom (deal: manual, brand locked by the brief) · idea: "the app says one sentence, the number answers" · vibe: "calm, spoken, exact, numeric, generous" · paper #FFFFFF · accent #124CC4 · faces Pretendard Variable, Pretendard JP Variable · hero: the blue prediction card under a spoken headline · posture light/grotesk-heavy/chromatic-blue · scope: app screens · signature: the one blue card and the hero figure on every screen */
+/* critique: the risk is a bland fintech template; the answer is one blue object per screen, sizes far apart, and sentences that say a fact. */
+/* waive 13 (80 words a screen): app screens carry product information the brief forbids removing. waive 16: sloplint is not packaged here, the floor was walked by hand. */
+
+:root {
+  /* ground and surfaces: no borders, the grey block is the only container */
+  --paper: #FFFFFF;
+  --fill: #EEF1F6;          /* soft block, field, chip */
+  --fill-press: #E4E8F0;    /* pressed row, pressed plain button, skeleton */
+  --hair: #E4E8F0;          /* the tab bar edge and the divider inside a block, nothing else */
+
+  /* ink: three steps, all AA on paper and on fill */
+  --ink: #0F1B33;           /* 17.1:1 on paper, 15.1:1 on fill */
+  --ink-2: #46536B;         /* 7.8:1 on paper, 6.8:1 on fill */
+  --ink-3: #586479;         /* 5.9:1 on paper, 5.3:1 on fill, 4.9:1 on fill-press */
+  --ink-off: #586479;       /* text of a switched off control */
+
+  /* the one blue */
+  --blue: #124CC4;          /* white on it 7.35:1 */
+  --blue-press: #0E3EA3;
+  --blue-tint: #E6EEFE;     /* blue text on it 6.3:1 */
+  --blue-2: #3A66CC;        /* second card of the deck */
+  --blue-3: #86A4E4;        /* third card of the deck */
+  --on-blue: #FFFFFF;
+  --on-blue-2: #DCE7FF;     /* 5.9:1 on blue */
+  --on-blue-fill: #2A5ECF;  /* a chip or line drawn on the blue card */
+
+  /* the two answers: left is persimmon, right is teal. OKLCH lightness 0.55 and 0.53 so neither looks recommended */
+  --left: #B94A00;          /* white on it 5.2:1 */
+  --left-tint: #FFECDD;
+  --left-ink: #9C3D00;      /* 5.9:1 on its tint */
+  --right: #08786D;         /* white on it 5.4:1 */
+  --right-tint: #DCF3EE;
+  --right-ink: #0A665C;     /* 5.9:1 on its tint */
+  --on-answer: #FFFFFF;
+
+  /* error only */
+  --danger: #B3261E;        /* 6.5:1 on paper */
+  --danger-tint: #FDECEA;
+
+  --scrim: rgba(15, 27, 51, 0.48);
+  --ring: #124CC4;
+
+  /* type: one family per language, weight and size do the work */
+  --font: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", "Segoe UI", Roboto, sans-serif;
+  --font-ja: "Pretendard JP Variable", "Pretendard JP", "Pretendard Variable", -apple-system, "Hiragino Sans", "Yu Gothic UI", sans-serif;
+  --font-num: var(--font);
+  --font-code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;   /* wallet addresses only */
+
+  --t-hero: 44px;     /* the figure of a screen */
+  --t-say: 26px;      /* the spoken headline */
+  --t-title: 20px;    /* section title, card question at 22 to 24 */
+  --t-body: 17px;
+  --t-sub: 15px;
+  --t-cap: 13px;
+
+  /* spacing: a 4 px base, sections breathe at 32 and 40 */
+  --s-1: 4px; --s-2: 8px; --s-3: 12px; --s-4: 16px; --s-5: 20px; --s-6: 24px; --s-8: 32px; --s-10: 40px;
+  --gut: 20px;        /* page gutter */
+
+  /* radius: one per level */
+  --r-card: 28px;     /* the prediction card, sheets */
+  --r-block: 20px;    /* grey blocks */
+  --r-ctl: 16px;      /* buttons, fields, rows when pressed */
+  --r-sm: 12px;       /* small buttons, icon tiles */
+  --r-pill: 999px;
+
+  --h-btn: 56px;
+  --h-row: 64px;
+  --h-tab: 60px;
+
+  /* motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-back: cubic-bezier(0.34, 1.56, 0.64, 1);   /* a small overshoot: card snap back, the check */
+  --d-press: 120ms;
+  --d-ui: 200ms;
+  --d-sheet: 420ms;
+
+  --shadow-card: 0 12px 28px -12px rgba(15, 27, 51, 0.28);   /* the dragged card only */
+  --shadow-thumb: 0 1px 3px rgba(15, 27, 51, 0.14);          /* the segmented thumb only */
+}

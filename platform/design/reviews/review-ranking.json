@@ -1,0 +1,14 @@
+{
+  "screen": "ranking.html",
+  "design": {"Hierarchy": 6, "Layout": 6, "Spacing": 7, "Type": 7, "Colour": 6, "Consistency": 6, "Density": 6, "Copy": 6, "Mobile": 7, "Finish": 7},
+  "design_total": 64,
+  "usability": {"Status": 3, "Real world": 2, "User control": 3, "Consistency": 2, "Error prevention": 3, "Recognition": 3, "Flexibility": 2, "Minimal design": 3, "Error recovery": 3, "Help": 3},
+  "usability_total": 27,
+  "fixes": [
+    {"rank": 1, "element": ".krow rows carrying the '동점' chip, and the prize explainer", "problem": "Two players with 2,350P are ranks 3 and 4 with prizes 192.6 and 128.4 CT; no tie break rule is shown.", "change": "Split the combined prize between tied ranks, or name the tie break in the chip and add the rule to the explainer."},
+    {"rank": 2, "element": "Prize pool card above the Top 10 list", "problem": "At 390x844 no leaderboard row is fully visible on the first screen.", "change": "Collapse it to one row with pool, time left and a small explainer link so ranks 1 to 3 show without scrolling."},
+    {"rank": 3, "element": ".pin-pts in the pinned bar versus the header points pill", "problem": "1,350P and 1,250P for the same player with no labels.", "change": "Label the pinned figure as this week's points."},
+    {"rank": 4, "element": "Prize column in .krow", "problem": "Number and unit on two lines make each row 96px.", "change": "Put 'CT' on the number line and reduce row height to about 64px."},
+    {"rank": 5, "element": ".fig--volt pool figure, .krow-rank medals, .pin-rank, .pin-pts, heading 'Top 10'", "problem": "Four lime uses outside the brand rule; 'Top 10' untranslated in KO.", "change": "Make them white or ink with an ink edge; use '상위 10명' in KO."}
+  ]
+}

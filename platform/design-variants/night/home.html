@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F131B">
+<title>Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<noscript>Cojam needs JavaScript to show today's predictions.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* H1 Home, card view. States: fresh (default), partial, loading, empty, error, offline, hold.
+   Swipe rules: commit past 35% of the card width, or a fling (96 px at 0.5 px/ms, 56 px at 1.1 px/ms); Undo for 3 seconds; the fifth pick leads to done.html. */
+(function () {
+  var t = N.t, M = N.M, ic = N.ic, st = N.state;
+  var ARM = 0.35, g, root, deck, busy = false, lastCommit = 0, railW = 0;
+  var viewSw = N.seg([{ id: "card", label: ic.cards + t("h.view.card"), href: N.href("home.html") }, { id: "term", label: ic.list + t("h.view.term"), href: N.href("home-list.html") }], "card", t("h.view.label"));
+
+  function body() {
+    if (st === "loading") return N.skel(["cells", "card", "btn"]);
+    if (st === "error") return N.errorBox();
+    if (st === "hold") return '<section class="state"><span class="state-ic">' + ic.stake + "</span><h2>" + t("hold.home.h") + "</h2><p>" + t("hold.home.b") + '</p><a class="btn btn-2" href="' + N.href("hold.html") + '">' + t("hold.home.btn") + "</a></section>";
+    if (st === "empty") return N.cells([{ k: t("d.next"), v: '<span class="fig" data-cd="' + M.untilNextSet() + '"></span>', s: t("d.next.at") }]) +
+      N.emptyBox(t("h.empty.h"), t("h.empty.b", { time: t("time.kst9") }));
+    return N.cells([
+      { k: '<span id="left"></span>', v: '<span class="fig" id="cnt"></span><span id="dt"></span>' },
+      { k: t("h.closes"), v: '<span class="fig" data-cd="' + M.untilNextSet() + '"></span>' }], "tape is-right") +
+      '<div class="deck" id="deck"></div>' +
+      '<div class="rail" id="rail" aria-hidden="true"><i class="rail-m is-l"></i><i class="rail-m is-c"></i><i class="rail-m is-r"></i><i class="needle" id="needle"></i></div>' +
+      '<div class="choices" id="choices"><button type="button" class="choice choice-l" data-side="l"></button><button type="button" class="choice choice-r" data-side="r"></button></div>' +
+      '<div class="foot" id="foot"></div><p class="sr" aria-live="polite" id="live"></p>';
+  }
+
+  function cardHTML(id) {
+    var Q = N.q(id), long = N.lang === "en" ? Q.title.length > 44 : Q.title.length > 22;
+    return '<article class="card" id="card" aria-label="' + N.esc(t("h.qn.sr", { n: Q.n })) + '">' +
+      '<img class="card-img" src="' + Q.img + '" alt="" width="800" height="1000" draggable="false"><div class="card-scrim"></div><div class="card-wash"></div>' +
+      '<div class="card-top"><span class="chip chip-cat">' + t("cat." + Q.cat) + '</span><span class="card-n">' + Q.n + "/5</span></div>" +
+      '<div class="stamp stamp-l"><span>' + Q.left + '</span></div><div class="stamp stamp-r"><span>' + Q.right + "</span></div>" +
+      '<div class="card-b"><h2 class="card-q' + (long ? " is-long" : "") + '">' + Q.title + '</h2><ul class="card-meta"><li>' + ic.source + "<span>" + t("h.answer", { rule: Q.rule }) + "</span></li><li>" + ic.clock + "<span>" + t("h.ai", { time: Q.settle }) + "</span></li></ul></div></article>";
+  }
+
+  function tape() {
+    var n = g.count();
+    root.querySelector("#left").textContent = t("h.left", { n: 5 - n });
+    root.querySelector("#cnt").innerHTML = n + "<small>/5</small>";
+    root.querySelector("#dt").innerHTML = N.dayTicks(g.picks, g.held && g.held.id);
+  }
+  function hint() { root.querySelector("#foot").className = "foot"; root.querySelector("#foot").innerHTML = "<span>" + t(st === "offline" ? "h.offline" : "h.final") + "</span>"; }
+  function undoBar(h) {
+    var Q = N.q(h.id), f = root.querySelector("#foot");
+    f.className = "foot undo";
+    f.innerHTML = '<span class="undo-l">' + N.mark(h.side) + "<span>" + t("h.sync", { n: Q.n, choice: h.side === "l" ? Q.left : Q.right }) + '</span></span><button type="button" class="undo-b" id="undo" aria-label="' + N.esc(t("h.undo.aria", { n: Q.n, choice: h.side === "l" ? Q.left : Q.right })) + '">' + ic.undo + t("h.undo") + '</button><div class="drain"><i></i></div>';
+    f.querySelector("#undo").addEventListener("click", function () { g.undo(); });
+  }
+  function arm(side) { root.classList.toggle("is-arm-l", side === "l"); root.classList.toggle("is-arm-r", side === "r"); }
+  function needle(p) { var x = Math.max(-1.2, Math.min(1.2, p / ARM)) * 0.38 * railW; root.querySelector("#needle").style.transform = "translateX(" + x.toFixed(1) + "px)"; }
+
+  function renderDeck(from) {
+    var id = g.current(), left = 5 - g.count(), ch = root.querySelector("#choices"), rail = root.querySelector("#rail");
+    arm(null); needle(0);
+    if (!id) {                                   /* all five picked: the last one can still be undone */
+      ch.hidden = true; rail.hidden = true;
+      deck.innerHTML = '<section class="finish"><h2>' + t("h.end.h") + '</h2><p class="finish-n"><span id="fin">' + t("h.end.in", { n: 3 }) + '</span></p><div class="drain"><i></i></div><button type="button" class="btn btn-1" id="fin-now">' + t("h.end.now") + '</button><p class="fine">' + t("h.fin.b") + "</p></section>";
+      var n = 3, iv = setInterval(function () { n -= 1; var el = document.getElementById("fin"); if (!el || n < 1) { clearInterval(iv); if (el) el.textContent = t("h.end.b"); return; } el.textContent = t("h.end.in", { n: n }); }, 1000);
+      deck.querySelector("#fin-now").addEventListener("click", function () { g.flush(); });
+      return;
+    }
+    ch.hidden = false; rail.hidden = false;
+    var Q = N.q(id);
+    deck.innerHTML = (left > 2 ? '<div class="plate plate-2"></div>' : "") + (left > 1 ? '<div class="plate plate-1"></div>' : "") + cardHTML(id) + (left > 1 ? '<span class="sr">' + t("n.stack", { n: left - 1 }) + "</span>" : "");
+    var card = deck.querySelector("#card");
+    if (from && !N.reduced) {                    /* undo: the card comes back from the side it left */
+      card.style.transform = "translate(" + (from === "l" ? -120 : 120) + "%, 12px) rotate(" + (from === "l" ? -12 : 12) + "deg)";
+      card.getBoundingClientRect();
+      card.style.transition = "transform var(--dur-move) var(--ease-settle)"; card.style.transform = "";
+    } else card.classList.add("is-in");
+    var L = ch.querySelector('[data-side="l"]'), R = ch.querySelector('[data-side="r"]');
+    L.innerHTML = ic.left + "<span>" + Q.left + "</span>"; R.innerHTML = "<span>" + Q.right + "</span>" + ic.right;
+    L.setAttribute("aria-label", t("h.pick.aria", { choice: Q.left, q: Q.title })); R.setAttribute("aria-label", t("h.pick.aria", { choice: Q.right, q: Q.title }));
+    bind(card);
+  }
+
+  function commit(side) {
+    if (busy || !g.current()) return;
+    if (st === "offline") { N.toast(t("h.offline")); return; }
+    busy = true; lastCommit = Date.now();
+    var card = deck.querySelector("#card"), go = function () { busy = false; g.pick(side); };
+    arm(side); needle(side === "l" ? -ARM : ARM);
+    if (N.reduced || !card) { go(); return; }
+    card.style.transition = "transform var(--dur-short) var(--ease-out), opacity var(--dur-short) linear";
+    card.style.transform = "translate(" + (side === "l" ? -125 : 125) + "%, 16px) rotate(" + (side === "l" ? -13 : 13) + "deg)"; card.style.opacity = "0.2";
+    setTimeout(go, 200);
+  }
+
+  function bind(card) {
+    var sx, sy, dx = 0, active = false, lock = null, W = 1, sam = [], wasArmed = false;
+    function reset() { card.style.transition = "transform var(--dur-short) var(--ease-settle)"; card.style.transform = ""; card.querySelectorAll(".stamp").forEach(function (s) { s.style.opacity = ""; s.style.visibility = ""; }); arm(null); needle(0); wasArmed = false; }
+    card.addEventListener("pointerdown", function (e) {
+      if (busy || st === "offline") { if (st === "offline") N.toast(t("h.offline")); return; }
+      active = true; lock = null; sx = e.clientX; sy = e.clientY; dx = 0; W = card.offsetWidth; railW = root.querySelector("#rail").offsetWidth; sam = [[e.timeStamp, e.clientX]];
+      try { card.setPointerCapture(e.pointerId); } catch (err) {}
+      card.style.transition = "none"; card.classList.remove("is-in");
+    });
+    card.addEventListener("pointermove", function (e) {
+      if (!active) return;
+      dx = e.clientX - sx; var dy = e.clientY - sy;
+      if (lock === null && (Math.abs(dx) > 10 || Math.abs(dy) > 10)) lock = Math.abs(dx) >= Math.abs(dy) ? "x" : "y";
+      if (lock === "y") { active = false; reset(); return; }
+      if (lock !== "x") return;
+      sam.push([e.timeStamp, e.clientX]); if (sam.length > 12) sam.shift();
+      var p = dx / W, side = dx < 0 ? "l" : "r", armed = Math.abs(p) >= ARM;
+      card.style.transform = "translate(" + dx + "px," + (dy * 0.18).toFixed(1) + "px) rotate(" + (p * 7).toFixed(2) + "deg)";
+      card.querySelector(".stamp-" + side).style.opacity = armed ? 1 : (Math.min(1, Math.abs(p) / ARM) * 0.4).toFixed(2);   /* below the mark the stamp only hints */
+      card.querySelector(".stamp-" + (side === "l" ? "r" : "l")).style.opacity = 0; card.querySelector(".stamp-" + side).style.visibility = "visible"; card.querySelector(".stamp-" + (side === "l" ? "r" : "l")).style.visibility = "";
+      arm(armed ? side : null); needle(p);
+      if (armed && !wasArmed && navigator.vibrate) { try { navigator.vibrate(5); } catch (err) {} }
+      wasArmed = armed;
+    });
+    function end(e) {
+      if (!active) return; active = false;
+      var p = dx / W, v = 0, last = sam[sam.length - 1];
+      for (var i = sam.length - 1; i >= 0; i--) { if (last[0] - sam[i][0] >= 100 || i === 0) { var dt = last[0] - sam[i][0]; v = dt > 0 ? (last[1] - sam[i][1]) / dt : 0; break; } }
+      var same = v * dx > 0, av = Math.abs(v), ad = Math.abs(dx);
+      var fling = same && ((ad >= 96 && av >= 0.5) || (ad >= 56 && av >= 1.1));
+      if (e.type !== "pointercancel" && lock === "x" && (Math.abs(p) >= ARM || fling)) commit(dx < 0 ? "l" : "r"); else reset();
+    }
+    card.addEventListener("pointerup", end); card.addEventListener("pointercancel", end);
+  }
+
+  N.page({
+    tab: "home", fit: true, title: t("h.title"), headRight: viewSw, body: body,
+    after: function (app) {
+      root = app; deck = app.querySelector("#deck"); if (!deck) return;
+      g = N.game({
+        start: st === "partial" ? [["q1", "r"], ["q2", "l"]] : [],
+        change: function (kind, id, side) {
+          var Q = N.q(id), live = app.querySelector("#live");
+          tape();
+          if (kind === "pick") { renderDeck(); undoBar(g.held); live.textContent = t("h.live.picked", { choice: side === "l" ? Q.left : Q.right, k: 5 - g.count() }); }
+          if (kind === "saved") { hint(); if (g.count() < 5) app.querySelector("#foot").innerHTML = "<span>" + t("h.left.saved") + "</span>"; }
+          if (kind === "undo") { renderDeck(side); hint(); live.textContent = t("h.undone", { n: Q.n }); }
+        },
+        finish: function () { app.querySelector("#foot").innerHTML = '<i class="spin"></i><span>' + t("h.end.b") + "</span>"; setTimeout(function () { location.href = N.href("done.html", "moment"); }, 500); }
+      });
+      railW = app.querySelector("#rail").offsetWidth;
+      tape(); renderDeck(); hint();
+      app.querySelector("#choices").addEventListener("click", function (e) {
+        var b = e.target.closest(".choice"); if (!b) return;
+        if (Date.now() - lastCommit < 400) return;          /* a quick double tap never answers two cards */
+        commit(b.getAttribute("data-side"));
+      });
+      if (st === "offline") app.querySelectorAll(".choice").forEach(function (b) { b.setAttribute("aria-disabled", "true"); });
+      document.addEventListener("keydown", function (e) {
+        if (e.repeat || e.target.closest("input, a, .sheet")) return;
+        if (e.key === "ArrowLeft") commit("l"); else if (e.key === "ArrowRight") commit("r");
+        else if (e.key === "z" || e.key === "Z" || e.key === "Backspace") g.undo();
+      });
+      window.addEventListener("pagehide", function () { g.flush(true); });
+    }
+  });
+})();
+</script>
+</body>
+</html>

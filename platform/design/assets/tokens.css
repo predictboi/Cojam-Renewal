@@ -1,0 +1,142 @@
+/* Cojam Daily Prediction PWA: design tokens.
+   Inherited from the live site (site/assets/tokens.css, direction B "Signal") so the app and the landing read as one family.
+   Every colour, size, radius, shadow and duration used by components.css and the screens lives here. Screens hard code nothing. */
+
+@font-face { font-family: "Pretendard Fallback"; src: local("Arial"), local("ArialMT"), local("Helvetica"), local("Liberation Sans"); font-weight: 100 449; size-adjust: 101%; }
+@font-face { font-family: "Pretendard Fallback"; src: local("Arial"), local("ArialMT"), local("Helvetica"), local("Liberation Sans"); font-weight: 450 549; size-adjust: 102.7%; }
+@font-face { font-family: "Pretendard Fallback"; src: local("Arial Bold"), local("Arial-BoldMT"), local("Helvetica Bold"), local("Liberation Sans Bold"); font-weight: 550 900; size-adjust: 98.7%; }
+
+:root {
+  /* ---------- colour ----------
+     One loud colour (blue: header and page head band), two quiet ones (snow content, ink cards and text),
+     one key colour (volt) with four jobs only: the primary action, the current selection (a chosen period, the profile avatar), the day progress
+     and the one reward payoff (the "+100P" figure during the day done moment). The current tab and the current segment of a switch are ink, not volt.
+     Figures, the podium, the points pill and illustration grounds use ink, white, blue or sky.
+     Checked pairs: snow on blue 7.35, volt on blue 6.38, sky on blue 4.86, on-brand-2 on blue 5.64, ink on volt 15.7,
+     ink-2 on snow 7.21, ink-2 on mist 6.53, ink-soft on ink 8.70, blue on snow 7.24, up on snow 5.29, down on snow 6.47, warn on warn-tint 5.81.
+     Never: volt or sky as text on snow (1.2 and 1.5), blue text on ink (2.6). */
+  --brand: #124CC4;
+  --brand-hover: #0F3FA6;
+  --brand-deep: #0D3A9C;
+  --brand-tint: #E7EEFB;
+  --volt: #D6FF3D;
+  --volt-hover: #CBF52A;
+  --on-volt: #0B1530;
+  --volt-off: #F0F7CF;        /* the primary action switched off: a flat pale lime, ink-2 text on it is 6.6:1 */
+  /* The two answers of a prediction: left (no, down, under) is coral, right (yes, up, over) is sky. Neither is lime: lime keeps its four jobs.
+     The pair is tuned to the same visual weight on the ink card: equal OKLCH lightness (coral 0.731, sky 0.733) and close chroma (0.166, 0.147),
+     so neither answer looks like the recommended one. Ink text on both: 7.07:1 on coral, 7.70:1 on sky; against the ink ground the fills are 7.07 and 7.70.
+     The hot shades (armed drag, hover, press) step down together to lightness 0.70: ink text 6.29 and 6.91.
+     Used on the buttons, the drag stamps, the drag tint and the dot beside every made pick (pick line, list view, day done, results). */
+  --pick-l: #FF7A66; --pick-l-hot: #FF6753; --pick-r: #4DB0FF; --pick-r-hot: #3FA6FA; --on-pick: #0B1530;
+  --sky: #97DBFF;
+  --sky-tint: #E3F5FF;
+  --snow: #FDFDFF;
+  --surface: #FFFFFF;
+  --inset: #EEF2F9;           /* mist */
+  --line: #DCE3EF;
+  --line-strong: #C3CDDF;
+  --line-field: #8390AC;      /* the edge of an input or an unselected option: 3.2:1 on white, so the control is found without the ink edge */
+  --ink: #0B1530;
+  --ink-2: #4A5672;
+  --ink-soft: #A9B4D0;        /* secondary text on ink */
+  --ink-line: #1B2A55;        /* hairlines and empty slots on ink */
+  --ink-raise: #14224A;       /* one raised level on ink */
+  --on-brand: #FFFFFF;
+  --on-brand-2: #D6E2FA;      /* secondary text on blue */
+  --band-slot: rgba(255, 255, 255, 0.2);   /* empty progress block on blue */
+  --band-chip: rgba(11, 21, 48, 0.32);     /* quiet chip on blue */
+  --grid-line: rgba(255, 255, 255, 0.12);
+  --scrim: rgba(11, 21, 48, 0.56);
+  --stage: #070E22;           /* the ground around the phone column on wide screens */
+
+  --up: #0E7A4D;   --up-tint: #E4F4EC;
+  --down: #B42318; --down-tint: #FCE9E7;
+  --warn: #8A5300; --warn-tint: #FFF4E0;
+  --up-on-ink: #5FD49A;
+
+  /* ---------- type ---------- */
+  --font: "Pretendard Variable", Pretendard, "Pretendard Fallback", -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+  --font-ja: "Pretendard JP Variable", "Pretendard JP", "Pretendard Fallback", "Hiragino Sans", "Noto Sans JP", sans-serif;
+  --font-display: "Archivo", "Pretendard Variable", Pretendard, "Pretendard Fallback", system-ui, sans-serif;
+  --font-display-ja: "Archivo", "Pretendard JP Variable", "Pretendard JP", "Pretendard Fallback", system-ui, sans-serif;
+  --font-data: ui-monospace, "SF Mono", Menlo, Consolas, monospace;   /* addresses and hashes only */
+  --fs-11: 11px;              /* the count on a tab badge only */
+  --fs-12: 12px; --fs-13: 13px; --fs-14: 14px; --fs-15: 15px; --fs-16: 16px; --fs-18: 18px; --fs-20: 20px; --fs-22: 22px; --fs-24: 24px; --fs-28: 28px; --fs-32: 32px; --fs-40: 40px;
+  --fs-hero: clamp(40px, 12.4vw, 54px);    /* gate headline */
+  --fs-clock: clamp(38px, 12vw, 50px);     /* large countdown */
+  --fw-regular: 400; --fw-medium: 500; --fw-semi: 600; --fw-bold: 700; --fw-heavy: 800; --fw-black: 900;
+  --wide: 118%;               /* display width for Latin titles and figures */
+  --wide-max: 125%;
+  --lh-tight: 1.08; --lh-title: 1.25; --lh-body: 1.5;
+
+  /* ---------- space ---------- */
+  --s-2: 2px; --s-4: 4px; --s-6: 6px; --s-8: 8px; --s-10: 10px; --s-12: 12px; --s-16: 16px; --s-20: 20px; --s-24: 24px; --s-32: 32px; --s-40: 40px; --s-48: 48px;
+  --gutter: 16px;
+  --stack: 16px;              /* between blocks on a screen */
+  --sect: 28px;               /* between sections of a flat page */
+  --pad-card: 16px;
+  --app-w: 430px;             /* the phone column on wide screens */
+  --head-h: 56px;
+  --tab-h: 62px;
+  --target: 44px;
+  --safe-t: env(safe-area-inset-top, 0px);
+  --safe-b: env(safe-area-inset-bottom, 0px);
+
+  /* ---------- shape ----------
+     Three radii, each with one job. Small: chips, tags, small blocks. Medium: buttons, inputs, list and tinted blocks, toasts.
+     Large: the prediction card, sheets and the login panel. Full pills only for small chips, the points pill and the view switch.
+     The heavy ink edge (and the hard drop below) marks what is pressed as the main action and the prediction card; nothing else carries it. */
+  --r-s: 6px;
+  --r-m: 12px;
+  --r-l: 24px;
+  --r-pill: 999px;
+  --edge: 2px solid var(--ink);
+  --edge-thin: 1.5px solid var(--ink);
+  --rule: 2px solid var(--ink);                   /* between major sections of a flat page */
+  --hair: 1px solid var(--line);                  /* between rows inside a list */
+  --hair-strong: 1.5px solid var(--line-field);   /* inputs and unselected options */
+
+  /* ---------- shadow ---------- */
+  --shadow-hard: 0 4px 0 var(--ink);        /* the primary button: a hard ink drop that presses down */
+  --shadow-hard-down: 0 1px 0 var(--ink);
+  --shadow-answer: 0 3px 0 var(--ink);      /* the two answer buttons */
+  --shadow-card: 5px 5px 0 var(--ink);      /* the login panel and the gate preview */
+  --shadow-deck: 0 18px 30px -14px rgba(11, 21, 48, 0.55), 5px 5px 0 var(--ink);   /* the front card of the deck: a hard drop plus soft depth */
+  --shadow-toast: 0 0 0 2px var(--snow);   /* a snow ring keeps the ink toast apart from ink below it: no soft shadow */
+  --shadow-tab: 0 -1px 0 var(--line);
+  --shadow-stage: 0 0 0 1px var(--ink-line), 0 30px 80px rgba(0, 0, 0, 0.5);
+  --ring: 0 0 0 3px var(--brand-tint);
+  --press-shade: rgba(11, 21, 48, 0.08);
+  --spin-track: rgba(11, 21, 48, 0.25);
+
+  /* ---------- pattern ---------- */
+  --band: linear-gradient(var(--grid-line) 1px, transparent 1px) -1px -1px / 44px 44px, linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) -1px -1px / 44px 44px, var(--brand);
+  --stripes: repeating-linear-gradient(-45deg, var(--volt) 0 5px, transparent 5px 10px);
+  --card-scrim: linear-gradient(180deg, rgba(11, 21, 48, 0) 0, rgba(11, 21, 48, 0.72) 28px, rgba(11, 21, 48, 0.985) 54px);   /* behind the question on an image card: the picture fades out over 54px and the text starts at 56px on solid ink, so no part of any picture passes behind the words */
+  --chip-on-img: rgba(11, 21, 48, 0.78);
+  --stripes-ink: repeating-linear-gradient(-45deg, var(--ink) 0 2px, transparent 2px 7px);
+
+  /* ---------- motion: transform and opacity, 120 to 400 ms ---------- */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --dur-press: 120ms;
+  --dur-release: 180ms;
+  --dur-fast: 160ms;
+  --dur-base: 240ms;
+  --dur-slow: 320ms;
+  --dur-count: 400ms;
+  --dur-deck: 420ms;         /* the next card rises, straightens and sharpens */
+  --dur-burst: 1300ms;
+  --dur-stripes: 1.2s;
+  --stagger: 50ms;
+  --press-scale: 0.97;
+
+  /* ---------- layers ---------- */
+  --z-head: 20; --z-tab: 30; --z-pin: 25; --z-sheet: 50; --z-toast: 60;
+
+  color-scheme: light;
+}
+:lang(ja) { --font: var(--font-ja); --font-display: var(--font-display-ja); }

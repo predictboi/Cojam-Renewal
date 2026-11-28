@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Dashboard · Cojam admin</title>
+<link rel="icon" href="../assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="../assets/tokens.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<!-- AD1 Dashboard. States: ?state=calm | loading | error. Also ?env=kairos and ?role=viewer on every admin screen. -->
+<script src="data.js"></script>
+<script src="admin.js"></script>
+<script>
+(function () {
+  "use strict";
+  var X = Admin, D = AD, n = X.n, tag = X.tag, fig = X.fig, ic = X.ic, calm = X.is("calm");
+
+  function alerts() {
+    if (calm) return '<div class="alerts"><p class="alerts-ok">' + ic("ok", 18) + "Nothing needs you right now. Reserves, jobs, the question schedule and the review list are all inside their limits.</p></div>";
+    var f = D.reserves[2], s = D.reserves[1];
+    var list = [
+      ["down", "Act now", "Fee payer is below its floor: " + n(f.bal, 1) + " KAIA, floor " + n(f.floor) + " KAIA.", "Covers about " + f.runway + " days of sponsored transactions at " + n(f.perDay, 1) + " KAIA a day.", "system.html", "Open System"],
+      ["warn", "Soon", "Staking rewards fund covers " + s.runway + " days of new stakes.", n(s.bal) + " CT free, " + n(s.perDay) + " CT a day reserved by new stakes.", "system.html", "Open System"],
+      ["warn", "Soon", "1 answer is late: Q-1124-1, Nikkei 225.", "Cancelled automatically at the 48 hour deadline, in " + X.cd(18 * 3600 + 28 * 60) + ".", "answers.html?state=late", "Open Answers"],
+      ["warn", "Check", "1 answer was set with low confidence (0.71) and has been paid: Q-1124-4, V-League.", "803 players were paid for No.", "answers.html?state=after", "Open Answers"],
+      ["warn", "Soon", "Saturday 28 Nov has 4 of 5 questions.", "Sunday 29 Nov has 1 question without an image.", "questions.html?state=short", "Open Questions"],
+      ["warn", "Review", D.abuse.review + " accounts are waiting for review.", "Invite cluster flagged under luckyday88: 11 friends, 3 blocked in the last hour.", "players.html", "Open Players"],
+      ["", "Notice", "Owner change announced: Completion points 100 to 120, Points per hit 50 to 40.", "Can be applied in " + X.cd(D.pending.in) + ".", "rewards.html", "Open Reward settings"]
+    ];
+    return '<ul class="alerts" aria-label="Alerts">' + list.map(function (a) { return "<li>" + tag(a[1], a[0]) + "<p>" + a[2] + " <span>" + a[3] + "</span></p>" + X.link(a[5], a[4]) + "</li>"; }).join("") + "</ul>";
+  }
+
+  function todaySet() {
+    var rows = D.today;
+    var t = X.table({
+      caption: "Today's five questions", cls: "tight", rows: rows, loading: X.is("loading"), error: X.is("error"), what: "Today's set",
+      cols: [
+        { h: "Slot", w: "44px", cell: function (r) { return '<span class="nb">' + r.slot + "</span>"; } },
+        { h: "Question", cell: function (r) { return '<div class="qcell">' + X.thumb(r.img) + '<div><a class="t1" href="questions.html" style="color:inherit;text-decoration:none">' + X.esc(r.en.title) + '</a><span class="t2">' + r.cat + " · " + r.id + "</span></div></div>"; } },
+        { h: "State", cell: function (r) { return tag(r.state); } },
+        { h: "Answer due", cell: function (r) { return '<span class="nowrap">' + r.due + "</span>"; } },
+        { h: "Picks", num: 1, val: function (r) { return r.picks[0] + r.picks[1]; }, cell: function (r) { return n(r.picks[0] + r.picks[1]); } },
+        { h: "Split of picks", w: "210px", cell: function (r) { var a = r.picks[0], b = r.picks[1], p = a / (a + b) * 100; return '<div class="splitcell"><span><span class="pk" data-d="l">' + X.esc(r.en.left) + " " + p.toFixed(0) + '%</span><span class="pk" data-d="r">' + (100 - p).toFixed(0) + "% " + X.esc(r.en.right) + '</span></span><div class="splitbar" role="img" aria-label="' + n(a) + " picked " + r.en.left + ", " + n(b) + " picked " + r.en.right + '"><i style="width:' + p + '%"></i><u></u></div></div>'; } }
+      ],
+      sort: [0, "asc"]
+    });
+    var p = D.play;
+    var side = X.is("loading") ? '<div class="figs rows">' + [0, 1, 2].map(function () { return '<div class="fig"><span class="skel" style="width:90px"></span><span class="skel fig-v"></span></div>'; }).join("") + "</div>" :
+      '<div class="figs rows">' +
+      fig("Players today", n(p.players), "<b>" + n(p.completed) + "</b> finished all 5 (" + X.pct(p.completed / p.players) + ")", "l") +
+      '<div class="figs">' + fig("Picks", n(p.picks), "of " + n(p.players * 5) + " possible", "s") + fig("Undo rate", X.pct(p.undone / (p.picks + p.undone)), n(p.undone) + " picks taken back", "s") + fig("Hits paid", n(p.hitsPaid), "2 questions settled today", "s") + "</div></div>";
+    return '<section class="sec"><div class="sec-head"><h2>Today\'s set</h2>' + tag("Live", "ink") + '<span class="sec-note">Thursday 26 Nov. All five close together in ' + X.cd(D.now.dayEndsIn) + ' (Fri 09:00 KST).</span><span class="sec-end">' + X.link("Questions", "questions.html") + "</span></div>" +
+      '<div class="cols cols-8-4 split"><div>' + t + "</div><div>" + (X.is("error") ? "" : side) + "</div></div></section>";
+  }
+
+  function players() {
+    var u = D.users, max = 2100;
+    var bars = D.daily.map(function (d, i) { return '<i class="' + (i === 29 ? "now" : "") + '" style="height:' + (d[0] / max * 100) + '%" title="' + (i === 29 ? "Today so far" : (29 - i) + " days ago") + ": " + n(d[0]) + " players, " + n(d[1]) + ' finished"><u style="height:' + (d[1] / d[0] * 100) + '%"></u></i>'; }).join("");
+    return '<section class="sec"><div class="sec-head"><h2>Players</h2><span class="sec-end">' + X.link("Players", "players.html") + "</span></div>" +
+      '<div class="cols cols-2 split"><div class="figs">' +
+      fig("Registered", n(u.registered), "<b>+" + u.newWeek + "</b> this week") +
+      fig("Daily active", n(D.play.players), "Yesterday " + n(D.daily[28][0]) + " at day end") +
+      fig("New today", n(u.newToday), "<b>" + u.invitedToday + "</b> came by invite (" + X.pct(u.invitedToday / u.newToday) + ")") +
+      fig("Active this week", n(u.activeWeek), "<b>" + n(u.qualified) + "</b> qualified for the pool") + "</div>" +
+      '<figure><div class="sec-head" style="min-height:0;margin-bottom:8px"><span class="fig-l">Players a day, last 30 days</span><span class="sec-end legend"><span>Played</span><span class="k2">Finished all 5</span></span></div><div class="bars" role="img" aria-label="Daily players rose from 212 thirty days ago to a peak of 2,038 on Monday. Today so far 1,926.">' + bars + '</div><div class="bars-x"><span>28 Oct: 212</span><span>Peak Mon 23 Nov: 2,038</span><span>Today so far: ' + n(D.play.players) + "</span></div></figure></div></section>";
+  }
+
+  function points() {
+    var P = D.points, c = D.convert;
+    function row(l, k, note) { return "<tr><td>" + l + (note ? ' <span class="t2">' + note + "</span>" : "") + '</td><td class="num">' + n(P[k][0]) + ' P</td><td class="num">' + n(P[k][1]) + " P</td></tr>"; }
+    var tbl = '<table class="tbl tight"><caption class="sr">Points issued today and this week, by kind</caption><thead><tr><th scope="col">Points issued</th><th scope="col" class="num">Today</th><th scope="col" class="num">This week</th></tr></thead><tbody>' +
+      row("Completion", "completion", n(D.play.completed) + " finished days at 100 P") + row("Hits", "hits", n(D.play.hitsPaid) + " hits at 50 P") + row("Invite bonus", "invite", "10% on top of what invited friends earn") + row("Welcome", "welcome", D.invites.welcomeToday + " first finished days at 100 P") +
+      '</tbody><tfoot><tr><td>Total</td><td class="num">' + n(P.total[0]) + ' P</td><td class="num">' + n(P.total[1]) + " P</td></tr></tfoot></table>";
+    var conv = '<div class="stack" style="gap:20px"><div class="figs">' + fig("Converted today", n(c.todayCt) + "<small>CT</small>", n(c.todayCt * c.rate) + " P in " + c.todayN + " conversions") + fig("Converted this week", n(c.weekCt) + "<small>CT</small>", n(c.weekCt * c.rate) + " P in " + c.weekN + " conversions") + "</div>" +
+      X.meter(c.todayCt, c.capDay, { left: "<b>Daily cap, everyone:</b> " + n(c.todayCt) + " of " + n(c.capDay) + " CT", right: X.pct(c.todayCt / c.capDay) + " used", aria: "0.9% of the daily conversion cap used" }) +
+      X.meter(c.topUser, c.capUser, { left: "<b>Largest player today:</b> " + c.topUser + " of " + c.capUser + " CT", right: c.atUserCap + " players at the cap" }) +
+      '<p class="hint">' + n(c.waiting) + " players are still inside the 7 day wait before their first conversion. Points issued this week are " + (P.total[1] / (c.weekCt * c.rate)).toFixed(1) + " times the points converted.</p></div>";
+    return '<section class="sec"><div class="sec-head"><h2>Points and conversion</h2><span class="sec-note">1,000 P = 1 CT</span><span class="sec-end">' + X.link("Reward settings", "rewards.html") + "</span></div>" +
+      '<div class="cols cols-2 split"><div>' + tbl + "</div>" + conv + "</div></section>";
+  }
+
+  function reserves() {
+    var rows = D.reserves.map(function (r) { return calm ? Object.assign({}, r, r.id === "fee" ? { bal: 1240, runway: 30, k: "ok" } : r.id === "stake" ? { bal: 96400, runway: 58, k: "ok" } : {}) : r; });
+    var t = X.table({
+      caption: "Reserve and wallet balances with runway", rows: rows,
+      cols: [
+        { h: "Reserve", cell: function (r) { return '<span class="t1">' + r.name + '</span><span class="t2">' + r.what + "</span>"; } },
+        { h: "Balance", num: 1, val: function (r) { return r.bal; }, cell: function (r) { return '<span class="num-d" style="font-size:16px">' + n(r.bal, r.unit === "KAIA" ? 1 : 0) + "</span> " + r.unit; } },
+        { h: "Floor", num: 1, cell: function (r) { return n(r.floor) + " " + r.unit; } },
+        { h: "Outflow a day", num: 1, cell: function (r) { return n(r.perDay, r.unit === "KAIA" ? 1 : 0) + " " + r.unit; } },
+        { h: "Runway", num: 1, val: function (r) { return r.runway; }, cell: function (r) { return '<span class="num-d" style="font-size:16px">' + r.runway + "</span> days"; } },
+        { h: "State", cell: function (r) { return r.k === "down" ? tag("Below floor", "down") : r.k === "warn" ? tag("Under 30 days", "warn") : tag("Healthy", "up"); } },
+        { h: "What drives it", cell: function (r) { return '<span class="dim">' + r.note + "</span>"; } }
+      ],
+      sort: [4, "asc"]
+    });
+    return '<section class="sec"><div class="sec-head"><h2>Reserves and runway</h2><span class="sec-note">Runway is the balance divided by the average outflow of the last 7 days.</span><span class="sec-end">' + X.link("System", "system.html") + "</span></div>" + t +
+      '<p class="hint" style="margin-top:10px">Staked in total: ' + n(D.staking.total) + " CT in " + D.staking.stakes + " stakes. Interest reserved for them: " + n(D.staking.owed) + " CT, held by the staking contract and not part of the free balance above.</p></section>";
+  }
+
+  function invitesAbuse() {
+    var i = D.invites, a = D.abuse;
+    return '<section class="sec"><div class="cols cols-2 split"><div><div class="sec-head"><h2>Invites</h2><span class="sec-end">' + X.link("Top inviters", "players.html?state=invites") + '</span></div><div class="figs">' +
+      fig("Linked today", i.today, "of " + D.users.newToday + " new players (" + X.pct(i.shareToday) + ")") + fig("Linked this week", i.week, "of " + D.users.newWeek + " new players (" + X.pct(i.shareWeek) + ")") + fig("Welcome bonuses", i.welcomeToday, i.welcomeWeek + " this week") + "</div></div>" +
+      '<div><div class="sec-head"><h2>Blocked and review</h2><span class="sec-end">' + X.link("Review list", "players.html") + '</span></div><div class="figs">' +
+      fig("Waiting for review", calm ? 0 : a.review, calm ? "Nothing waiting" : "Score 50 to 79, in " + a.clusters + " flagged clusters") + fig("Blocked this week", a.blockedWeek, "<b>" + (calm ? 0 : a.blockedHour) + "</b> in the last hour") + fig("Blocked in total", a.blocked, X.pct(a.blocked / D.users.registered) + " of registered players") + "</div></div></div></section>";
+  }
+
+  X.mount({
+    page: "index", title: "Dashboard", sub: D.now.day + " · day 4 of week " + D.now.week, states: ["calm", "loading", "error"],
+    render: function () {
+      if (X.is("loading")) return '<div class="alerts"><p class="alerts-ok"><span class="spin"></span>Loading today\'s figures</p></div>' + todaySet();
+      if (X.is("error")) return X.note("down", "<b>The dashboard could not load new figures.</b> The admin API did not answer in 10 seconds. What you see below is from 14:21:40 KST. Nothing was changed.", '<button type="button" class="link" data-reload>Try again</button>') + '<div style="height:24px"></div>' + todaySet();
+      return alerts() + todaySet() + players() + points() + reserves() + invitesAbuse() +
+        '<section class="sec"><div class="sec-head"><h2>Recent activity</h2><span class="sec-note">The last ' + D.log.length + ' system events</span><span class="sec-end">' + X.link("Full log", "system.html#log") + "</span></div>" + X.log(calm ? D.log.filter(function (l) { return l.lv === "info"; }) : D.log) + "</section>";
+    }
+  });
+})();
+</script>
+</body>
+</html>

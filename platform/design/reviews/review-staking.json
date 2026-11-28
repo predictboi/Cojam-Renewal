@@ -1,0 +1,14 @@
+{
+  "screen": "staking.html",
+  "design": {"Hierarchy": 8, "Layout": 7, "Spacing": 7, "Type": 8, "Colour": 8, "Consistency": 7, "Density": 7, "Copy": 7, "Mobile": 6, "Finish": 7},
+  "design_total": 72,
+  "usability": {"Status": 4, "Real world": 3, "User control": 2, "Consistency": 3, "Error prevention": 2, "Recognition": 4, "Flexibility": 3, "Minimal design": 3, "Error recovery": 3, "Help": 3},
+  "usability_total": 30,
+  "fixes": [
+    {"rank": 1, "element": "txCfg().review in staking.html (review only when a >= 10000)", "problem": "One tap starts a 90 day lock with no early exit for any amount under 10,000 CT; cancel is available for about 2 seconds.", "change": "Show the review sheet for every amount with amount, period, rate, unlock date and 'no early exit' above the confirm button."},
+    {"rank": 2, "element": "#go primary button", "problem": "Sits at about y 811 at 390x844, behind the tab bar; not visible on the first screen at either size.", "change": "Pin it in a sticky bar above the tab bar, or remove the tier and won value rows to shorten the page."},
+    {"rank": 3, "element": "#go label and #sum while the amount is invalid", "problem": "Button says 'enter an amount' when 50 or 2,000 is entered; summary still shows interest for an invalid amount.", "change": "Use the reason as the label and blank the interest row until the amount is valid."},
+    {"rank": 4, "element": "Transaction sheet .sheet during signing", "problem": "Escape does nothing; cancel turns into hide silently; no message after a cancel.", "change": "Map Escape to the visible button and toast 'stake cancelled, your CT is unchanged'."},
+    {"rank": 5, "element": "Summary row s.value '원화 환산'", "problem": "Does not say which amount is converted.", "change": "Move it under the amount input as a caption."}
+  ]
+}

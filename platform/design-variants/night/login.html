@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F131B">
+<title>Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<noscript>Cojam needs JavaScript to show today's predictions.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* A1 Login. States: empty (default), bademail, sending, code, wrong, verifying, offline. */
+(function () {
+  var t = N.t, M = N.M, ic = N.ic, st = N.state, I = window.CJ_I18N;
+  var codeStep = st === "code" || st === "wrong" || st === "verifying", email = M.user.email;
+  function top() {
+    return '<div class="bare-top"><span class="brand"><span class="tile"><img src="assets/cojam-mark.svg" alt="" width="20" height="20"></span><b translate="no">Cojam</b></span>' +
+      '<nav class="lang" aria-label="' + t("lang.label") + '">' + I.langs.map(function (l) { return '<a href="login.html?lang=' + l + (st ? "&state=" + st : "") + '"' + (l === N.lang ? ' aria-current="true"' : "") + ' lang="' + l + '">' + (l === "en" ? "EN" : I.names[l]) + "</a>"; }).join("") + "</nav></div>";
+  }
+  function body() {
+    var off = st === "offline" ? '<p class="note mt-12">' + ic.off + "<span>" + t("a.offline") + "</span></p>" : "";
+    if (codeStep) {
+      return top() + '<div class="lede"><h1>' + t("a.code.h1") + "</h1><p>" + t("a.code.body", { email: "<b>" + email + "</b>" }) + "</p></div>" +
+        '<form class="form" id="f" novalidate><div class="field"><div class="field-top"><label for="code">' + t("a.code.h") + '</label></div><div class="field-box' + (st === "wrong" ? " is-bad" : "") + '"><input class="num codein" id="code" name="code" spellcheck="false" inputmode="numeric" autocomplete="one-time-code" maxlength="6" value="' + (st === "wrong" ? "418205" : st === "verifying" ? "418250" : "") + '" placeholder="000000" aria-describedby="cmsg"></div>' +
+        '<p class="field-msg' + (st === "wrong" ? " is-bad" : "") + '" id="cmsg">' + (st === "wrong" ? t("a.code.wrong") : t("a.code.tip")) + "</p></div>" +
+        '<button class="btn btn-1"' + (st === "verifying" ? " disabled" : "") + ">" + (st === "verifying" ? '<i class="spin"></i>' + t("a.code.verifying") : t("a.code.btn")) + "</button></form>" +
+        '<p class="fine mt-16">' + t("a.code.resendin", { s: 42 }) + '</p><a class="lnk" href="' + N.href("login.html") + '">' + t("a.code.change") + "</a>";
+    }
+    var bad = st === "bademail";
+    return top() + '<div class="lede"><h1>' + t("a.h1") + "</h1><p>" + t("a.lede") + "</p></div>" + off +
+      '<form class="form" id="f" novalidate><div class="field"><div class="field-top"><label for="em">' + t("a.email.label") + '</label></div><div class="field-box' + (bad ? " is-bad" : "") + '"><input id="em" name="email" type="email" spellcheck="false" inputmode="email" autocomplete="email" placeholder="name@gmail.com" value="' + (bad ? "minji@naver" : st === "sending" ? email : "") + '" aria-describedby="emsg"></div>' +
+      '<p class="field-msg' + (bad ? " is-bad" : "") + '" id="emsg">' + (bad ? t("a.email.bad") : t("a.email.cap", { list: M.providerNames })) + "</p></div>" +
+      '<button class="btn btn-1"' + (st === "sending" || st === "offline" ? " disabled" : "") + ">" + (st === "sending" ? '<i class="spin"></i>' + t("a.email.sending") : t("a.email.btn")) + "</button></form>" +
+      '<ol class="facts">' + [1, 2, 3].map(function (i) { return "<li><b>0" + i + "</b><span>" + t("a.fact." + i) + "</span></li>"; }).join("") + "</ol>" +
+      N.details(t("a.help.q"), "<p>" + t("a.help.a") + "</p>") +
+      '<p class="fine mt-16">' + t("a.fine", { terms: t("a.terms"), privacy: t("a.privacy") }) + '</p><p><a class="lnk" href="https://cojam.app/terms">' + t("a.terms") + '</a> &nbsp; <a class="lnk" href="https://cojam.app/privacy">' + t("a.privacy") + "</a></p>";
+  }
+  N.page({
+    bare: true, title: t("a.h1"), body: body,
+    after: function (app) {
+      app.querySelector("#f").addEventListener("submit", function (e) {
+        e.preventDefault();
+        if (codeStep) { var c = app.querySelector("#code").value; if (c.length < 6) { var m = app.querySelector("#cmsg"); m.textContent = t("a.code.short"); m.classList.add("is-bad"); return; } location.href = N.href("first-run.html"); return; }
+        var v = app.querySelector("#em").value.trim(), msg = app.querySelector("#emsg");
+        if (!v) { msg.textContent = t("a.email.empty"); msg.classList.add("is-bad"); return; }
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v)) { msg.textContent = t("a.email.bad"); msg.classList.add("is-bad"); return; }
+        location.href = N.href("login.html", "code");
+      });
+    }
+  });
+})();
+</script>
+</body>
+</html>

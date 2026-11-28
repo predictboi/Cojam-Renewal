@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#FFFFFF">
+<title>Cojam Daily Prediction: concept D "Clean" hub</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<!-- The hub: every screen and state of concept D in one tap. A review tool, so its own labels are English only. -->
+<div class="hub">
+  <div class="hub-top"><img src="assets/cojam-mark.svg" alt="" width="28" height="28">Cojam</div>
+  <h1>Daily Prediction, concept D: Clean</h1>
+  <p>One spoken sentence and one figure per screen, on a white ground with soft grey blocks. Mock data only. Choose the language the screens open in, then tap a screen for its main state or a chip for one state.</p>
+  <div class="seg" role="group" aria-label="Language for the screens" id="hub-lang" style="--n:3">
+    <span class="seg-thumb"></span>
+    <button type="button" class="seg-btn" data-l="en" aria-pressed="true">EN</button>
+    <button type="button" class="seg-btn" data-l="ko" aria-pressed="false">한국어</button>
+    <button type="button" class="seg-btn" data-l="ja" aria-pressed="false">日本語</button>
+  </div>
+  <main id="hub"></main>
+</div>
+<script>
+(function () {
+  var FLOWS = [
+    { h: "Start", p: "The way in for a new player.", items: [
+      ["A1", "Login", "login.html", ["bademail", "sending", "code", "wrong", "setup", "offline"]],
+      ["A2", "First run", "first-run.html", ["1", "2", "3", "code", "code-valid"]]
+    ] },
+    { h: "Play", p: "Today's five predictions in both views, the day done moment, results and the weekly ranking.", items: [
+      ["H1", "Home, card deck", "home.html", ["fresh", "partial", "armed", "undo", "final", "finishing", "loading", "empty", "error", "offline", "hold"]],
+      ["H2", "Home, list view", "home-list.html", ["fresh", "partial", "finishing", "loading", "offline"]],
+      ["H3", "Day done", "done.html", ["moment", "saving", "results", "offline"]],
+      ["R1", "Results", "results.html", ["loading", "empty", "error"]],
+      ["K1", "Weekly ranking", "ranking.html", ["top10", "unranked", "lastweek", "loading", "error", "hold"]]
+    ] },
+    { h: "Staking", p: "Open a stake, watch the interest tick, claim and withdraw.", items: [
+      ["S1", "New stake", "staking.html", ["empty", "below", "above", "zero", "review", "success", "loading", "error", "hold"]],
+      ["S2", "My stakes", "stakes.html", ["claimable", "empty", "loading", "error", "hold"]]
+    ] },
+    { h: "Wallet", p: "Balances, convert, deposit and withdraw.", items: [
+      ["W1", "Wallet", "wallet.html", ["zero", "loading", "error", "hold"]],
+      ["W2", "Convert points", "convert.html", ["empty", "short", "wait", "success", "loading", "hold"]],
+      ["W3", "Deposit", "deposit.html", ["arrived", "offline"]],
+      ["W4", "Withdraw CT", "withdraw.html", ["empty", "bad", "review"]]
+    ] },
+    { h: "Account", p: "Profile, invites and the account on hold notice. The hold chip on H1, K1, S1, S2, W1, W2, P1 and I1 shows what each screen says while on hold.", items: [
+      ["P1", "Profile and settings", "profile.html", ["saved", "logout", "hold"]],
+      ["I1", "Invite friends", "invite.html", ["empty", "copied", "loading", "error", "hold"]],
+      ["SYS", "Account on hold", "hold.html", []]
+    ] }
+  ];
+  var langs = ["en", "ko", "ja"], lang = new URLSearchParams(location.search).get("lang") || "en";
+  if (langs.indexOf(lang) < 0) lang = "en";
+  function url(file, st) { return file + "?lang=" + lang + (st ? "&state=" + st : ""); }
+  function render() {
+    document.getElementById("hub").innerHTML = FLOWS.map(function (f) {
+      return '<section class="hub-sec"><h2>' + f.h + "</h2><p>" + f.p + "</p>" + f.items.map(function (it) {
+        return '<a class="row" href="' + url(it[2]) + '"><span class="row-ic"><b style="font-size:13px">' + it[0] + '</b></span><span class="row-t"><b>' + it[1] + "</b><small>" + it[2] + '</small></span><span class="row-chev"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></span></a>' +
+          (it[3].length ? '<div class="hub-states">' + it[3].map(function (s) { return '<a href="' + url(it[2], s) + '">' + s + "</a>"; }).join("") + "</div>" : "");
+      }).join("") + "</section>";
+    }).join("");
+    Array.prototype.forEach.call(document.querySelectorAll("#hub-lang button"), function (b, i) { var on = b.getAttribute("data-l") === lang; b.setAttribute("aria-pressed", on ? "true" : "false"); if (on) document.querySelector("#hub-lang .seg-thumb").style.transform = "translateX(" + i * 100 + "%)"; });
+  }
+  document.getElementById("hub-lang").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; lang = b.getAttribute("data-l"); history.replaceState(null, "", "?lang=" + lang); render(); });
+  render();
+})();
+</script>
+</body>
+</html>

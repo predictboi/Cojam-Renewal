@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F131B">
+<title>Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<noscript>Cojam needs JavaScript to show today's predictions.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* SYS Account on hold: the full explanation. Each tab screen links here from its own hold notice (?state=hold). */
+(function () {
+  var t = N.t, ic = N.ic, MAIL = "help@cojam.app";
+  function list(key, n, on) { var s = ""; for (var i = 1; i <= n; i++) s += "<li>" + t(key + i) + "</li>"; return '<ul class="bul' + (on ? " is-on" : "") + '">' + s + "</ul>"; }
+  function body() {
+    return '<section class="state" style="flex:none;padding-bottom:var(--s-8)"><span class="state-ic">' + ic.stake + "</span><h2>" + t("sys.blocked.h") + "</h2><p>" + t("sys.blocked.b") + "</p></section>" +
+      '<section class="sec"><div class="sec-h"><h2>' + t("sys.blocked.works.h") + "</h2></div>" + list("sys.blocked.works.", 4, true) + '<p class="fine mt-8">' + t("sys.blocked.fee") + "</p></section>" +
+      '<section class="sec"><div class="sec-h"><h2>' + t("sys.blocked.stops.h") + '</h2><span class="chip chip-wait">' + t("hold.tag") + "</span></div>" + list("sys.blocked.stops.", 5) + "</section>" +
+      '<section class="sec"><p class="muted">' + t("sys.blocked.note") + '</p><div class="row"><span class="row-l"><span class="row-s">' + t("sys.blocked.contact") + '</span><span class="row-k">' + MAIL + '</span></span><button type="button" class="btn btn-2" id="mail">' + ic.copy + t("sys.blocked.mail") + "</button></div></section>";
+  }
+  N.page({
+    tab: "wallet", back: N.href("wallet.html", "hold"), title: t("hold.t"), body: body,
+    pin: '<a class="btn btn-1" href="' + N.href("wallet.html", "hold") + '">' + t("sys.blocked.btn") + "</a>",
+    after: function (app) { app.querySelector("#mail").addEventListener("click", function () { N.copy(MAIL); }); }
+  });
+})();
+</script>
+</body>
+</html>

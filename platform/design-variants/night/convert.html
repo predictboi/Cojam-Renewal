@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F131B">
+<title>Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<noscript>Cojam needs JavaScript to show today's predictions.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* W2 Convert points. States: default (1,000P), short (under 1,000P), wait (the 7 day wait), loading, offline, hold. Steps of 1,000P only, so the field is a stepper: it cannot hold a value the button cannot send. */
+(function () {
+  var t = N.t, M = N.M, ic = N.ic, st = N.state, pts = st === "short" ? 800 : M.user.points, v = pts >= 1000 ? 1000 : 0, root;
+  var blocked = st === "short" || st === "wait" || st === "hold" || st === "offline";
+  function body() {
+    if (st === "loading") return N.skel(["row", "fig", "cells", "row"]);
+    var top = "";
+    if (st === "hold") top = N.hold("hold.convert");
+    if (st === "wait") { var d = M.user.firstConvert, date = N.date(d, { month: "long", day: "numeric" }), left = (d - Date.now()) / 3600000; top = '<aside class="hold" role="note"><div class="hold-b" style="padding-bottom:var(--s-12)"><strong>' + t("c.wait.h", { date: date }) + "</strong><p>" + t("c.wait.b", { date: date }) + '</p><p>' + t("c.wait.left", { d: Math.floor(left / 24), h: Math.floor(left % 24) }) + "</p></div></aside>"; }
+    if (st === "short") top = '<aside class="hold" role="note"><div class="hold-b" style="padding-bottom:var(--s-12)"><strong>' + t("c.short.h") + "</strong><p>" + t("c.short.b", { p: N.num(pts), g: N.num(1000 - pts) }) + "</p></div></aside>";
+    return '<div class="mt-16">' + top + "</div>" +
+      '<div class="field"><div class="field-top"><label id="cl">' + t("c.amount") + "</label><span>" + t("c.avail") + ' <span class="num">' + N.num(pts) + 'P</span></span></div>' +
+        '<div class="stepper" role="group" aria-labelledby="cl"><button type="button" id="minus" aria-label="-1,000P">' + ic.minus + '</button><output class="fig" id="val" aria-live="polite"></output><button type="button" id="plus" aria-label="+1,000P">' + ic.plus + "</button></div>" +
+        '<p class="field-msg">' + t("c.step") + "</p></div>" +
+      '<div class="get"><span class="lbl">' + t("c.get") + '</span><span class="fig fig-l" id="get"></span></div>' +
+      '<dl class="kvs" style="border-top:1px solid var(--line-2)"><div class="kv"><dt>' + t("c.rate") + '</dt><dd>1,000P = 1 CT</dd></div><div class="kv"><dt>' + t("c.minimum") + '</dt><dd class="num">1,000P</dd></div><div class="kv"><dt>' + t("c.capleft") + "</dt><dd>" + t("c.capof", { n: 50 }) + '</dd></div><div class="kv"><dt>' + t("c.fee") + "</dt><dd>" + t("c.fee.v") + "</dd></div></dl>";
+  }
+  function pin() { return st === "loading" ? "" : '<button type="button" class="btn btn-1" id="go"></button><p class="pin-note">' + (st === "offline" ? t("w.offline") : st === "hold" ? t("hold.convert.reason") : t("c.rank")) + "</p>"; }
+  function up() {
+    var max = Math.floor(pts / 1000) * 1000;
+    root.querySelector("#val").innerHTML = N.num(v) + "<small>P</small>";
+    root.querySelector("#get").innerHTML = (v / 1000) + "<small>CT</small>";
+    root.querySelector("#get").classList.toggle("is-zero", !v);
+    root.querySelector("#minus").disabled = blocked || v <= 1000; root.querySelector("#plus").disabled = blocked || v >= max;
+    var go = root.querySelector("#go"); go.disabled = blocked || !v;
+    N.tighten(root); go.textContent = st === "hold" ? t("hold.convert.btn") : v ? t("c.btn", { p: N.num(v), n: v / 1000 }) : t("c.btn.empty");
+  }
+  N.page({
+    tab: "wallet", back: N.href("wallet.html"), title: t("c.title"), body: body, pin: pin,
+    after: function (app) {
+      root = app; if (!app.querySelector("#val")) return; up();
+      app.addEventListener("click", function (e) {
+        if (e.target.closest("#minus")) { v -= 1000; up(); }
+        if (e.target.closest("#plus")) { v += 1000; up(); }
+        var go = e.target.closest("#go");
+        if (go) { var p = v; go.disabled = true; go.innerHTML = '<i class="spin"></i>' + t("tx.send.h"); setTimeout(function () { pts -= p; N.toast(t("c.ok.h", { p: N.num(p), n: p / 1000 })); v = pts >= 1000 ? 1000 : 0; up(); app.querySelector(".field-top .num").textContent = N.num(pts) + "P"; }, 1200); }
+      });
+    }
+  });
+})();
+</script>
+</body>
+</html>

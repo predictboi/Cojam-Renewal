@@ -1,0 +1,343 @@
+== login.html?lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 3
+  fill button.btn.btn-primary.btn-block "Send code" 322x52
+  text a "Terms"
+  text a "Privacy Policy"
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== login.html?state=code&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 3
+  fill button.btn.btn-primary.btn-block "Log in" 322x52
+  text button.linkish "Send a new code"
+  text button.linkish "Use another email"
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== first-run.html?lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 3
+  text a.linkish "Skip"
+  text button.onb-code-open "Have an invite code?"
+  fill button.btn.btn-primary.btn-block "Next" 358x52
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== home.html?state=fresh&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill span.tb-key "predictions left todayHome" 49x50
+  border span.tb-dot
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== home.html?state=partial&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 3
+  fill div.qart "4/5Sports" 336x240
+  fill span.tb-key "predictions left todayHome" 49x50
+  border span.tb-dot
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== home.html?state=hold&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 1
+  fill span.tb-key "Home" 49x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== home.html?state=empty&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill span.tb-key "predictions left todayHome" 49x50
+  border span.tb-dot
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== home.html?state=loading&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill span.tb-key "predictions left todayHome" 49x50
+  border span.tb-dot
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== home.html?state=error&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill span.tb-key "predictions left todayHome" 49x50
+  border span.tb-dot
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== home-list.html?state=fresh&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 3
+  fill span.thumb "" 52x52
+  fill span.tb-key "predictions left todayHome" 49x50
+  border span.tb-dot
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== home-list.html?lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 3
+  fill span.thumb "" 52x52
+  fill span.tb-key "predictions left todayHome" 49x50
+  border span.tb-dot
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== done.html?lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 4
+  fill span.cap-top "" 114x89
+  fill a.btn.btn-primary.btn-block "See weekly ranking" 358x52
+  text a.linkish "See results"
+  fill span.tb-key "Home" 49x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== results.html?lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 14
+  text button.linkish "How answers are set"
+  text button.linkish "How answers are set"
+  text button.linkish "How answers are set"
+  text button.linkish "How answers are set"
+  text button.linkish "How answers are set"
+  text button.linkish "How answers are set"
+  text button.linkish "How answers are set"
+  text button.linkish "How answers are set"
+  fill span.rstamp.rstamp--corr.is-land "Corrected" 87x35
+  text button.linkish "How answers are set"
+  text button.linkish "How answers are set"
+  text button.linkish "How answers are set"
+  text button.linkish "How answers are set"
+  fill span.tb-key "Results" 58x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== results.html?state=empty&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill a.btn.btn-primary "Go to today's predictions" 235x52
+  fill span.tb-key "Results" 58x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== ranking.html?lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 4
+  text button.linkish "How prizes work"
+  fill span.pod-block "Rank 22256.80CT" 106x106
+  text span "27"
+  fill span.tb-key "Ranking" 62x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== ranking.html?state=lastweek&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 4
+  text button.linkish "How prizes work"
+  fill span.pod-block "Rank 22239.20CT" 106x106
+  text span "31"
+  fill span.tb-key "Ranking" 62x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== staking.html?lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 3
+  fill button "90 days12%" 75x72
+  fill button.btn.btn-primary.btn-block "Stake 500 CT" 346x52
+  fill span.tb-key "Staking" 59x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== staking.html?state=review&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 5
+  fill button "90 days14%" 75x72
+  fill button.btn.btn-primary.btn-block "Stake 12,000 CT" 346x52
+  fill span.tb-key "Staking" 59x50
+  fill button.btn.btn-primary.btn-block "Stake 12,000 CT" 358x52
+  text span "Cancel"
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== staking.html?state=hold&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 3
+  text a.hold-more "What this means"
+  fill button "90 days12%" 75x72
+  fill span.tb-key "Staking" 59x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== stakes.html?lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 4
+  fill i "" 75x14
+  fill i "" 322x14
+  fill button.btn.btn-primary.btn-block "Withdraw 503.2877 CT" 322x52
+  fill span.tb-key "Staking" 59x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== stakes.html?state=empty&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill a.btn.btn-primary "Start a stake" 138x52
+  fill span.tb-key "Staking" 59x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== wallet.html?lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 2
+  i "6C80" 14px
+  i "bedD" 14px words
+ACCENT used (must be only the primary action and the current selection): 3
+  fill a.btn.btn-primary.btn-block "Convert points" 322x52
+  text a.linkish "Kaiascan"
+  fill span.tb-key "Wallet" 52x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== wallet.html?state=deposit&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 9
+  i "6C80" 14px
+  i "bedD" 14px words
+  i "C2b9" 14px
+  i "1E5d" 14px
+  i "c93D" 14px
+  i "5E0f" 14px
+  i "6A29" 14px
+  i "48bD" 14px
+  i "1C7e" 14px
+ACCENT used (must be only the primary action and the current selection): 5
+  fill a.btn.btn-primary.btn-block "Convert points" 322x52
+  text a.linkish "Kaiascan"
+  fill span.tb-key "Wallet" 52x50
+  fill button.btn.btn-primary.btn-block "Copy address" 358x52
+  text span "Close"
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== wallet.html?state=withdraw&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 2
+  i "6C80" 14px
+  i "bedD" 14px words
+ACCENT used (must be only the primary action and the current selection): 5
+  fill a.btn.btn-primary.btn-block "Convert points" 322x52
+  text a.linkish "Kaiascan"
+  fill span.tb-key "Wallet" 52x50
+  fill button.btn.btn-primary.btn-block "Withdraw 250 CT" 358x52
+  text span "Cancel"
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== wallet.html?state=hold&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 2
+  i "6C80" 14px
+  i "bedD" 14px words
+ACCENT used (must be only the primary action and the current selection): 3
+  text a.hold-more "What this means"
+  text a.linkish "Kaiascan"
+  fill span.tb-key "Wallet" 52x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== convert.html?lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill button.btn.btn-primary.btn-block "Convert 1,000P to 1 CT" 346x52
+  fill span.tb-key "Wallet" 52x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== convert.html?state=short&lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill a.btn.btn-primary "Play today's set" 164x52
+  fill span.tb-key "Wallet" 52x50
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== profile.html?lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 2
+  fill span.me-in "M" 36x36
+  text button.linkish "Check for update"
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== invite.html?lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 2
+  b.code-v "MINJI7Q" 24px words display
+  p.inv-link "app.cojam.app/i/MINJI7Q" 13px words
+ACCENT used (must be only the primary action and the current selection): 4
+  text span.inv-pct "10"
+  text small "%"
+  text span "Copy"
+  fill button.btn.btn-primary.btn-block "Share invite link" 358x52
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== hold.html?lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 1
+  text a.sys-link "Open wallet"
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0
+== index.html?lang=en
+overflow px: 0
+MONO misuse (words, display size, or labels outside tables): 0
+ACCENT used (must be only the primary action and the current selection): 116
+  fill a.is-main "Open" 67x44
+  text a "typo"
+  text a "unsupported"
+  text a "bademail"
+  text a "sending"
+  text a "code"
+  text a "wrong"
+  text a "expired"
+  text a "setup"
+  text a "refused"
+  text a "offline"
+  fill a.is-main "Open" 67x44
+  text a "2"
+  text a "3"
+  text a "code-valid"
+  text a "code-unknown"
+  fill a.is-main "Open" 67x44
+  text a "partial"
+  text a "syncing"
+  text a "slow"
+  text a "failed"
+  text a "offline"
+  text a "noimage"
+  text a "loading"
+  text a "empty"
+  text a "closed"
+  text a "error"
+  text a "hold"
+  fill a.is-main "Open" 67x44
+  text a "(sample)"
+  text a "syncing"
+  text a "failed"
+  text a "offline"
+  text a "loading"
+  text a "empty"
+  text a "error"
+  text a "hold"
+  fill a.is-main "Open" 67x44
+  text a "moment"
+  text a "saving"
+  ... 76 more
+CONTRAST under 4.5:1: 0
+TARGETS under 44px tall: 0

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>I1 Invite friends | Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/screens/invite.css">
+</head>
+<body>
+<!-- I1 Invite friends. States: (none), empty (no friends yet), loading, error, offline (the code and link still copy; the figures may be out of date), copied (code copied), shared (link shared), hold (account on hold: code and link hidden with the reason, figures stay, with one line that no bonus is added while on hold). Add ?lang=en|ko|ja. Mock data only. -->
+<noscript>Cojam needs JavaScript to show this screen.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/components.js"></script>
+<script>
+(function () {
+  var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$, esc = App.esc, V = M.invite;
+  var from = new URLSearchParams(location.search).get("from"), back = from === "wallet" ? "wallet.html" : "profile.html";
+  var day = 350, cut = Math.round(day * V.rate / 100);   /* a full day with five hits pays 350P: the worked example of the offer */
+  /* the offer leads on the band: "10%" in the display numerals, the one sentence that says what it is, and the offer worked once (a friend's 350P day pays +35P) */
+  function head() {
+    return '<div class="inv-hero"><h1><span class="inv-pct" aria-hidden="true">' + V.rate + '<small>%</small></span><span class="inv-line">' + t("inv.hero.line", { r: V.rate }) + "</span></h1>" +
+      '<p class="inv-sub">' + t("inv.hero.sub") + "</p>" +
+      '<div class="inv-ex" role="img" aria-label="' + esc(t("inv.ex.sr", { a: day, b: cut })) + '"><div><span>' + t("inv.ex.friend") + "</span><b>+" + F.pts(day) + "</b></div>" + C.icon("right", 20) + "<div><span>" + t("inv.ex.you") + "</span><b>+" + F.pts(cut) + "</b></div></div></div>";
+  }
+  /* my code is the thing to hand over: the copy block, the link it makes, then the one primary action and its quiet twin */
+  function codeSec() {
+    /* account on hold: the code and the link are not shown and nothing can be shared; the notice says why. What was earned stays visible below */
+    if (S === "hold") return '<section class="sec inv-code" aria-labelledby="code-h"><h2 class="lbl" id="code-h">' + t("inv.code.h") + "</h2>" + C.hold(t("hold.invite")) + "</section>";
+    return '<section class="sec inv-code" aria-labelledby="code-h"><h2 class="lbl" id="code-h">' + t("inv.code.h") + "</h2>" + C.code(V.code, { id: "code", done: S === "copied" }) +
+      '<p class="inv-link" translate="no">' + V.linkShort + "</p>" +
+      /* offline: copying needs no network, so the code and the link stay live and the line says so */
+      (App.offline ? '<p class="hold-why" id="inv-off">' + C.icon("offline", 16) + "<span>" + t("inv.offline") + "</span></p>" : "") +
+      '<div class="inv-acts">' + C.btn(t("inv.share"), { kind: "primary", block: true, icon: "share", id: "share" }) +
+      C.btn(t("inv.copylink"), { block: true, icon: "copy", id: "copylink", attrs: 'data-copy="' + V.link + '" data-done="' + esc(t("inv.linkcopied")) + '"' }) + "</div></section>";
+  }
+  function how() {
+    var w = "<b>+" + V.welcome + "P</b>", r = "<b>" + V.rate + "%</b>";
+    return '<section class="sec" aria-labelledby="how-h"><h2 class="sect-h" id="how-h">' + t("inv.how.h") + '</h2><ol class="inv-steps"><li><span>' + t("inv.how.1") + "</span></li><li><span>" +
+      t("inv.how.2", { w: "\u0001" }).replace("+\u0001P", w) + "</span></li><li><span>" + t("inv.how.3", { r: "\u0001" }).replace("\u0001%", r) + "</span></li></ol></section>";
+  }
+  function friend(f) {
+    return '<li class="inv-friend"><span class="inv-friend-n" translate="no">' + esc(f.name) + "</span>" + C.tag(t("inv.st." + f.st), f.st === "first" ? "ink" : "") +
+      "<b" + (f.pts ? "" : ' class="is-zero"') + ">" + (f.pts ? "+" + F.pts(f.pts) : "0P") + "</b></li>";
+  }
+  function results() {
+    if (S === "loading") return '<section class="sec" aria-busy="true">' + C.skel("120px", "20px") + '<div class="inv-tri">' + [1, 2, 3].map(function () { return "<div>" + C.skel("64px", "26px") + C.skel("72px", "12px") + "</div>"; }).join("") + "</div>" +
+      [1, 2, 3].map(function () { return '<div class="inv-friend">' + C.skel("110px", "16px") + C.skel("70px", "22px") + C.skel("56px", "16px") + "</div>"; }).join("") + '<p class="sr-only" role="status">' + t("common.loading") + "</p></section>";
+    if (S === "error") return '<section class="sec" aria-labelledby="res-h"><h2 class="sect-h" id="res-h">' + t("inv.res.h") + "</h2>" + C.note("error", t("inv.error"), C.btn(t("common.retry"), { sm: true, icon: "refresh", attrs: "data-reload" })) + "</section>";
+    /* nobody yet: one plain sentence, no figures at zero and no empty box. The offer and the steps above carry the page */
+    if (S === "empty") return '<section class="sec" aria-labelledby="res-h"><h2 class="sect-h" id="res-h">' + t("inv.res.h") + '</h2><p class="inv-none">' + t("inv.empty") + "</p></section>";
+    return '<section class="sec" aria-labelledby="res-h"><h2 class="sect-h" id="res-h">' + t("inv.res.h") + "</h2>" + (App.offline ? '<p class="hold-why" id="inv-stale">' + C.icon("info", 16) + "<span>" + t("inv.stale") + "</span></p>" : "") +
+      /* on hold: no bonus is added for what friends earn in that time; what was received stays, so the figures below stand */
+      (S === "hold" ? '<p class="hold-why" id="inv-hold">' + C.icon("info", 16) + "<span>" + t("hold.invite.bonus") + "</span></p>" : "") + '<div class="inv-tri">' +
+      "<div><b>" + V.joined + "</b><span>" + t("inv.res.joined") + "</span></div><div><b>" + F.pts(V.week) + "</b><span>" + t("inv.res.week") + "</span></div><div><b>" + F.pts(V.total) + "</b><span>" + t("inv.res.total") + "</span></div></div>" +
+      '<h3 class="inv-sub-h">' + t("inv.friends.h") + '</h3><ul class="list inv-friends">' + V.friends.map(friend).join("") + "</ul></section>";
+  }
+  function rules() {
+    return '<section class="sec" aria-labelledby="rules-h"><h2 class="sect-h" id="rules-h">' + t("inv.rules.h") + '</h2><ul class="inv-rules">' + [1, 2, 3, 4].map(function (i) { return "<li>" + t("inv.rule." + i) + "</li>"; }).join("") + "</ul></section>";
+  }
+  App.mount({ tab: "", back: back, title: t("inv.title"), head: head(), body: codeSec() + (S === "hold" ? "" : how()) + results() + rules(), pts: S === "loading" ? "loading" : "", badges: { home: "dot", results: 2 }, after: function () {
+    var share = $("#share"); if (!share) return;
+    var lab = $("span", share), busy = false;
+    function flash(text) { if (busy) return; busy = true; var old = lab.textContent; lab.textContent = text; share.classList.add("is-done"); App.live(text); setTimeout(function () { lab.textContent = old; share.classList.remove("is-done"); busy = false; }, 2000); }
+    /* the system share sheet where the device has one; anywhere else the same button copies the link and says so */
+    share.addEventListener("click", function () {
+      var data = { title: "Cojam", text: t("inv.share.text", { code: V.code, w: V.welcome }), url: V.link };
+      if (navigator.share && !App.offline) { navigator.share(data).then(function () { App.toast(t("inv.shared")); }).catch(function () {}); return; }
+      try { if (navigator.clipboard) navigator.clipboard.writeText(V.link).catch(function () {}); } catch (e) {}
+      flash(t("inv.linkcopied"));
+    });
+    if (S === "shared") App.toast(t("inv.shared"));
+  } });
+})();
+</script>
+</body>
+</html>

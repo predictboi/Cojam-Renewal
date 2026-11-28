@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F131B">
+<title>Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<noscript>Cojam needs JavaScript to show today's predictions.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* K1 Weekly ranking. States: top10 (default), lastweek, unranked, loading, error, offline, hold. A table, not a podium: this is the desk's board. */
+(function () {
+  var t = N.t, M = N.M, st = N.state, last = st === "lastweek", top = M.ranking[0].pts;
+  function board() {
+    return '<table class="rk"><thead><tr><th class="c-r" scope="col"><span class="sr">' + t("n.col.rank") + '</span>#</th><th scope="col">' + t("n.col.player") + '</th><th class="c-p n" scope="col">' + t("n.col.pts") + '</th><th class="c-z n" scope="col">' + t("k.col.prize") + "</th></tr></thead><tbody>" +
+      M.ranking.map(function (r) {
+        return '<tr class="' + (r.rank <= 3 ? "is-top" : "") + '"><td class="c-r">' + r.rank + '</td><td><span class="rk-name">' + N.esc(r.name) + '</span><span class="rk-bar" aria-hidden="true"><i style="width:' + (r.pts / top * 100).toFixed(1) + '%"></i></span></td><td class="c-p n">' + N.num(r.pts) + '</td><td class="c-z n">' + N.num(r.prize, 2).replace(/0$/, "") + "<small>CT</small></td></tr>";
+      }).join("") + "</tbody></table>";
+  }
+  function around() {
+    return '<table class="rk"><thead><tr><th class="c-r" scope="col"><span class="sr">' + t("n.col.rank") + '</span>#</th><th scope="col">' + t("n.col.player") + '</th><th class="c-p n" scope="col">' + t("n.col.pts") + '</th><th class="c-g n" scope="col">' + t("k.col.gap") + "</th></tr></thead><tbody>" +
+      M.around.map(function (r) {
+        var d = r.pts - M.me.pts, gap = r.me ? t("k.you") : d > 0 ? t("k.gap.up", { n: d }) : d < 0 ? t("k.gap.down", { n: -d }) : t("k.gap.same");
+        return '<tr class="' + (r.me ? "is-me" : "") + '"><td class="c-r">' + r.rank + '</td><td><span class="rk-name">' + N.esc(r.name) + '</span></td><td class="c-p n">' + N.num(r.pts) + '</td><td class="c-g n is-word">' + gap + "</td></tr>";
+      }).join("") + "</tbody></table>";
+  }
+  function split() {
+    var s = M.pool.split;
+    return '<div class="split" role="img" aria-label="' + N.esc(t("n.split.sr")) + ": " + s.map(function (v, i) { return "#" + (i + 1) + " " + v + "%"; }).join(", ") + '">' + s.map(function (v, i) { return '<i style="flex:' + v + ' 1 0">' + (i < 5 ? v + "%" : "") + "</i>"; }).join("") + "</div>" +
+      '<div class="split-k" aria-hidden="true">' + s.map(function (v, i) { return '<span style="flex:' + v + ' 1 0">' + (i + 1) + "</span>"; }).join("") + "</div>";
+  }
+  function body() {
+    var weekSeg = N.seg([{ id: "this", label: t("r.week"), href: N.href("ranking.html") }, { id: "last", label: t("k.lastweek"), href: N.href("ranking.html", "lastweek") }], last ? "last" : "this", t("k.week"), "is-wide");
+    if (st === "loading") return weekSeg + N.skel(["cells", "row", "row", "row", "row", "row"]);
+    if (st === "error") return weekSeg + N.errorBox();
+    return weekSeg + (st === "hold" ? '<div class="mt-16">' + N.hold("hold.rank") + "</div>" : "") +
+      '<section class="pool"><div class="pool-top"><div class="pool-l"><p class="lbl">' + (last ? t("k.final.h") : t("k.pool")) + "</p>" + N.fig(N.num(M.pool.ct), "CT", "fig-l") + "</div>" +
+        '<div class="pool-r">' + (last ? '<span class="lbl">' + t("k.you") + "</span>" + N.fig(t("k.rankth", { n: 31 })) + '<span class="lbl">' + N.num(1200) + "P</span>"
+          : '<span class="lbl">' + t("k.ends") + '</span><span class="fig" data-cd="' + M.untilWeekEnd() + '" data-fmt="dh"></span><span class="lbl">' + t("k.endat") + "</span>") + "</div></div>" +
+        split() + '<p class="fine mt-12">' + (last ? t("k.closed", { time: t("k.final.time") }) : t("k.pool.line", { n: N.num(M.pool.players) })) + "</p>" +
+        N.details(t("k.split.q"), "<p>" + t("k.split.note") + "</p><p>" + t("k.tie") + " " + t("k.tie.note") + "</p>") + "</section>" +
+      '<section class="sec"><div class="sec-h"><h2>' + t("k.top") + '</h2><span class="lbl"' + (last ? ">" + t("k.final.time") : " data-ago>") + "</span></div>" + board() + "</section>" +
+      (st === "unranked" || last ? "" : '<section class="sec"><div class="sec-h"><h2>' + t("k.around") + '</h2><span class="lbl">' + t("k.around.sub", { a: 25, b: 29 }) + "</span></div>" + around() + "</section>") +
+      (st === "unranked" ? '<section class="sec"><p class="muted">' + t("k.none") + '</p><a class="btn btn-2 mt-12" href="' + N.href("home.html") + '">' + t("k.play") + "</a></section>" : "");
+  }
+  function pin() {
+    if (st === "loading" || st === "error" || st === "unranked" || last) return "";
+    return '<a class="me" href="#main" aria-label="' + N.esc(t("k.you") + ", " + t("k.rank.sr", { n: M.me.rank })) + '"><span class="me-r">' + t("k.rankth", { n: M.me.rank }) + '</span><span class="me-l"><b>' + t("k.you") + "</b><span>" + (st === "hold" ? t("hold.rank.pin") : t("k.gap", { gap: M.me.gap })) + "</span></span>" + N.fig(N.num(M.me.pts), "P", "fig-s") + "</a>";
+  }
+  N.page({ tab: "rank", title: t("k.title"), body: body, pin: pin });
+})();
+</script>
+</body>
+</html>

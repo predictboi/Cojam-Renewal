@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F131B">
+<title>Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<noscript>Cojam needs JavaScript to show today's predictions.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* I1 Invite friends. States: default, empty (no friends yet), loading, error, offline, hold (code and link hidden). */
+(function () {
+  var t = N.t, M = N.M, ic = N.ic, st = N.state, v = M.invite, none = st === "empty";
+  function body() {
+    if (st === "loading") return N.skel(["fig", "cells", "row", "btn", "row"]);
+    var offer = '<section class="offer mt-16"><p class="fig fig-xl">' + v.rate + '<small>%</small></p><p class="offer-line">' + t("inv.hero.line", { r: v.rate }) + '</p><p class="muted">' + t("inv.hero.sub") + "</p></section>" +
+      '<div role="img" aria-label="' + N.esc(t("inv.ex.sr", { a: 350, b: 35 })) + '">' + N.cells([{ k: t("inv.ex.friend"), v: N.fig("+350", "P") }, { k: t("inv.ex.you"), v: N.fig("+35", "P") }]) + "</div>";
+    var share = st === "hold" ? N.hold("hold.invite") + '<p class="fine">' + t("hold.invite.bonus") + "</p>" :
+      '<div class="stack-12"><div class="field"><div class="field-top"><label id="cl">' + t("inv.code.h") + '</label><span class="num">' + v.linkShort + '</span></div><button type="button" class="code" id="code" aria-labelledby="cl code"><b>' + v.code + "</b><span>" + ic.copy + t("common.copy") + "</span></button></div>" +
+      '<button type="button" class="btn btn-1" id="share">' + ic.share + t("inv.share") + '</button><button type="button" class="btn btn-2 btn-wide" id="link">' + t("inv.copylink") + "</button></div>";
+    var how = '<section class="sec"><div class="sec-h"><h2>' + t("inv.how.h") + '</h2></div><ol class="steps">' + [1, 2, 3].map(function (i) { return "<li><b>0" + i + "</b><span>" + t("inv.how." + i, { w: v.welcome, r: v.rate }) + "</span></li>"; }).join("") + "</ol></section>";
+    var res = '<section class="sec"><div class="sec-h"><h2>' + t("inv.res.h") + "</h2></div>" +
+      (st === "error" ? '<p class="note is-danger">' + ic.alert + "<span>" + t("inv.error") + "</span></p>" :
+      N.cells([{ k: t("inv.res.joined"), v: N.fig(none ? 0 : v.joined, "", none ? "is-zero" : "") }, { k: t("inv.res.week"), v: N.fig(none ? "0" : "+" + v.week, "P", none ? "is-zero" : "") }, { k: t("inv.res.total"), v: N.fig(none ? "0" : "+" + N.num(v.total), "P", none ? "is-zero" : "") }]) +
+      (none ? '<p class="fine mt-12">' + t("inv.empty") + "</p>" :
+        '<table class="tbl mt-16"><caption class="sr">' + t("inv.friends.h") + '</caption><thead><tr><th scope="col">' + t("n.col.friend") + '</th><th scope="col"></th><th class="n" scope="col">' + t("n.col.earned") + "</th></tr></thead><tbody>" +
+        v.friends.map(function (f) { return "<tr><td>" + N.esc(f.name) + '</td><td><span class="chip ' + (f.st === "first" ? "chip-miss" : "chip-off") + '">' + t("inv.st." + f.st) + '</span></td><td class="n' + (f.pts ? "" : " muted") + '">' + N.num(f.pts) + "P</td></tr>"; }).join("") + "</tbody></table>")) + "</section>";
+    var rules = '<section class="sec"><div class="sec-h"><h2>' + t("inv.rules.h") + '</h2></div><ul class="bul">' + [1, 2, 3, 4].map(function (i) { return "<li>" + t("inv.rule." + i) + "</li>"; }).join("") + "</ul></section>";
+    return offer + '<div class="mt-16">' + share + "</div>" + how + res + rules;
+  }
+  N.page({
+    back: N.href("profile.html"), title: t("inv.title"), body: body,
+    after: function (app) {
+      var on = function (id, fn) { var el = app.querySelector(id); if (el) el.addEventListener("click", fn); };
+      on("#code", function () { N.copy(v.code); });
+      on("#link", function () { N.copy(v.link, t("inv.linkcopied")); });
+      on("#share", function () { var d = { text: t("inv.share.text", { code: v.code, w: v.welcome }), url: v.link }; if (navigator.share) navigator.share(d).catch(function () {}); else N.copy(v.link, t("inv.linkcopied")); });
+    }
+  });
+})();
+</script>
+</body>
+</html>

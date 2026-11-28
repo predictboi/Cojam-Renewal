@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>All screens · Cojam admin</title>
+<link rel="icon" href="../assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="../assets/tokens.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body>
+<!-- Hub: every admin screen and every state, one click each. A review tool. -->
+<div class="hub">
+  <p style="margin-bottom:12px"><span class="chip-logo" style="box-shadow:inset 0 0 0 2px var(--ink)"><img src="../assets/cojam-mark.svg" alt="">Cojam</span></p>
+  <h1>Admin design hub</h1>
+  <p class="dim" style="max-width:76ch;margin:8px 0 24px">Every admin screen and state, static with mock data. The mock moment is Thursday 26 Nov 2026, 14:32 KST, day 4 of week 48. Add <b>env=kairos</b> to any link for the test network badge and <b>role=viewer</b> or <b>role=owner</b> for the other roles. The admin is English only and built for 1024 pixels and wider. <a href="../index.html">PWA design hub</a></p>
+  <ul class="hub-list" id="list"></ul>
+</div>
+<script>
+(function () {
+  var S = [
+    ["AD0", "signin.html", "Sign in", ["sending", "code", "wrongcode", "expired", "notallowed", "failed", "idle"]],
+    ["AD1", "index.html", "Dashboard", ["calm", "loading", "error"]],
+    ["AD2", "rewards.html", "Reward settings", ["none", "editing", "invalid", "review", "connect", "wrongwallet", "signing", "failed", "proposed", "ready", "cancel", "loading", "error"]],
+    ["AD3", "questions.html", "Questions", ["scheduled", "edit", "short", "noimage", "regen", "swap", "cancel", "void", "emptyqueue", "loading", "error"]],
+    ["AD4", "answers.html", "Answers", ["correct", "after", "sign", "compensate", "compensated", "void", "late", "rerun", "waiting", "corrected", "empty", "loading", "error"]],
+    ["AD5", "ranking.html", "Ranking and airdrop", ["last", "ready", "waiting", "sending", "failed", "lowreserve", "capped", "empty", "loading", "error"]],
+    ["AD6", "system.html", "System", ["failing", "maintenance", "maint", "adddomain", "domainerror", "disabledomain", "addadmin", "loading", "error"]],
+    ["AD7", "players.html", "Players", ["detail", "block", "blockerror", "clear", "blocked", "unblock", "unblockfail", "invites", "search", "noresult", "empty", "loading", "error"]]
+  ];
+  document.getElementById("list").innerHTML = S.map(function (s) {
+    return '<li><span class="nb">' + s[0] + '</span><a class="name" href="' + s[1] + '">' + s[2] + '</a><span class="st">' + s[3].map(function (x) { return '<a href="' + s[1] + "?state=" + x + '">' + x + "</a>"; }).join("") +
+      (s[0] === "AD0" ? "" : '<a href="' + s[1] + '?env=kairos">env=kairos</a><a href="' + s[1] + '?role=viewer">role=viewer</a>' + (s[0] === "AD6" || s[0] === "AD2" ? '<a href="' + s[1] + '?role=owner">role=owner</a>' : "")) + "</span></li>";
+  }).join("");
+})();
+</script>
+</body>
+</html>

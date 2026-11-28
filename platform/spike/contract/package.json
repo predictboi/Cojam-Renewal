@@ -1,0 +1,17 @@
+{
+  "name": "cojam-spike-contract",
+  "private": true,
+  "version": "0.0.0",
+  "description": "SpikePredict: compile with solc-js 0.8.28 and deploy to Kairos (phase 0 spike only)",
+  "type": "commonjs",
+  "scripts": {
+    "compile": "node compile.js",
+    "test": "node --test test.js",
+    "deploy": "node deploy.js",
+    "verify": "node verify-sourcify.js"
+  },
+  "dependencies": {
+    "ethers": "6.15.0",
+    "solc": "0.8.28"
+  }
+}

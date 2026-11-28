@@ -1,0 +1,61 @@
+/* Design token starter. Every colour, font, size, space and duration lives here; pages never hard code them.
+   Replace the brand values, check each text pair with scripts/contrast.js and note the ratio next to it. */
+:root {
+  /* brand: the accent has two jobs only, the primary action and the current selection */
+  --brand: #124CC4;          /* white text on it: 7.35:1 */
+  --brand-hover: #0F3FA6;
+  --brand-tint: #E7EEFB;     /* selected background */
+  --data: #97DBFF;           /* data colour (never text on white) */
+
+  /* ground */
+  --bg: #F5F7FB;  --surface: #FFFFFF;  --inset: #EEF2F9;
+  --line: #DCE3EF; --line-strong: #C3CDDF;
+  --ink: #0B1530; --ink-2: #4A5672;   /* muted text still passes 4.5:1 */
+  --on-brand: #FFFFFF;
+
+  /* status: change and warnings only */
+  --up: #0E7A4D; --down: #B42318; --warn: #8A5300;
+
+  /* type */
+  --font: system-ui, -apple-system, "Segoe UI", sans-serif;   /* one family, tabular numerals for figures */
+  --font-data: ui-monospace, Menlo, Consolas, monospace;       /* addresses and hashes only */
+  --fs-12: 12px; --fs-13: 13px; --fs-14: 14px; --fs-16: 16px; --fs-20: 20px; --fs-24: 24px; --fs-32: 32px;
+  --fs-display: clamp(36px, 5.2vw, 56px);
+  --fw-regular: 400; --fw-medium: 500; --fw-semi: 600;
+
+  /* shape */
+  --r-control: 8px; --r-panel: 12px; --container: 1120px; --gutter: 16px;
+
+  /* rhythm: one set of names for page level spacing; phones get tighter values below */
+  --sp-page: 32px;      /* top padding of app pages */
+  --sp-section: 64px;   /* landing section padding */
+  --sp-head: 32px;      /* section head to its content */
+  --sp-panel: 24px;     /* panel padding */
+  --sp-stack: 24px;     /* between stacked blocks */
+  --sp-group: 32px;     /* between groups inside a section */
+
+  /* light: decorative only, low alpha, never the only fill behind text */
+  --glow: rgba(18, 76, 196, 0.16);
+  --glow-data: rgba(151, 219, 255, 0.55);
+  --edge: linear-gradient(135deg, rgba(18, 76, 196, 0.30), var(--line) 38%, var(--line) 62%, var(--data));
+  --shadow-lift: 0 10px 24px -8px rgba(11, 21, 48, 0.16), 0 2px 6px rgba(11, 21, 48, 0.05);
+
+  /* motion: transform and opacity only */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);        /* entries, press, reveals */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);    /* on screen movement */
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);     /* sheets */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);  /* release, pops */
+  --dur-press: 120ms; --dur-release: 180ms; --dur-fast: 160ms; --dur-base: 240ms; --dur-slow: 320ms; --dur-reveal: 400ms;
+  --stagger: 50ms;
+  --press-scale: 0.97; --press-scale-card: 0.985; --lift: -2px;
+
+  color-scheme: light;
+}
+@media (min-width: 768px) { :root { --gutter: 32px; } }
+/* Phones: about a third less vertical rhythm. Touch targets stay 44 px. */
+@media (max-width: 599px) {
+  :root { --sp-page: 20px; --sp-section: 40px; --sp-head: 20px; --sp-panel: 16px; --sp-stack: 16px; --sp-group: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+}

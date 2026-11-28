@@ -1,0 +1,256 @@
+{
+  "source": "CojamPredict.weekOf / weekEnd on Hardhat",
+  "generatedAt": "2026-11-26T17:24:32.438Z",
+  "weekOf": [
+    {
+      "dayId": 0,
+      "weekId": 0
+    },
+    {
+      "dayId": 1,
+      "weekId": 0
+    },
+    {
+      "dayId": 2,
+      "weekId": 0
+    },
+    {
+      "dayId": 3,
+      "weekId": 0
+    },
+    {
+      "dayId": 4,
+      "weekId": 1
+    },
+    {
+      "dayId": 5,
+      "weekId": 1
+    },
+    {
+      "dayId": 10,
+      "weekId": 1
+    },
+    {
+      "dayId": 11,
+      "weekId": 2
+    },
+    {
+      "dayId": 12,
+      "weekId": 2
+    },
+    {
+      "dayId": 20000,
+      "weekId": 2857
+    },
+    {
+      "dayId": 20770,
+      "weekId": 2967
+    },
+    {
+      "dayId": 20771,
+      "weekId": 2967
+    },
+    {
+      "dayId": 20772,
+      "weekId": 2967
+    },
+    {
+      "dayId": 20773,
+      "weekId": 2968
+    },
+    {
+      "dayId": 20774,
+      "weekId": 2968
+    },
+    {
+      "dayId": 20775,
+      "weekId": 2968
+    },
+    {
+      "dayId": 20776,
+      "weekId": 2968
+    },
+    {
+      "dayId": 20777,
+      "weekId": 2968
+    },
+    {
+      "dayId": 20778,
+      "weekId": 2968
+    },
+    {
+      "dayId": 20779,
+      "weekId": 2968
+    },
+    {
+      "dayId": 20780,
+      "weekId": 2969
+    },
+    {
+      "dayId": 20781,
+      "weekId": 2969
+    },
+    {
+      "dayId": 20782,
+      "weekId": 2969
+    },
+    {
+      "dayId": 20783,
+      "weekId": 2969
+    },
+    {
+      "dayId": 20784,
+      "weekId": 2969
+    },
+    {
+      "dayId": 20785,
+      "weekId": 2969
+    },
+    {
+      "dayId": 20786,
+      "weekId": 2969
+    },
+    {
+      "dayId": 20787,
+      "weekId": 2970
+    },
+    {
+      "dayId": 20788,
+      "weekId": 2970
+    },
+    {
+      "dayId": 20789,
+      "weekId": 2970
+    },
+    {
+      "dayId": 20790,
+      "weekId": 2970
+    },
+    {
+      "dayId": 20791,
+      "weekId": 2970
+    },
+    {
+      "dayId": 20792,
+      "weekId": 2970
+    },
+    {
+      "dayId": 20793,
+      "weekId": 2970
+    },
+    {
+      "dayId": 20794,
+      "weekId": 2971
+    },
+    {
+      "dayId": 20795,
+      "weekId": 2971
+    },
+    {
+      "dayId": 20796,
+      "weekId": 2971
+    },
+    {
+      "dayId": 20797,
+      "weekId": 2971
+    },
+    {
+      "dayId": 20798,
+      "weekId": 2971
+    },
+    {
+      "dayId": 20799,
+      "weekId": 2971
+    },
+    {
+      "dayId": 20800,
+      "weekId": 2971
+    },
+    {
+      "dayId": 20801,
+      "weekId": 2972
+    },
+    {
+      "dayId": 20802,
+      "weekId": 2972
+    },
+    {
+      "dayId": 20803,
+      "weekId": 2972
+    },
+    {
+      "dayId": 20804,
+      "weekId": 2972
+    },
+    {
+      "dayId": 20805,
+      "weekId": 2972
+    },
+    {
+      "dayId": 20806,
+      "weekId": 2972
+    },
+    {
+      "dayId": 20807,
+      "weekId": 2972
+    },
+    {
+      "dayId": 20808,
+      "weekId": 2973
+    },
+    {
+      "dayId": 20809,
+      "weekId": 2973
+    },
+    {
+      "dayId": 25000,
+      "weekId": 3571
+    },
+    {
+      "dayId": 50000,
+      "weekId": 7143
+    },
+    {
+      "dayId": 4294967295,
+      "weekId": 613566756
+    }
+  ],
+  "weekEnd": [
+    {
+      "weekId": 0,
+      "end": 345600
+    },
+    {
+      "weekId": 1,
+      "end": 950400
+    },
+    {
+      "weekId": 2,
+      "end": 1555200
+    },
+    {
+      "weekId": 2968,
+      "end": 1795392000
+    },
+    {
+      "weekId": 2969,
+      "end": 1795996800
+    },
+    {
+      "weekId": 2970,
+      "end": 1796601600
+    },
+    {
+      "weekId": 2971,
+      "end": 1797206400
+    },
+    {
+      "weekId": 3000,
+      "end": 1814745600
+    },
+    {
+      "weekId": 613566756,
+      "end": 371085174374400
+    }
+  ]
+}

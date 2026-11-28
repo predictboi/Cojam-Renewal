@@ -1,0 +1,16 @@
+{
+  "network": "kaia",
+  "chainId": 8217,
+  "ct": "0x91cb3B346C80ff965a9667ba6228834dbedD71a2",
+  "predictLogic": null,
+  "predict": null,
+  "predictDeployBlock": null,
+  "staking": null,
+  "stakingDeployBlock": null,
+  "stakingShortLock": null,
+  "stakingShortLockDeployBlock": null,
+  "owner": "0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb",
+  "treasury": "0xd9dA67b7dcf94C2837d55614A430EA4Ff477eCAb",
+  "operator": null,
+  "pauser": null
+}

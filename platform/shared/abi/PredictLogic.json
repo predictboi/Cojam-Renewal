@@ -1,0 +1,350 @@
+[
+  {
+    "inputs": [],
+    "name": "BadTimes",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "BadWinners",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "DayExists",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "EmptyContentHash",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "Frozen",
+    "type": "error"
+  },
+  {
+    "inputs": [],
+    "name": "NotRegistered",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "which",
+        "type": "uint8"
+      }
+    ],
+    "name": "ParamOutOfBounds",
+    "type": "error"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint8",
+        "name": "bits",
+        "type": "uint8"
+      },
+      {
+        "internalType": "uint256",
+        "name": "value",
+        "type": "uint256"
+      }
+    ],
+    "name": "SafeCastOverflowedUintDowncast",
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint16",
+            "name": "completionPoints",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "hitPoints",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "referralBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "welcomePoints",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint32",
+            "name": "settleDelay",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "pointsPerCT",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minConvertPoints",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxConvertCtPerUserPerDay",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxConvertCtPerDay",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minAccountAge",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minResolveGap",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxWeeklyPool",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "airdropDelay",
+            "type": "uint32"
+          },
+          {
+            "internalType": "address",
+            "name": "treasury",
+            "type": "address"
+          },
+          {
+            "internalType": "uint16[10]",
+            "name": "splitBps",
+            "type": "uint16[10]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxResolveAfterClose",
+            "type": "uint32"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct Params",
+        "name": "p",
+        "type": "tuple"
+      }
+    ],
+    "name": "ParamsApplied",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint16",
+            "name": "completionPoints",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "hitPoints",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "referralBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "welcomePoints",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint32",
+            "name": "settleDelay",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "pointsPerCT",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minConvertPoints",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxConvertCtPerUserPerDay",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxConvertCtPerDay",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minAccountAge",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minResolveGap",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxWeeklyPool",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "airdropDelay",
+            "type": "uint32"
+          },
+          {
+            "internalType": "address",
+            "name": "treasury",
+            "type": "address"
+          },
+          {
+            "internalType": "uint16[10]",
+            "name": "splitBps",
+            "type": "uint16[10]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxResolveAfterClose",
+            "type": "uint32"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct Params",
+        "name": "p",
+        "type": "tuple"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint64",
+        "name": "applyAfter",
+        "type": "uint64"
+      }
+    ],
+    "name": "ParamsProposed",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "uint16",
+            "name": "completionPoints",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "hitPoints",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "referralBps",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint16",
+            "name": "welcomePoints",
+            "type": "uint16"
+          },
+          {
+            "internalType": "uint32",
+            "name": "settleDelay",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "pointsPerCT",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minConvertPoints",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxConvertCtPerUserPerDay",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxConvertCtPerDay",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minAccountAge",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "minResolveGap",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxWeeklyPool",
+            "type": "uint32"
+          },
+          {
+            "internalType": "uint32",
+            "name": "airdropDelay",
+            "type": "uint32"
+          },
+          {
+            "internalType": "address",
+            "name": "treasury",
+            "type": "address"
+          },
+          {
+            "internalType": "uint16[10]",
+            "name": "splitBps",
+            "type": "uint16[10]"
+          },
+          {
+            "internalType": "uint32",
+            "name": "maxResolveAfterClose",
+            "type": "uint32"
+          }
+        ],
+        "internalType": "struct Params",
+        "name": "p",
+        "type": "tuple"
+      }
+    ],
+    "name": "checkParams",
+    "outputs": [],
+    "stateMutability": "pure",
+    "type": "function"
+  }
+]

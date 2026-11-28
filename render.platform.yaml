@@ -1,0 +1,248 @@
+# Render Blueprint for the Cojam Daily Prediction platform (Kairos testnet for now).
+# Separate from render.yaml (swap site, gas API, ops job), which stays untouched.
+# Dashboard: New, Blueprint, pick this repository, set the Blueprint file path to render.platform.yaml.
+#
+# Every service checks out the whole repository; rootDir only sets the working directory. platform/api and
+# platform/app import TypeScript sources from platform/shared by relative path (no build step: tsx runs the
+# API and the worker), so platform/shared must stay in the checkout and is listed in each buildFilter.
+#
+# Secrets are `sync: false`: Render asks for them when the Blueprint is created, they never live in git.
+# Optional values are not listed and can be added by hand later: PRIVY_VERIFICATION_KEY, PRIVY_ADMIN_APP_SECRET,
+# PRIVY_ADMIN_VERIFICATION_KEY, ADMIN_SERVICE_TOKEN_SHA256, SENTRY_DSN (API); ALERT_TELEGRAM_BOT_TOKEN,
+# ALERT_TELEGRAM_CHAT_ID, ALERT_EMAIL (worker).
+# EMAIL_HASH_KEY and IP_HASH_SALT are generated once in a shared group, because the API and the worker must
+# hash with the same keys.
+
+envVarGroups:
+  - name: cojam-platform-shared
+    envVars:
+      - key: EMAIL_HASH_KEY
+        generateValue: true
+      - key: IP_HASH_SALT
+        generateValue: true
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: "20"
+      - key: NETWORK
+        value: kairos
+      - key: CHAIN_ID
+        value: "1001"
+      - key: KAIA_RPC_URL
+        value: https://public-en-kairos.node.kaia.io
+      # Contract addresses and deploy blocks come from platform/shared/addresses/kairos.json (CT_ADDRESS,
+      # PREDICT_ADDRESS, STAKING_ADDRESS and the *_DEPLOY_BLOCK names override them when set on a service).
+      - key: MAX_GAS_PRICE_GKEI
+        value: "50"
+      - key: RISK_BLOCK_SCORE
+        value: "80"
+      - key: RISK_REVIEW_SCORE
+        value: "50"
+      - key: LOG_LEVEL
+        value: info
+
+databases:
+  - name: cojam-app-db
+    databaseName: cojam_app
+    user: cojam
+    region: singapore
+    postgresMajorVersion: "16"
+    # A paid plan keeps daily backups and point in time recovery (DEV-PLAN 8.1 "Data loss").
+    plan: basic-256mb
+    ipAllowList: []
+
+services:
+  # Web API: REST for the PWA and the admin, the fee payer (co-signs Kaia 0x31 transactions).
+  - type: web
+    name: cojam-app-api
+    runtime: node
+    region: singapore
+    branch: ccr-ae3111c3-lc250i
+    rootDir: platform/api
+    plan: starter
+    buildCommand: npm ci --omit=dev
+    startCommand: npm run start:api
+    healthCheckPath: /v1/health
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - platform/api/**
+        - platform/shared/**
+        - render.platform.yaml
+    envVars:
+      - fromGroup: cojam-platform-shared
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cojam-app-db
+          property: connectionString
+      - key: TRUST_PROXY
+        value: "1"
+      # Add https://app.cojam.app and https://admin.cojam.app once the custom domains are attached.
+      - key: ALLOWED_ORIGINS
+        value: https://cojam-app.onrender.com,https://cojam-admin.onrender.com,https://app.cojam.app,https://admin.cojam.app
+      - key: APP_URL
+        value: https://app.cojam.app
+      - key: PRIVY_APP_ID
+        value: cmwxqqrt0017p0gl5hi2gewh7
+      - key: PRIVY_APP_SECRET
+        sync: false
+      # Same Privy app as the players for now (the admin allow list on the server decides who gets in).
+      # With the same id the API reuses PRIVY_APP_SECRET; a separate admin app needs PRIVY_ADMIN_APP_SECRET.
+      - key: PRIVY_ADMIN_APP_ID
+        value: cmwxqqrt0017p0gl5hi2gewh7
+      - key: ADMIN_OWNER_EMAIL
+        sync: false
+      # The platform fee payer: a new hot key holding KAIA only, never the swap fee payer.
+      - key: APP_FEE_PAYER_PRIVATE_KEY
+        sync: false
+      - key: DAILY_BUDGET_KAIA
+        value: "10"
+      - key: MIN_FEE_PAYER_BALANCE_KAIA
+        value: "10"
+
+  # Background worker: indexer, operator transactions (register, createDay, setOutcome, settle, airdrop,
+  # freezes), the AI pipeline, risk checks and monitors. Exactly one instance: it owns the operator key's
+  # nonce (a Postgres advisory lock makes a second instance exit).
+  - type: worker
+    name: cojam-app-worker
+    runtime: node
+    region: singapore
+    branch: ccr-ae3111c3-lc250i
+    rootDir: platform/api
+    plan: starter
+    numInstances: 1
+    buildCommand: npm ci --omit=dev
+    startCommand: npm run start:worker
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - platform/api/**
+        - platform/shared/**
+        - render.platform.yaml
+    envVars:
+      - fromGroup: cojam-platform-shared
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cojam-app-db
+          property: connectionString
+      # Holds OPERATOR_ROLE on CojamPredict; KAIA only. On Kairos the test key is the operator.
+      - key: OPERATOR_PRIVATE_KEY
+        sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: AI_MODEL
+        value: claude-opus-5-5
+      - key: AI_MONTHLY_BUDGET_USD
+        value: "300"
+      - key: DRAFT_HORIZON_DAYS
+        value: "7"
+      - key: MIN_OPERATOR_BALANCE_KAIA
+        value: "5"
+      # Address only, for the fee payer balance monitor.
+      - key: APP_FEE_PAYER_ADDRESS
+        value: "0x0b54C476f7e57a042DE826b893348bAf904fBD23"
+      - key: IMAGE_BASE_URL
+        value: https://img.cojam.app
+
+  # The installed PWA (app.cojam.app). Static: Vite builds platform/app into dist.
+  - type: web
+    name: cojam-app
+    runtime: static
+    branch: ccr-ae3111c3-lc250i
+    rootDir: platform/app
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - platform/app/**
+        - platform/shared/**
+        - render.platform.yaml
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: VITE_NETWORK
+        value: kairos
+      # The API's public URL; switch to https://app-api.cojam.app once the custom domain is attached.
+      - key: VITE_API_URL
+        value: https://cojam-app-api.onrender.com
+      - key: VITE_PRIVY_APP_ID
+        value: cmwxqqrt0017p0gl5hi2gewh7
+      - key: VITE_RELEASE
+        value: kairos
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000; includeSubDomains
+      # The service worker and its registration must never be cached, or players stay on an old release.
+      - path: /sw.js
+        name: Cache-Control
+        value: no-cache, no-store, must-revalidate
+      - path: /registerSW.js
+        name: Cache-Control
+        value: no-cache, no-store, must-revalidate
+      - path: /manifest.webmanifest
+        name: Cache-Control
+        value: no-cache
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+    routes:
+      # Client side routes: every unknown path serves the app shell.
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  # The admin web app (admin.cojam.app), desktop only. Static: Vite builds platform/admin into dist.
+  # Sign in uses a separate admin Privy app (email only); owner actions are signed in the browser by
+  # the owner's own wallet, never by a server.
+  - type: web
+    name: cojam-admin
+    runtime: static
+    branch: ccr-ae3111c3-lc250i
+    rootDir: platform/admin
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - platform/admin/**
+        - platform/shared/**
+        - render.platform.yaml
+    envVars:
+      - key: NODE_VERSION
+        value: "20"
+      - key: VITE_API_URL
+        value: https://cojam-app-api.onrender.com
+      # Public id of the admin Privy app (not a secret); set it when that app exists.
+      - key: VITE_PRIVY_ADMIN_APP_ID
+        value: cmwxqqrt0017p0gl5hi2gewh7
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Strict-Transport-Security
+        value: max-age=31536000; includeSubDomains
+      - path: /*
+        name: X-Robots-Tag
+        value: noindex, nofollow
+      - path: /index.html
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html

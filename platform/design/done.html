@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>H3 Day done with countdown | Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/screens/home.css">
+<link rel="stylesheet" href="assets/screens/invite.css">
+</head>
+<body>
+<!-- H3 Day done with countdown. States: (none) paid, moment (plays saving, then paid), saving, results, zero, offline, welcome (an invited player's first full day: +100P and the one time +100P welcome bonus). Add ?lang=en|ko|ja. Mock data only. -->
+<noscript>Cojam needs JavaScript to show this screen.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/components.js"></script>
+<script>
+(function () {
+  var t = App.t, F = App.fmt, S = App.state, M = MOCK, $ = App.$;
+  var sess = App.sess;
+  if (S === "moment" && sess.data.paid) S = "";   /* the reward moment plays once; a reload shows the settled screen */
+  var phase = S === "moment" || S === "saving" ? "saving" : "paid";
+  /* points: the 100P already counted in this tab is in M.user.points; a preset opened on its own adds it for the picture */
+  /* welcome: an invited player's first full day. The one time welcome bonus is paid in the same moment as the day's 100P */
+  var wel = S === "welcome", W = M.invite.welcome;
+  var basePts = phase === "paid" && !sess.data.paid ? M.user.points + 100 : M.user.points;
+  if (wel) basePts += W;
+  if (phase === "paid") M.user.points = basePts;
+  /* the picks are the ones actually made on the home screen in this tab; a preset opened on its own falls back to sample picks */
+  var sample = { q1: "r", q2: "r", q3: "l", q4: "r", q5: "r" };
+  var picks = M.set.map(function (id) { return [id, sess.data.picks[id] || sample[id]]; });
+  var outcome = S === "results" ? ["wait", "pend", "miss", "wait", "wait"] : ["wait", "wait", "wait", "wait", "wait"];
+  var waiting = outcome.filter(function (o) { return o === "wait"; }).length;
+
+  /* the one reward moment: "+100P" is the hero of the head, under the small headline. It waits in the quiet blue while the last pick is saved,
+     pops in lime with a burst that stays inside the header band when the points are paid, then settles to white. No toast repeats it; the header pill counts up. */
+  function status(p) {
+    if (p === "saving") return '<p class="done-st" id="reward"><span class="spin"></span>' + t("d.saving.st") + "</p>";
+    return '<p class="done-st" id="reward">' + C.icon("check", 14) + (wel ? t("d.wel.st", { n: 100 + W }) : t("d.paid.st")) + "</p>";
+  }
+  function head() {
+    var segs = phase === "saving" ? ["done", "done", "done", "done", "pend"] : ["done", "done", "done", "done", "done"];
+    return '<div class="done-stack"><h1>' + t("d.h1") + '</h1>' + (wel ? '<div class="done-figs">' : "") + '<p class="done-fig' + (phase === "saving" ? " is-wait" : "") + '" id="done-fig" aria-hidden="true">+100P</p>' + (wel ? '<p class="done-wel" id="done-wel" aria-hidden="true"><b>+' + W + "P</b><span>" + t("d.wel.tag") + "</span></p></div>" : "") +
+      '<div aria-live="polite" id="reward-wrap">' + status(phase) + "</div></div>" +
+      '<div class="ph-line"><span class="ph-count">5<small>/5</small></span>' + C.day5(segs, { band: true, id: "day5", cls: S === "moment" ? "is-flash" : "", label: "5/5" }) + "</div>";
+  }
+  function pickRow(p, i) {
+    var o = outcome[i], q = App.q(p[0]);
+    var sub = o === "pend" ? t("d.hitpending", { time: "22:10" }) : o === "miss" ? t("d.miss") : "";
+    return '<li class="pick"><span class="pick-q">' + App.esc(q.title) + '</span><span class="pick-c">' + C.pick(p[1], App.esc(q[p[1]])) + (sub ? "<small>" + sub + "</small>" : "") + "</span></li>";
+  }
+  function body() {
+    var secs = S === "zero" ? 0 : M.untilNextSet();
+    /* the primary action first; the next set is one quiet line under it; then the picks: how many wait for an answer, with when the +50P arrive in two short lines, and the rows */
+    return C.btn(t("d.rank"), { kind: "primary", block: true, href: "ranking.html", iconEnd: "right" }) +
+      '<p class="watch" id="next">' + (S === "zero" ? '<span class="spin"></span><span>' + t("d.loading") + "</span>" :
+        C.icon("clock", 16) + "<span>" + t("d.next") + '</span> <b class="clock-inline" id="clock" data-cd="' + secs + '" aria-hidden="true"></b><span class="sr-only" data-cd-sr></span>') + "</p>" +
+      (wel ? '<p class="done-welnote">' + t("d.wel.note", { name: '<b translate="no">' + App.esc(M.invite.by) + "</b>", w: W }) + "</p>" : "") +
+      '<section class="sec sec-rule done-picks"><div class="sect-h"><h2 class="sect-h">' + t("d.picks") + '</h2><a class="linkish" href="results.html">' + t("d.results") + "</a></div>" +
+      '<div class="done-wait">' + (waiting ? '<p class="done-wait-n">' + t("d.waitn", { n: waiting }) + "</p>" : "") + '<div class="plain-note"><p>' + t("d.hit.1") + "</p><p>" + t("d.hit.2") + "</p></div></div>" +
+      '<ul class="list">' + picks.map(pickRow).join("") + "</ul></section>";
+  }
+  App.mount({ tab: "home", cls: "is-done", docTitle: t("d.h1"), head: head(), body: body(), points: basePts, pts: phase === "saving" ? "pending" : S === "results" ? "hits" : "", badges: { results: 2 }, after: function () {
+    document.addEventListener("cd:zero", function () { if (S !== "zero") setTimeout(function () { location.href = "home-cards.html"; }, 1200); });
+    if (S === "zero") setTimeout(function () { App.toast(t("h.new")); }, 600);
+    if (S !== "moment") return;
+    /* the burst is flat and wide, so every piece stays inside the header band (the band also clips it) */
+    function burst(el) {
+      if (App.reduce) return;
+      var b = document.createElement("span"), r = el.getBoundingClientRect(), W = $(".ph").getBoundingClientRect().width, n = 32, h = "";
+      b.className = "burst"; b.setAttribute("aria-hidden", "true");
+      for (var i = 0; i < n; i++) {
+        var x = -r.width / 2 + 12 + Math.random() * (W - r.left - 36), y = (Math.random() - 0.5) * 84;
+        h += '<i style="--n:' + i + ";--x:" + x.toFixed(0) + "px;--y:" + y.toFixed(0) + "px;--r:" + Math.round(Math.random() * 360) + 'deg"></i>';
+      }
+      b.innerHTML = h; el.appendChild(b); setTimeout(function () { b.remove(); }, 2200);
+    }
+    /* the day done moment: the fifth pick is mined (the 100P is credited in that same transaction), only then "+100P paid" and the count up */
+    var day5 = $("#day5"), wrap = $("#reward-wrap"), fig = $("#done-fig");
+    setTimeout(function () { day5.children[4].className = "is-done is-fill"; }, 800);
+    setTimeout(function () {
+      var sp = App.$("#pts .spin"); if (sp) sp.remove();
+      wrap.innerHTML = status("paid"); fig.classList.remove("is-wait"); fig.classList.add("is-pop");
+      sess.data.paid = true; sess.save(); day5.classList.remove("is-flash"); day5.classList.add("is-wave");
+      burst(fig); try { if (navigator.vibrate) navigator.vibrate([12, 40, 18]); } catch (e) {}
+      App.addPoints(100); App.live(t("toast.paid", { n: 100 }));
+    }, 1500);
+  } });
+})();
+</script>
+</body>
+</html>

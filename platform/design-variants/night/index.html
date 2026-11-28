@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F131B">
+<title>Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<noscript>Cojam needs JavaScript to show today's predictions.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* The hub: every screen and every state of the Night Desk variant, one tap each. A review tool, so its own labels are English only. */
+(function () {
+  var FLOWS = [
+    { h: "Start", items: [
+      ["A1", "Login", "login.html", ["bademail", "sending", "code", "wrong", "verifying", "offline"]],
+      ["A2", "First run", "first-run.html", ["2", "3", "settingup"]]] },
+    { h: "Play", items: [
+      ["H1", "Home, card deck", "home.html", ["partial", "loading", "empty", "error", "offline", "hold"]],
+      ["H2", "Home, list view", "home-list.html", ["partial", "loading", "error", "offline", "hold"]],
+      ["H3", "Day done", "done.html", ["moment", "saving", "offline"]],
+      ["R1", "Results", "results.html", ["loading", "empty", "error", "offline"]],
+      ["K1", "Weekly ranking", "ranking.html", ["lastweek", "unranked", "loading", "error", "offline", "hold"]]] },
+    { h: "Staking", items: [
+      ["S1", "New stake", "staking.html", ["empty", "below", "zero", "review", "loading", "error", "offline", "hold"]],
+      ["S2", "My stakes", "stakes.html", ["claimable", "empty", "loading", "error", "offline", "hold"]]] },
+    { h: "Wallet", items: [
+      ["W1", "Wallet", "wallet.html", ["new", "deposit", "withdraw", "loading", "error", "offline", "hold"]],
+      ["W2", "Convert points", "convert.html", ["short", "wait", "loading", "offline", "hold"]]] },
+    { h: "Account", items: [
+      ["P1", "Profile and settings", "profile.html", ["saved", "hold"]],
+      ["I1", "Invite friends", "invite.html", ["empty", "loading", "error", "hold"]],
+      ["SYS", "Account on hold", "hold.html", []]] }
+  ];
+  var lang = window.CJ_I18N.lang;
+  function url(f, s) { return f + "?lang=" + lang + (s ? "&state=" + s : ""); }
+  function render() {
+    document.getElementById("hub").innerHTML = FLOWS.map(function (f) {
+      return '<section class="hub-sec"><h2>' + f.h + "</h2>" + f.items.map(function (it) {
+        return '<div class="hub-item"><span class="hub-id">' + it[0] + '</span><a href="' + url(it[2]) + '">' + it[1] + N.ic.chev + "</a>" +
+          (it[3].length ? '<div class="hub-states">' + it[3].map(function (s) { return '<a href="' + url(it[2], s) + '">' + s + "</a>"; }).join("") + "</div>" : "") + "</div>";
+      }).join("") + "</section>";
+    }).join("");
+    document.querySelectorAll("#hub-lang button").forEach(function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-id") === lang); });
+  }
+  document.body.insertAdjacentHTML("afterbegin", '<main class="hub"><div class="hub-top"><span class="brand"><span class="tile"><img src="assets/cojam-mark.svg" alt="" width="20" height="20"></span><b translate="no">Cojam</b></span>' +
+    '<div id="hub-lang">' + N.seg([{ id: "en", label: "EN" }, { id: "ko", label: "한국어" }, { id: "ja", label: "日本語" }], lang, "Language for the screens") + "</div></div>" +
+    "<h1>Night Desk</h1><p>Variant B of the Cojam Daily Prediction PWA: a dark, precise desk for casual players. Every screen and its main states, mock data only. Choose the language the screens open in, then tap a screen for its main state or a chip for one state. Concept and scores: CONCEPT.md and REVIEW.md in this folder.</p>" +
+    '<div id="hub"></div></main>');
+  document.getElementById("hub-lang").addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; lang = b.getAttribute("data-id"); try { localStorage.setItem("cjp.lang", lang); } catch (err) {} history.replaceState(null, "", "?lang=" + lang); document.documentElement.lang = lang; render(); });
+  document.title = "Night Desk: Cojam design variant";
+  render();
+})();
+</script>
+</body>
+</html>

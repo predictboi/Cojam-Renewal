@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#124CC4">
+<title>H2 Home, terminal view | Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="assets/tokens.css">
+<link rel="stylesheet" href="assets/components.css">
+<link rel="stylesheet" href="assets/screens/home.css">
+</head>
+<body>
+<!-- H2 Home, terminal view. States: (none) two answered (or the picks made in this tab; with all five answered it is the finished home, which links to day done), fresh (the explicit reset), syncing, slow, failed, reconnect, reconnectfail, otherdevice, loading, empty, closed, error, offline, hold (account on hold). Add ?lang=en|ko|ja. Mock data only. -->
+<noscript>Cojam needs JavaScript to show this screen.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/components.js"></script>
+<script>
+(function () {
+  var t = App.t, S = App.state, M = MOCK, $ = App.$;
+  /* picks: n -> { dir, sync: "ok" | "saving" | "fail" } */
+  var picks = {}, sess = App.sess, live = S === "" || S === "fresh";
+  /* "?state=fresh" is the explicit reset. It is dropped from the address once used, so Back from day done never resets the day again. */
+  function dropFresh() { try { var u = new URL(location.href); u.searchParams.delete("state"); history.replaceState(null, "", u.pathname + u.search + u.hash); } catch (e) {} }
+  /* a page restored from the back cache is built again, so it always shows the picks as they are now */
+  window.addEventListener("pageshow", function (e) { if (e.persisted) location.reload(); });
+  if (S === "fresh") { sess.resetDay(); dropFresh(); }
+  var leftSaved = live ? sess.takeLeft() : 0;   /* picks sent at once because the player left inside their undo window */
+  /* the day is already finished in this tab: the list shows all five answered and links to day done */
+  var fin = live && sess.picked() === 5;
+  /* picks made in this tab (in either view) carry over; with none, the plain screen shows its two sample picks */
+  if (live && sess.picked()) M.set.forEach(function (id, i) { if (sess.data.picks[id]) picks[i + 1] = { dir: sess.data.picks[id], sync: "ok" }; });
+  else if (S !== "fresh" && S !== "partial0" && S !== "hold") { picks[1] = { dir: "r", sync: "ok" }; picks[2] = { dir: "l", sync: S === "syncing" || S === "slow" ? "saving" : "ok" }; }
+  if (S === "failed") picks[2] = { dir: "l", sync: "fail" };
+  var current = null;
+  var noSet = S === "empty" || S === "closed" || S === "error" || S === "loading" || S === "otherdevice";
+  var Q = M.set.map(App.q), UNDO_MS = 3000;   /* as on the card view: a pick can be undone for 3 seconds, then it is sent */
+  function isAnswered(n) { return picks[n] && picks[n].sync !== "fail"; }
+  function count() { return Q.filter(function (q) { return isAnswered(q.n); }).length; }
+  function firstOpen() { for (var i = 0; i < 5; i++) if (!isAnswered(Q[i].n)) return Q[i].n; return null; }
+  function segs() { return Q.map(function (q) { var p = picks[q.n]; return !p ? "" : p.sync === "ok" ? "done" : p.sync === "saving" || p.sync === "held" ? "pend" : "fail"; }); }
+
+  function head() {
+    var c = S === "loading" ? 0 : count();
+    var sw = C.viewSwitch("term", S === "fresh" ? "" : S);
+    var cd = S === "empty" || S === "closed" || S === "hold" ? "" : S === "loading" ? C.skel("96px", "12px") : C.closes(M.untilNextSet());
+    return '<div class="ph-top"><h1>' + t("h.title") + "</h1>" + sw + "</div>" +
+      '<div class="ph-line"><span class="ph-count"><span id="cnt">' + c + "</span><small>/5</small></span>" + C.day5(S === "loading" ? ["", "", "", "", ""] : segs(), { band: true, id: "day5" }) + cd + "</div>";
+  }
+  function viewSwitch() { return ""; }
+  function row(q) {
+    var n = q.n, p = picks[n], num = '<span class="trow-n" aria-hidden="true">0' + n + "</span>", tag = C.tag(t("cat." + q.cat));
+    if (p && p.sync !== "fail") {
+      var undo = p.sync === "held" ? '<button type="button" class="undo" data-undo="' + n + '" aria-label="' + App.esc(t("h.undo.aria", { n: n, choice: q[p.dir] })) + '"><svg class="undo-ring" viewBox="0 0 22 22" aria-hidden="true"><circle class="trk" cx="11" cy="11" r="8"/><circle class="run" cx="11" cy="11" r="8" style="animation-duration:' + UNDO_MS + "ms;animation-delay:-" + (Date.now() - p.t0) + 'ms"/></svg><span>' + t("h.undo") + "</span></button>" : "";
+      return '<li class="trow is-done">' + num + '<div><p class="trow-q">' + App.esc(q.title) + '</p><div class="trow-foot">' + (undo ? "" : tag) + '<span class="trow-state">' +
+        (p.sync === "saving" ? '<span class="spin"></span><span class="sr-only">' + t("common.saving") + "</span>" : undo ? "" : C.icon("check", 16)) + t("h.t.chose", { choice: C.pick(p.dir, App.esc(q[p.dir])) }) + "</span>" + undo + "</div></div>" + C.thumb(q) + "</li>";
+    }
+    var failed = p && p.sync === "fail";
+    if (n === current) {
+      return '<li class="trow is-open' + (failed ? " is-fail" : "") + '">' + num + '<div><h2 class="trow-q" tabindex="-1" id="open-q">' + App.esc(q.title) + '</h2><div class="trow-foot">' + tag +
+        (failed ? '<span class="trow-state">' + C.icon("warn", 16) + t("h.t.notsaved") + "</span>" : "") + "</div></div>" + C.thumb(q) +
+        '<div class="trow-body"><div class="qcard-meta"><span>' + C.icon("search", 14) + "<span>" + t("h.answer", { rule: App.esc(q.rule) }) + "</span></span>" + '<button type="button" class="qmeta-btn" data-ai-info="' + q.id + '" aria-haspopup="dialog">' + C.icon("clock", 14) + "<span>" + t("h.ai", { time: q.settle }) + "</span>" + C.icon("info", 14) + "</button></div>" +
+        '<div class="choices">' + ["l", "r"].map(function (d) {
+          return '<button type="button" class="choice" data-pick="' + n + '" data-dir="' + d + '"' + (App.offline ? ' aria-disabled="true"' : "") + ' aria-label="' + App.esc(t("h.pick.aria", { choice: q[d], q: q.title })) + '">' + (d === "l" ? C.icon("left", 18) : "") + "<span>" + App.esc(q[d]) + "</span>" + (d === "r" ? C.icon("right", 18) : "") + "</button>";
+        }).join("") + "</div>" + (App.offline ? '<p class="small muted">' + t("h.offline") + "</p>" : '<p class="qcard-final">' + t("h.final") + "</p>") + "</div></li>";
+    }
+    return '<li class="trow' + (failed ? " is-fail" : "") + '">' + num + '<div><p class="trow-q">' + App.esc(q.title) + '</p><div class="trow-foot">' + tag +
+      (failed ? '<span class="trow-state">' + C.icon("warn", 16) + t("h.t.notsaved") + "</span>" : "") +
+      C.btn(failed ? t("h.t.again") : t("h.t.pick"), { sm: true, attrs: 'data-open="' + n + '"' }) + "</div></div>" + C.thumb(q) + "</li>";
+  }
+  function list() { return Q.map(row).join(""); }
+  function keep() { if (!live) return; sess.data.picks = {}; Q.forEach(function (q) { var p = picks[q.n]; if (p && p.sync !== "fail") sess.data.picks[q.id] = p.dir; }); sess.save(); }
+  function body() {
+    if (S === "loading") return viewSwitch() + '<ol class="term" aria-busy="true">' + [1, 2, 3, 4, 5].map(function (n) { return '<li class="trow"><span class="trow-n" aria-hidden="true">0' + n + "</span><div>" + C.skel("94%", "16px") + '<div class="trow-foot">' + C.skel("64px", "22px") + C.skel("72px") + "</div></div></li>"; }).join("") + '</ol><p class="sr-only" role="status">' + t("common.loading") + "</p>";
+    if (S === "empty") return viewSwitch() + C.empty({ icon: "clock", title: t("h.empty.h"), body: t("h.empty.b", { time: t("time.kst9") }), extra: '<p class="fig fig--md" data-cd="' + M.untilNextSet() + '"></p>' });
+    if (S === "closed") return viewSwitch() + C.empty({ icon: "refresh", title: t("h.closed"), action: C.btn(t("h.closed.btn"), { kind: "primary", href: "home-terminal.html" }) });
+    if (S === "error") return viewSwitch() + C.error();
+    if (S === "otherdevice") return viewSwitch() + C.otherDevice();
+    /* account on hold: the list is replaced by the same short panel as on the card view */
+    if (S === "hold") return C.empty({ icon: "pause", title: t("hold.home.h"), body: t("hold.home.b"), action: C.btn(t("hold.home.btn"), { href: "system.html?state=blocked", iconEnd: "right", id: "hold-more" }) });
+    return viewSwitch() + (App.offline ? C.note("warn", t("h.offline")) : "") + C.playBanner(S) + '<ol class="term" id="term">' + list() + '</ol><div class="term-end" id="term-end" hidden></div>';
+  }
+  current = firstOpen();
+  App.store.set("view", "term");
+  App.mount({ tab: "home", docTitle: t("h.title"), head: head(), body: body(), badges: { home: fin || S === "hold" ? 0 : "dot", results: 2 }, after: function () {
+    var term = $("#term"), lastPick = 0; if (!term) return;
+    if (S === "failed") App.toast(t("h.toast.fail", { n: 2 }), { btn: t("common.retry") });
+    if (leftSaved) App.toast(leftSaved > 1 ? t("h.left.savedn", { n: leftSaved }) : t("h.left.saved"));
+    var leaving = false;
+    window.addEventListener("pagehide", function () { var n = Q.filter(function (q) { return picks[q.n] && picks[q.n].sync === "held"; }).length; if (live && n && !leaving) sess.leave(n); });
+    /* under the list once all five are picked: "Finishing in 3" with "Finish now" while a pick can still be undone (as on the card view),
+       then "Saving", and on a finished day the link to day done */
+    var endEl = $("#term-end"), endT, endMode = "";
+    function heldPicks() { return Q.map(function (q) { return picks[q.n]; }).filter(function (p) { return p && p.sync === "held"; }).sort(function (a, b) { return a.t0 - b.t0; }); }
+    function endPaint() {
+      clearInterval(endT);
+      var held = heldPicks(), mode = count() < 5 ? "" : held.length ? "wait" : fin && !leaving ? "fin" : "saving";
+      if (mode !== endMode) {
+        endMode = mode; endEl.hidden = !mode; endEl.className = "term-end" + (mode === "fin" ? " is-fin" : "");   /* on a finished day the block leads the list, so the link is on the first screen */
+        endEl.innerHTML = !mode ? "" : '<div class="term-end-txt"><h2>' + t("h.end.h") + '</h2><p id="term-end-p">' + (mode === "fin" ? t("h.fin.b") : mode === "saving" ? '<span class="spin"></span>' + t("h.end.b") : "") + "</p></div>" +
+          (mode === "wait" ? C.btn(t("h.end.now"), { kind: "primary", block: true, id: "finish" }) : mode === "fin" ? C.btn(t("h.fin.btn"), { kind: "primary", block: true, href: sess.data.paid ? "done.html" : "done.html?state=moment", iconEnd: "right" }) : "");
+        if (mode === "wait") endEl.scrollIntoView({ block: "nearest", behavior: App.reduce ? "auto" : "smooth" });
+      }
+      if (mode !== "wait") return;
+      var p = held[held.length - 1], line = $("#term-end-p");
+      function tick() { line.innerHTML = t("h.end.in", { n: "<b>" + Math.max(1, Math.ceil((UNDO_MS - (Date.now() - p.t0)) / 1000)) + "</b>" }); }
+      tick(); endT = setInterval(tick, 100);
+    }
+    function goDone(ms) { leaving = true; endPaint(); setTimeout(function () { location.href = "done.html?state=moment"; }, ms); }
+    /* "Finish now": every pick still inside its undo window is sent at once and the day done screen opens */
+    endEl.addEventListener("click", function (e) {
+      if (!e.target.closest("#finish")) return;
+      heldPicks().forEach(function (p) { clearTimeout(p.timer); p.sync = "saving"; });
+      leaving = true; paint(false); goDone(0);
+    });
+    function paint(focus) {
+      term.innerHTML = list(); endPaint();
+      var day5 = $("#day5"), sg = segs(); for (var i = 0; i < 5; i++) day5.children[i].className = sg[i] ? "is-" + sg[i] : "";
+      $("#cnt").textContent = count();
+      if (focus) { var h = $("#open-q"); if (h) h.focus({ preventScroll: true }); }
+    }
+    function confirm(n) { setTimeout(function () { if (picks[n]) { picks[n].sync = "ok"; paint(false); var seg = $("#day5").children[n - 1]; seg.classList.add("is-fill"); } }, 1300 + Math.random() * 800); }
+    if (S === "syncing") confirm(2);
+    document.addEventListener("click", function (e) { if (e.target.closest("[data-retry-now]")) { var b = $(".banner"); confirm(2); setTimeout(function () { if (b) b.remove(); }, 1500); } });
+    term.addEventListener("click", function (e) {
+      var o = e.target.closest("[data-open]"); if (o) { current = +o.getAttribute("data-open"); paint(true); return; }
+      var u = e.target.closest("[data-undo]");
+      if (u) {   /* Undo: the pick is dropped before it was sent and the question opens again */
+        var un = +u.getAttribute("data-undo"), up = picks[un]; if (!up || up.sync !== "held") return;
+        clearTimeout(up.timer); delete picks[un]; keep(); current = un; paint(true); App.live(t("h.undone", { n: un })); return;
+      }
+      var b = e.target.closest("[data-pick]"); if (!b || b.disabled) return;
+      if (App.offline) { App.toast(t("h.offline"), { key: "offline" }); return; }   /* the answers look switched off, and a tap says why */
+      if (Date.now() - lastPick < 400) return;   /* a quick double tap never answers two questions */
+      lastPick = Date.now();
+      var n = +b.getAttribute("data-pick"), dir = b.getAttribute("data-dir");
+      var p = picks[n] = { dir: dir, sync: "held", t0: Date.now() }; keep(); current = firstOpen();
+      p.timer = setTimeout(function () {
+        p.sync = "saving"; paint(false); confirm(n);
+        var open = Q.some(function (q) { return picks[q.n] && picks[q.n].sync === "held"; });
+        if (count() === 5 && !open && !leaving) goDone(App.reduce ? 0 : 500);
+      }, UNDO_MS);
+      try { if (navigator.vibrate) navigator.vibrate(10); } catch (err) {}
+      App.live(t("h.live.picked", { choice: Q[n - 1][dir], k: 5 - count() }));
+      paint(true);
+    });
+    /* Undo from the keyboard while a window is open: Z or Backspace takes back the most recent pick */
+    endPaint();
+    document.addEventListener("keydown", function (e) {
+      if ((e.key !== "z" && e.key !== "Z" && e.key !== "Backspace") || e.repeat || e.altKey || e.ctrlKey || e.metaKey || $("#sheet-root.is-open")) return;
+      var u = App.$$("[data-undo]", term).sort(function (a, b) { return picks[+b.getAttribute("data-undo")].t0 - picks[+a.getAttribute("data-undo")].t0; })[0];
+      if (u) { e.preventDefault(); u.click(); }
+    });
+  } });
+})();
+</script>
+</body>
+</html>

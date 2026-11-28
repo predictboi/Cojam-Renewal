@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0F131B">
+<title>Cojam</title>
+<link rel="icon" href="assets/cojam-mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chivo+Mono:wght@400..700&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-jp-dynamic-subset.min.css">
+<link rel="stylesheet" href="tokens.css">
+<link rel="stylesheet" href="components.css">
+</head>
+<body>
+<noscript>Cojam needs JavaScript to show today's predictions.</noscript>
+<script src="assets/i18n.js"></script>
+<script src="assets/mock.js"></script>
+<script src="assets/app.js"></script>
+<script>
+/* S2 My stakes. States: default, claimable (a large stake with interest to claim), empty, loading, error, offline, hold. Interest ticks every second (every 10 s under reduced motion). */
+(function () {
+  var t = N.t, M = N.M, st = N.state, DAY = 86400000;
+  var stakes = st === "empty" ? [] : st === "claimable" ? [M.stakeBig].concat(M.stakes) : M.stakes;
+  function calc(s) {
+    var el = Math.min(s.days * 86400, (Date.now() - +s.start) / 1000), per = s.amount * s.rate / 100 / 365 / 86400;
+    return { interest: per * el, per: per, day: Math.min(s.days, Math.floor(el / 86400) + 1), unlocked: el >= s.days * 86400, unlock: new Date(+s.start + s.days * DAY), pct: Math.min(100, el / (s.days * 864)) };
+  }
+  function f4(n) { return N.num(n, 4); }
+  function tabs() { return '<nav class="ptabs" aria-label="' + t("s.switch") + '"><a class="ptab" href="' + N.href("staking.html") + '">' + t("s.new") + '</a><a class="ptab" href="' + N.href("stakes.html") + '" aria-current="page">' + t("s.tab.mine") + '<span class="count">' + stakes.length + "</span></a></nav>"; }
+  function pos(s) {
+    var c = calc(s), act;
+    if (c.unlocked) act = '<button type="button" class="btn btn-1" data-wd="' + s.id + '">' + t("m.withdraw", { a: f4(s.amount + c.interest) }) + '</button><p class="fine center">' + t("m.withint", { p: N.num(s.amount), i: f4(c.interest) }) + "</p>";
+    else if (c.interest >= M.minClaim) act = '<button type="button" class="btn btn-2 btn-wide" data-claim="' + s.id + '">' + t("m.claim", { i: N.num(c.interest, 2) }) + "</button>";
+    else act = '<p class="fine">' + t("m.claim.gap", { g: N.num(M.minClaim - c.interest, 2) }) + "</p>";
+    if (st === "hold" && (c.unlocked || c.interest >= M.minClaim)) act += '<p class="fine center">' + t("hold.fee.line") + "</p>";
+    return '<article class="pos" data-stake="' + s.id + '"><div class="pos-h">' + N.fig(N.num(s.amount), "CT") + '<span class="lbl">' + t("m.card.period", { d: s.days, r: s.rate }) + "</span></div>" +
+      '<div class="prog" role="img" aria-label="' + N.esc(t("m.day", { x: c.day, d: s.days })) + '"><i style="width:' + c.pct.toFixed(1) + '%"></i></div>' +
+      '<div class="prog-k"><span>' + (c.unlocked ? '<span class="chip chip-hit">' + t("m.unlocked") + "</span>" : t("m.day", { x: c.day, d: s.days })) + "</span><span>" + (c.unlocked ? t("m.started", { date: N.date(s.start) }) : t("m.unlocks", { date: N.date(c.unlock) })) + "</span></div>" +
+      '<dl><div class="kv"><dt>' + t("m.interest") + '</dt><dd class="num"><span data-tick="' + s.id + '">' + f4(c.interest) + "</span> CT</dd></div></dl>" + act + "</article>";
+  }
+  function body() {
+    if (st === "loading") return tabs() + N.skel(["fig", "cells", "row", "row", "row"]);
+    if (st === "error") return tabs() + N.errorBox("e.rpc");
+    if (st === "empty") return tabs() + N.emptyBox(t("m.empty.h"), t("m.empty.b"), t("m.empty.btn"), N.href("staking.html"));
+    var total = 0, sofar = 0, claim = 0;
+    stakes.forEach(function (s) { var c = calc(s); total += s.amount; sofar += c.interest; if (c.unlocked || c.interest >= M.minClaim) claim += c.interest; });
+    return tabs() + (st === "hold" ? '<div class="mt-16">' + N.hold("hold.stakes") + "</div>" : "") +
+      '<section class="hero mt-16"><p class="lbl">' + t("m.staked") + "</p>" + N.fig(N.num(total), "CT", "fig-l") + "</section>" +
+      N.cells([{ k: t("m.sofar"), v: '<span class="fig"><span id="sofar">' + f4(sofar) + "</span><small>CT</small></span>" }, { k: t("m.claimable"), v: N.fig(f4(claim), "CT") }]) +
+      "<div>" + stakes.map(pos).join("") + "</div>" +
+      N.details(t("m.closed.q", { n: M.stakesClosed.length }), M.stakesClosed.map(function (s) { return '<div class="kv"><dt>' + N.num(s.amount) + " CT, " + t("m.card.period", { d: s.days, r: s.rate }) + '</dt><dd class="num">' + t("m.paidout", { a: N.num(s.paid, 2) }) + "</dd></div>"; }).join(""));
+  }
+  N.page({
+    tab: "stake", title: t("s.title"), body: body,
+    after: function (app) {
+      if (!app.querySelector("#sofar") || st === "offline") return;
+      setInterval(function () {
+        var sum = 0; stakes.forEach(function (s) { var c = calc(s); sum += c.interest; var el = app.querySelector('[data-tick="' + s.id + '"]'); if (el) el.innerHTML = N.tight(f4(c.interest)); });
+        app.querySelector("#sofar").innerHTML = N.tight(f4(sum));
+      }, N.reduced ? 10000 : 1000);
+      app.addEventListener("click", function (e) {
+        var c = e.target.closest("[data-claim]"), w = e.target.closest("[data-wd]"), b = c || w; if (!b) return;
+        var label = b.textContent; b.disabled = true; b.innerHTML = '<i class="spin"></i>' + t("tx.send.h");
+        setTimeout(function () { b.textContent = label; N.toast(c ? t("m.ok.claim", { i: label.replace(/[^\d.,]/g, "") }) : t("m.ok.wd", { a: label.replace(/[^\d.,]/g, "") })); if (w) b.closest(".pos").remove(); else b.disabled = false; }, 1200);
+      });
+    }
+  });
+})();
+</script>
+</body>
+</html>
