@@ -181,7 +181,6 @@ export default function HomeCards() {
         });
       },
     });
-    el.focus({ preventScroll: true });
     // the very first card a player ever sees leans right, then left, once: each lean shows that answer as a proof stamp
     let nudge: Animation[] = [], nudgeT: ReturnType<typeof setTimeout>[] = [];
     const stopNudge = () => { nudge.forEach((a) => { try { a.cancel(); } catch { /* */ } }); nudge = []; nudgeT.forEach(clearTimeout); nudgeT = []; el.querySelectorAll('.choice.is-hot').forEach((b) => b.classList.remove('is-hot')); el.removeAttribute('data-nudge'); };
@@ -358,9 +357,9 @@ function PickBar({ held, items, slots, count, offline, onUndo, focusUndo, sendin
     const s = slots[p.slot]; const dir: Dir = p.choice === 1 ? 'l' : 'r';
     content = (
       <>
-        <span className="fuse" aria-hidden="true"><i key={p.id + ':' + p.sendAfter} style={{ ['--gone' as string]: '-' + gone + 'ms', animationPlayState: isPaused ? 'paused' : undefined }} /></span>
         <span className="pickbar-msg" id="pick-msg"><Icon name="check" size={16} /><span dangerouslySetInnerHTML={{ __html: label(p) }} /></span>
         <button type="button" className="undo" id="undo" ref={undoRef} aria-label={t('h.undo.aria', { n: p.slot + 1, choice: s ? s.q[dir] : '' })} onClick={onUndo} onFocus={onFocus} onBlur={onBlur}>
+          <span className="fuse fuse--fill" aria-hidden="true"><i key={p.id + ':' + p.sendAfter} style={{ ['--gone' as string]: '-' + gone + 'ms', animationPlayState: isPaused ? 'paused' : undefined }} /></span>
           <Icon name="undo" size={18} /><span>{t('h.undo')}</span><kbd aria-hidden="true">Z</kbd>
         </button>
       </>

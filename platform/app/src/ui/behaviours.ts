@@ -24,7 +24,7 @@ const $$ = <E extends Element = HTMLElement>(sel: string, root: ParentNode = doc
 type DgEl = HTMLElement & { _dg?: HTMLElement[]; _s?: string };
 export function digits(el: DgEl, str: string) {
   if (!el._dg || el._s!.length !== str.length || !el._dg[0]?.isConnected) {
-    el.innerHTML = str.replace(/./g, (c) => '<i class="' + (/\d/.test(c) ? 'dg' : 'dgs') + '">' + c + '</i>');
+    el.innerHTML = str.replace(/./g, (c) => '<i class="' + (/\d/.test(c) ? 'dg' : c === ':' ? 'dgs dgc' : 'dgs') + '">' + c + '</i>');
     el._dg = Array.from(el.children) as HTMLElement[]; el._s = str; return;
   }
   for (let i = 0; i < str.length; i++) if (str[i] !== el._s![i]) {
@@ -77,6 +77,14 @@ function enhance(root: ParentNode) {
     put();
     x._tk = window.setInterval(() => { if (!el.isConnected) { clearInterval(x._tk); return; } put(); }, reduceMotion() ? 10000 : 1000);
   });
+}
+
+/** the reason a key was refused: a short line under the field (also announced), gone after a moment. The value is never changed. */
+function refuse(el: HTMLElement, why: string) {
+  const f = el.closest('.field'); if (!f) return;
+  let n = f.querySelector('.field-refuse') as (HTMLElement & { _t?: number }) | null;
+  if (!n) { n = document.createElement('p'); n.className = 'field-refuse'; n.setAttribute('role', 'status'); const box = f.querySelector('.field-box'); box?.parentNode?.insertBefore(n, box.nextSibling); }
+  n.textContent = why; clearTimeout(n._t); const m = n; n._t = window.setTimeout(() => m.remove(), 2600);
 }
 
 /* An answer label never breaks inside a word, in any language: it wraps only at a space or a phrase boundary (CSS), and a
@@ -144,8 +152,11 @@ export function installBehaviours() {
   document.addEventListener('beforeinput', (e) => {
     const el = e.target as HTMLInputElement; const ie = e as InputEvent;
     if (!el?.closest?.('.field-box--fig') || ie.inputType !== 'insertText' || !ie.data) return;
-    if (!/^[0-9０-９.,．，]+$/.test(ie.data) || (/[.．]/.test(ie.data) && /[.．]/.test(el.value) && el.selectionStart === el.selectionEnd)) e.preventDefault();
+    const bad = !/^[0-9０-９.,．，]+$/.test(ie.data), twice = !bad && /[.．]/.test(ie.data) && /[.．]/.test(el.value) && el.selectionStart === el.selectionEnd;
+    if (bad || twice) { e.preventDefault(); refuse(el, t(bad ? 'pp.numonly' : 'pp.onepoint')); }
   });
+  // the next accepted key clears the reason
+  document.addEventListener('input', (e) => { const f = (e.target as Element)?.closest?.('.field'), n = f?.querySelector('.field-refuse') as (HTMLElement & { _t?: number }) | null; if (n) { clearTimeout(n._t); n.remove(); } });
   document.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter' || e.isComposing) return; const el = e.target as HTMLElement;
     if (!el || el.tagName !== 'INPUT' || !el.closest('.field-box') || el.closest('form, #sheet')) return;

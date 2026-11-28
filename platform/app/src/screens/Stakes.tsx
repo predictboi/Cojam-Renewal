@@ -35,7 +35,7 @@ export default function Stakes() {
   const loading = st === 'loading' || q.isPending;
   // the unlock moment: the tag flips and the withdraw button appears, no reload
   useEffect(() => { if (st !== 'unlocking') return; const tm = setTimeout(() => { setTick((x) => x + 1); live(t('m.unlocked')); }, 6500); return () => clearTimeout(tm); }, [st]);
-  useEffect(() => { if (st === 'claim') showTx('success', { key: 'claim', label: '', success: { title: t('m.ok.claim', { i: '263.01' }) }, exec: async () => '' }); }, [st]);
+  useEffect(() => { if (st === 'claim') showTx('success', { key: 'claim', label: '', success: { stamp: 'pp.st.claimed', title: t('m.ok.claim', { i: '263.01' }) }, exec: async () => '' }); }, [st]);
 
   const stakes = q.data?.positions || [];
   const total = stakes.reduce((a, s) => a + s.amount, 0);
@@ -68,13 +68,13 @@ export default function Stakes() {
   const onClick = (e: React.MouseEvent) => {
     const el = e.target as Element;
     const c = el.closest('[data-claim]') as HTMLButtonElement | null, wd = el.closest('[data-wd]') as HTMLButtonElement | null;
-    if (c && !c.disabled) { const s = stakes.find((x) => x.id === c.getAttribute('data-claim'))!; const i = F.dec(calc(s).interest, 2); void runTx({ key: 'claim:' + s.id, label: t('m.chip.claim', { i }), review: rv(t('m.claim', { i }), F.ct(calc(s).interest)), success: { title: t('m.ok.claim', { i }) }, exec: (p) => actions.claim(s.id, held, p) }); }
+    if (c && !c.disabled) { const s = stakes.find((x) => x.id === c.getAttribute('data-claim'))!; const i = F.dec(calc(s).interest, 2); void runTx({ key: 'claim:' + s.id, label: t('m.chip.claim', { i }), review: rv(t('m.claim', { i }), F.ct(calc(s).interest)), success: { stamp: 'pp.st.claimed', title: t('m.ok.claim', { i }) }, exec: (p) => actions.claim(s.id, held, p) }); }
     // the withdrawal of an unlocked stake always passes a short review: the stake, the interest and the total
     if (wd && !wd.disabled) {
       const s = stakes.find((x) => x.id === wd.getAttribute('data-wd'))!; const a = F.dec(out(s), 4), cc = calc(s);
       void runTx({ key: 'wd:' + s.id, label: t('m.chip.wd', { a }),
         review: { title: t('m.withdraw', { a }), rows: [[t('pp.stake'), F.ct(s.amount)], [t('m.interest'), F.ct(cc.interest)], [t('pp.total'), F.ct(out(s)), true], ...feeRows()], note: held ? t('hold.fee.line') + '. ' + t('hold.fee.rv') : '', confirm: t('m.withdraw', { a }) },
-        success: { title: t('m.ok.wd', { a }) }, exec: (p) => actions.withdrawStake(s.id, held, p) });
+        success: { stamp: 'pp.st.out', title: t('m.ok.wd', { a }) }, exec: (p) => actions.withdrawStake(s.id, held, p) });
     }
   };
   const hq = held ? '?state=hold' : '';

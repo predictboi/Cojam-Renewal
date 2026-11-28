@@ -88,7 +88,7 @@ export default function HomeList() {
     if (s.answered) {
       const dir: 'l' | 'r' = s.m.choice.chain ? (s.m.choice.chain === 1 ? 'l' : 'r') : it ? (it.choice === 1 ? 'l' : 'r') : n === 2 && st ? 'l' : 'r';
       const isHeld = v === 'held';
-      const undo = isHeld ? '<button type="button" class="undo" data-undo="' + n + '" aria-label="' + esc(t('h.undo.aria', { n, choice: q[dir] })) + '"><span class="fuse fuse--btn" aria-hidden="true"><i style="--gone:-' + (Date.now() - it!.createdAt) + 'ms"></i></span>' + icon('undo', 18) + '<span>' + t('h.undo') + '</span></button>' : '';
+      const undo = isHeld ? '<button type="button" class="undo" data-undo="' + n + '" aria-label="' + esc(t('h.undo.aria', { n, choice: q[dir] })) + '"><span class="fuse fuse--fill" aria-hidden="true"><i style="--gone:-' + (Date.now() - it!.createdAt) + 'ms"></i></span>' + icon('undo', 18) + '<span>' + t('h.undo') + '</span></button>' : '';
       const saving = s.seg === 'pend' && !isHeld;
       // a sent answer says plainly that it is final
       return '<li class="trow is-done">' + num + '<div><p class="trow-q">' + esc(q.title) + '</p><div class="trow-foot"><span class="trow-state">' +
@@ -101,7 +101,7 @@ export default function HomeList() {
         '<div class="choices">' + (['l', 'r'] as const).map((d) => '<button type="button" class="choice" data-pick="' + n + '" data-dir="' + d + '"' + (offline ? ' aria-disabled="true"' : '') + ' aria-label="' + esc(t('h.pick.aria', { choice: q[d], q: q.title })) + '">' + (d === 'l' ? icon('left', 18) : '') + '<span>' + esc(q[d]) + '</span>' + (d === 'r' ? icon('right', 18) : '') + '</button>').join('') + '</div>' +
         '<p class="qcard-final">' + (offline ? t('h.offline') : t('h.final')) + '</p></div></li>';
     }
-    return '<li class="trow' + (failed ? ' is-fail' : '') + '">' + num + '<div><p class="trow-q">' + esc(q.title) + '</p><div class="trow-foot">' + cat +
+    return '<li class="trow' + (failed ? ' is-fail' : '') + '">' + num + '<div><div class="trow-qw"><span class="trow-kick">' + t('cat.' + q.cat) + '</span><p class="trow-q">' + esc(q.title) + '</p></div><div class="trow-foot">' +
       (failed ? '<span class="trow-state">' + icon('warn', 16) + t('h.t.notsaved') + '</span>' : '') +
       btn(failed ? t('h.t.again') : t('h.t.pick'), { sm: true, attrs: 'data-open="' + n + '"' }) + '</div></div>' + thumb(q.img, q.cat) + '</li>';
   }

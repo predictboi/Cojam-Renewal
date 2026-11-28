@@ -1500,12 +1500,71 @@ button.pin .tag, aside.pin .tag { background: var(--ink-2); color: var(--on-ink)
    ===================================================================== */
 /* an answer label wraps only at a space or a phrase boundary, never inside a word; App.fitChoices steps the size down when a word does not fit */
 .choice span { overflow-wrap: normal; word-break: keep-all; }
-:lang(ja) .choice span { word-break: auto-phrase; }
 /* short phones: with the pick bar pinned, the card must show both answers whole without scrolling. The second sentence of the source line (when the AI settles it)
    is in the Rules sheet, one tap away, so it gives way first. */
-@media (max-height: 600px) { .is-home .qmeta-t span:nth-child(2) { display: none; } }
+@media (max-height: 600px) {
+  .is-home .qmeta-t span:nth-child(2) { display: none; }
+  .is-home .qcard h2 { font-size: 1.3125rem; }
+  .is-home .qcard h2.is-long { font-size: 1.1875rem; }
+  .is-home .qcard h2.is-xlong { font-size: 1.0625rem; }
+  .is-home .qcard-body { gap: var(--s-8); padding-top: var(--s-10); padding-bottom: var(--s-10); }
+  .is-home .qmeta { min-height: 44px; }
+}
 /* home: a toast never covers the answers or the pick bar; it comes in under the dateline */
 .is-home ~ .toasts { top: calc(var(--mast-h) + 40px + env(safe-area-inset-top)); bottom: auto; align-content: start; }
 .is-home ~ .toasts .toast { transform-origin: 50% 0; }
 @starting-style { .is-home ~ .toasts .toast { transform: translateY(-120%) rotate(-1.5deg); } }
 .is-home ~ .toasts .toast.is-out { transform: translateY(-120%); }
+
+/* =====================================================================
+   REVIEW G (round 5)
+   ===================================================================== */
+/* 2. a ticking slab figure: the colon has its own centred cell, so a digit never touches it at any size */
+[data-dg] .dgc, [data-tick] .dgc, .dgc { display: inline-block; width: 0.42em; text-align: center; }
+/* 5. the pending "+50" sits inside the points pill, under the balance, so the nameplate keeps its words at 360 px on every tab */
+.pts-in:has(.pts-tag) { flex-direction: column; justify-content: center; gap: 1px; height: 36px; }
+.pts-tag { padding-left: 0; border-left: 0; font-size: 12px; line-height: 1; }
+/* 6. the time left to undo is a draining fill inside the Undo button: the time and the control are one object */
+.undo .fuse--fill { position: absolute; inset: 0; left: 0; right: 0; top: 0; bottom: 0; width: auto; height: auto; background: none; }
+.undo .fuse--fill i { height: 100%; background: color-mix(in srgb, var(--ink) 20%, var(--sheet)); box-shadow: inset 0 -3px 0 var(--ink); }
+.undo > svg, .undo > span:not(.fuse), .undo > kbd { position: relative; z-index: 1; }
+@media (prefers-reduced-motion: reduce) {
+  /* reduced motion: the fill stands still (the announcement carries the time) */
+  .undo .fuse--fill i { animation: none !important; transform: none !important; }
+}
+/* 13. ranking: one face for every name (the text face); the slab stays on the rank numerals and the top three keep their size step */
+.krow-name, .krow--lead .krow-name, .krow-name .mono, .krow--lead .krow-name .mono { font-family: var(--font-text); letter-spacing: 0; }
+.krow--lead .krow-name { font-weight: var(--fw-bold); }
+.krow-name .mono, .krow--lead .krow-name .mono { font-size: 1em; font-weight: inherit; }
+
+/* 4. day done, while the last pick can still be undone and while it is saved: "+100P" stands in its final place as an outline and fills in when it is paid */
+.is-moment.is-saving .done-fig { opacity: 1; }
+.done-fig { transition: color 320ms var(--ease-out), -webkit-text-stroke-color 320ms var(--ease-out); -webkit-text-stroke: 1.5px transparent; paint-order: stroke fill; }
+.done-fig.is-wait, .is-moment.is-saving .done-fig { color: transparent; -webkit-text-stroke: 1.5px var(--ink-2); }
+@supports not (-webkit-text-stroke: 1px black) { .done-fig.is-wait, .is-moment.is-saving .done-fig { color: var(--ink-3); } }
+
+/* 1. home card from 600 px of height: the picture always stays (72 px at least); the card closes up around it first */
+.qcard.is-snug .qimg { min-height: 72px; margin-top: var(--s-8); }
+.qcard.is-snug .qmeta-t span:nth-child(2) { display: none; }
+.qcard.is-snug h2 { font-size: 1.3125rem; }
+.qcard.is-snug h2.is-long { font-size: 1.1875rem; }
+.qcard.is-snug h2.is-xlong { font-size: 1.0625rem; }
+.qcard.is-snug .qcard-body { gap: var(--s-8); padding-top: var(--s-8); padding-bottom: var(--s-8); }
+.qcard.is-snug .qmeta { min-height: 44px; }
+/* 7. the reason a key was refused */
+.field-refuse { margin-top: var(--s-4); color: var(--down); font-size: var(--fs-13); font-weight: var(--fw-mid); }
+/* 12. the fiat estimate (Korean only: the won is the reader's currency) sits on the label line, never on a row of its own */
+.lbl-row { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-12); }
+.lbl-row .sub { color: var(--ink-2); font-size: var(--fs-13); white-space: nowrap; }
+@media (max-height: 660px) { .wrow { min-height: 44px; padding-top: var(--s-4); padding-bottom: var(--s-4); } }
+/* 3. first run with the invite code open: the drawing gives way first, then the panel scrolls; the text is never the part that is cut */
+.auth--onb:has(#code-form:not([hidden])) .onb-art { height: clamp(64px, 14dvh, 280px); }
+@media (max-height: 600px) { .auth--onb:has(#code-form:not([hidden])) .onb-art { height: 56px; } }
+/* 10. the drawing on the first run card prints a real question picture through the halftone */
+.art-cards .art-img { position: relative; overflow: hidden; border: 0; background: var(--paper-2); isolation: isolate; --ht-cell: 4px; }
+/* the drawing is centred in its band whatever its unscaled size (its box can be taller than the band) */
+.onb-art { position: relative; }
+.onb-art > * { position: absolute; left: 50%; top: 50%; translate: -50% -50%; }
+/* the own bar without a rank: the sentence wraps, it is never cut */
+aside.pin--wide .pin-main, aside.pin--wide .pin-main > b, aside.pin--wide .pin-main > span { white-space: normal; overflow: visible; text-overflow: clip; }
+.xb { display: inline-block; }

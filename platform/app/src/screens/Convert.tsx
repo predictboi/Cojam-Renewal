@@ -37,6 +37,7 @@ export default function Convert() {
   let err = '', fix = '';
   const use = (f: number) => btn(t('c.fix', { f: F.int(f) }), { sm: true, attrs: 'data-fix="' + f + '"' });
   if (p.bad) err = t('pp.c.nan');
+  else if (!p.empty && (p.decimals || 0) > 0) err = t('pp.c.whole');   // a value with decimals is refused, never rounded to another number
   else if (!p.empty && v > bal) { err = t('c.e.bal', { p: F.int(bal) }); if (maxP) fix = use(maxP); }
   else if (!p.empty && v < min) err = t('c.e.min');
   else if (!p.empty && v % rate) { const f = Math.floor(v / rate) * rate; err = t('c.e.step', { f: F.int(f) }); fix = use(f); }
@@ -49,7 +50,7 @@ export default function Convert() {
   const txCfg = (pts: number): TxCfg => ({
     key: 'convert', label: t('c.chip', { p: F.int(pts) }),
     review: { title: t('c.btn', { p: F.int(pts), n: pts / rate }), rows: [[t('pp.points'), F.pts(pts)], [t('c.get'), F.ct(pts / rate), true], [t('c.ok.left'), F.pts(bal - pts)]], note: t('pp.c.final'), confirm: t('c.btn', { p: F.int(pts), n: pts / rate }) },
-    success: { title: t('c.ok.h', { p: F.int(pts), n: pts / rate }), rows: [[t('c.ok.left'), F.pts(bal - pts)], [t('c.ok.ct'), F.ct((d?.ct || 0) + pts / rate)]] },
+    success: { stamp: 'pp.st.conv', title: t('c.ok.h', { p: F.int(pts), n: pts / rate }), rows: [[t('c.ok.left'), F.pts(bal - pts)], [t('c.ok.ct'), F.ct((d?.ct || 0) + pts / rate)]] },
     exec: (pr) => actions.convert(pts, pr),
     onSuccess: () => setVal(''),
     // after a conversion the form is cleared and the wallet opens

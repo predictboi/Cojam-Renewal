@@ -19,7 +19,7 @@ export interface TxCfg {
   label: string;
   review?: { title?: string; rows: Row[]; check?: string; note?: string; warn?: string; confirm?: string } | null;
   stepsTitle?: string; steps?: string[];
-  success: { title: string; rows?: Row[]; btn?: { label: string; href: string }; fig?: string };
+  success: { title: string; rows?: Row[]; btn?: { label: string; href: string }; fig?: string; stamp?: string };
   cancelMsg?: string;
   failKey?: string;
   exec: (p: TxProgress) => Promise<string>;
@@ -50,7 +50,7 @@ function doneFig(ok: TxCfg['success']): string {
     if (hit) fig = hit[1] + ' ' + hit[2];
   }
   const parts = fig ? /^(.*?)(?:\s(CT|P))?$/.exec(fig) : null;
-  return '<div class="sheet-done" aria-hidden="true">' + rstamp('hit', t('pp.filed')) + (parts ? '<span class="sheet-done-fig">' + parts[1] + (parts[2] ? '<small>' + parts[2] + '</small>' : '') + '</span>' : '') + '</div>';
+  return '<div class="sheet-done" aria-hidden="true">' + rstamp('hit', t(ok.stamp || 'pp.filed')) + (parts ? '<span class="sheet-done-fig">' + parts[1] + (parts[2] ? '<small>' + parts[2] + '</small>' : '') + '</span>' : '') + '</div>';
 }
 
 function view(state: TxState, cfg: TxCfg, hash: string | null): string {

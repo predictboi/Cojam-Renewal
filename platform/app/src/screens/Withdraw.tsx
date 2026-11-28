@@ -56,7 +56,7 @@ export default function Withdraw() {
       key: 'withdraw', label: t('x.chip', { a: A }),
       review: { title: t('x.rv.h', { a: A }), rows: [[t('x.rv.to'), '<span class="addr-v" translate="no">' + F.groups(dest) + '</span>'], [t('x.amount'), F.ct(n), true], [t('x.fee'), t('x.fee.v', { f: fee })]], check: t('x.rv.check'), confirm: t('x.rv.h', { a: A }) },
       // a finished withdrawal shows where it went and what is left
-      success: { title: t('x.ok', { a: A }), rows: [[t('x.rv.to'), '<span class="addr-v" translate="no">' + F.groups(dest) + '</span>'], [t('pp.balance'), F.ct(Math.round((bal - n) * 1e4) / 1e4)]] },
+      success: { stamp: 'pp.st.sent', title: t('x.ok', { a: A }), rows: [[t('x.rv.to'), '<span class="addr-v" translate="no">' + F.groups(dest) + '</span>'], [t('pp.balance'), F.ct(Math.round((bal - n) * 1e4) / 1e4)]] },
       exec: (pr) => actions.transferCt(getAddress(dest) as Address, raw, pr),
       onSuccess: () => { setAmt(''); setTo(''); setTouched(false); },
       onDone: () => { if (!st) nav('/wallet'); },

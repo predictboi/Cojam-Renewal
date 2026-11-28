@@ -32,7 +32,7 @@ export default function Wallet() {
     const hit = d.pendingHit;
     body = (offline ? note('warn', t('w.offline')) : '') + (held ? hold(t('hold.wallet')) : '') +
       '<section class="msec" aria-labelledby="ct-h">' + (err ? note('warn', t('e.rpc'), btn(t('common.retry'), { sm: true, icon: 'refresh', attrs: 'data-reload' })) : '') +
-      '<div class="mhero"><h2 class="lbl" id="ct-h">' + t('w.avail') + '</h2><p class="fig fig--xl" id="ct-fig">' + (ct ? F.dec(ct) + '<small>CT</small>' : '<span class="is-zero">0 CT</span>') + '</p>' + (ko ? '<p class="sub">' + F.krw(ct) + '</p>' : '') + '</div>' +
+      '<div class="mhero"><div class="lbl-row"><h2 class="lbl" id="ct-h">' + t('w.avail') + '</h2>' + (ko ? '<span class="sub">' + F.krw(ct) + '</span>' : '') + '</div><p class="fig fig--xl" id="ct-fig">' + (ct ? F.dec(ct) + '<small>CT</small>' : '<span class="is-zero">0 CT</span>') + '</p></div>' +
       '<div class="acts">' + btn(t('w.deposit'), { icon: 'download', href: '/deposit', disabled: offline, id: 'dep' }) + btn(t('w.withdraw'), { icon: 'share', href: '/withdraw', disabled: offline, id: 'wd' }) + '</div>' +
       '<div class="list"><div class="wrow wrow--addr"><span>' + t('pp.addr') + '</span>' + addr(a, { id: 'copy-addr' }) + '</div>' +
       '<a class="wrow" href="/stakes"><span>' + t('w.staked') + '</span><b id="staked">' + F.dec(d.staked) + ' <small>CT</small></b><span class="wrow-go"><span class="sr-only">' + t('s.mine', { n: d.openStakes }) + '</span><span aria-hidden="true">' + d.openStakes + '</span>' + icon('chev', 16) + '</span></a>' +

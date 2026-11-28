@@ -8,7 +8,7 @@ import { api } from '../api';
 import { ApiError } from '../api/errors';
 import { LANGS, LANG_NAMES, setLang, t, useLang, type Lang } from '../i18n';
 import { esc } from '../lib/fmt';
-import { day5, icon, plate } from '../ui/h';
+import { day5, halftone, icon, plate } from '../ui/h';
 import { Html, Icon, Seg, Shell } from '../ui/kit';
 import { useOffline, usePreset } from '../state/app';
 import { loadPlayKey, playKeyValid } from '../chain/playKey';
@@ -105,11 +105,13 @@ export default function FirstRun() {
       if (hid) hid.hidden = true; f.style.transform = k < 1 ? 'scale(' + k.toFixed(3) + ')' : '';
     });
     fitArt(); window.addEventListener('resize', fitArt); void document.fonts?.ready.then(fitArt);
-    return () => window.removeEventListener('resize', fitArt);
+    // the band shrinks when the invite code opens
+    const ro = new ResizeObserver(fitArt); rootRef.current?.querySelectorAll('.onb-art').forEach((b) => ro.observe(b));
+    return () => { window.removeEventListener('resize', fitArt); ro.disconnect(); };
   }, [lang]);
 
   const art = (i: number) => {
-    if (i === 1) return '<div class="art-fig"><div class="art-cards" aria-hidden="true"><i></i><i><span class="art-img"></span><span class="art-ch"><b></b><b></b></span></i></div>' + day5(['done', 'done', 'pend', '', ''], { label: ' ' }) + '</div>';
+    if (i === 1) return '<div class="art-fig"><div class="art-cards" aria-hidden="true"><i></i><i><span class="art-img">' + halftone('/assets/img/q1-bitcoin.svg', 'crypto', 320, 240) + '</span><span class="art-ch"><b></b><b></b></span></i></div>' + day5(['done', 'done', 'pend', '', ''], { label: ' ' }) + '</div>';
     if (i === 2) return '<div class="art-fig"><div class="two"><div><p class="fig">+100P</p><p class="small muted">' + t('o.2.a') + '</p></div><div><p class="fig">+50P</p><p class="small muted">' + t('o.2.c') + '</p></div></div>' + day5(['done', 'done', 'done', 'done', 'done'], { label: ' ' }) + '</div>';
     return '<div class="art-swap" aria-hidden="true"><span class="art-coin">1,000P</span>' + icon('right', 28) + '<span class="art-coin">1 CT</span></div>';
   };

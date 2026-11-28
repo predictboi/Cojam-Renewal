@@ -765,5 +765,14 @@
  "pp.x.sum": "A letter in this address is wrong. Paste it again from where you copied it.",
  "pp.c.nan": "Enter points as a number, like 1,000.",
  "pp.live.key": "Picked {choice}. Undo within 10 seconds.",
+ "pp.st.sent": "Sent",
+ "pp.st.staked": "Staked",
+ "pp.st.conv": "Converted",
+ "pp.st.claimed": "Claimed",
+ "pp.st.out": "Withdrawn",
+ "pp.numonly": "Numbers only.",
+ "pp.onepoint": "One decimal point only.",
+ "pp.c.whole": "Points are whole numbers, like 1,000.",
+ "pp.finishnow": "Finish now",
  "pp.lede": "We email you a code."
 }

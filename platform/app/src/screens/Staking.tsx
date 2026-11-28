@@ -76,7 +76,7 @@ export default function Staking() {
     return {
       key: 'stake', label: t('s.chip', { a: A }), stepsTitle: t('tx.stake.h', { a: A }), steps: [t('tx.step1', { a: A }), t('tx.step2', { a: A })], cancelMsg: t('s.cancelled'),
       review: { title: t('s.rv.h', { a: A, d: period }), rows: [[t('s.amount'), F.ct(amt)], [t('s.period'), t('s.days', { d: period })], [t('s.apr'), rr + '%'], [t('s.interest', { d: period }), F.ct(((amt * rr) / 100) * period / 365), true]], warn: t('s.noexit', { date: unlock }), confirm: t('s.btn', { a: A }) },
-      success: { title: t('s.ok.h', { a: A }), rows: [[t('s.unlock'), unlock], [t('s.apr'), rr + '%']], btn: { label: t('s.ok.btn'), href: '/stakes' } },
+      success: { stamp: 'pp.st.staked', title: t('s.ok.h', { a: A }), rows: [[t('s.unlock'), unlock], [t('s.apr'), rr + '%']], btn: { label: t('s.ok.btn'), href: '/stakes' } },
       exec: (pr) => actions.stake(String(amt), period, pr),
       onSuccess: () => setVal(''),
       onDone: () => { if (!st) void w.refetch(); },

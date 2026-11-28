@@ -13,6 +13,8 @@ import type { RankRow, Ranking as R } from '../api/types';
 import { CONFIG } from '../config';
 
 const rankNo = (n: number) => '<span class="sr-only">' + t('k.rank.sr', { n }) + '</span><span aria-hidden="true">' + n + '</span>';
+// one face for every name in the table (the text face); the "x" of an address is shaped on its own so it never becomes a multiplication sign
+const rankName = (n: string) => (/^0x/i.test(n) ? '<span translate="no">0<span class="xb">x</span>' + esc(n.slice(2)) + '</span>' : nameHtml(n));
 const gap = (g: number) => t(g > 0 ? 'k.gap.up' : g < 0 ? 'k.gap.down' : 'k.gap.same', { n: F.int(Math.abs(g)) });
 
 export default function Ranking() {
@@ -31,7 +33,7 @@ export default function Ranking() {
   function row(r: RankRow & { gap?: number }) {
     const lead = r.prize !== undefined && r.rank <= 3;
     return '<li style="--i:' + rowN++ + '" class="krow' + (lead ? ' krow--lead' : '') + (lead && r.rank === 1 ? ' krow--first' : '') + (r.me ? ' is-me' : '') + '" data-rank="' + r.rank + '"><span class="krow-rank">' + rankNo(r.rank) + '</span>' +
-      '<p class="krow-name">' + nameHtml(r.name) + (r.me ? tag(t('k.you'), 'ink') : '') + '</p><p class="krow-pts">' + F.pts(r.points) + '</p>' +
+      '<p class="krow-name">' + rankName(r.name) + (r.me ? tag(t('k.you'), 'ink') : '') + '</p><p class="krow-pts">' + F.pts(r.points) + '</p>' +
       (r.prize === undefined ? '' : '<p class="krow-prize"><span data-prize="' + r.prize + '">' + F.prize(r.prize) + '</span><small>CT</small></p>') +
       (r.gap === undefined ? '' : '<p class="krow-gap krow-gap--one">' + (r.me ? '' : gap(r.gap)) + '</p>') + '</li>';
   }

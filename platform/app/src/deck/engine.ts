@@ -46,8 +46,20 @@ export function createDeck(root: HTMLElement, o: DeckOpts = {}): DeckApi {
   function fit() {
     root.style.minHeight = '';
     const c = live()[0]; if (!c) return;
-    c.classList.remove('is-tight', 'is-up');
-    const body = $('.qcard-body', c), top = $('.qcard-top', c), need = (top ? top.offsetHeight : 0) + (body ? body.offsetHeight : 0) + 4, room = root.clientHeight - need - 12;
+    // measured with transitions off: under reduced motion every property still transitions for a moment, and a read in the
+    // same frame would see the size of the class just removed
+    c.classList.add('is-measuring'); requestAnimationFrame(() => c.classList.remove('is-measuring'));
+    c.classList.remove('is-tight', 'is-up', 'is-snug');
+    let need = 0;
+    const measure = () => { const body = $('.qcard-body', c), top = $('.qcard-top', c); need = (top ? top.offsetHeight : 0) + (body ? body.offsetHeight : 0) + 4; return root.clientHeight - need - 12; };
+    let room = measure();
+    // From 600 px of height the card always has its picture, as a band of at least 72 px: the card closes up first (a smaller
+    // headline, tighter gaps, the second source sentence moves to Rules); if that is not enough the deck grows and the page scrolls.
+    if (window.innerHeight >= 600) {
+      if (room < 72) { c.classList.add('is-snug'); room = measure(); }
+      if (room < 72) root.style.minHeight = need + 12 + 72 + 'px';
+      return;
+    }
     if (room < 64) { c.classList.add('is-tight'); if (room > 20) { c.classList.add('is-up'); if (c.scrollHeight > c.clientHeight + 1) c.classList.remove('is-up'); } }
     if (root.clientHeight < need) root.style.minHeight = need + 'px';
   }
@@ -57,6 +69,8 @@ export function createDeck(root: HTMLElement, o: DeckOpts = {}): DeckApi {
   const onFonts = () => { if (root.isConnected) fit(); };
   void document.fonts?.ready.then(onFonts);
   document.fonts?.addEventListener?.('loadingdone', onFonts);
+  // a face can arrive before this deck exists (fonts.ready resolves early with lazy subsets): measure once more after the first paints
+  const refits = [setTimeout(onFonts, 400), setTimeout(onFonts, 1200)];
   function buzz(ms: number) { try { (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive && navigator.vibrate?.(ms); } catch { /* */ } }
   /* under the threshold the stamp is a proof (an unfilled outline that grows with the travel); at the threshold it presses in */
   function paint(card: HTMLElement, k: number, armed: boolean) {
@@ -186,7 +200,7 @@ export function createDeck(root: HTMLElement, o: DeckOpts = {}): DeckApi {
     destroy() {
       root.removeEventListener('pointerdown', down); root.removeEventListener('pointermove', move);
       root.removeEventListener('pointerup', end); root.removeEventListener('pointercancel', end);
-      root.removeEventListener('click', click); document.removeEventListener('keydown', key); window.removeEventListener('resize', onResize); document.fonts?.removeEventListener?.('loadingdone', onFonts); clearTimeout(qTimer);
+      root.removeEventListener('click', click); document.removeEventListener('keydown', key); window.removeEventListener('resize', onResize); document.fonts?.removeEventListener?.('loadingdone', onFonts); refits.forEach(clearTimeout); clearTimeout(qTimer);
       lift.remove();
     },
   };

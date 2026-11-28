@@ -96,12 +96,8 @@ export default function Done() {
     setMode('paid');
     try { (navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive && navigator.vibrate?.([12, 40, 18]); } catch { /* */ }
     live(t('toast.paid', { n: 100 }));
-    const fig = figRef.current as (HTMLElement & { _roll?: number }) | null;
-    if (fig && !reduceMotion()) {
-      const t0 = performance.now();
-      const step = (now: number) => { const k = Math.min(1, (now - t0) / 620), e = 1 - Math.pow(1 - k, 4); fig.innerHTML = num(100 * e); if (k < 1) fig._roll = requestAnimationFrame(step); };
-      fig._roll = requestAnimationFrame(step);
-    }
+    // the figure stood here in outline; it fills in (CSS), it never shows another amount
+    if (figRef.current) figRef.current.innerHTML = num(100);
     at(640, () => {
       if (modeRef.current === 'settled') return;
       const s = document.querySelector('#seal .rstamp') as HTMLElement | null;
@@ -126,6 +122,13 @@ export default function Done() {
     heroRef.current?.getAnimations?.({ subtree: true }).forEach((a) => { try { a.finish(); } catch { /* */ } });
   }
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
+  // "Finish now" ends the window; when the button gives its place to the way on, the focus follows it
+  const hadFin = useRef(false);
+  useEffect(() => {
+    const on = (e: FocusEvent) => { hadFin.current = (e.target as Element)?.id === 'fin-btn'; };
+    document.addEventListener('focusin', on); return () => document.removeEventListener('focusin', on);
+  }, []);
+  useEffect(() => { if (mode !== 'undo' && hadFin.current) { hadFin.current = false; document.getElementById('rank-btn')?.focus({ preventScroll: true }); } }, [mode]);
   /* Undo on this page takes the fifth pick back and returns to the deck, where its card is on top again */
   const undoLast = async () => {
     if (modeRef.current !== 'undo') return;
@@ -180,7 +183,8 @@ export default function Done() {
       <Html className="ph-line" html={day5(segs, { id: 'day5', label: '5/5' })} />
     </section>
   );
-  const body = btn(t('d.rank'), { kind: 'primary', block: true, href: '/ranking', iconEnd: 'right' }) +
+  // while the last pick can be undone the primary action is "Finish now"; then it gives its place to the way on
+  const body = '<div id="done-act">' + (mode === 'undo' ? btn(t('pp.finishnow'), { kind: 'primary', block: true, id: 'fin-btn' }) : btn(t('d.rank'), { kind: 'primary', block: true, href: '/ranking', iconEnd: 'right', id: 'rank-btn' })) + '</div>' +
     (wel ? '<p class="done-welnote">' + t('d.wel.note', { name: '<b translate="no">' + esc(td?.inviterName || meQ.data?.referrer?.name || (CONFIG.mockApi ? DESIGN.invite.by : '')) + '</b>', w: W }) + '</p>' : '') +
     '<section class="sec sec-rule"><div class="sh"><h2>' + t('d.picks') + '</h2><a class="linkish" href="/results">' + t('d.results') + '</a></div>' +
     (waiting ? '<p class="done-wait-n">' + t('d.waitn', { n: waiting }) + qbtn('hits', t('h.ai.h')) + '</p>' : '') +
@@ -200,9 +204,9 @@ export default function Done() {
   const lq = lastQ ? qOf(lastQ) : null, ldir: 'l' | 'r' | null = heldLast ? (heldLast.choice === 1 ? 'l' : 'r') : null;
   const undoBar = mode === 'undo' ? (
     <div className="pin pin--undo" id="undo-bar">
-      <span className="fuse" aria-hidden="true"><i style={{ ['--gone' as string]: '-' + (UNDO_MS - undoMs) + 'ms' }} /></span>
       <span className="pickbar-msg"><Icon name="check" size={16} /><span dangerouslySetInnerHTML={{ __html: lq && ldir ? t('h.sync', { n: lq.n, choice: pick(ldir, esc(lq[ldir])) }) : t('h.qn.sr', { n: lq ? lq.n : 5 }) }} /></span>
       <button type="button" className="undo" id="undo-last" aria-label={t('h.undo.aria', { n: lq ? lq.n : 5, choice: lq && ldir ? lq[ldir] : '' })} onClick={() => void undoLast()}>
+        <span className="fuse fuse--fill" aria-hidden="true"><i style={{ ['--gone' as string]: '-' + (UNDO_MS - undoMs) + 'ms' }} /></span>
         <Icon name="undo" size={18} /><span>{t('h.undo')}</span><kbd aria-hidden="true">Z</kbd>
       </button>
     </div>
