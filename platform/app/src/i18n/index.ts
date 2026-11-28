@@ -1,4 +1,4 @@
-// i18next seeded from the design copy (scripts/gen-i18n.mjs). English for everyone by default; Korean and Japanese
+// i18next seeded from the design copy (scripts/gen-i18n.mjs). English for everyone by default; Korean (and Japanese once enabled in ./langs)
 // only by the player's choice, remembered on the device (and in users.language). The device language is never read.
 import i18next from 'i18next';
 import { initReactI18next, useTranslation } from 'react-i18next';
@@ -6,18 +6,20 @@ import en from './en.json';
 import ko from './ko.json';
 import ja from './ja.json';
 
-export type Lang = 'en' | 'ko' | 'ja';
-export const LANGS: Lang[] = ['en', 'ko', 'ja'];
-export const LANG_NAMES: Record<Lang, string> = { en: 'English', ko: '한국어', ja: '日本語' };
+import { ENABLED_LANGS, isEnabledLang, resolveLang, type Lang } from './langs';
+export type { Lang } from './langs';
+export { ALL_LANGS, ENABLED_LANGS, ENABLED_LANG_NAMES, LANG_NAMES, isEnabledLang, resolveLang } from './langs';
+/** the languages every control lists: only the enabled ones (see ENABLED_LANGS in ./langs) */
+export const LANGS: Lang[] = ENABLED_LANGS;
 const KEY = 'cjp.lang';
 
 function initialLang(): Lang {
   const q = new URLSearchParams(location.search).get('lang');
   let saved: string | null = null;
   try { saved = localStorage.getItem(KEY); } catch { /* storage off */ }
-  const l = (q || saved || 'en') as Lang;
-  if (!LANGS.includes(l)) return 'en';
-  if (q) { try { localStorage.setItem(KEY, l); } catch { /* */ } }
+  const l = resolveLang(q, saved);
+  // remember a request only when it was honoured (?lang=ja while hidden is not saved)
+  if (q && q === l) { try { localStorage.setItem(KEY, l); } catch { /* */ } }
   return l;
 }
 
@@ -47,7 +49,7 @@ void i18next.use(initReactI18next).init({
 });
 
 export function setLang(l: Lang) {
-  if (!LANGS.includes(l)) return;
+  if (!isEnabledLang(l)) return;
   try { localStorage.setItem(KEY, l); } catch { /* */ }
   document.documentElement.lang = l;
   loadFonts(l);

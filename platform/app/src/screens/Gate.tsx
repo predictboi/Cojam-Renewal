@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, useLocation, useParams } from 'react-router-dom';
 import { api } from '../api';
-import { LANG_NAMES, currentLang, t, useLang } from '../i18n';
+import { ENABLED_LANG_NAMES, currentLang, t, useLang } from '../i18n';
 import { esc } from '../lib/fmt';
 import { btn, code, dateline, help, icon, langSelect, note, plate, steps } from '../ui/h';
 import { qcard, qOf } from '../ui/qcard';
@@ -93,7 +93,7 @@ export default function Gate() {
   // one voice for the headline: the second sentence on its own line, no italic word
   const h1 = t('g.h1').replace(/<em>(.*?)<\/em>/, '<span class="gate-h1-2">$1</span>');
   const raw = '<div class="auth gate"><p class="gate-top" role="note">' + icon('shield', 16) + '<span>' + t('g.top') + '</span></p>' +
-    '<header class="gate-bar">' + plate(true) + langSelect(currentLang(), LANG_NAMES) + '</header><div class="oxford" aria-hidden="true"></div>' + dateline('<span>' + t('d.next.at') + '</span>', 'dateline--cover') +
+    '<header class="gate-bar">' + plate(true) + langSelect(currentLang(), ENABLED_LANG_NAMES) + '</header><div class="oxford" aria-hidden="true"></div>' + dateline('<span>' + t('d.next.at') + '</span>', 'dateline--cover') +
     '<div class="gate-cols"><div class="gate-col"><div class="stack-12"><h1>' + h1 + '</h1><p class="auth-lede">' + t('g.lede') + '</p></div></div>' +
     '<div class="gate-col"><section class="panel" aria-live="polite" id="panel">' + panel + '</section>' + demo +
     '<ul class="facts"><li>' + t('g.fact.1') + '</li><li>' + t('g.fact.2') + '</li><li>' + t('g.fact.3') + '</li></ul>' +

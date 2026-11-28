@@ -5,7 +5,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { api, useConfig } from '../api';
-import { LANG_NAMES, currentLang, t, useLang } from '../i18n';
+import { ENABLED_LANG_NAMES, currentLang, t, useLang } from '../i18n';
 import { esc, sleep } from '../lib/fmt';
 import { btn, help, icon, langSelect, plate, qbtn } from '../ui/h';
 import { Dateline, Html, Shell } from '../ui/kit';
@@ -219,7 +219,7 @@ export default function Login() {
   return (
     <Shell bare docTitle={headline} raw={
       <div className="auth">
-        <Html as="header" className="gate-bar" html={plate(true) + langSelect(currentLang(), LANG_NAMES)} />
+        <Html as="header" className="gate-bar" html={plate(true) + langSelect(currentLang(), ENABLED_LANG_NAMES)} />
         <div className="oxford" aria-hidden="true" />
         <Dateline cls="dateline--cover" live={'<span>' + t('d.next.at') + '</span>'} />
         <div className="auth-main">
