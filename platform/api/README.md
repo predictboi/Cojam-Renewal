@@ -9,7 +9,8 @@ Stack: Node 20, Fastify 5, TypeScript run by `tsx` (no build step), zod, Postgre
 | Path | Owner | What |
 | --- | --- | --- |
 | `src/server/` | API | `main.ts` (entry), `app.ts` (Fastify factory), `errors.ts`, `limits.ts` (Postgres counters), `hash.ts` |
-| `src/routes/` | API | `public.ts`, `session.ts`, `play.ts`, `wallet.ts`, `invite.ts`, `tx.ts`, `admin.ts`, `common.ts` |
+| `src/routes/` | API | `public.ts`, `session.ts`, `play.ts`, `wallet.ts`, `invite.ts`, `tx.ts`, `admin.ts`, `data.ts` (data room: `/public/data`, its admin settings and outside links), `common.ts` |
+| `src/dataRoom/` | API and worker | `split.ts` (the split counts and rules), `polymarket.ts` (the outside market interface, the Gamma API client and a fake) |
 | `src/auth/` | API | Privy verification, the dev bypass, admin roles and the operations agent service token |
 | `src/feeDelegation/` | API | `decode.ts` (0x31 decode, recover, co-sign), `policy.ts` (static allow list, gas caps, revert mapping), `service.ts` (the sponsorship pipeline) |
 | `src/db/` | API (shared) | `migrations/*.sql`, `types.ts` (Kysely types for every table), `index.ts` (`createDb`, `audit`, `getState`), `migrate.ts`, `seed.ts` |
