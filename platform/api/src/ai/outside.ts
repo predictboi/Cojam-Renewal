@@ -19,7 +19,17 @@ export const OUTSIDE_MAX_LONG_CANDIDATES = 12;
  * Questions about something that may happen at any time inside a period ("reach $X November 23-29", "week of",
  * "by December 31", "dip to"): their answer could be decided before our close, so they are left out.
  */
-const PERIOD_EVENT = /\b(week of|this week|dip to|reach(es)?|hits?|by (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*|before (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*|in (january|february|march|april|may|june|july|august|september|october|november|december))\b|\b\d{1,2}\s*[-–]\s*\d{1,2}(,|\?|\s|$)/i;
+const PERIOD_EVENT = /\b(week of|this week|dip to|reach(es)?|hits?|by (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*|before (jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)\w*|in (january|february|march|april|may|june|july|august|september|october|november|december))\b|\b\d{1,2}\s*[-–]\s*\d{1,2}(,|\?|\s|$)|\bfrom\b[^?]*\bto\b/i;
+
+/**
+ * Market shapes that make poor game questions or touch topics we never use: betting lines (spreads, exact scores,
+ * halves), "will X say or post" mention markets, news headlines, conflicts and named politicians.
+ */
+const NOISE = /\b(spread|handicap|exact score|1h|2h|1st half|2nd half|headlines?|insult\w*|say|says|mention\w*|tweets?|posts?|ukraine|russia|israel|gaza|iran\w*|trump|biden)\b/i;
+
+export function isNoise(m: Pick<OutsideMarket, 'question' | 'eventTitle'>): boolean {
+  return NOISE.test(m.question) || NOISE.test(m.eventTitle ?? '');
+}
 
 export function isPeriodEvent(m: Pick<OutsideMarket, 'question' | 'eventTitle'>): boolean {
   return PERIOD_EVENT.test(m.question) || PERIOD_EVENT.test(m.eventTitle ?? '');
@@ -37,6 +47,7 @@ export function outsideReject(m: OutsideMarket, dayId: number, longMaxDays: numb
   if (m.volume < OUTSIDE_MIN_VOLUME) return 'thin';
   if (bannedInText([m.question, m.eventTitle ?? '', m.description.slice(0, 400)].join(' \n ')).length) return 'topic not allowed';
   if (isPeriodEvent(m)) return 'decided during a period';
+  if (isNoise(m)) return 'not a game question';
   return null;
 }
 
