@@ -8,3 +8,4 @@ export * from "./email.ts";
 export * from "./invite.ts";
 export type * from "./api.ts";
 export * from "./content.ts";
+export * from "./dataRoom.ts";

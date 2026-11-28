@@ -194,7 +194,7 @@ export const SEEN_KEY = 'cjp.seen';
 /** the player's stakes as the tab bar needs them: where the Staking tab opens, and whether any stake is unlocked (CT ready) */
 export function useStakeTab(enabled = true): { href: string; ready: boolean } {
   const pos = usePositions(enabled);
-  const w = useWallet();
+  const w = useWallet(enabled);
   const list = pos.data?.positions;
   const now = Date.now();
   const ready = !!list?.some((p) => !p.closed && now >= p.start + p.lockDays * 86400000);
@@ -202,8 +202,9 @@ export function useStakeTab(enabled = true): { href: string; ready: boolean } {
   return { href: any ? '/stakes' : '/staking', ready };
 }
 export function useBadges(over?: Badges, enabled = true): Badges {
-  const today = useToday();
-  const me = useMe();
+  // a bare screen (log in, the legal pages, the public data room) has no tab bar: it reads nothing that needs a sign in
+  const today = useToday(enabled);
+  const me = useMe(enabled);
   const stake = useStakeTab(enabled);
   const items = useOutbox((s) => s.items);
   const answered = today.data ? today.data.markets.filter((m) => m.choice.chain || items.some((i) => i.marketId === m.marketId && i.state !== 'failed')).length : 5;

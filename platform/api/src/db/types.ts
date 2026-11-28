@@ -442,6 +442,22 @@ export interface UserMarksTable {
   updated_at: DefaultTimestamp;
 }
 
+/** Migration 0005: an outside market (Polymarket) linked to a question for the data room comparison. */
+export interface MarketOutsideTable {
+  market_id: number;
+  source: "polymarket";
+  url: string;
+  market_slug: string;
+  right_outcome: string;
+  right_price: number | null;
+  taken_at: Timestamp | null;
+  attempted_at: Timestamp | null;
+  error: string | null;
+  linked_by: string;
+  created_at: DefaultTimestamp;
+  updated_at: DefaultTimestamp;
+}
+
 export interface Database {
   users: UsersTable;
   registration_requests: RegistrationRequestsTable;
@@ -475,6 +491,7 @@ export interface Database {
   operator_requests: OperatorRequestsTable;
   app_state: AppStateTable;
   user_marks: UserMarksTable;
+  market_outside: MarketOutsideTable;
   schema_migrations: SchemaMigrationsTable;
 }
 

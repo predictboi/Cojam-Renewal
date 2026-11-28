@@ -3,6 +3,9 @@
 // Amounts: points are integers; CT and KAIA are decimal numbers in token units (display only: on chain amounts are
 // always built from the player's typed string with parseUnits, never from these floats).
 
+import type { DataSplit } from '../../../shared/src/dataRoom.ts';
+export type { DataDay, DataMarket, DataOutside, DataRoom, DataSide, DataSplit } from '../../../shared/src/dataRoom.ts';
+
 export type Lang = 'en' | 'ko' | 'ja';
 export type Address = `0x${string}`;
 export type Dir = 'l' | 'r';
@@ -93,6 +96,8 @@ export interface ResultRow {
   expectedAt?: number;                  // wait: when the answer is expected (ms)
   landsAt?: number;                     // pend: when the +50P lands (ms)
   answer?: Dir; setAt?: number; evidenceUrl?: string; correctedAt?: number;
+  /** How the players picked (DECISIONS "Data room"): sent only once the player's own pick is in. */
+  split?: DataSplit;
 }
 export interface ResultDay {
   dayId: number; date: number; answered: number; completed: boolean;

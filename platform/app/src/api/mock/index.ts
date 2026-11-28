@@ -11,6 +11,8 @@ import type {
 } from '../types';
 import RAW from './design-mock.json';
 import { MOCK_QUESTIONS, MOCK_RESULTS_DAY0 } from './questions';
+import { devQuestionsForDay, type DevQuestion } from '../../../../shared/src/devQuestions.ts';
+import { DATA_MIN_PLAYERS, DATA_MIN_TOP_PLAYERS, type DataDay, type DataMarket, type DataRoom, type DataSide, type DataSplit } from '../../../../shared/src/dataRoom.ts';
 
 // The design's data with compliant questions (questions.ts); today's set shows no outcome yet, the pending hit moves to
 // yesterday's set (p2, answer set at 15:40, the +50P lands 6 hours later).
@@ -183,7 +185,8 @@ function results(): Results {
       const q = QS[r.q], rules = (M.pastRules as unknown as Record<string, string[]>)[r.q];
       const tx = text(r.q);
       if (rules) (['en', 'ko', 'ja'] as Lang[]).forEach((l, i) => { tx[l] = { ...tx[l], rule: tx[l].rule || rules[i] }; });
-      return { marketId: r.q, category: q.cat as Market['category'], text: tx, choice: r.c, outcome: r.out as ResultRow['outcome'], expectedAt: exp(r.exp, g.day), landsAt: hm(r.at), setAt: ago(g.day), answer: r.out === 'miss' ? (r.c === 'r' ? 'l' : 'r') : r.c || undefined };
+      const split = g.day === 0 && r.c ? TODAY_SPLIT[r.q] : undefined;
+      return { marketId: r.q, category: q.cat as Market['category'], text: tx, choice: r.c, outcome: r.out as ResultRow['outcome'], expectedAt: exp(r.exp, g.day), landsAt: hm(r.at), setAt: ago(g.day), answer: r.out === 'miss' ? (r.c === 'r' ? 'l' : 'r') : r.c || undefined, ...(split ? { split } : {}) };
     }),
   }));
   return { summary: { week: { points: M.week.pts, hits: M.week.hits, answered: M.week.answered }, all: { points: M.all.pts, hitRate: M.all.rate }, pending: { points: M.user.pendingHit, landsAt: todayAt(21, 40) } }, days: out, nextCursor: st === 'empty' ? null : 'more' };
@@ -202,8 +205,57 @@ function invite(): InviteInfo {
   };
 }
 
+/* ---------- the data room (platform/shared/src/dataRoom.ts): closed days only, built from the dev question sets ---------- */
+/** today's live split on the player's own picks (shown once the pick is sent); q2 is still under the minimum */
+const TODAY_SPLIT: Record<string, DataSplit> = {
+  q1: { players: 642, rightShare: 61, topRightShare: 68 },
+  q2: { players: 18, rightShare: null, topRightShare: null },
+  q3: { players: 588, rightShare: 44, topRightShare: 39 },
+  q4: { players: 515, rightShare: 50, topRightShare: 57 },
+  q5: { players: 601, rightShare: 73, topRightShare: 64 },
+};
+/** [players, right share, top right share, outcome, Polymarket right price] per slot; null outcome = not answered yet */
+type DR = [number, number | null, number | null, DataSide | null, number?];
+const DATA_DAYS: { back: number; pool: 'yesterday' | 'earlier' | 'today'; rows: DR[] }[] = [
+  // closed this morning: answers mostly still to come; a Polymarket line above, a Counting row, a 50:50 row, one below
+  { back: 1, pool: 'yesterday', rows: [[1284, 62, 71, null, 55], [22, null, null, null], [903, 50, 58, null], [1102, 42, 35, 1, 30], [1250, 71, 66, null]] },
+  { back: 2, pool: 'earlier', rows: [[1410, 64, 70, 2], [1388, 55, 48, 1], [1205, 31, 27, 1, 39], [1342, 58, 61, 2, 58], [1190, 47, null, 2]] },
+  { back: 3, pool: 'today', rows: [[1167, 68, 74, 2, 69], [1093, 39, 33, 1], [26, null, null, 2], [1220, 57, 60, 1], [1301, 81, 85, 2]] },
+  // the second page
+  { back: 4, pool: 'yesterday', rows: [[998, 59, 63, 2], [1012, 35, 30, 1], [976, 52, 55, 2], [1044, 66, 72, 1, 61], [1003, 45, 41, 1]] },
+  { back: 5, pool: 'earlier', rows: [[871, 73, 79, 2], [902, 40, 38, 1], [866, 61, 57, 2], [911, 50, 52, 1], [889, 56, 60, 2]] },
+];
+function dataDay(d: (typeof DATA_DAYS)[number]): DataDay {
+  const id = dayId() - d.back, set: DevQuestion[] = devQuestionsForDay(id)[d.pool];
+  const markets = d.rows.map(([players, right, top, outcome, pm], slot): DataMarket => {
+    const q = set[slot % set.length];
+    const txt = (l: Lang) => ({ title: q.text[l].title, a: q.text[l].left, b: q.text[l].right });
+    const shown = players >= DATA_MIN_PLAYERS ? right : null;
+    const larger: DataSide | null = shown === null || shown === 50 ? null : shown > 50 ? 2 : 1;
+    return {
+      marketId: String(id * 5 + slot), slot, category: q.category, text: { en: txt('en'), ko: txt('ko'), ja: txt('ja') },
+      split: { players, rightShare: shown, topRightShare: shown === null || players < DATA_MIN_TOP_PLAYERS * 5 ? null : top },
+      ...(pm === undefined ? {} : { outside: { source: 'polymarket' as const, url: 'https://polymarket.com/event/' + q.key, rightPrice: pm, takenAt: (id + 1) * 86400 } }),
+      outcome, crowdRight: outcome === null || larger === null ? null : outcome === larger,
+    };
+  });
+  return { dayId: id, closedAt: (id + 1) * 86400, markets };
+}
+function dataRoom(page: 0 | 1): DataRoom {
+  const st = guard(/^\/data/);
+  if (st === 'empty') return { crowd: { rightPercent: null, questions: 0 }, days: [], nextCursor: null };
+  const all = DATA_DAYS.map(dataDay);
+  const judged = all.flatMap((d) => d.markets).filter((m) => m.crowdRight !== null);
+  const right = judged.filter((m) => m.crowdRight).length;
+  return {
+    crowd: { rightPercent: judged.length ? Math.round((right / judged.length) * 100) : null, questions: judged.length },
+    days: page === 0 ? all.slice(0, 3) : all.slice(3),
+    nextCursor: page === 0 ? 'p2' : null,
+  };
+}
+
 /* which query is the screen's main read, for the loading and error presets */
-const MAIN: Record<string, RegExp> = { today: /^\/(list)?$/, results: /^\/results/, ranking: /^\/ranking/, positions: /^\/stakes/, invite: /^\/invite/, wallet: /^\/(staking|convert|withdraw|deposit)$/ };
+const MAIN: Record<string, RegExp> = { data: /^\/data/, today: /^\/(list)?$/, results: /^\/results/, ranking: /^\/ranking/, positions: /^\/stakes/, invite: /^\/invite/, wallet: /^\/(staking|convert|withdraw|deposit)$/ };
 function gate<T>(name: string, v: () => T, ms?: number): Promise<T> {
   const w = where();
   if (w.st === 'loading' && (MAIN[name]?.test(w.path) || name === 'wallet' && w.path !== '/profile')) return never();
@@ -252,6 +304,7 @@ export const mockApi: Api & { moreResults(): ResultDay; inviteKnown: Record<stri
   positions: () => gate('positions', positions),
   sponsor: async () => wait({ txHash: '0x' + Math.random().toString(16).slice(2).padEnd(64, '0').slice(0, 64), action: 'mock' }, 350),
   tx: async (hash) => ({ hash, status: 'mined' }),
+  getDataRoom: (cursor) => (cursor ? wait(dataRoom(1), 300) : gate('data', () => dataRoom(0), 220)),
   moreResults: () => moreDay,
   inviteKnown: M.invite.known as Record<string, string>,
   selfCode: M.invite.self,

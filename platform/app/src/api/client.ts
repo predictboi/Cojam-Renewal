@@ -7,7 +7,7 @@ import type * as W from '../../../shared/src/api.ts';
 import * as A from './adapt';
 import { setKrwPerCt } from '../lib/fmt';
 import type {
-  AppConfig, EmailCheck, InviteInfo, InviteLookup, Lang, Me, Positions, Ranking, Results, SessionState,
+  AppConfig, DataRoom, EmailCheck, InviteInfo, InviteLookup, Lang, Me, Positions, Ranking, Results, SessionState,
   SponsorOk, StakeQuote, Today, TxStatus, WalletInfo,
 } from './types';
 
@@ -29,6 +29,8 @@ export interface Api {
   positions(): Promise<Positions>;
   sponsor(rawTransaction: string, opts?: { auth?: boolean }): Promise<SponsorOk>;
   tx(hash: string): Promise<TxStatus>;
+  /** The public data room (GET /public/data, no sign in): closed days, newest first, 7 a page. */
+  getDataRoom(cursor?: string): Promise<DataRoom>;
 }
 
 type TokenFn = () => Promise<string | null>;
@@ -116,5 +118,6 @@ export const httpApi: Api = {
   positions: async () => A.positions(await call<W.StakingPositionsResponse>('GET', '/v1/staking/positions')),
   // A play key predict is sponsored without a token (6.2): the outbox passes auth: false
   sponsor: (rawTransaction, opts) => call('POST', '/v1/tx/sponsor', { rawTransaction }, opts?.auth !== false),
+  getDataRoom: (cursor) => call<DataRoom>('GET', '/public/data' + (cursor ? '?cursor=' + encodeURIComponent(cursor) : ''), undefined, false),
   tx: async (hash) => { const r = await call<W.TxStatusResponse>('GET', '/v1/tx/' + hash); return { hash: r.txHash, status: r.status }; },
 };

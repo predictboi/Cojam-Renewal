@@ -3,6 +3,8 @@
 // in fields ending with `Wei`; points are plain numbers (0 decimals); addresses are lower case 0x strings.
 // Errors use ApiErrorBody from ./errors.ts.
 
+import type { DataSplit } from "./dataRoom.ts";
+
 export type Lang = "en" | "ko" | "ja";
 export type Address = `0x${string}`;
 
@@ -225,6 +227,11 @@ export interface ResultRow {
   resolvedAt: number | null;
   /** Evidence of the deciding resolution run, else the primary source. */
   evidenceUrl: string | null;
+  /**
+   * How the players picked (data room). Only on a row whose pick is recorded (indexed): the live figure while the day
+   * is open, the final one after the close. Never present before the player's own pick.
+   */
+  split?: DataSplit;
 }
 export interface ResultDay {
   dayId: number;

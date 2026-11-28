@@ -3,6 +3,7 @@
 // falls back to a safe default and is listed in the build report as a field the plan or the API still has to add.
 import { formatUnits } from 'viem';
 import type * as W from '../../../shared/src/api.ts';
+import type { DataSplit } from '../../../shared/src/dataRoom.ts';
 import { addressesFor } from '../../../shared/addresses/index.ts';
 import { CONFIG } from '../config';
 import { DESIGN } from './mock';
@@ -95,6 +96,13 @@ function outcome(row: W.ResultRow): Outcome {
   if (row.correctedOutcome) return 'corr';
   return row.hitState === 'pending' ? 'pend' : 'hit';
 }
+/** The split on a result row (platform/shared/src/dataRoom.ts), only on a row the player picked; anything malformed is dropped. */
+function splitOf(x: W.ResultRow & { split?: DataSplit | null }): DataSplit | undefined {
+  const s = x.split;
+  if (!s || !x.myChoice || typeof s.players !== 'number') return undefined;
+  const pct = (v: unknown) => (typeof v === 'number' && v >= 0 && v <= 100 ? Math.round(v) : null);
+  return { players: s.players, rightShare: pct(s.rightShare), topRightShare: pct(s.topRightShare) };
+}
 export function results(r: W.ResultsResponse): Results {
   const days: ResultDay[] = r.days.map((d) => ({
     dayId: d.dayId, date: d.dayId * 86400000, answered: d.answered, completed: d.completed,
@@ -103,6 +111,7 @@ export function results(r: W.ResultsResponse): Results {
     rows: d.rows.map((x) => ({
       marketId: String(x.marketId), category: x.category as Market['category'], text: x.text, choice: dir(x.myChoice), outcome: outcome(x),
       landsAt: ms(x.landsAt) || undefined, expectedAt: ms(x.resolvesAt) || undefined, answer: dir((x.correctedOutcome || x.outcome) as 1 | 2 | null) || undefined, setAt: ms(x.resolvedAt) || undefined, evidenceUrl: x.evidenceUrl || undefined,
+      split: splitOf(x),
     })),
   }));
   const pendLands = r.days.flatMap((d) => d.rows).filter((x) => x.hitState === 'pending' && x.landsAt).map((x) => x.landsAt!).sort()[0];
